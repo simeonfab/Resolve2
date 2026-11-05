@@ -494,6 +494,43 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
     Ok(finish("I stopped after many steps; tell me to continue if there's more to do.".into(), &actions))
 }
 
+// ---------------------------------------------------------------- call trace (Test Intake inspector)
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct Trace {
+    pub at: i64,
+    pub purpose: String,
+    pub provider: String,
+    pub model: String,
+    /// The full prompt sent (system prompt; the user turn is a fixed "Return the JSON now.").
+    pub request: String,
+    /// The model's raw text, or the error.
+    pub response: String,
+    pub ok: bool,
+}
+
+thread_local! {
+    static TRACE: std::cell::RefCell<Vec<Trace>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
+    let purpose = PURPOSE.with(|x| x.borrow().clone());
+    let t = Trace {
+        at: crate::model::now_ms(),
+        purpose,
+        provider: cfg.provider.clone(),
+        model: if cfg.model.is_empty() { "(default)".into() } else { cfg.model.clone() },
+        request: system.to_string(),
+        response: match raw { Ok(s) => s.clone(), Err(e) => format!("ERROR: {e}") },
+        ok: raw.is_ok(),
+    };
+    TRACE.with(|x| x.borrow_mut().push(t));
+}
+
+/// Take the calls recorded on this thread since the last take.
+pub fn take_trace() -> Vec<Trace> {
+    TRACE.with(|x| std::mem::take(&mut *x.borrow_mut()))
+}
 // ---------------------------------------------------------------- structured (JSON) completions
 //
 // Used by Resolve Intake and ResolveOS roles. One system prompt (with the user's text fenced
@@ -514,7 +551,14 @@ pub fn parse_json_object(text: &str) -> Result<Value, String> {
 }
 
 /// One completion that should return a JSON object. `temperature` None = provider default.
+/// One raw call; returns the model's text. Every call (success or failure) is added to the trace.
 pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<Value, String> {
+    let raw = complete_text_once(cfg, system, temperature);
+    trace_push(cfg, system, &raw);
+    raw.and_then(|t| parse_json_object(&t))
+}
+
+fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<String, String> {
     let user = "Return the JSON now.";
     match cfg.provider.as_str() {
         "anthropic" => {
@@ -530,12 +574,12 @@ pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>
             let resp = post("https://api.anthropic.com/v1/messages", &headers, &body)?;
             record_from_response("anthropic", &model, &resp);
             let text: String = resp["content"].as_array().cloned().unwrap_or_default().iter().filter(|b| b["type"] == "text").filter_map(|b| b["text"].as_str().map(|s| s.to_string())).collect::<Vec<_>>().join("\n");
-            parse_json_object(&text)
+            Ok(text)
         }
         "claude-code" | "codex-cli" => {
             let text = run_cli_plain(&cfg.provider, system, user)?;
             record_usage(&cfg.provider, "subscription", 0, 0);
-            parse_json_object(&text)
+            Ok(text)
         }
         _ => {
             let (endpoint, headers): (String, Vec<(&str, String)>) = match cfg.provider.as_str() {
@@ -554,7 +598,7 @@ pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>
             let resp = post(&endpoint, &headers, &body)?;
             record_from_response(&cfg.provider, &cfg.model, &resp);
             let text = resp["choices"][0]["message"]["content"].as_str().unwrap_or("").to_string();
-            parse_json_object(&text)
+            Ok(text)
         }
     }
 }

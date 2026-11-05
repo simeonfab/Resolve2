@@ -36,6 +36,8 @@ pub enum Kind {
     Update,
     /// Output of a ResolveOS role / guidance step, kept so context survives sessions.
     Guidance,
+    /// A roadmap item (outcome or workstream) in Now / Next / Later. Tasks link to it.
+    Roadmap,
 }
 
 pub struct FieldDef {
@@ -54,7 +56,8 @@ const fn locked(key: &'static str, label: &'static str) -> FieldDef {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 13] = [
+    pub const ALL: [Kind; 14] = [
+        Kind::Roadmap,
         Kind::Hypothesis,
         Kind::Experiment,
         Kind::Evidence,
@@ -84,6 +87,7 @@ impl Kind {
             Kind::Milestone => "Milestone",
             Kind::Update => "Progress update",
             Kind::Guidance => "Guidance",
+            Kind::Roadmap => "Roadmap item",
         }
     }
     pub fn plural(self) -> &'static str {
@@ -101,6 +105,7 @@ impl Kind {
             Kind::Milestone => "Milestones",
             Kind::Update => "Updates",
             Kind::Guidance => "Guidance",
+            Kind::Roadmap => "Roadmap",
         }
     }
     pub fn icon(self) -> &'static str {
@@ -118,6 +123,7 @@ impl Kind {
             Kind::Milestone => "⚑",
             Kind::Update => "↻",
             Kind::Guidance => "✦",
+            Kind::Roadmap => "▤",
         }
     }
     pub fn key(self) -> &'static str {
@@ -135,6 +141,7 @@ impl Kind {
             Kind::Milestone => "milestone",
             Kind::Update => "update",
             Kind::Guidance => "guidance",
+            Kind::Roadmap => "roadmap",
         }
     }
     pub fn parse(s: &str) -> Option<Kind> {
@@ -156,6 +163,7 @@ impl Kind {
             Kind::Blocker => &["Blocking", "Resolved"],
             Kind::Milestone => &["Planned", "Reached", "Missed"],
             Kind::Update | Kind::Guidance => &["Recorded"],
+            Kind::Roadmap => &["Planned", "Active", "Done", "Dropped"],
         }
     }
     /// Is a record in this status still something to act on?
@@ -171,6 +179,7 @@ impl Kind {
             Kind::Question => status == "Open",
             Kind::Blocker => status == "Blocking",
             Kind::Milestone => status == "Planned",
+            Kind::Roadmap => status == "Planned" || status == "Active",
             Kind::Evidence | Kind::Update | Kind::Guidance => false,
         }
     }
@@ -226,6 +235,7 @@ impl Kind {
         const BLK: &[FieldDef] = &[f("unblock", "What would unblock it", true), f("owner", "Owner", false)];
         const MIL: &[FieldDef] = &[f("date", "Target date", false), f("criteria", "Done when…", true)];
         const UPD: &[FieldDef] = &[f("date", "Date", false)];
+        const RMP: &[FieldDef] = &[f("phase", "Now, Next or Later", false), f("detail", "What it involves", true), f("basis", "Basis: evidence, assumption or uncertain", false)];
         const GUI: &[FieldDef] = &[f("role", "Role", false), f("action", "Action", false), f("provider", "Model / provider", false)];
         match self {
             Kind::Hypothesis => HYP,
@@ -241,6 +251,7 @@ impl Kind {
             Kind::Milestone => MIL,
             Kind::Update => UPD,
             Kind::Guidance => GUI,
+            Kind::Roadmap => RMP,
         }
     }
 }

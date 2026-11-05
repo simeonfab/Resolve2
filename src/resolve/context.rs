@@ -40,6 +40,9 @@ pub struct ProjectContext {
     /// Free notes the user keeps about the project's context.
     #[serde(default)]
     pub notes: String,
+    /// The roadmap reveal after adoption has been shown (once per project).
+    #[serde(default)]
+    pub reveal_seen: bool,
     pub created: i64,
     pub updated: i64,
 }
@@ -64,6 +67,7 @@ impl ProjectContext {
             win_task_id: Some(win),
             page_id: Some(page_id),
             notes: String::new(),
+            reveal_seen: true,
             created: t,
             updated: t,
         }

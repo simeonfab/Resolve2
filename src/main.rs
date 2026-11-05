@@ -24,6 +24,7 @@ mod seed;
 mod selftest;
 mod selftest_resolve;
 mod selftest_safety;
+mod selftest_journey;
 mod server;
 mod store;
 mod templates;
