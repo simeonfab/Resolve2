@@ -227,6 +227,40 @@ impl App {
         });
         ui.add_space(10.0);
         card(ui, p, |ui| {
+            ui.label(RichText::new("📁 Where your files are").font(fb(16.0)));
+            ui.label(RichText::new("Everything is plain files on this PC. Resolve 2 never reads or writes Resolve Beta's folder (%APPDATA%\\Weave).").size(12.0).color(p.faint));
+            let exe = std::env::current_exe().ok();
+            // the source code lives in the folder that holds `target\debug\resolve2.exe`
+            let code = exe.as_ref().and_then(|e| e.ancestors().find(|a| a.join("Cargo.toml").is_file()).map(|a| a.to_path_buf()));
+            let root = crate::store::root();
+            let rows: Vec<(&str, std::path::PathBuf, bool)> = vec![
+                ("All Resolve 2 data (workspaces, settings, AI keys)", root.clone(), true),
+                ("This workspace (data.json: pages, tasks, projects, Resolve records)", self.store.dir.clone(), true),
+                ("This workspace's backups", self.store.backups_dir(), true),
+                ("AI usage log", crate::ai::usage_path(), false),
+                ("The program", exe.clone().unwrap_or_default(), false),
+                ("Source code and docs (git repository)", code.clone().unwrap_or_default(), true),
+            ];
+            for (label, path, is_dir) in rows {
+                if path.as_os_str().is_empty() {
+                    continue;
+                }
+                let target = if is_dir { path.clone() } else { path.parent().map(|x| x.to_path_buf()).unwrap_or_default() };
+                ui.add_space(4.0);
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new(label).size(12.5));
+                    if ui.add_enabled(target.exists(), egui::Button::new("Open").small()).clicked() {
+                        open_folder(&target);
+                    }
+                    if ui.small_button("Copy").clicked() {
+                        ui.ctx().copy_text(path.display().to_string());
+                    }
+                });
+                ui.add(egui::Label::new(RichText::new(path.display().to_string()).size(11.5).monospace().color(p.dim)).wrap());
+            }
+        });
+        ui.add_space(10.0);
+        card(ui, p, |ui| {
             ui.label(RichText::new("Opening Resolve 2").font(fb(16.0)));
             let exe = std::env::current_exe().map(|x| x.display().to_string()).unwrap_or_default();
             ui.label(RichText::new(format!("The program is {exe}")).size(12.0).color(p.dim));
