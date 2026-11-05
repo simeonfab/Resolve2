@@ -15,6 +15,7 @@ pub mod assess;
 pub mod context;
 pub mod intake;
 pub mod journey;
+pub mod testlab;
 pub mod records;
 pub mod roles;
 

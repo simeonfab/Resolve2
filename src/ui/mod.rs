@@ -3,7 +3,10 @@ pub mod widgets;
 mod calendar;
 mod cockpit;
 mod intake;
+mod intake_review;
+mod intake_steps;
 pub mod resolve;
+pub mod testlab;
 mod dashboard;
 mod help;
 mod assistant;
@@ -38,6 +41,8 @@ pub enum View {
     Intake(Id),
     /// A project's Resolve cockpit (ResolveOS runtime surface).
     Resolve(Id),
+    /// Test Intake home (only in the sandbox process).
+    TestLab,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -151,6 +156,8 @@ pub struct StartOpts {
     pub screenshot: Option<PathBuf>,
     pub workspace: Option<String>,
     pub view: Option<String>,
+    /// Test Intake mode: sandbox data folder, no sidebar, no MCP/phone server.
+    pub testlab: bool,
 }
 
 pub struct App {
@@ -193,6 +200,9 @@ pub struct App {
     pub resolve_ui: resolve::ResolveUi,
     /// (message, expires, change-set id): toasts with an Undo button.
     pub undo_toasts: Vec<(String, f64, Id)>,
+    /// Running as Test Intake (sandbox data folder).
+    pub testlab: bool,
+    pub lab: testlab::LabUi,
 }
 
 impl App {
@@ -262,9 +272,25 @@ impl App {
             temp: HashMap::new(),
             resolve_ui: resolve::ResolveUi::default(),
             undo_toasts: vec![],
+            testlab: opts.testlab,
+            lab: testlab::LabUi::default(),
         };
         app.page_ui.ai_open = open_ai;
-        app.ensure_server();
+        if app.testlab {
+            // --view intake-<stage> opens the newest run at that stage (screenshots / checks)
+            app.view = match opts.view.as_deref() {
+                Some(v) if v.starts_with("intake") => {
+                    let stage = v.strip_prefix("intake-").unwrap_or("");
+                    app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| View::Intake(i.id.clone())).unwrap_or(View::TestLab)
+                }
+                _ => View::TestLab,
+            };
+        } else {
+            app.ensure_server();
+            if opts.view.is_none() {
+                app.open_intake_if_new();
+            }
+        }
         app
     }
 
@@ -321,6 +347,7 @@ impl App {
         self.reg.save();
         self.view = View::Dashboard;
         self.back.clear();
+        self.open_intake_if_new();
         self.open_task = None;
         self.event_edit = None;
         self.page_ui = PageUi { ai_can_act: true, ..Default::default() };
@@ -747,13 +774,8 @@ impl App {
                     ui.horizontal(|ui| {
                         section_label(ui, p, "My Projects");
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("New project").clicked() {
-                                let pr = Project { id: new_id(), name: "New project".into(), color: [41, 171, 135], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
-                                let id = pr.id.clone();
-                                self.store.data.projects.push(pr);
-                                self.touch();
-                                self.go(View::Project(id));
-                                self.tasks_ui.rename_project = true;
+                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("New project — opens the intake").clicked() {
+                                self.start_intake();
                             }
                         });
                     });
@@ -1330,6 +1352,7 @@ impl App {
             View::Help => self.help_view(ui, p),
             View::Intake(id) => self.intake_view(ui, p, &id),
             View::Resolve(id) => self.resolve_view(ui, p, &id),
+            View::TestLab => self.testlab_view(ui, p),
         }
     }
 
@@ -1405,15 +1428,19 @@ impl eframe::App for App {
             }
         }
 
-        self.sidebar(ctx, &p);
-        if let Some(tid) = self.open_task.clone() {
+        // the intake (and the Test Intake lab) are full screen: no sidebar, no app chrome
+        let full_screen = self.testlab || matches!(self.view, View::Intake(_));
+        if !full_screen {
+            self.sidebar(ctx, &p);
+        }
+        if let Some(tid) = self.open_task.clone().filter(|_| !full_screen) {
             if self.store.data.task(&tid).is_some() {
                 self.task_panel(ctx, &p, &tid);
             } else {
                 self.open_task = None;
             }
         }
-        if self.page_ui.ai_open {
+        if self.page_ui.ai_open && !full_screen {
             let pid = match &self.view {
                 View::Page(id) => Some(id.clone()),
                 _ => None,

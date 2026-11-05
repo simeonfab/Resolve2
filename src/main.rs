@@ -38,10 +38,79 @@ fn arg_value(args: &[String], flag: &str) -> Option<String> {
 
 fn main() {
     let args: Vec<String> = std::env::args().collect();
+    let testlab = args.iter().any(|a| a == "--testlab");
     if let Some(d) = arg_value(&args, "--data-dir") {
         let p = PathBuf::from(d);
         let p = if p.is_absolute() { p } else { std::env::current_dir().map(|c| c.join(&p)).unwrap_or(p) };
         store::set_root(p);
+    } else if testlab {
+        // Test Intake never touches the real data folder
+        store::set_root(resolve::testlab::default_root());
+    }
+    // resolve2 --promote RUN.json [--workspace NAME]: adopt a Test Intake run into the real data folder
+    if let Some(f) = arg_value(&args, "--promote") {
+        match resolve::testlab::promote_file(&f, arg_value(&args, "--workspace").as_deref()) {
+            Ok((ws, pid)) => println!("Created the project in your \"{ws}\" workspace (id {pid}). Open Resolve 2 to see it."),
+            Err(e) => {
+                println!("{e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+    // resolve2 --testlab --lab-run "SCENARIO" [--provider P] [--model M] [--url U] [--max-q N] [--adopt]
+    // drives a whole intake headlessly in the Test Intake data folder and prints what happened
+    if let Some(name) = arg_value(&args, "--lab-run") {
+        let Some(scn) = resolve::testlab::scenario(&name) else {
+            println!("No scenario called '{name}'. Scenarios: {}", resolve::testlab::scenarios().iter().map(|s| s.name.clone()).collect::<Vec<_>>().join(", "));
+            std::process::exit(2);
+        };
+        let provider = match arg_value(&args, "--provider") {
+            Some(p) if p == "offline" => p,
+            Some(p) => format!("{p}|{}|{}", arg_value(&args, "--model").unwrap_or_default(), arg_value(&args, "--url").unwrap_or_default()),
+            None => String::new(),
+        };
+        let max_q = arg_value(&args, "--max-q").and_then(|n| n.parse().ok()).unwrap_or(9);
+        let t0 = std::time::Instant::now();
+        let mut run = resolve::testlab::headless_run(&scn, &provider, max_q, false, &mut |s| println!("{s}"));
+        let reg = store::Registry::load();
+        let meta = reg.workspaces[0].clone();
+        let mut st = store::Store::open(meta);
+        let rid = run.id.clone();
+        let adopt = args.iter().any(|a| a == "--adopt");
+        if adopt && run.proposal.is_some() {
+            run.stage = "bridge".into();
+        }
+        st.data.intakes.push(run);
+        if adopt {
+            match resolve::journey::adopt_all(&mut st.data, &rid) {
+                Ok(pid) => println!("adopted → project {pid}"),
+                Err(e) => println!("adopt failed: {e}"),
+            }
+        }
+        let _ = st.save();
+        if let Some(r) = st.data.intakes.iter().find(|x| x.id == rid) {
+            if let Ok((md, js)) = resolve::testlab::export(r) {
+                println!("exported: {}\n          {}", md.display(), js.display());
+            }
+        }
+        println!("seconds: {:.1}", t0.elapsed().as_secs_f32());
+        return;
+    }
+    // resolve2 --connect-claude-desktop [--workspace NAME]: register this workspace in Claude Desktop only
+    if args.iter().any(|a| a == "--connect-claude-desktop") {
+        let reg = store::Registry::load();
+        let meta = arg_value(&args, "--workspace").as_deref().and_then(|w| reg.find(w).cloned()).or_else(|| reg.find("Personal").cloned()).unwrap_or_else(|| reg.workspaces[0].clone());
+        let exe = std::env::current_exe().map(|x| x.display().to_string()).unwrap_or_default();
+        let name = format!("resolve2_{}", store::sanitize(&meta.name).to_lowercase().replace([' ', '-', '.', '(', ')'], "_"));
+        match ui::settings::add_to_claude_desktop(&name, &exe, &meta.id) {
+            Ok(m) => println!("{m}"),
+            Err(e) => {
+                println!("⚠ {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
     }
     let workspace = arg_value(&args, "--workspace");
     let pick = |reg: &store::Registry| -> store::WorkspaceMeta {
@@ -164,10 +233,11 @@ fn main() {
         screenshot: arg_value(&args, "--screenshot").map(PathBuf::from),
         workspace: workspace.clone(),
         view: arg_value(&args, "--view"),
+        testlab,
     };
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_title("Resolve 2")
+            .with_title(if testlab { "Resolve 2 — Test Intake (sandbox)" } else { "Resolve 2" })
             .with_inner_size([1600.0, 900.0])
             .with_min_inner_size([960.0, 600.0]),
         ..Default::default()

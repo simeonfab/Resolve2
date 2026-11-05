@@ -226,6 +226,16 @@ impl App {
             });
         });
         ui.add_space(10.0);
+        let mut lab = false;
+        card(ui, p, |ui| {
+            ui.label(RichText::new("🧪 Test Intake").font(fb(16.0)));
+            ui.label(RichText::new(format!("Run the whole intake journey on sample scenarios or your own answers, choose the AI per run, inspect each question's reasoning and the raw AI calls, compare runs and export them. It opens in its own window with sandbox data in {} — never your real workspaces, never shared over MCP.", crate::resolve::testlab::default_root().display())).size(12.0).color(p.dim));
+            lab = primary_button(ui, p, "Open Test Intake").clicked();
+        });
+        if lab {
+            self.launch_testlab();
+        }
+        ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("📁 Where your files are").font(fb(16.0)));
             ui.label(RichText::new("Everything is plain files on this PC. Resolve 2 never reads or writes Resolve Beta's folder (%APPDATA%\\Weave).").size(12.0).color(p.faint));

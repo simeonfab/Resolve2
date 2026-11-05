@@ -1,0 +1,82 @@
+[
+  {
+    "name": "New consumer app idea",
+    "opening": "I want to build a phone app that helps people who rent split household bills fairly with their flatmates. Right now my flat uses a spreadsheet and someone always forgets to pay. I've sketched some screens but haven't built anything.",
+    "answers": {
+      "goal": "Get a first version into the hands of a few flat-shares and see if they keep using it.",
+      "problem": "Shared bills cause arguments: people forget, nobody wants to chase, and the spreadsheet is always out of date.",
+      "who": "People aged 20-35 in shared rented flats, mostly 3-5 flatmates.",
+      "why": "Every flat I've lived in had the same fight, and none of the banking apps solve the 'who owes what this month' bit.",
+      "outcome": "Flatmates settle up each month without anyone having to chase — you'd see it in on-time payments and fewer reminder messages.",
+      "evidence": "My own flat and two friends' flats complained about this; one friend said they'd try anything. No numbers yet.",
+      "assumptions": "That people will link their bank or enter bills by hand; that one person per flat will set it up for everyone.",
+      "constraints": "Evenings and weekends only, about £500 to spend, I can't code the backend myself.",
+      "uncertainties": "Whether anyone would pay for it, and whether flatmates would all install it.",
+      "followup": "I'd start with my own flat as the first test."
+    }
+  },
+  {
+    "name": "Rescuing a stalled project",
+    "opening": "We started redesigning our charity's volunteer sign-up process eight months ago. There's a half-finished new form, notes in Google Docs and an old Trello board nobody updates. The project lead left and it's stalled.",
+    "answers": {
+      "goal": "Get the new sign-up live so volunteers can register without phoning the office.",
+      "problem": "The current paper and phone process loses people — staff spend hours on calls and some volunteers never hear back.",
+      "who": "New volunteers, and the two office staff who process sign-ups.",
+      "why": "We have a big recruitment drive in the spring and the old process won't cope.",
+      "outcome": "New volunteers are registered within two days of applying, and office staff stop spending mornings on sign-up calls.",
+      "evidence": "Last spring 40% of people who enquired never completed sign-up; staff log about 6 hours a week on calls.",
+      "assumptions": "That volunteers are happy to sign up online; that the half-finished form is mostly right.",
+      "constraints": "No budget for agencies, one part-time staff member can help, must meet our safeguarding checks.",
+      "uncertainties": "What state the half-built form is really in, and who should own it now.",
+      "followup": "The trustees meet next month and will ask for a date."
+    }
+  },
+  {
+    "name": "Service business",
+    "opening": "I'm a freelance bookkeeper and I want to turn what I do into a fixed-price monthly package for small cafés, instead of charging by the hour.",
+    "answers": {
+      "goal": "Sign up ten cafés on a monthly package within six months.",
+      "problem": "Hourly billing makes clients nervous about costs and makes my income lumpy.",
+      "who": "Independent cafés with 2-10 staff that do their own books badly.",
+      "why": "I already have three café clients and they keep asking what it will cost each month.",
+      "outcome": "Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end; I'd see it in on-time monthly records.",
+      "evidence": "Three existing café clients; two said they'd prefer a fixed fee. I spend roughly 5 hours a month per café.",
+      "assumptions": "That cafés will pay about £150 a month; that the work per café is predictable.",
+      "constraints": "Just me, 30 hours a week available, I don't want to hire yet.",
+      "uncertainties": "The right price, and how to find cafés beyond word of mouth.",
+      "followup": "My local business network has a café owners' meetup."
+    }
+  },
+  {
+    "name": "Internal work project",
+    "opening": "At work I've been asked to cut the time it takes our customer support team to answer emails. Nobody has defined what success looks like and there are three different tools in play.",
+    "answers": {
+      "goal": "Bring first-response time on support emails down and keep it down.",
+      "problem": "Emails sit unanswered because they land in three places and nobody owns triage.",
+      "who": "The 8-person support team, and customers waiting for answers.",
+      "why": "Complaints about slow replies are the top theme in our customer survey this quarter.",
+      "outcome": "Customers get a first reply within 4 working hours, and the team stops missing emails — visible in the help desk's response-time report.",
+      "evidence": "The help desk report shows a median first response of 19 hours; the survey has 120 comments about slow replies.",
+      "assumptions": "That moving everything into one inbox will fix most of it; that the team has capacity if triage is clear.",
+      "constraints": "No new budget this year, changes need IT sign-off, the team can't stop answering emails while we change things.",
+      "uncertainties": "Whether the real problem is routing or simply too few people.",
+      "followup": "My manager wants an update in two weeks."
+    }
+  },
+  {
+    "name": "Doom Clock corporate events",
+    "opening": "I designed a tabletop game called Doom Clock — a race-against-time co-op game. I want to sell it to companies as a team-building event that I run on site.",
+    "answers": {
+      "goal": "Run paid Doom Clock team events for companies and see whether they rebook.",
+      "problem": "Most team-building events feel forced; companies want something engaging that actually gets people talking.",
+      "who": "HR and team leads at companies with 20-200 staff, and the employees who take part.",
+      "why": "Two people who played at a games night asked if I could run it at their offices.",
+      "outcome": "Teams finish the session talking to colleagues they don't usually work with, and the company books a second session within three months.",
+      "evidence": "Two HR contacts asked for a quote; players at three games nights rated it highly. No paid events yet.",
+      "assumptions": "That companies will pay around £1,500 per session; that I can run it for groups of 12-30.",
+      "constraints": "I can run events on Fridays only, I have one copy of the game, no insurance yet.",
+      "uncertainties": "The right price, and whether it works for groups bigger than 12.",
+      "followup": "One of the HR contacts can host a pilot next month."
+    }
+  }
+]

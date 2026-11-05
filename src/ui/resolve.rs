@@ -17,6 +17,10 @@ pub enum JobOut {
     Plan(Id, Result<intake::ProjectPlan, String>),
     Team(Id, Result<Vec<(String, String)>, String>),
     Proposals(Id, String, Result<(String, Vec<Proposal>), String>),
+    // ---- intake journey (v2)
+    Answer(Id, crate::resolve::journey::AnswerOut),
+    Understood(Id, Result<Understanding, String>, Vec<crate::ai::Trace>),
+    Proposed(Id, Option<String>, Result<crate::resolve::journey::Proposal, String>, Vec<crate::ai::Trace>),
 }
 
 #[derive(Default)]
@@ -35,6 +39,14 @@ pub struct ResolveUi {
     pub new_title: String,
     pub show_import: bool,
     pub new_tool: String,
+    // ---- intake journey (v2)
+    /// Adopt in progress: (intake id, next step, state, snapshot for Undo).
+    pub adopt: Option<(Id, usize, crate::resolve::journey::AdoptState, std::collections::BTreeMap<(String, Id), (serde_json::Value, i64)>)>,
+    /// The Adopt change set, offered as Undo once the project opens.
+    pub adopt_cs: Option<Id>,
+    pub focus_qa: Option<Id>,
+    pub show_why: bool,
+    pub inspector: bool,
 }
 
 pub fn amber() -> Color32 {
@@ -66,16 +78,46 @@ impl App {
         self.store.data.intakes.iter().find(|x| x.id == id).cloned()
     }
 
+    /// New project, from anywhere: resume an unfinished intake, else start one.
     pub fn start_intake(&mut self) {
+        let open = self.store.data.intakes.iter().filter(|x| x.is_v2() && x.status == "in_progress" && x.stage != "name").max_by_key(|x| x.updated).map(|x| x.id.clone());
+        if let Some(id) = open {
+            self.go(View::Intake(id));
+            return;
+        }
+        self.new_intake();
+    }
+
+    /// Always a fresh intake. The name is asked once, then remembered from the last intake.
+    pub fn new_intake(&mut self) {
         let mut i = Intake::new();
-        // the name is asked once, then remembered from the last intake
         if let Some(last) = self.store.data.intakes.iter().filter(|x| !x.name.is_empty()).max_by_key(|x| x.updated) {
             i.name = last.name.clone();
+            i.stage = "bring".into();
         }
         let id = i.id.clone();
         self.store.data.intakes.push(i);
         self.touch();
         self.go(View::Intake(id));
+    }
+
+    /// Open Test Intake: a separate window and process, with its own sandbox data folder.
+    pub fn launch_testlab(&mut self) {
+        let exe = std::env::current_exe().unwrap_or_default();
+        match std::process::Command::new(exe).arg("--testlab").spawn() {
+            Ok(_) => self.toast(format!("Test Intake opened in its own window (sandbox: {})", crate::resolve::testlab::default_root().display())),
+            Err(e) => self.toast(format!("Couldn't open Test Intake: {e}")),
+        }
+    }
+
+    /// A brand-new workspace opens straight into the intake.
+    pub fn open_intake_if_new(&mut self) {
+        let d = &self.store.data;
+        let fresh = d.projects.is_empty() && d.tasks.is_empty() && !d.intakes.iter().any(|i| i.status == "done");
+        if fresh && self.shot.is_none() {
+            self.start_intake();
+            self.back.clear();
+        }
     }
 
     /// Apply finished background work. Called every frame.
@@ -95,6 +137,48 @@ impl App {
         self.resolve_ui.rx = None;
         self.resolve_ui.busy.clear();
         match out {
+            JobOut::Answer(id, out) => {
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::apply_answer(i, out);
+                    self.resolve_ui.focus_qa = None;
+                }
+                self.touch();
+            }
+            JobOut::Understood(id, r, calls) => {
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::keep_trace(i, calls);
+                    match r {
+                        Ok(u) => {
+                            i.understanding = Some(u);
+                            i.last_error.clear();
+                        }
+                        Err(e) => i.last_error = e,
+                    }
+                    i.touch();
+                }
+                self.touch();
+            }
+            JobOut::Proposed(id, section, r, calls) => {
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::keep_trace(i, calls);
+                    match r {
+                        Ok(fresh) => {
+                            match (section.as_deref(), i.proposal.as_mut()) {
+                                (Some(s), Some(p)) if s != "all" => crate::resolve::journey::merge_section(p, fresh, s),
+                                _ => i.proposal = Some(fresh),
+                            }
+                            let snapshot = i.clone();
+                            if let Some(p) = i.proposal.as_mut() {
+                                crate::resolve::journey::sanitise(p, &snapshot);
+                            }
+                            i.last_error.clear();
+                        }
+                        Err(e) => i.last_error = e,
+                    }
+                    i.touch();
+                }
+                self.touch();
+            }
             JobOut::Understand(id, r) => match r {
                 Ok(u) => {
                     if let Some(i) = self.intake_mut(&id) {

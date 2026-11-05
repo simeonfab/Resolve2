@@ -28,6 +28,36 @@ pub struct Pal {
     pub field: Color32,
     pub toast_bg: Color32,
     pub toast_text: Color32,
+    /// Dark ink surfaces (intake top bar, the one dominant card per screen) and text on them.
+    pub ink: Color32,
+    pub on_ink: Color32,
+    pub on_ink_soft: Color32,
+    /// Small labels above headlines.
+    pub eyebrow: Color32,
+    /// Test-mode banner.
+    pub banner_bg: Color32,
+    pub banner_text: Color32,
+}
+
+/// Type sizes (one place to change them).
+pub mod size {
+    pub const HERO: f32 = 30.0;
+    pub const QUESTION: f32 = 28.0;
+    pub const TITLE: f32 = 22.0;
+    pub const SECTION: f32 = 15.0;
+    pub const BODY: f32 = 14.0;
+    pub const ANSWER: f32 = 17.0;
+    pub const SMALL: f32 = 12.5;
+    pub const TINY: f32 = 11.5;
+}
+
+/// Spacing and radii.
+pub mod space {
+    pub const RADIUS: f32 = 10.0;
+    pub const RADIUS_SMALL: f32 = 6.0;
+    pub const CARD_PAD: f32 = 16.0;
+    pub const COLUMN: f32 = 680.0;
+    pub const SIDE_PANEL: f32 = 340.0;
 }
 
 pub fn pal(dark: bool) -> Pal {
@@ -54,6 +84,12 @@ pub fn pal(dark: bool) -> Pal {
             field: Color32::from_rgb(26, 26, 24),
             toast_bg: Color32::from_rgb(58, 56, 50),
             toast_text: Color32::from_rgb(251, 248, 242),
+            ink: Color32::from_rgb(20, 19, 17),
+            on_ink: Color32::from_rgb(251, 248, 242),
+            on_ink_soft: Color32::from_rgb(201, 196, 183),
+            eyebrow: Color32::from_rgb(201, 122, 74),
+            banner_bg: Color32::from_rgb(200, 160, 64),
+            banner_text: Color32::from_rgb(26, 26, 24),
         }
     } else {
         Pal {
@@ -78,6 +114,12 @@ pub fn pal(dark: bool) -> Pal {
             field: Color32::from_rgb(255, 255, 255),
             toast_bg: Color32::from_rgb(26, 26, 24),
             toast_text: Color32::from_rgb(251, 248, 242),
+            ink: Color32::from_rgb(26, 26, 24),
+            on_ink: Color32::from_rgb(251, 248, 242),
+            on_ink_soft: Color32::from_rgb(201, 196, 183),
+            eyebrow: Color32::from_rgb(139, 74, 42),
+            banner_bg: Color32::from_rgb(200, 160, 64),
+            banner_text: Color32::from_rgb(26, 26, 24),
         }
     }
 }

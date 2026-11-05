@@ -116,14 +116,18 @@ impl App {
                     .collect();
                 let mut open_resolve: Option<Id> = None;
                 let mut new_intake = false;
+                let mut test_intake = false;
                 egui::Frame::none().fill(p.callout).rounding(10.0).inner_margin(egui::Margin::symmetric(16.0, 12.0)).show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     ui.horizontal(|ui| {
                         ui.label(RichText::new("✦ Resolve").font(fs(15.0)).color(p.accent));
                         ui.label(RichText::new("your guided projects and their next move").size(12.5).color(p.dim));
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if primary_button(ui, p, "Bring in something new").clicked() {
+                            if primary_button(ui, p, "New project").on_hover_text("Opens the intake").clicked() {
                                 new_intake = true;
+                            }
+                            if ui.button("Test Intake").on_hover_text("Try the intake in a sandbox — nothing touches your workspaces").clicked() {
+                                test_intake = true;
                             }
                         });
                     });
@@ -144,6 +148,9 @@ impl App {
                 if new_intake {
                     self.start_intake();
                     return;
+                }
+                if test_intake {
+                    self.launch_testlab();
                 }
                 if let Some(pid) = open_resolve {
                     self.go(View::Resolve(pid));
