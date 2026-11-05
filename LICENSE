@@ -1,0 +1,10 @@
+Copyright (c) 2026 Simeon Fabowale-Makinde. All rights reserved.
+
+This software and its documentation are proprietary and confidential. No licence is granted to
+use, copy, modify or distribute them without the copyright holder's written permission.
+
+Third-party components are used under their own licences; see docs/LICENSING.md and
+docs/THIRD_PARTY_CRATES.md. Those licences and notices continue to apply to those components.
+
+(Provisional notice chosen to keep commercial options open. Review with a lawyer before any
+public or commercial release — see docs/LICENSING.md.)

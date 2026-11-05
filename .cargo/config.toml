@@ -1,0 +1,4 @@
+# The GNU Rust toolchain ships its own dlltool but rustc only looks for it on PATH.
+# Point rustc straight at the bundled copy so `cargo build` works without Visual Studio.
+[target.x86_64-pc-windows-gnu]
+rustflags = ["-C", "dlltool=C:\\Users\\simeo\\.rustup\\toolchains\\stable-x86_64-pc-windows-gnu\\lib\\rustlib\\x86_64-pc-windows-gnu\\bin\\self-contained\\dlltool.exe"]

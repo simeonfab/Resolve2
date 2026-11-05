@@ -1,0 +1,17 @@
+# build output
+/target/
+
+# local test / screenshot data (may contain generated workspaces)
+/shots/
+*.png
+!docs/**/*.png
+
+# never commit data, secrets or local config
+*.env
+.env*
+workspaces.json
+data.json
+settings.json
+backups/
+*.key
+*.pem
