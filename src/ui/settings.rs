@@ -226,6 +226,16 @@ impl App {
             });
         });
         ui.add_space(10.0);
+        let mut lab = false;
+        card(ui, p, |ui| {
+            ui.label(RichText::new("🧪 Test Intake").font(fb(16.0)));
+            ui.label(RichText::new(format!("Run the whole intake journey on sample scenarios or your own answers, choose the AI per run, inspect each question's reasoning and the raw AI calls, compare runs and export them. It opens in its own window with sandbox data in {} — never your real workspaces, never shared over MCP.", crate::resolve::testlab::default_root().display())).size(12.0).color(p.dim));
+            lab = primary_button(ui, p, "Open Test Intake").clicked();
+        });
+        if lab {
+            self.launch_testlab();
+        }
+        ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("📁 Where your files are").font(fb(16.0)));
             ui.label(RichText::new("Everything is plain files on this PC. Resolve 2 never reads or writes Resolve Beta's folder (%APPDATA%\\Weave).").size(12.0).color(p.faint));
@@ -411,6 +421,8 @@ impl App {
     }
 
     fn settings_backups(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        self.recently_deleted(ui, p);
+        ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("Backups").font(fb(16.0)));
             ui.horizontal(|ui| {
@@ -465,6 +477,34 @@ impl App {
                 });
             }
         });
+    }
+
+    /// Everything deleted in the last 60 days — by you, the assistant or an MCP client — restorable.
+    pub fn recently_deleted(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        let list: Vec<crate::history::ChangeSet> = self.store.data.recently_deleted().into_iter().take(50).cloned().collect();
+        let mut restore: Option<String> = None;
+        card(ui, p, |ui| {
+            ui.label(RichText::new("🗑 Recently deleted").font(fb(16.0)));
+            ui.label(RichText::new("Deletes are soft: anything deleted in the last 60 days — by you, the assistant or Claude/ChatGPT over MCP — can be put back.").size(12.0).color(p.faint));
+            if list.is_empty() {
+                ui.label(RichText::new("Nothing deleted recently.").color(p.dim));
+            }
+            for cs in &list {
+                ui.horizontal(|ui| {
+                    let when = chrono::DateTime::from_timestamp_millis(cs.created).map(|x| x.with_timezone(&chrono::Local).format("%-d %b %H:%M").to_string()).unwrap_or_default();
+                    ui.label(RichText::new(when).size(11.5).color(p.faint));
+                    ui.label(RichText::new(&cs.label).size(13.0));
+                    let items: Vec<String> = cs.changes.iter().filter(|c| c.before.is_some() && c.after_updated == 0).take(4).map(crate::history::item_label).collect();
+                    ui.label(RichText::new(items.join(" · ")).size(11.5).color(p.dim));
+                    if ui.small_button("Restore").clicked() {
+                        restore = Some(cs.id.clone());
+                    }
+                });
+            }
+        });
+        if let Some(id) = restore {
+            self.undo(&id);
+        }
     }
 
     fn settings_sync(&mut self, ui: &mut egui::Ui, p: &Pal) {

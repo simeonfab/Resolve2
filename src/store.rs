@@ -381,7 +381,7 @@ impl Store {
     pub fn backup_now(&mut self) -> Result<PathBuf, String> {
         let dir = self.backups_dir();
         fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
-        let name = format!("backup-{}.json", chrono::Local::now().format("%Y-%m-%d_%H-%M-%S"));
+        let name = format!("backup-{}.json", chrono::Local::now().format("%Y-%m-%d_%H-%M-%S-%3f"));
         let p = dir.join(name);
         write_json_atomic(&p, &self.data).map_err(|e| e.to_string())?;
         self.settings.last_backup = now_ms();

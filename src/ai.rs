@@ -335,9 +335,49 @@ fn run_cli(provider: &str, system: &str, prompt: &str, meta: crate::store::Works
             changes.push(format!("{}{diff} {}", if diff > 0 { "+" } else { "" }, names[i]));
         }
     }
-    Ok(if changes.is_empty() { text } else { format!("{text}\n\nDone in your workspace: {}", changes.join(", ")) })
+    let claims = claims_changes(&text);
+    Ok(if changes.is_empty() {
+        if claims {
+            format!("⚠ Mismatch: the reply says changes were made, but nothing in your workspace changed. Treat its claims as not done.\n\n{text}")
+        } else {
+            text
+        }
+    } else {
+        format!("{text}\n\nConfirmed in your workspace: {}", changes.join(", "))
+    })
 }
 
+/// Does the model's prose claim it changed something?
+pub fn claims_changes(text: &str) -> bool {
+    let l = text.to_lowercase();
+    ["i created", "i've created", "i have created", "i added", "i've added", "i have added", "created a new", "created the", "added a new", "added the", "i updated", "i've updated", "i scheduled", "i've scheduled", "i deleted", "i've deleted", "i moved", "i completed", "i've completed", "i marked", "has been created", "has been added", "has been updated", "have been added", "was created", "was added", "is now on your", "done! ", "all set"]
+        .iter()
+        .any(|p| l.contains(p))
+}
+
+/// The assistant's answer, showing only what the tools confirmed. If the prose claims changes the
+/// tools did not complete, say so on screen.
+pub fn confirmed_report(text: &str, actions: &[String]) -> String {
+    let ok: Vec<&String> = actions.iter().filter(|a| a.starts_with('✓')).collect();
+    let failed: Vec<&String> = actions.iter().filter(|a| a.starts_with('✗')).collect();
+    let mismatch = claims_changes(text) && (ok.is_empty() || !failed.is_empty());
+    let mut s = String::new();
+    if mismatch {
+        s.push_str(if ok.is_empty() {
+            "⚠ Mismatch: the reply says changes were made, but the tools completed none. Nothing below the line happened unless it is listed as confirmed.\n\n"
+        } else {
+            "⚠ Mismatch: the reply claims more than the tools completed. Only the confirmed changes below happened.\n\n"
+        });
+    }
+    s.push_str(text.trim());
+    if !ok.is_empty() {
+        s.push_str(&format!("\n\nConfirmed in your workspace:\n{}", ok.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n")));
+    }
+    if !failed.is_empty() {
+        s.push_str(&format!("\n\nNot done (the tool failed):\n{}", failed.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n")));
+    }
+    s
+}
 pub fn claude_code_installed() -> bool {
     find_cli("claude").is_some()
 }
@@ -347,6 +387,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
         return run_cli(&cfg.provider, system, prompt, meta, allow_write);
     }
     let mut store = crate::store::Store::open(meta);
+    crate::mcp::begin_ai_batch(&store.meta.id);
     let read_only = !allow_write || store.settings.ai_read_only;
     let tools = crate::mcp::tools(read_only);
     let tool_list = tools.as_array().cloned().unwrap_or_default();
@@ -366,13 +407,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
             Err(e) => (e, true),
         }
     };
-    let finish = |text: String, actions: &Vec<String>| -> String {
-        if actions.is_empty() {
-            text
-        } else {
-            format!("{text}\n\nDone in your workspace:\n{}", actions.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n"))
-        }
-    };
+    let finish = |text: String, actions: &Vec<String>| -> String { confirmed_report(&text, actions) };
     const MAX_STEPS: usize = 16;
     if cfg.provider == "anthropic" {
         if cfg.key.trim().is_empty() {
@@ -459,6 +494,43 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
     Ok(finish("I stopped after many steps; tell me to continue if there's more to do.".into(), &actions))
 }
 
+// ---------------------------------------------------------------- call trace (Test Intake inspector)
+
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct Trace {
+    pub at: i64,
+    pub purpose: String,
+    pub provider: String,
+    pub model: String,
+    /// The full prompt sent (system prompt; the user turn is a fixed "Return the JSON now.").
+    pub request: String,
+    /// The model's raw text, or the error.
+    pub response: String,
+    pub ok: bool,
+}
+
+thread_local! {
+    static TRACE: std::cell::RefCell<Vec<Trace>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
+    let purpose = PURPOSE.with(|x| x.borrow().clone());
+    let t = Trace {
+        at: crate::model::now_ms(),
+        purpose,
+        provider: cfg.provider.clone(),
+        model: if cfg.model.is_empty() { "(default)".into() } else { cfg.model.clone() },
+        request: system.to_string(),
+        response: match raw { Ok(s) => s.clone(), Err(e) => format!("ERROR: {e}") },
+        ok: raw.is_ok(),
+    };
+    TRACE.with(|x| x.borrow_mut().push(t));
+}
+
+/// Take the calls recorded on this thread since the last take.
+pub fn take_trace() -> Vec<Trace> {
+    TRACE.with(|x| std::mem::take(&mut *x.borrow_mut()))
+}
 // ---------------------------------------------------------------- structured (JSON) completions
 //
 // Used by Resolve Intake and ResolveOS roles. One system prompt (with the user's text fenced
@@ -479,7 +551,14 @@ pub fn parse_json_object(text: &str) -> Result<Value, String> {
 }
 
 /// One completion that should return a JSON object. `temperature` None = provider default.
+/// One raw call; returns the model's text. Every call (success or failure) is added to the trace.
 pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<Value, String> {
+    let raw = complete_text_once(cfg, system, temperature);
+    trace_push(cfg, system, &raw);
+    raw.and_then(|t| parse_json_object(&t))
+}
+
+fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<String, String> {
     let user = "Return the JSON now.";
     match cfg.provider.as_str() {
         "anthropic" => {
@@ -495,12 +574,12 @@ pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>
             let resp = post("https://api.anthropic.com/v1/messages", &headers, &body)?;
             record_from_response("anthropic", &model, &resp);
             let text: String = resp["content"].as_array().cloned().unwrap_or_default().iter().filter(|b| b["type"] == "text").filter_map(|b| b["text"].as_str().map(|s| s.to_string())).collect::<Vec<_>>().join("\n");
-            parse_json_object(&text)
+            Ok(text)
         }
         "claude-code" | "codex-cli" => {
             let text = run_cli_plain(&cfg.provider, system, user)?;
             record_usage(&cfg.provider, "subscription", 0, 0);
-            parse_json_object(&text)
+            Ok(text)
         }
         _ => {
             let (endpoint, headers): (String, Vec<(&str, String)>) = match cfg.provider.as_str() {
@@ -519,7 +598,7 @@ pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>
             let resp = post(&endpoint, &headers, &body)?;
             record_from_response(&cfg.provider, &cfg.model, &resp);
             let text = resp["choices"][0]["message"]["content"].as_str().unwrap_or("").to_string();
-            parse_json_object(&text)
+            Ok(text)
         }
     }
 }

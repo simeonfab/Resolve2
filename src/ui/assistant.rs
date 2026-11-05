@@ -37,8 +37,14 @@ impl App {
                     Err(e) => format!("⚠ {e}"),
                 };
                 self.page_ui.ai_job = None;
-                // the assistant may have changed things: pick them up now
+                // the assistant may have changed things: pick them up now, and offer Undo for all of them
                 self.store.reload_if_changed();
+                let since = self.page_ui.ai_started_ms;
+                let ids: Vec<String> = self.store.data.history.iter().filter(|c| c.created >= since && !c.undone && c.label.starts_with("AI:")).map(|c| c.id.clone()).collect();
+                if !ids.is_empty() {
+                    let n = ids.len();
+                    self.undo_toasts.push((format!("The assistant made {n} change(s)"), self.now + 10.0, ids.join(",")));
+                }
             } else {
                 ctx.request_repaint_after(std::time::Duration::from_millis(200));
             }
@@ -156,6 +162,7 @@ impl App {
             let cfg = self.ai_config();
             let can_act = self.page_ui.ai_can_act;
             let tool_capable = matches!(cfg.provider.as_str(), "anthropic" | "openai-cloud" | "claude-code" | "codex-cli") || can_act;
+            self.page_ui.ai_started_ms = now_ms();
             self.page_ui.ai_job = Some(if tool_capable {
                 crate::ai::ask_agent(cfg, crate::ai::AGENT_SYSTEM, &prompt, self.store.meta.clone(), can_act, &label)
             } else {

@@ -399,6 +399,30 @@ fn set_record_fields(r: &mut crate::resolve::Record, a: &Value) -> Result<(), St
     r.updated = now_ms();
     Ok(())
 }
+// ---------------------------------------------------------------- AI write batches
+
+static AI_BATCH: std::sync::Mutex<Option<std::collections::HashMap<String, std::time::Instant>>> = std::sync::Mutex::new(None);
+
+/// Start a new AI write batch for a workspace (the in-app assistant calls this per request):
+/// the next AI write takes a backup first.
+pub fn begin_ai_batch(workspace_id: &str) {
+    if let Ok(mut g) = AI_BATCH.lock() {
+        g.get_or_insert_with(Default::default).remove(workspace_id);
+    }
+}
+
+/// Back up before the first write of an AI batch. A batch is one in-app assistant request, one
+/// MCP process (Claude Desktop / Claude Code / Codex session), or 10 minutes of MCP-over-HTTP activity.
+fn ai_backup_before_write(store: &mut Store) {
+    let Ok(mut g) = AI_BATCH.lock() else { return };
+    let map = g.get_or_insert_with(Default::default);
+    let fresh = map.get(&store.meta.id).map_or(false, |t| t.elapsed() < std::time::Duration::from_secs(600));
+    if !fresh {
+        let _ = store.backup_now();
+        map.insert(store.meta.id.clone(), std::time::Instant::now());
+    }
+}
+
 // ---------------------------------------------------------------- the dispatcher
 
 /// Run one tool against the workspace. Returns JSON text for the assistant.
@@ -410,7 +434,18 @@ pub fn call(store: &mut Store, name: &str, a: &Value) -> Result<String, String> 
         return Err("This workspace is read-only for AI assistants. Change it in Resolve 2 → Settings → AI & MCP.".into());
     }
     store.reload_if_changed();
+    let writes = WRITE_TOOLS.contains(&name);
+    if writes {
+        ai_backup_before_write(store);
+    }
+    let before = if writes { Some(crate::history::snapshot(&store.data)) } else { None };
     let out = run(store, name, a)?;
+    // every AI change is undoable; AI deletes are soft (restorable from Recently deleted)
+    if let Some(b) = before {
+        let what = a.get("title").or(a.get("name")).or(a.get("text")).or(a.get("id")).and_then(|v| v.as_str()).unwrap_or("").chars().take(60).collect::<String>();
+        let kind = if name == "delete_item" { "delete" } else { "ai" };
+        store.data.keep_change(&format!("AI: {}{}", name.replace('_', " "), if what.is_empty() { String::new() } else { format!(" — {what}") }), kind, &b);
+    }
     // a completed task ticks its page to-do (and the other way round)
     let synced = store.data.sync_todo_links();
     if WRITE_TOOLS.contains(&name) || synced {

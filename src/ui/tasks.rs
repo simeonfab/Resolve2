@@ -207,7 +207,7 @@ impl App {
                         ui.close_menu();
                     }
                     if ui.button(RichText::new("🗑 Delete project and its tasks").color(p.accent)).clicked() {
-                        app.store.data.delete_project(&pid);
+                        { let name = app.store.data.project(&pid).map(|p| p.name.clone()).unwrap_or_default(); let pp = pid.clone(); app.undoable(&format!("Deleted project \"{name}\""), "delete", |d| d.delete_project(&pp)); }
                         app.touch();
                         app.view = View::Inbox;
                         ui.close_menu();
@@ -847,7 +847,7 @@ impl App {
         }
         if delete {
             let title = t.title.clone();
-            self.store.data.delete_task(tid);
+            { let t2 = tid.to_string(); let name = self.store.data.task(&t2).map(|t| t.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted task \"{name}\""), "delete", |d| d.delete_task(&t2)); }
             self.open_task = None;
             self.touch();
             self.toast(format!("Deleted \"{title}\""));

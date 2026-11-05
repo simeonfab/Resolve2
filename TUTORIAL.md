@@ -6,9 +6,27 @@ Resolve 2 keeps your pages, databases, tasks and calendars in one app on your PC
 
 ## 0. Opening Resolve 2 and where things are
 
-- **The first time**: open it from Craft Anything (Play), or double-click **Open Resolve 2.cmd** in the project's `app` folder (`Documents\Craft Anything\build-me-a-single-productivity\app`).
+- **The first time**: open it from Craft Anything (Play), or double-click **Open Resolve 2.cmd** in the project's `app` folder (`Documents\Craft Anything\build-me-a-single-productivity-copy\app`).
 - **Then make it a normal app**: Settings → General → **Put Resolve 2 on my desktop and Start menu**. After that, double-click the Resolve 2 icon or press Windows and type *Resolve 2*. You can pin it to the taskbar.
-- **The program itself**: `...\build-me-a-single-productivity\app\target\debug\resolve2.exe`.
+- **The program itself**: `...\build-me-a-single-productivity-copy\app\target\debug\resolve2.exe`.
+- Resolve 2 is separate from Control Centre (Resolve Beta): different program, data folder and AI connections.
+
+## Start a project with Resolve (the intake)
+
+- **New project** (Home, or **+** next to My Projects) opens the intake full screen. A brand-new workspace opens straight into it.
+- Tell Resolve what's going on in your own words, then answer one question at a time. **Enter** continues, **Shift+Enter** adds a new line, **Esc** leaves with everything saved — come back any time and it resumes where you stopped.
+- On the right, **What Resolve has heard** sorts your answers into evidence, assumptions and open questions. Click a label to change it, or edit the words.
+- Jump back to any question with the numbers at the top; if you change an earlier answer, later answers built on it are flagged for review. **Why this question?** shows the reasoning (Hypothesis Zero).
+- Stop whenever you like with **Show me the proposal**. Confirm what Resolve understood (the outcome is in your words and needs your tick), then review the proposal: every part can be edited, removed or regenerated, and each item is labelled evidence, assumption or uncertain.
+- **Adopt** creates the project — roadmap (Now / Next / Later), tasks, Hypothesis Zero hypotheses and experiments, evidence and assumptions, a project brief and the intake transcript. Then **Open my project**. Adopt can be undone.
+- Without AI connected, the intake still works with a fixed set of questions and builds the proposal only from your own words.
+
+## Test Intake
+
+- Home → **Test Intake**, or Settings → General → **Open Test Intake**. It opens in its own window with sandbox data in `%APPDATA%\Resolve2-TestLab` — your real workspaces are never touched, and the sandbox is never shared over MCP. A yellow **TEST MODE** banner shows the whole time.
+- Pick the AI for the run (app default, no AI, Ollama, LM Studio, Claude Code, Anthropic or OpenAI keys), then a sample scenario or **Use my own answers**.
+- In a run, **Inspector** shows each question's reasoning, how the answer was classified, the provider and model, and the raw AI request and response. **Answer from scenario** fills the scenario's answer; **Branch from here** copies the run up to that question so you can try another path.
+- In the runs list: tick two runs to compare their proposals side by side, **Save answers for replay**, **Export Markdown + JSON**, or **Promote to real project** (asks first, then creates it in your real workspace).
 - **Your data**: `%APPDATA%\Resolve2` (paste that into File Explorer's address bar), with one folder per workspace holding `data.json`, settings and `backups`. Settings → General → *Open folder* takes you there.
 - **This tutorial** is in the app under **Help & tutorial**, and as `TUTORIAL.md` in the `app` folder. **FOR_AI_ASSISTANTS.md** next to it is a full description of the app to paste into ChatGPT or Claude when you want their advice (for example, which local AI model suits your PC).
 
@@ -209,3 +227,7 @@ Claude and ChatGPT, connected through MCP, can do nearly everything you can: sea
 - Your files live in `%APPDATA%\Resolve2` (Settings → General → Open folder).
 - **Esc** closes dialogs and the task panel; **⏴** at the top goes back.
 - When you're ready, delete or ignore the Sample workspace and work in Personal, or make more workspaces for work, side projects and so on.
+- **Undo**: completing, deleting, adopting a project and changes made by the assistant show a toast with **Undo** for a few seconds.
+- **Nothing is deleted for good straight away**: Settings → Backups → **Recently deleted** lists everything deleted in the last 60 days — by you, the assistant, or Claude/ChatGPT over MCP — with **Restore**.
+- **AI changes are backed up first**: before the assistant or an MCP client makes its first change in a batch, Resolve 2 takes a backup (Settings → Backups).
+- **The assistant only reports what really happened**: under its answer you'll see *Confirmed in your workspace* (✓) and *Not done* (✗). If its words claim more than its tools did, a **⚠ Mismatch** warning appears — small local models sometimes do this.

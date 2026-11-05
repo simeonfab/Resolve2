@@ -272,7 +272,7 @@ impl App {
         });
         if delete_page {
             let title = page.title.clone();
-            self.store.data.delete_page(pid);
+            { let pg = pid.to_string(); let name = self.store.data.page(&pg).map(|p| p.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted page \"{name}\""), "delete", |d| d.delete_page(&pg)); }
             self.touch();
             self.view = page.parent.clone().map(View::Page).unwrap_or(View::Dashboard);
             self.toast(format!("Deleted \"{}\"", if title.is_empty() { "Untitled" } else { &title }));

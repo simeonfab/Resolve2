@@ -26,6 +26,38 @@ pub struct Pal {
     pub callout: Color32,
     pub code: Color32,
     pub field: Color32,
+    pub toast_bg: Color32,
+    pub toast_text: Color32,
+    /// Dark ink surfaces (intake top bar, the one dominant card per screen) and text on them.
+    pub ink: Color32,
+    pub on_ink: Color32,
+    pub on_ink_soft: Color32,
+    /// Small labels above headlines.
+    pub eyebrow: Color32,
+    /// Test-mode banner.
+    pub banner_bg: Color32,
+    pub banner_text: Color32,
+}
+
+/// Type sizes (one place to change them).
+pub mod size {
+    pub const HERO: f32 = 30.0;
+    pub const QUESTION: f32 = 28.0;
+    pub const TITLE: f32 = 22.0;
+    pub const SECTION: f32 = 15.0;
+    pub const BODY: f32 = 14.0;
+    pub const ANSWER: f32 = 17.0;
+    pub const SMALL: f32 = 12.5;
+    pub const TINY: f32 = 11.5;
+}
+
+/// Spacing and radii.
+pub mod space {
+    pub const RADIUS: f32 = 10.0;
+    pub const RADIUS_SMALL: f32 = 6.0;
+    pub const CARD_PAD: f32 = 16.0;
+    pub const COLUMN: f32 = 680.0;
+    pub const SIDE_PANEL: f32 = 340.0;
 }
 
 pub fn pal(dark: bool) -> Pal {
@@ -50,6 +82,14 @@ pub fn pal(dark: bool) -> Pal {
             callout: Color32::from_rgb(46, 42, 33),
             code: Color32::from_rgb(28, 27, 24),
             field: Color32::from_rgb(26, 26, 24),
+            toast_bg: Color32::from_rgb(58, 56, 50),
+            toast_text: Color32::from_rgb(251, 248, 242),
+            ink: Color32::from_rgb(20, 19, 17),
+            on_ink: Color32::from_rgb(251, 248, 242),
+            on_ink_soft: Color32::from_rgb(201, 196, 183),
+            eyebrow: Color32::from_rgb(201, 122, 74),
+            banner_bg: Color32::from_rgb(200, 160, 64),
+            banner_text: Color32::from_rgb(26, 26, 24),
         }
     } else {
         Pal {
@@ -72,6 +112,14 @@ pub fn pal(dark: bool) -> Pal {
             callout: Color32::from_rgb(251, 245, 230),
             code: Color32::from_rgb(244, 240, 232),
             field: Color32::from_rgb(255, 255, 255),
+            toast_bg: Color32::from_rgb(26, 26, 24),
+            toast_text: Color32::from_rgb(251, 248, 242),
+            ink: Color32::from_rgb(26, 26, 24),
+            on_ink: Color32::from_rgb(251, 248, 242),
+            on_ink_soft: Color32::from_rgb(201, 196, 183),
+            eyebrow: Color32::from_rgb(139, 74, 42),
+            banner_bg: Color32::from_rgb(200, 160, 64),
+            banner_text: Color32::from_rgb(26, 26, 24),
         }
     }
 }
@@ -163,6 +211,16 @@ pub fn install_fonts(ctx: &egui::Context) {
             m.insert(0, "consolas".into());
         }
     }
+    // Resolve brand fonts, bundled (SIL OFL 1.1 — licences in assets/fonts): Inter for text,
+    // DM Serif Display for the one dominant headline per screen. System fonts stay as fallbacks
+    // for characters outside their Latin subset.
+    fonts.font_data.insert("inter".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Regular.ttf")));
+    fonts.font_data.insert("inter-semi".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-SemiBold.ttf")));
+    fonts.font_data.insert("inter-bold".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Bold.ttf")));
+    fonts.font_data.insert("dm-serif".into(), FontData::from_static(include_bytes!("../../assets/fonts/DMSerifDisplay-Regular.ttf")));
+    prop.insert(0, "inter".into());
+    semi.insert(0, "inter-semi".into());
+    boldf.insert(0, "inter-bold".into());
     fonts.families.insert(FontFamily::Proportional, prop);
     fonts.families.insert(bold(), boldf.clone());
     let mut serif_f = boldf.clone();
@@ -170,6 +228,7 @@ pub fn install_fonts(ctx: &egui::Context) {
         fonts.font_data.insert("georgia".into(), FontData::from_owned(b));
         serif_f.insert(0, "georgia".into());
     }
+    serif_f.insert(0, "dm-serif".into());
     fonts.families.insert(serif(), serif_f);
     fonts.families.insert(semibold(), semi);
     ctx.set_fonts(fonts);

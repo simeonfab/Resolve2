@@ -324,6 +324,8 @@ pub fn run() -> i32 {
         t.check("✨ Ask AI can make changes (tool call → real task, result fed back)", made && out.as_ref().map_or(false, |o| o.contains("Added it.") && o.contains("create task")), format!("{out:?}"));
     }
     crate::selftest_resolve::run(&mut t, personal.clone(), port + 7);
+    crate::selftest_safety::run(&mut t, personal.clone(), port + 9);
+    crate::selftest_journey::run(&mut t, personal.clone(), port + 11);
     reg = Registry::load();
     t.check("workspace list persists", reg.workspaces.len() == 3, reg.workspaces.len());
     println!("\n{} passed, {} failed", t.pass, t.fail);

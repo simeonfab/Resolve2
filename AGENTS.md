@@ -14,13 +14,15 @@ page, MCP over HTTP, `/sync`), ureq + Windows `curl.exe` for outgoing HTTP. Stor
 | `src/main.rs` | Entry point and command-line modes (`--selftest`, `--test-ai`, `--mcp`, `--serve`, `--ask`, `--screenshot`) |
 | `src/model.rs` | Shared data model + merge (newest edit per item wins, tombstones) |
 | `src/store.rs` | Data folder, workspaces, atomic saves, backups, sync, app settings |
-| `src/resolve/` | Resolve logic: `intake.rs`, `context.rs`, `records.rs` (incl. Hypothesis Zero), `assess.rs`, `roles.rs` |
+| `src/resolve/` | Resolve logic: `journey.rs` (the intake: questions, heard, proposal, adopt), `testlab.rs` (Test Intake), `intake.rs` (original intake prompts, reused), `context.rs`, `records.rs` (incl. Hypothesis Zero), `assess.rs`, `roles.rs` |
+| `src/history.rs` | Undo / soft delete (change sets) for every delete, complete, adopt and AI write |
 | `src/ai.rs` | Provider layer (Anthropic, OpenAI, Ollama/OpenAI-compatible, Claude Code/Codex CLI), usage + budget |
 | `src/mcp.rs` | MCP server (stdio + HTTP) |
-| `src/ui/` | Views. `mod.rs` (App, View enum, sidebar, routing), `intake.rs`, `cockpit.rs`, `resolve.rs` (jobs), `dashboard.rs`, `tasks.rs`, `pages.rs`, `databases.rs`, `calendar.rs`, `settings.rs`, `assistant.rs` |
+| `src/ui/` | Views. `mod.rs` (App, View enum, sidebar, routing), `intake.rs` + `intake_steps.rs` + `intake_review.rs` (full-screen journey), `testlab.rs`, `cockpit.rs`, `resolve.rs` (jobs), `dashboard.rs`, `tasks.rs`, `pages.rs`, `databases.rs`, `calendar.rs`, `settings.rs`, `assistant.rs` |
 | `src/ui/theme.rs` | **Design tokens** (colours, fonts, text styles, radii, spacing) — the one tokens file |
 | `src/ui/widgets.rs` | Shared component styling (cards, pills, buttons, nav items, chips) |
-| `resolveos/` | Original ResolveOS role/governance prompt files (owner's material) |
+| `resolveos/` | Original ResolveOS role/governance prompt files, `h0.md` (the H0 method + question-set slot), `intake-scenarios.json` |
+| `assets/fonts/` | Inter + DM Serif Display (OFL, licences alongside) |
 | `src/selftest.rs`, `src/selftest_resolve.rs` | End-to-end checks |
 | `docs/` | STATUS, RECONCILIATION, RESOLVE_SPEC, DATA_SCHEMA, LICENSING, THIRD_PARTY_CRATES |
 
@@ -30,6 +32,8 @@ cargo build                                    # target\debug\resolve2.exe
 target\debug\resolve2.exe --selftest           # must end "N passed, 0 failed"
 target\debug\resolve2.exe --data-dir shots\x --test-ai --provider ollama --model llama3.2 --url http://localhost:11434
 target\debug\resolve2.exe --data-dir shots\x --view resolve --screenshot shots\x\r.png
+target\debug\resolve2.exe --testlab --data-dir shots\lab --lab-run "Service business" --provider ollama --model llama3.2 --url http://localhost:11434
+target\debug\resolve2.exe --testlab --data-dir shots\lab --view intake-proposal --screenshot shots\lab\p.png
 ```
 If the build says "Access is denied" on `resolve2.exe`, the app is open: rename the exe (it keeps
 running) — never kill the user's window.

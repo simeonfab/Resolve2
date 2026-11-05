@@ -196,6 +196,42 @@ pub struct Intake {
     pub status: String,
     #[serde(default)]
     pub last_error: String,
+    // ---- journey (v2) fields; see resolve/journey.rs
+    /// 2 = the Typeform-style journey.
+    #[serde(default)]
+    pub v: u8,
+    /// "name" | "bring" | "questions" | "confirm" | "proposal" | "bridge" | "reveal" | "done"
+    #[serde(default)]
+    pub stage: String,
+    #[serde(default)]
+    pub qas: Vec<super::journey::Qa>,
+    /// Which question is on screen.
+    #[serde(default)]
+    pub cursor: usize,
+    #[serde(default)]
+    pub heard: Vec<super::journey::Heard>,
+    /// Targets the model judged covered.
+    #[serde(default)]
+    pub ai_covered: Vec<String>,
+    /// The model judged coverage good enough to stop.
+    #[serde(default)]
+    pub suggest_stop: bool,
+    #[serde(default)]
+    pub proposal: Option<super::journey::Proposal>,
+    /// Per-run provider override "provider|model|url" (Test Intake); empty = app default.
+    #[serde(default)]
+    pub provider: String,
+    /// Raw AI requests/responses (inspector).
+    #[serde(default)]
+    pub trace: Vec<crate::ai::Trace>,
+    /// Test Intake: scenario name, and the run this one branched from (run id, question index).
+    #[serde(default)]
+    pub scenario: String,
+    #[serde(default)]
+    pub branched_from: Option<(Id, usize)>,
+    /// The name was asked in this intake and the greeting shown (greet once).
+    #[serde(default)]
+    pub greeted: bool,
     pub created: i64,
     pub updated: i64,
 }
@@ -203,7 +239,7 @@ pub struct Intake {
 impl Intake {
     pub fn new() -> Self {
         let t = now_ms();
-        Intake { id: new_id(), situation: "messy_project".into(), status: "in_progress".into(), created: t, updated: t, ..Default::default() }
+        Intake { id: new_id(), situation: "messy_project".into(), status: "in_progress".into(), v: 2, stage: "name".into(), created: t, updated: t, ..Default::default() }
     }
     pub fn touch(&mut self) {
         self.updated = now_ms();
@@ -774,7 +810,7 @@ pub fn handoff(d: &mut WorkspaceData, intake_id: &str) -> Result<Id, String> {
     };
     use crate::resolve::Kind;
     for a in &u.assumptions {
-        add(Kind::Assumption, a, "Assumed during intake.", &[]);
+        add(Kind::Assumption, &super::journey::clean_claim(a), "Assumed during intake.", &[]);
     }
     add(Kind::Question, &u.uncertainty, "Biggest uncertainty from intake.", &[]);
     add(Kind::Decision, &r.open_decision, "Open decision from the intake recommendation.", &[]);

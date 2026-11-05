@@ -3,7 +3,10 @@ pub mod widgets;
 mod calendar;
 mod cockpit;
 mod intake;
+mod intake_review;
+mod intake_steps;
 pub mod resolve;
+pub mod testlab;
 mod dashboard;
 mod help;
 mod assistant;
@@ -38,6 +41,8 @@ pub enum View {
     Intake(Id),
     /// A project's Resolve cockpit (ResolveOS runtime surface).
     Resolve(Id),
+    /// Test Intake home (only in the sandbox process).
+    TestLab,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -120,6 +125,8 @@ pub struct PageUi {
     pub ai_out: String,
     pub ai_job: Option<crate::ai::AiJob>,
     pub ai_for_page: Option<Id>,
+    /// When the current assistant request started (to find the changes it made, for Undo).
+    pub ai_started_ms: i64,
     pub menu_block: Option<usize>,
 }
 
@@ -149,6 +156,8 @@ pub struct StartOpts {
     pub screenshot: Option<PathBuf>,
     pub workspace: Option<String>,
     pub view: Option<String>,
+    /// Test Intake mode: sandbox data folder, no sidebar, no MCP/phone server.
+    pub testlab: bool,
 }
 
 pub struct App {
@@ -189,6 +198,11 @@ pub struct App {
     pub last_hub: f64,
     pub hub_status: String,
     pub resolve_ui: resolve::ResolveUi,
+    /// (message, expires, change-set id): toasts with an Undo button.
+    pub undo_toasts: Vec<(String, f64, Id)>,
+    /// Running as Test Intake (sandbox data folder).
+    pub testlab: bool,
+    pub lab: testlab::LabUi,
 }
 
 impl App {
@@ -199,6 +213,8 @@ impl App {
             .workspace
             .as_deref()
             .and_then(|w| reg.find(w).cloned())
+            // Test Intake keeps all runs in the sandbox's "Personal" workspace
+            .or_else(|| if opts.testlab { reg.find("Personal").cloned() } else { None })
             .or_else(|| reg.settings.last_workspace.as_deref().and_then(|w| reg.find(w).cloned()))
             .unwrap_or_else(|| reg.workspaces[0].clone());
         let mut store = Store::open(meta);
@@ -257,9 +273,26 @@ impl App {
             sync_status: String::new(),
             temp: HashMap::new(),
             resolve_ui: resolve::ResolveUi::default(),
+            undo_toasts: vec![],
+            testlab: opts.testlab,
+            lab: testlab::LabUi::default(),
         };
         app.page_ui.ai_open = open_ai;
-        app.ensure_server();
+        if app.testlab {
+            // --view intake-<stage> opens the newest run at that stage (screenshots / checks)
+            app.view = match opts.view.as_deref() {
+                Some(v) if v.starts_with("intake") => {
+                    let stage = v.strip_prefix("intake-").unwrap_or("");
+                    app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| View::Intake(i.id.clone())).unwrap_or(View::TestLab)
+                }
+                _ => View::TestLab,
+            };
+        } else {
+            app.ensure_server();
+            if opts.view.is_none() {
+                app.open_intake_if_new();
+            }
+        }
         app
     }
 
@@ -316,6 +349,7 @@ impl App {
         self.reg.save();
         self.view = View::Dashboard;
         self.back.clear();
+        self.open_intake_if_new();
         self.open_task = None;
         self.event_edit = None;
         self.page_ui = PageUi { ai_can_act: true, ..Default::default() };
@@ -436,22 +470,63 @@ impl App {
     }
 
     pub fn toggle_task(&mut self, id: &str) {
-        let Some(t) = self.store.data.task_mut(id) else { return };
+        let Some(t) = self.store.data.task(id).cloned() else { return };
+        let id = id.to_string();
         if t.completed {
-            t.completed = false;
-            t.completed_at = None;
-            t.updated = now_ms();
-        } else {
-            let title = t.title.clone();
-            let rolled = t.complete();
-            let next = t.due;
-            if rolled {
-                self.toast(format!("↻ \"{title}\" moved to {}", next.map(fmt_date_short).unwrap_or_default()));
-            } else {
-                self.toast(format!("✔ Completed \"{title}\""));
+            self.store.data.record_change(&format!("Reopened \"{}\"", t.title), "edit", |d| {
+                if let Some(t) = d.task_mut(&id) {
+                    t.completed = false;
+                    t.completed_at = None;
+                    t.updated = now_ms();
+                }
+            });
+            self.touch();
+            return;
+        }
+        let mut rolled = false;
+        let mut next = None;
+        let cs = self.store.data.record_change(&format!("Completed \"{}\"", t.title), "complete", |d| {
+            if let Some(t) = d.task_mut(&id) {
+                rolled = t.complete();
+                next = t.due;
+            }
+        });
+        self.touch();
+        let msg = if rolled { format!("↻ \"{}\" moved to {}", t.title, next.map(fmt_date_short).unwrap_or_default()) } else { format!("✔ Completed \"{}\"", t.title) };
+        match cs {
+            Some(cs) => self.undo_toasts.push((msg, self.now + 6.0, cs)),
+            None => self.toast(msg),
+        }
+    }
+
+    /// Run a change that can be undone (deletes are soft: restorable from Settings → Recently deleted),
+    /// and show a toast with Undo.
+    pub fn undoable(&mut self, label: &str, kind: &str, f: impl FnOnce(&mut WorkspaceData)) {
+        let cs = self.store.data.record_change(label, kind, f);
+        self.touch();
+        if let Some(cs) = cs {
+            self.undo_toasts.push((label.to_string(), self.now + 6.0, cs));
+        }
+    }
+
+    /// Undo one change set, or several (comma-separated ids, undone newest first).
+    pub fn undo(&mut self, cs: &str) {
+        let (mut n, mut skipped, mut err) = (0, 0, None);
+        for id in cs.split(',').rev() {
+            match self.store.data.undo_change(id) {
+                Ok((a, b)) => {
+                    n += a;
+                    skipped += b;
+                }
+                Err(e) => err = Some(e),
             }
         }
         self.touch();
+        match err {
+            Some(e) if n == 0 => self.toast(e),
+            _ => self.toast(if skipped > 0 { format!("Undone ({n} restored; {skipped} edited since and left as they are)") } else { "Undone".to_string() }),
+        }
+        self.undo_toasts.retain(|t| t.2 != cs);
     }
 
     pub fn new_page(&mut self, parent: Option<Id>) -> Id {
@@ -701,13 +776,8 @@ impl App {
                     ui.horizontal(|ui| {
                         section_label(ui, p, "My Projects");
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("New project").clicked() {
-                                let pr = Project { id: new_id(), name: "New project".into(), color: [41, 171, 135], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
-                                let id = pr.id.clone();
-                                self.store.data.projects.push(pr);
-                                self.touch();
-                                self.go(View::Project(id));
-                                self.tasks_ui.rename_project = true;
+                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("New project — opens the intake").clicked() {
+                                self.start_intake();
                             }
                         });
                     });
@@ -1187,17 +1257,40 @@ impl App {
     fn toasts_ui(&mut self, ctx: &egui::Context, p: &Pal) {
         let now = self.now;
         self.toasts.retain(|t| t.1 > now);
-        if self.toasts.is_empty() {
+        self.undo_toasts.retain(|t| t.1 > now);
+        if self.toasts.is_empty() && self.undo_toasts.is_empty() {
             return;
         }
+        let mut undo: Option<Id> = None;
         egui::Area::new(egui::Id::new("toasts")).anchor(Align2::LEFT_BOTTOM, [290.0, -20.0]).order(egui::Order::Tooltip).show(ctx, |ui| {
+            for (msg, until, cs) in self.undo_toasts.iter().rev().take(3) {
+                egui::Frame::none().fill(p.toast_bg).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(msg).color(p.toast_text).size(13.5));
+                        if ui.add(egui::Button::new(RichText::new("Undo").color(p.accent).strong()).frame(false)).clicked() {
+                            undo = Some(cs.clone());
+                        }
+                    });
+                    // depletion bar: time left to undo
+                    let frac = ((until - now) / 6.0).clamp(0.0, 1.0) as f32;
+                    let r = ui.available_rect_before_wrap();
+                    let bar = egui::Rect::from_min_size(egui::pos2(r.left(), r.top() + 2.0), egui::vec2(r.width().max(120.0) * frac, 2.0));
+                    ui.painter().rect_filled(bar, 1.0, p.accent);
+                    ui.add_space(4.0);
+                });
+                ui.add_space(6.0);
+            }
             for (msg, _) in self.toasts.iter().rev().take(4) {
-                egui::Frame::none().fill(if p.dark { Color32::from_rgb(60, 60, 60) } else { Color32::from_rgb(40, 40, 40) }).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
-                    ui.label(RichText::new(msg).color(Color32::WHITE).size(13.5));
+                egui::Frame::none().fill(p.toast_bg).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
+                    ui.label(RichText::new(msg).color(p.toast_text).size(13.5));
                 });
                 ui.add_space(6.0);
             }
         });
+        ctx.request_repaint_after(std::time::Duration::from_millis(100));
+        if let Some(cs) = undo {
+            self.undo(&cs);
+        }
     }
 
     fn handle_screenshot(&mut self, ctx: &egui::Context) {
@@ -1261,6 +1354,7 @@ impl App {
             View::Help => self.help_view(ui, p),
             View::Intake(id) => self.intake_view(ui, p, &id),
             View::Resolve(id) => self.resolve_view(ui, p, &id),
+            View::TestLab => self.testlab_view(ui, p),
         }
     }
 
@@ -1336,15 +1430,19 @@ impl eframe::App for App {
             }
         }
 
-        self.sidebar(ctx, &p);
-        if let Some(tid) = self.open_task.clone() {
+        // the intake (and the Test Intake lab) are full screen: no sidebar, no app chrome
+        let full_screen = self.testlab || matches!(self.view, View::Intake(_));
+        if !full_screen {
+            self.sidebar(ctx, &p);
+        }
+        if let Some(tid) = self.open_task.clone().filter(|_| !full_screen) {
             if self.store.data.task(&tid).is_some() {
                 self.task_panel(ctx, &p, &tid);
             } else {
                 self.open_task = None;
             }
         }
-        if self.page_ui.ai_open {
+        if self.page_ui.ai_open && !full_screen {
             let pid = match &self.view {
                 View::Page(id) => Some(id.clone()),
                 _ => None,

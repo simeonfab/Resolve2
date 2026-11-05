@@ -1,5 +1,7 @@
 # Status (5 Nov 2026, v2.0.0-alpha.1)
 
+**Latest: Part 3 (the intake journey, Test Intake, Undo/soft delete, AI safety) — see `docs/reports/2026-11-05-part3.md`.** Part 4 (navigation and sections) has not started. The tables below describe the earlier Resolve layer; where they mention the old intake screens, the journey replaced them.
+
 Legend: **Tested** = covered by `--selftest` (real code paths; AI via a scripted stand-in server) ·
 **Built** = works in the app, checked by screenshot/manual use, no automated test · **Partial** · **Missing**.
 
