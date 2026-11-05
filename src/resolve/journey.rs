@@ -534,8 +534,16 @@ pub fn offline_understanding(i: &Intake) -> Understanding {
 
 fn finish_understanding(u: &mut Understanding, i: &Intake) {
     let theirs = i.answer_for("outcome");
-    u.outcome = if !theirs.is_empty() { theirs } else { clean_outcome(&u.outcome) };
-    u.assumptions = u.assumptions.iter().map(|a| clean_claim(a)).filter(|a| !a.is_empty()).collect();
+    let said = i.transcript();
+    // the outcome is the user's own words: their answer, or a model reading made of their words —
+    // otherwise left empty for them to write (never a prompt example or an invention)
+    u.outcome = if !theirs.is_empty() {
+        theirs
+    } else {
+        let m = clean_outcome(&u.outcome);
+        if grounded(&m, &said) { m } else { String::new() }
+    };
+    u.assumptions = u.assumptions.iter().map(|a| clean_claim(a)).filter(|a| !a.is_empty() && grounded(a, &said)).collect();
     u.mentioned_tools = intake::detect_tools(&i.transcript());
 }
 

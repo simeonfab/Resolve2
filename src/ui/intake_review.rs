@@ -322,7 +322,8 @@ impl App {
         let items: Vec<crate::resolve::Record> = d.records.iter().filter(|r| r.project_id.as_deref() == Some(&pid) && r.kind == Kind::Roadmap).cloned().collect();
         ui.columns(3, |cols| {
             for (c, phase) in ["Now", "Next", "Later"].iter().enumerate() {
-                let ui = &mut cols[c];
+                // a plain (non-justified) column, so text isn't stretched
+                cols[c].vertical(|ui| {
                 ui.label(RichText::new(*phase).font(fs(size::SECTION)).color(if c == 0 { p.accent } else { p.dim }));
                 let mine: Vec<&crate::resolve::Record> = items.iter().filter(|r| r.field("phase") == *phase).collect();
                 if mine.is_empty() {
@@ -342,6 +343,7 @@ impl App {
                     });
                     ui.add_space(6.0);
                 }
+                });
             }
         });
         ui.add_space(18.0);

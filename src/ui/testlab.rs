@@ -287,8 +287,8 @@ impl App {
             ui.label(RichText::new("Compare proposals").font(fs(size::SECTION)));
             ui.columns(2, |cols| {
                 for (c, r) in runs.iter().enumerate() {
-                    let ui = &mut cols[c];
                     let Some(pr) = &r.proposal else { continue };
+                    cols[c].vertical(|ui| {
                     ui.label(RichText::new(&pr.name).font(fserif(size::TITLE)));
                     ui.label(RichText::new(format!("{} · {}", if r.provider.is_empty() { "app default".to_string() } else { r.provider.replace('|', " / ") }, if r.scenario.is_empty() { "own answers" } else { &r.scenario })).size(size::TINY).color(p.faint));
                     ui.label(RichText::new(&pr.summary).size(size::SMALL));
@@ -307,6 +307,7 @@ impl App {
                         }
                     }
                     ui.label(RichText::new(format!("{} tasks · {} experiments · {} open uncertainties · {} questions asked", pr.tasks.len(), pr.experiments.len(), pr.uncertainties.len(), r.qas.len())).size(size::TINY).color(p.faint));
+                    });
                 }
             });
         });

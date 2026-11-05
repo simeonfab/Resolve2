@@ -211,6 +211,16 @@ pub fn install_fonts(ctx: &egui::Context) {
             m.insert(0, "consolas".into());
         }
     }
+    // Resolve brand fonts, bundled (SIL OFL 1.1 — licences in assets/fonts): Inter for text,
+    // DM Serif Display for the one dominant headline per screen. System fonts stay as fallbacks
+    // for characters outside their Latin subset.
+    fonts.font_data.insert("inter".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Regular.ttf")));
+    fonts.font_data.insert("inter-semi".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-SemiBold.ttf")));
+    fonts.font_data.insert("inter-bold".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Bold.ttf")));
+    fonts.font_data.insert("dm-serif".into(), FontData::from_static(include_bytes!("../../assets/fonts/DMSerifDisplay-Regular.ttf")));
+    prop.insert(0, "inter".into());
+    semi.insert(0, "inter-semi".into());
+    boldf.insert(0, "inter-bold".into());
     fonts.families.insert(FontFamily::Proportional, prop);
     fonts.families.insert(bold(), boldf.clone());
     let mut serif_f = boldf.clone();
@@ -218,6 +228,7 @@ pub fn install_fonts(ctx: &egui::Context) {
         fonts.font_data.insert("georgia".into(), FontData::from_owned(b));
         serif_f.insert(0, "georgia".into());
     }
+    serif_f.insert(0, "dm-serif".into());
     fonts.families.insert(serif(), serif_f);
     fonts.families.insert(semibold(), semi);
     ctx.set_fonts(fonts);

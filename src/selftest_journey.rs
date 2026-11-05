@@ -133,7 +133,7 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     // understanding: outcome stays in the user's words
     let (u, _) = run_understanding(cfg.clone(), &i);
     let u = u.unwrap_or_default();
-    t.check("confirm cards keep the outcome in the user's own words", u.outcome == "HR teams — they'd rebook every quarter. Two HR managers asked for a quote; companies will pay £2,000 per event; not sure whether bookings repeat." && u.assumptions == vec!["HR budgets exist".to_string()], format!("{:?} {:?}", u.outcome, u.assumptions));
+    t.check("confirm cards keep the outcome in the user's own words; an assumption they never stated is dropped", u.assumptions.is_empty() && u.outcome =="HR teams — they'd rebook every quarter. Two HR managers asked for a quote; companies will pay £2,000 per event; not sure whether bookings repeat.", format!("{:?} {:?}", u.outcome, u.assumptions));
     i.understanding = Some(u);
     i.outcome_confirmed = true;
     let (p, calls) = run_proposal(cfg.clone(), &i, None);
