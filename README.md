@@ -21,6 +21,11 @@ data folder (`%APPDATA%\Resolve2`) and MCP names.
 - Any existing project: open it and press **✦ Open in Resolve**.
 - Claude / Codex / ChatGPT can read and update everything over MCP (Settings → AI & MCP).
 
+## Test
+- `target\debug\resolve2.exe --selftest` — ~90 end-to-end checks; no network or keys (AI via a labelled stand-in server).
+- `target\debug\resolve2.exe --data-dir shots\aitest --test-ai --provider ollama --model llama3.2 --url http://localhost:11434` — one real intake call through a real model (also `--provider claude-code`, `anthropic`, `openai-cloud`, `openai`).
+- `--data-dir <folder>` keeps any test away from your real data.
+
 ## Develop
 - `target\debug\resolve2.exe --selftest` runs ~90 end-to-end checks (no network or keys needed).
 - Read `AGENTS.md` before changing code. Docs: `ARCHITECTURE.md`, `docs/`.

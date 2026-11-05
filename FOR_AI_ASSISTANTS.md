@@ -21,7 +21,7 @@ A single Windows desktop app that replaces Notion + Todoist + Google Calendar fo
    - stdio: `resolve2.exe --mcp --workspace <name or id>`, for Claude Desktop, Claude Code, Codex and any local MCP client (Open WebUI, LM Studio…).
    - HTTP: `POST http://<host>:<port>/mcp?token=<token>`, for ChatGPT connectors; needs a public HTTPS address (a tunnel such as cloudflared or Tailscale Funnel).
 2. **In-app assistant ("✨ Ask AI")**, like Notion AI. It can answer and also act, using the same tools in a function-calling loop (up to 16 steps). Providers:
-   - **Claude subscription** (no extra cost, the default when Claude Code is installed): runs the Claude Code CLI (`claude -p`, signed in with the user's Pro/Max account) with this app as its MCP server.
+   - **Claude subscription** (personal/development use only; not the default): runs the Claude Code CLI (`claude -p`, signed in with the user's Pro/Max account) with this app as its MCP server.
    - **ChatGPT subscription** (no extra cost): runs the Codex CLI (`codex exec`, signed in with ChatGPT) with this app as its MCP server.
    - **Claude API**: Anthropic Messages API, the user's own API key, default model `claude-opus-5-5`.
    - **ChatGPT**: OpenAI Chat Completions, the user's own API key, any model name.
@@ -55,3 +55,10 @@ A single Windows desktop app that replaces Notion + Todoist + Google Calendar fo
 - Under 8 GB RAM, no GPU: a ~1–3B model (e.g. `llama3.2`) is fine for summaries; tool use will be weak.
 - 16 GB RAM or a 6–8 GB GPU: 7–8B tool-capable models (e.g. `qwen3`, `llama3.1`) are a good balance.
 - 32 GB+ RAM or 12 GB+ GPU: 14B+ models give more reliable multi-step actions.
+
+## Resolve layer (Resolve 2)
+
+- **Intake**: name, situation, free text, confirm understanding (outcome question + isolated judge), next move, then a real project with Now/Next/Later tasks, a plan page, saved context and records. Works with no AI (manual path).
+- **Project cockpit**: next move, what matters now, editable context, ResolveOS actions, Product Director / Growth Lead / Tech Lead chat, Hypothesis Zero tree (hypotheses, negations, experiments with locked thresholds, evidence), records, Codex/Claude handoff brief.
+- **Default AI provider**: Ollama (local). API keys and the CLI subscriptions are opt-in. Usage is logged with user-entered prices and an optional monthly budget.
+- **Tested on 5 Nov 2026** (docs/RECONCILIATION.md): Ollama llama3.2 and Claude Code work for intake; Codex, LM Studio and API keys are untested on this PC. Small local models can claim a change that failed — trust the app's ✓/✗ action list.
