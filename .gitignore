@@ -1,17 +1,26 @@
-# build output
+﻿# build output
 /target/
+/target-*/
+node_modules/
+dist/
+*.pdb
 
 # local test / screenshot data (may contain generated workspaces)
 /shots/
 *.png
 !docs/**/*.png
 
-# never commit data, secrets or local config
-*.env
-.env*
+# never commit workspace data, backups, settings with tokens, logs or secrets
 workspaces.json
 data.json
 settings.json
 backups/
+ai-usage.jsonl
+*.jsonl
+.env
+.env.*
+*.env
 *.key
 *.pem
+*.pfx
+secrets*

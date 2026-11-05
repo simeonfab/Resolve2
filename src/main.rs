@@ -77,6 +77,33 @@ fn main() {
         }
         return;
     }
+    // resolve2 --test-ai [--provider P] [--model M] [--url U]: one real intake "understand" call
+    // through the same code the app uses; prints the provider, timing and the validated result or error.
+    if args.iter().any(|a| a == "--test-ai") {
+        let mut cfg = ai::current_config();
+        if let Some(p) = arg_value(&args, "--provider") {
+            cfg.provider = p;
+        }
+        if let Some(m) = arg_value(&args, "--model") {
+            cfg.model = m;
+        }
+        if let Some(u) = arg_value(&args, "--url") {
+            cfg.url = u;
+        }
+        let sample = "I run a small bakery and want to start selling bread subscriptions to offices nearby. I have two office customers who asked for it. I don't know if they'd pay monthly up front.";
+        println!("provider={} model={} url={}", cfg.provider, if cfg.model.is_empty() { "(default)" } else { &cfg.model }, cfg.url);
+        let t0 = std::time::Instant::now();
+        let r = resolve::intake::run_understand(&cfg, sample);
+        println!("seconds={:.1}", t0.elapsed().as_secs_f32());
+        match r {
+            Ok(u) => println!("OK\n{}", serde_json::to_string_pretty(&u).unwrap_or_default()),
+            Err(e) => {
+                println!("ERROR {e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     // resolve2 --connect-claude [--workspace NAME]: add this workspace to Claude Desktop and Claude Code
     if args.iter().any(|a| a == "--connect-claude") {
         let reg = store::Registry::load();

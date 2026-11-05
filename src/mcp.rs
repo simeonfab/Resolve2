@@ -1193,10 +1193,12 @@ pub fn run_stdio(mut store: Store) {
     let mut out = std::io::stdout();
     for line in stdin.lock().lines() {
         let Ok(line) = line else { break };
+        // some Windows tools (e.g. PowerShell pipes) prefix a byte-order mark
+        let line = line.trim_start_matches('\u{feff}');
         if line.trim().is_empty() {
             continue;
         }
-        if let Some(resp) = handle_text(&mut store, &line) {
+        if let Some(resp) = handle_text(&mut store, line) {
             let _ = writeln!(out, "{resp}");
             let _ = out.flush();
         }
