@@ -527,7 +527,7 @@ impl App {
             }
         }
         if delete {
-            self.store.data.delete_record(id);
+            { let rid = id.to_string(); self.undoable(&format!("Deleted {} \"{}\"", r.kind.label().to_lowercase(), r.title), "delete", |d| d.delete_record(&rid)); }
             self.resolve_ui.sel_record = None;
             self.touch();
             return;

@@ -192,7 +192,7 @@ impl App {
                                 }
                             });
                             if self.store.data.calendars.len() > 1 && ui.button(RichText::new("🗑 Delete calendar and its events").color(p.accent)).clicked() {
-                                self.store.data.delete_calendar(&c.id);
+                                { let cid = c.id.clone(); self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", |d| d.delete_calendar(&cid)); }
                                 self.touch();
                                 ui.close_menu();
                             }
@@ -855,7 +855,7 @@ impl App {
         }
         if delete {
             if let Some(id) = &dr.id {
-                self.store.data.delete_event(id);
+                { let eid = id.to_string(); let name = self.store.data.events.iter().find(|e| e.id == eid).map(|e| e.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted event \"{name}\""), "delete", |d| d.delete_event(&eid)); }
                 self.touch();
                 self.toast("Event deleted");
             }

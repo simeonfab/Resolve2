@@ -335,9 +335,49 @@ fn run_cli(provider: &str, system: &str, prompt: &str, meta: crate::store::Works
             changes.push(format!("{}{diff} {}", if diff > 0 { "+" } else { "" }, names[i]));
         }
     }
-    Ok(if changes.is_empty() { text } else { format!("{text}\n\nDone in your workspace: {}", changes.join(", ")) })
+    let claims = claims_changes(&text);
+    Ok(if changes.is_empty() {
+        if claims {
+            format!("⚠ Mismatch: the reply says changes were made, but nothing in your workspace changed. Treat its claims as not done.\n\n{text}")
+        } else {
+            text
+        }
+    } else {
+        format!("{text}\n\nConfirmed in your workspace: {}", changes.join(", "))
+    })
 }
 
+/// Does the model's prose claim it changed something?
+pub fn claims_changes(text: &str) -> bool {
+    let l = text.to_lowercase();
+    ["i created", "i've created", "i have created", "i added", "i've added", "i have added", "created a new", "created the", "added a new", "added the", "i updated", "i've updated", "i scheduled", "i've scheduled", "i deleted", "i've deleted", "i moved", "i completed", "i've completed", "i marked", "has been created", "has been added", "has been updated", "have been added", "was created", "was added", "is now on your", "done! ", "all set"]
+        .iter()
+        .any(|p| l.contains(p))
+}
+
+/// The assistant's answer, showing only what the tools confirmed. If the prose claims changes the
+/// tools did not complete, say so on screen.
+pub fn confirmed_report(text: &str, actions: &[String]) -> String {
+    let ok: Vec<&String> = actions.iter().filter(|a| a.starts_with('✓')).collect();
+    let failed: Vec<&String> = actions.iter().filter(|a| a.starts_with('✗')).collect();
+    let mismatch = claims_changes(text) && (ok.is_empty() || !failed.is_empty());
+    let mut s = String::new();
+    if mismatch {
+        s.push_str(if ok.is_empty() {
+            "⚠ Mismatch: the reply says changes were made, but the tools completed none. Nothing below the line happened unless it is listed as confirmed.\n\n"
+        } else {
+            "⚠ Mismatch: the reply claims more than the tools completed. Only the confirmed changes below happened.\n\n"
+        });
+    }
+    s.push_str(text.trim());
+    if !ok.is_empty() {
+        s.push_str(&format!("\n\nConfirmed in your workspace:\n{}", ok.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n")));
+    }
+    if !failed.is_empty() {
+        s.push_str(&format!("\n\nNot done (the tool failed):\n{}", failed.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n")));
+    }
+    s
+}
 pub fn claude_code_installed() -> bool {
     find_cli("claude").is_some()
 }
@@ -347,6 +387,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
         return run_cli(&cfg.provider, system, prompt, meta, allow_write);
     }
     let mut store = crate::store::Store::open(meta);
+    crate::mcp::begin_ai_batch(&store.meta.id);
     let read_only = !allow_write || store.settings.ai_read_only;
     let tools = crate::mcp::tools(read_only);
     let tool_list = tools.as_array().cloned().unwrap_or_default();
@@ -366,13 +407,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
             Err(e) => (e, true),
         }
     };
-    let finish = |text: String, actions: &Vec<String>| -> String {
-        if actions.is_empty() {
-            text
-        } else {
-            format!("{text}\n\nDone in your workspace:\n{}", actions.iter().map(|a| format!("- {a}")).collect::<Vec<_>>().join("\n"))
-        }
-    };
+    let finish = |text: String, actions: &Vec<String>| -> String { confirmed_report(&text, actions) };
     const MAX_STEPS: usize = 16;
     if cfg.provider == "anthropic" {
         if cfg.key.trim().is_empty() {

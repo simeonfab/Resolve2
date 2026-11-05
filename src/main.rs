@@ -13,6 +13,7 @@
 //!   resolve2 --install-shortcuts            add Resolve 2 to the desktop and Start menu
 
 mod ai;
+mod history;
 mod import;
 mod mcp;
 mod model;
@@ -22,6 +23,7 @@ mod search;
 mod seed;
 mod selftest;
 mod selftest_resolve;
+mod selftest_safety;
 mod server;
 mod store;
 mod templates;

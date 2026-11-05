@@ -716,6 +716,9 @@ pub struct WorkspaceData {
     pub intakes: Vec<crate::resolve::Intake>,
     #[serde(default)]
     pub contexts: Vec<crate::resolve::ProjectContext>,
+    /// Undo / soft-delete history (see src/history.rs).
+    #[serde(default)]
+    pub history: Vec<crate::history::ChangeSet>,
 }
 
 trait Stamped {
@@ -743,6 +746,7 @@ stamped!(Database);
 stamped!(crate::resolve::Record);
 stamped!(crate::resolve::Intake);
 stamped!(crate::resolve::ProjectContext);
+stamped!(crate::history::ChangeSet);
 
 fn merge_vec<T: Stamped + Clone>(local: &mut Vec<T>, remote: &[T], dead: &HashMap<String, i64>) {
     let mut index: HashMap<String, usize> = HashMap::new();
@@ -782,6 +786,7 @@ impl WorkspaceData {
         merge_vec(&mut self.records, &other.records, &dead);
         merge_vec(&mut self.intakes, &other.intakes, &dead);
         merge_vec(&mut self.contexts, &other.contexts, &dead);
+        merge_vec(&mut self.history, &other.history, &dead);
         // keep tombstones for 60 days
         let cutoff = now_ms() - 60 * 24 * 3600 * 1000;
         self.tombstones = dead

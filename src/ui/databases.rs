@@ -208,7 +208,7 @@ impl App {
             });
         });
         if delete {
-            self.store.data.delete_database(id);
+            { let did = id.to_string(); let name = self.store.data.database(&did).map(|d| d.name.clone()).unwrap_or_default(); self.undoable(&format!("Deleted database \"{name}\""), "delete", |d| d.delete_database(&did)); }
             for pg in self.store.data.pages.iter_mut() {
                 let before = pg.blocks.len();
                 pg.blocks.retain(|b| !(b.kind == BlockKind::Database && b.text == id));
@@ -609,10 +609,21 @@ impl App {
         let after = serde_json::to_string(&db).unwrap_or_default();
         if after != before {
             db.updated = now_ms();
-            if let Some(slot) = self.store.data.database_mut(id) {
-                *slot = db;
+            if delete_row.is_some() {
+                // a deleted row is undoable (soft delete)
+                let dbid = id.to_string();
+                let label = format!("Deleted a row in {}", db.name);
+                self.undoable(&label, "delete", move |d| {
+                    if let Some(slot) = d.database_mut(&dbid) {
+                        *slot = db;
+                    }
+                });
+            } else {
+                if let Some(slot) = self.store.data.database_mut(id) {
+                    *slot = db;
+                }
+                self.touch();
             }
-            self.touch();
         }
         if let Some(rid) = open_row {
             self.open_row_page(id, &rid);

@@ -26,6 +26,8 @@ pub struct Pal {
     pub callout: Color32,
     pub code: Color32,
     pub field: Color32,
+    pub toast_bg: Color32,
+    pub toast_text: Color32,
 }
 
 pub fn pal(dark: bool) -> Pal {
@@ -50,6 +52,8 @@ pub fn pal(dark: bool) -> Pal {
             callout: Color32::from_rgb(46, 42, 33),
             code: Color32::from_rgb(28, 27, 24),
             field: Color32::from_rgb(26, 26, 24),
+            toast_bg: Color32::from_rgb(58, 56, 50),
+            toast_text: Color32::from_rgb(251, 248, 242),
         }
     } else {
         Pal {
@@ -72,6 +76,8 @@ pub fn pal(dark: bool) -> Pal {
             callout: Color32::from_rgb(251, 245, 230),
             code: Color32::from_rgb(244, 240, 232),
             field: Color32::from_rgb(255, 255, 255),
+            toast_bg: Color32::from_rgb(26, 26, 24),
+            toast_text: Color32::from_rgb(251, 248, 242),
         }
     }
 }
