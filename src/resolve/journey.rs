@@ -420,10 +420,31 @@ fn observed(t: &str) -> bool {
 
 /// Clean a classification: no fragments, no echoes of the question, no duplicates of what was
 /// already heard, and goals/hopes are never evidence.
-pub fn filter_heard(items: Vec<Heard>, target: &str, question: &str, existing: &[Heard]) -> Vec<Heard> {
+/// Is `item` made of the user's own words (≥60% of its meaningful words appear in `source`)?
+pub fn grounded(item: &str, source: &str) -> bool {
+    let src = norm(source);
+    let words: Vec<String> = norm(item).split(' ').filter(|w| w.len() > 3).map(|w| w.to_string()).collect();
+    if words.is_empty() {
+        return true;
+    }
+    let hit = words.iter().filter(|w| src.contains(w.as_str()) || src.contains(&w[..w.len().saturating_sub(2).max(4)])).count();
+    hit as f32 / words.len() as f32 >= 0.6
+}
+
+pub fn filter_heard(items: Vec<Heard>, target: &str, question: &str, existing: &[Heard], answer_text: &str) -> Vec<Heard> {
     let mut out: Vec<Heard> = vec![];
     for mut h in items {
-        let t = h.text.trim().trim_matches(['…', '.', ',', ' ']).to_string();
+        let mut t = h.text.trim().trim_matches(['…', '.', ',', ' ']).to_string();
+        // fragments that start mid-sentence
+        for pre in ["and ", "but ", "or ", "with ", "so "] {
+            if t.to_lowercase().starts_with(pre) {
+                t = t[pre.len()..].to_string();
+            }
+        }
+        // only what they actually said: most of the item's words must be in their answer
+        if !answer_text.is_empty() && !grounded(&t, answer_text) {
+            continue;
+        }
         if t.split_whitespace().count() < 3 || !t.chars().any(|c| c.is_alphanumeric()) {
             continue;
         }
@@ -710,7 +731,7 @@ pub fn propose(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str>
     })
 }
 
-const WEAK_STARTS: [&str; 9] = ["conduct experiments", "analyze results", "analyse results", "gather feedback", "refine the", "iterate on", "test the", "validate the", "design and run experiments"];
+const WEAK_STARTS: [&str; 11] = ["conduct experiments", "analyze results", "analyse results", "gather feedback", "refine the", "refine ", "iterate ", "test the", "validate the", "design and run experiments", "develop the app"];
 
 /// Strict rules for the model's first answer (retried once with the reason).
 fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
@@ -718,8 +739,9 @@ fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
     if raw_name.split_whitespace().count() > 5 {
         return Err(format!("\"name\" must be 2-5 words naming the real thing, not \"{raw_name}\""));
     }
-    if p.h0.title.trim_end().ends_with('?') {
-        return Err("\"h0\" must be a claim, not a question".into());
+    let first = p.h0.title.split_whitespace().next().unwrap_or("").to_lowercase();
+    if p.h0.title.trim_end().ends_with('?') || ["what", "how", "why", "who", "when", "which", "is", "are", "does", "do", "can", "should", "will"].contains(&first.as_str()) {
+        return Err("\"h0\" must be a claim to test (\"X leads to Y\"), not a question".into());
     }
     for h in p.hypotheses.iter().chain(std::iter::once(&p.h0)) {
         if !h.negation.is_empty() && h.negation.split_whitespace().count() < 3 {
@@ -1125,7 +1147,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             let others: Vec<Heard> = i.heard.iter().filter(|h| h.from != qa.id || h.corrected).cloned().collect();
             let items = match &cfg {
                 Some(c) if !qa.answer.trim().is_empty() => match classify(c, &qa.target, &qa.question, &qa.answer, &qa.id) {
-                    Ok(v) => filter_heard(v, &qa.target, &qa.question, &others),
+                    Ok(v) => filter_heard(v, &qa.target, &qa.question, &others, &qa.answer),
                     Err(e) => {
                         out.note = format!("AI couldn't sort that answer ({}); used the fixed rule.", e.chars().take(120).collect::<String>());
                         offline_classify(qa)

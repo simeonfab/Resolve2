@@ -213,6 +213,8 @@ impl App {
             .workspace
             .as_deref()
             .and_then(|w| reg.find(w).cloned())
+            // Test Intake keeps all runs in the sandbox's "Personal" workspace
+            .or_else(|| if opts.testlab { reg.find("Personal").cloned() } else { None })
             .or_else(|| reg.settings.last_workspace.as_deref().and_then(|w| reg.find(w).cloned()))
             .unwrap_or_else(|| reg.workspaces[0].clone());
         let mut store = Store::open(meta);

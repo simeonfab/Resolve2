@@ -74,7 +74,7 @@ fn main() {
         let t0 = std::time::Instant::now();
         let mut run = resolve::testlab::headless_run(&scn, &provider, max_q, false, &mut |s| println!("{s}"));
         let reg = store::Registry::load();
-        let meta = reg.workspaces[0].clone();
+        let meta = reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone());
         let mut st = store::Store::open(meta);
         let rid = run.id.clone();
         let adopt = args.iter().any(|a| a == "--adopt");

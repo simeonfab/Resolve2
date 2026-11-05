@@ -55,6 +55,14 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     let n = clean_name("Resolve is a project to create and deliver Doom Clock corporate events for teams");
     t.check("project names are short and never the app's name", !n.to_lowercase().starts_with("resolve") && n.split_whitespace().count() <= 5, &n);
     t.check("outcomes drop the third-person framing", clean_outcome("The user appears to be better off when teams bond") == "Teams bond", clean_outcome("The user appears to be better off when teams bond"));
+    let answer = "Two people who played at a games night asked if I could run it at their offices.";
+    let items = vec![
+        Heard { id: "a".into(), text: "Two people asked if I could run it at their offices".into(), kind: "evidence".into(), from: "q".into(), corrected: false },
+        Heard { id: "b".into(), text: "It matters because it can improve team cohesion".into(), kind: "assumption".into(), from: "q".into(), corrected: false },
+        Heard { id: "c".into(), text: "and the".into(), kind: "evidence".into(), from: "q".into(), corrected: false },
+    ];
+    let kept = filter_heard(items, "why", "Why does this matter?", &[], answer);
+    t.check("'What Resolve has heard' keeps only the user's own words (invented items and fragments dropped)", kept.len() == 1 && kept[0].kind == "evidence", format!("{kept:?}"));
     t.check("generic filler is recognised", is_generic("Validate") && is_generic("Refine") && is_generic("Iterate and improve") && !is_generic("Book three venues"), "generic check");
 
     // ---- offline fallback: fixed questions cover every target, nothing invented
@@ -103,7 +111,7 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     apply_answer(&mut i, out);
     let q1 = i.qas.first().cloned().unwrap_or_default();
     t.check("the model chooses the first question and says why (decision trail)", q1.target == "outcome" && q1.why.contains("H0") && q1.depends_on == vec!["input".to_string()] && !q1.calls.is_empty(), format!("{q1:?}").chars().take(200).collect::<String>());
-    i.qas[0].answer = "HR teams — they'd rebook every quarter".into();
+    i.qas[0].answer = "HR teams — they'd rebook every quarter. Two HR managers asked for a quote; companies will pay £2,000 per event; not sure whether bookings repeat.".into();
     let out = run_answer(cfg.clone(), &i, Some(&q1.id), true);
     apply_answer(&mut i, out);
     t.check("an answer is sorted into evidence / assumption / open question, assumptions cleaned", i.heard.iter().any(|h| h.kind == "evidence") && i.heard.iter().any(|h| h.kind == "assumption" && h.text == "Companies will pay £2,000 per event") && i.heard.iter().any(|h| h.kind == "question"), format!("{:?}", i.heard));
@@ -125,7 +133,7 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     // understanding: outcome stays in the user's words
     let (u, _) = run_understanding(cfg.clone(), &i);
     let u = u.unwrap_or_default();
-    t.check("confirm cards keep the outcome in the user's own words", u.outcome == "HR teams — they'd rebook every quarter" && u.assumptions == vec!["HR budgets exist".to_string()], format!("{:?} {:?}", u.outcome, u.assumptions));
+    t.check("confirm cards keep the outcome in the user's own words", u.outcome == "HR teams — they'd rebook every quarter. Two HR managers asked for a quote; companies will pay £2,000 per event; not sure whether bookings repeat." && u.assumptions == vec!["HR budgets exist".to_string()], format!("{:?} {:?}", u.outcome, u.assumptions));
     i.understanding = Some(u);
     i.outcome_confirmed = true;
     let (p, calls) = run_proposal(cfg.clone(), &i, None);

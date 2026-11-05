@@ -250,6 +250,7 @@ impl App {
             let changed = !qa.answer.trim().is_empty() && qa.answer.trim() != qa.classified.trim();
             it.stage = "confirm".into();
             it.understanding = None;
+            it.last_error.clear();
             if changed {
                 self.ij_spawn_answer(it, Some(qa.id), false, "Noting that answer…");
             }
@@ -269,6 +270,7 @@ impl App {
             } else if it.suggest_stop && !changed {
                 it.stage = "confirm".into();
                 it.understanding = None;
+                it.last_error.clear();
             } else {
                 self.ij_spawn_answer(it, if classify { Some(qa.id) } else { None }, true, "Thinking about what to ask next…");
             }

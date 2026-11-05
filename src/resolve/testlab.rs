@@ -135,13 +135,25 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
     for h in &i.heard {
         log(&format!("heard ({}) {}", h.kind, h.text));
     }
+    if std::env::args().any(|a| a == "questions") {
+        // --stop-at questions: leave the run on its last question
+        i.stage = "questions".into();
+        i.touch();
+        return i;
+    }
     i.stage = "confirm".into();
+    i.last_error.clear();
     let (u, calls) = journey::run_understanding(cfg.clone(), &i);
     journey::keep_trace(&mut i, calls);
     i.understanding = u.ok();
     i.outcome_confirmed = true;
     if let Some(u) = &i.understanding {
         log(&format!("understood: project={} | outcome={}", u.project, u.outcome));
+    }
+    if std::env::args().any(|a| a == "confirm") {
+        i.outcome_confirmed = false;
+        i.touch();
+        return i;
     }
     i.stage = "proposal".into();
     let (p, calls) = journey::run_proposal(cfg, &i, None);
