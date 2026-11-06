@@ -122,8 +122,10 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
         log(&format!("Q{} [{}] {}\n    why: {}\n    A: {}", i.cursor + 1, q.target, q.question, q.why, a));
         i.qas[i.cursor].answer = a;
         let before = i.qas.len();
+        let (t0, n0) = (std::time::Instant::now(), i.trace.len());
         let out = journey::run_answer(cfg.clone(), &i, Some(&q.id), true);
         journey::apply_answer(&mut i, out);
+        log_calls(log, &i, n0, t0);
         if !i.last_error.is_empty() {
             log(&format!("    note: {}", i.last_error));
         }
@@ -143,9 +145,13 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
     }
     i.stage = "confirm".into();
     i.last_error.clear();
+    let (t0, n0) = (std::time::Instant::now(), i.trace.len());
     let (u, calls) = journey::run_understanding(cfg.clone(), &i);
     journey::keep_trace(&mut i, calls);
+    log_calls(log, &i, n0, t0);
     i.understanding = u.ok();
+    // same freshness key the app uses, so opening the run doesn't redo the understanding
+    i.understood_n = i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + usize::from(!i.input.trim().is_empty());
     i.outcome_confirmed = true;
     if let Some(u) = &i.understanding {
         log(&format!("understood: project={} | outcome={}", u.project, u.outcome));
@@ -156,8 +162,10 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
         return i;
     }
     i.stage = "proposal".into();
+    let (t0, n0) = (std::time::Instant::now(), i.trace.len());
     let (p, calls) = journey::run_proposal(cfg, &i, None);
     journey::keep_trace(&mut i, calls);
+    log_calls(log, &i, n0, t0);
     match p {
         Ok(mut p) => {
             journey::sanitise(&mut p, &i.clone());
@@ -172,6 +180,12 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
     let _ = adopt;
     i.touch();
     i
+}
+
+/// Timing line for one step: wall time plus each model call it made (parallel calls overlap).
+fn log_calls(log: &mut dyn FnMut(&str), i: &Intake, from: usize, t0: std::time::Instant) {
+    let calls: Vec<String> = i.trace.iter().skip(from).map(|t| format!("{} {:.1}s{}", t.purpose, t.ms as f64 / 1000.0, if t.ok { "" } else { " (failed)" })).collect();
+    log(&format!("    time: {:.1}s [{}]", t0.elapsed().as_secs_f64(), calls.join(", ")));
 }
 
 /// Run by `resolve2 --promote FILE [--workspace NAME]` in the REAL data folder: adopt the run's

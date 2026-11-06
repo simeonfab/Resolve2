@@ -292,11 +292,28 @@ impl App {
             app.ensure_server();
             match opts.view.as_deref() {
                 None => app.open_intake_if_new(),
-                // --view intake-<stage>: the newest intake at that stage (screenshots / checks)
+                // --view intake-<stage>[-<ending step>]: show the newest intake at that stage
+                // (screenshots / checks). In memory only; nothing is saved.
                 Some(v) if v.starts_with("intake") => {
-                    let stage = v.strip_prefix("intake-").unwrap_or("");
-                    if let Some(i) = app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated) {
-                        app.view = View::Intake(i.id.clone());
+                    let rest = v.strip_prefix("intake-").unwrap_or("");
+                    let (stage, step) = match rest.rsplit_once('-') {
+                        Some((s, n)) if n.parse::<u8>().is_ok() => (s.to_string(), n.parse::<u8>().ok()),
+                        _ => (rest.to_string(), None),
+                    };
+                    let pick = app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone()).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
+                    if let Some(id) = pick {
+                        if let Some(i) = app.store.data.intakes.iter_mut().find(|i| i.id == id) {
+                            if !stage.is_empty() {
+                                i.stage = stage.clone();
+                            }
+                            if let Some(n) = step {
+                                i.ending = n;
+                            }
+                            if stage == "questions" {
+                                i.cursor = i.qas.len().saturating_sub(1);
+                            }
+                        }
+                        app.view = View::Intake(id);
                     }
                 }
                 _ => {}

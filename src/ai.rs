@@ -507,13 +507,16 @@ pub struct Trace {
     /// The model's raw text, or the error.
     pub response: String,
     pub ok: bool,
+    /// How long the call took.
+    #[serde(default)]
+    pub ms: u64,
 }
 
 thread_local! {
     static TRACE: std::cell::RefCell<Vec<Trace>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
-fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
+fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>, ms: u64) {
     let purpose = PURPOSE.with(|x| x.borrow().clone());
     let t = Trace {
         at: crate::model::now_ms(),
@@ -523,6 +526,7 @@ fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
         request: system.to_string(),
         response: match raw { Ok(s) => s.clone(), Err(e) => format!("ERROR: {e}") },
         ok: raw.is_ok(),
+        ms,
     };
     TRACE.with(|x| x.borrow_mut().push(t));
 }
@@ -553,8 +557,9 @@ pub fn parse_json_object(text: &str) -> Result<Value, String> {
 /// One completion that should return a JSON object. `temperature` None = provider default.
 /// One raw call; returns the model's text. Every call (success or failure) is added to the trace.
 pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<Value, String> {
+    let t0 = std::time::Instant::now();
     let raw = complete_text_once(cfg, system, temperature);
-    trace_push(cfg, system, &raw);
+    trace_push(cfg, system, &raw, t0.elapsed().as_millis() as u64);
     raw.and_then(|t| parse_json_object(&t))
 }
 
@@ -577,9 +582,14 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
             Ok(text)
         }
         "claude-code" | "codex-cli" => {
-            // small judgement-only calls use a fast model on the Claude Code CLI
+            // the intake's waits use faster models on the Claude Code CLI: sorting an answer is a
+            // small judgement (haiku); the next question must arrive inside the 15 s limit (sonnet)
             let purpose = PURPOSE.with(|x| x.borrow().clone());
-            let model = if cfg.model.trim().is_empty() && cfg.provider == "claude-code" && purpose == "intake:classify" { "haiku".to_string() } else { cfg.model.trim().to_string() };
+            let model = match (cfg.model.trim().is_empty() && cfg.provider == "claude-code", purpose.as_str()) {
+                (true, "intake:classify") => "haiku".to_string(),
+                (true, "intake:next-question") => "sonnet".to_string(),
+                _ => cfg.model.trim().to_string(),
+            };
             let text = run_cli_plain_model(&cfg.provider, system, user, &model)?;
             record_usage(&cfg.provider, "subscription", 0, 0);
             Ok(text)

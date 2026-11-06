@@ -122,7 +122,8 @@ impl App {
 
     /// Precompute while the person reads or types, so the next screen is ready.
     pub(super) fn ij_precompute(&mut self, it: &Intake) {
-        if journey::cfg_for(it).is_none() {
+        // screenshots never start AI work
+        if self.shot.is_some() || journey::cfg_for(it).is_none() {
             return; // offline steps are instant
         }
         match it.stage.as_str() {
@@ -130,8 +131,18 @@ impl App {
                 let n = answered(it);
                 let ready = it.suggest_stop || it.coverage() >= 0.6;
                 let pending = self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, k)| x == &it.id && *k == n);
-                if ready && n > 0 && (it.understanding.is_none() || it.understood_n != n) && !pending && self.resolve_ui.bg_understand.is_none() {
+                let fresh = it.understanding.is_some() && it.understood_n == n;
+                if ready && n > 0 && !fresh && !pending && self.resolve_ui.bg_understand.is_none() {
                     self.ij_spawn_understand(it, false);
+                }
+                // once Resolve suggests stopping and the understanding is current, start the
+                // proposal too (it is the longest wait); editing the cards later redoes it
+                if it.suggest_stop && fresh {
+                    let key = und_key(it);
+                    let pending = self.resolve_ui.bg_propose.as_ref().map_or(false, |(x, k)| x == &it.id && *k == key);
+                    if (it.proposal.is_none() || it.proposed_from != key) && !pending && self.resolve_ui.bg_propose.is_none() {
+                        self.ij_spawn_proposal(it, None, false);
+                    }
                 }
             }
             "confirm" => {
@@ -368,8 +379,10 @@ impl App {
                 ui.add_space(6.0);
                 ui.label(RichText::new(title).size(size::SMALL).color(kind_color(p, kind)).strong());
                 for i in idx {
+                    // label and remove on one line, the words underneath, wrapped to the panel
+                    let h = &mut it.heard[i];
+                    ui.add_space(2.0);
                     ui.horizontal(|ui| {
-                        let h = &mut it.heard[i];
                         if chip(ui, &h.kind, kind_color(p, &h.kind)).on_hover_text("Change: evidence → assumption → question").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                             h.kind = match h.kind.as_str() {
                                 "evidence" => "assumption".into(),
@@ -378,13 +391,16 @@ impl App {
                             };
                             h.corrected = true;
                         }
-                        if ui.add(egui::TextEdit::singleline(&mut h.text).desired_width(ui.available_width() - 28.0).font(fp(size::SMALL))).changed() {
-                            h.corrected = true;
-                        }
-                        if ui.small_button("×").on_hover_text("Remove").clicked() {
-                            remove = Some(i);
-                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if ui.small_button("×").on_hover_text("Remove").clicked() {
+                                remove = Some(i);
+                            }
+                        });
                     });
+                    if ui.add(egui::TextEdit::multiline(&mut h.text).desired_rows(1).desired_width(f32::INFINITY).font(fp(size::SMALL))).changed() {
+                        h.text = h.text.replace(['\n', '\r'], " ");
+                        h.corrected = true;
+                    }
                 }
             }
             if let Some(i) = remove {
@@ -397,7 +413,8 @@ impl App {
 
     pub(super) fn ij_confirm(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let n = answered(it);
-        let stale = it.understanding.is_none() || (it.understood_n != n && !it.editing);
+        // (a screenshot shows what's there rather than starting AI work)
+        let stale = it.understanding.is_none() || (it.understood_n != n && !it.editing && self.shot.is_none());
         if stale {
             // precomputed in the background? wait for it (with visible progress), else ask now
             let pending = self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, k)| x == &it.id && *k == n);

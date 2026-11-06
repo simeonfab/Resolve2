@@ -173,7 +173,7 @@ impl App {
     pub fn open_intake_if_new(&mut self) {
         let d = &self.store.data;
         let fresh = d.projects.is_empty() && d.tasks.is_empty() && !d.intakes.iter().any(|i| i.status == "done");
-        if fresh && self.shot.is_none() {
+        if fresh {
             self.start_intake();
             self.back.clear();
         }
