@@ -124,7 +124,7 @@ impl App {
                         if ui.selectable_label(self.lab.provider == k, label).clicked() {
                             self.lab.provider = k.into();
                             let (m, u) = match k {
-                                "ollama" => ("llama3.2", "http://localhost:11434"),
+                                "ollama" => ("qwen3", "http://localhost:11434"),
                                 "openai" => ("", "http://localhost:1234"),
                                 "anthropic" => (crate::ai::CLAUDE_MODEL, ""),
                                 _ => ("", ""),
@@ -143,6 +143,9 @@ impl App {
                     ui.add(egui::TextEdit::singleline(&mut self.lab.url).desired_width(190.0));
                 }
             });
+            if let Some(note) = super::settings::model_note(&self.lab.provider, &self.lab.model) {
+                ui.label(RichText::new(note).size(size::TINY).color(p.orange));
+            }
             ui.add_space(6.0);
             ui.horizontal_wrapped(|ui| {
                 for s in &scns {

@@ -135,14 +135,11 @@ impl App {
                         ui.label(RichText::new("Arrive with an idea, a problem or a messy project — Resolve turns it into a connected project with a clear first move.").size(13.0));
                     }
                     for (pid, name, next, done, total) in &rows {
-                        ui.horizontal(|ui| {
-                            let r = ui.add(egui::Label::new(RichText::new(name).font(fs(14.0))).sense(Sense::click()));
-                            if r.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                                open_resolve = Some(pid.clone());
-                            }
-                            ui.label(RichText::new(format!("→ {next}")).size(13.0).color(p.dim));
-                            ui.label(RichText::new(format!("{done}/{total}")).size(11.5).color(p.faint));
-                        });
+                        ui.add_space(4.0);
+                        if wrap_link(ui, RichText::new(format!("{name}  ·  {done}/{total}")).font(fs(14.0))).clicked() {
+                            open_resolve = Some(pid.clone());
+                        }
+                        wrap_label(ui, RichText::new(format!("→ {next}")).size(13.0).color(p.dim));
                     }
                 });
                 if new_intake {
@@ -247,7 +244,7 @@ impl App {
                                         let (r, _) = ui.allocate_exact_size(egui::vec2(3.0, 16.0), Sense::hover());
                                         ui.painter().rect_filled(r, 1.0, col);
                                         let time = if e.all_day { "All day".to_string() } else { fmt_time(e.start.time()) };
-                                        if ui.add(egui::Label::new(RichText::new(format!("{time}  {}", e.title)).size(13.0)).sense(Sense::click())).clicked() {
+                                        if wrap_link(ui, RichText::new(format!("{time}  {}", e.title)).size(13.0)).clicked() {
                                             open_event = Some((*e).clone());
                                         }
                                     });
@@ -259,7 +256,7 @@ impl App {
                                         if resp.clicked() {
                                             toggles.push(t.id.clone());
                                         }
-                                        if ui.add(egui::Label::new(RichText::new(&t.title).size(13.0)).sense(Sense::click())).clicked() {
+                                        if wrap_link(ui, RichText::new(&t.title).size(13.0)).clicked() {
                                             open_task = Some(t.id.clone());
                                         }
                                     });
@@ -304,7 +301,7 @@ impl App {
                                     ui.add_sized([52.0, 20.0], egui::Label::new(RichText::new(time).size(12.5).color(p.dim)));
                                     let (r, _) = ui.allocate_exact_size(egui::vec2(4.0, 22.0), Sense::hover());
                                     ui.painter().rect_filled(r, 2.0, if past { col.linear_multiply(0.4) } else { col });
-                                    ui.add(egui::Label::new(RichText::new(&title).size(14.0).color(if past { p.dim } else { p.text })).sense(Sense::click()))
+                                    ui.add(egui::Label::new(RichText::new(&title).size(14.0).color(if past { p.dim } else { p.text })).wrap().sense(Sense::click()))
                                 });
                                 if resp.inner.clicked() {
                                     if let Some(e) = ev {
@@ -322,16 +319,13 @@ impl App {
                             let mut pages: Vec<&Page> = d.pages.iter().collect();
                             pages.sort_by_key(|x| -x.updated);
                             for pg in pages.iter().take(5) {
-                                ui.horizontal(|ui| {
-                                    let title = if pg.title.is_empty() { "Untitled" } else { &pg.title };
-                                    if ui.add(egui::Label::new(RichText::new(format!("{}  {}", if pg.icon.is_empty() { "📄" } else { &pg.icon }, title)).size(14.0)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                                        open_page = Some(pg.id.clone());
-                                    }
-                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                        let when = chrono::DateTime::from_timestamp_millis(pg.updated).map(|x| x.with_timezone(&Local).format("%-d %b").to_string()).unwrap_or_default();
-                                        ui.label(RichText::new(when).size(12.0).color(p.faint));
-                                    });
-                                });
+                                let title = if pg.title.is_empty() { "Untitled" } else { &pg.title };
+                                let when = chrono::DateTime::from_timestamp_millis(pg.updated).map(|x| x.with_timezone(&Local).format("%-d %b").to_string()).unwrap_or_default();
+                                if wrap_link(ui, RichText::new(format!("{}  {}   ", if pg.icon.is_empty() { "📄" } else { &pg.icon }, title)).size(14.0)).clicked() {
+                                    open_page = Some(pg.id.clone());
+                                }
+                                ui.label(RichText::new(when).size(11.0).color(p.faint));
+                                ui.add_space(2.0);
                             }
                         });
                         ui.add_space(12.0);
@@ -342,15 +336,16 @@ impl App {
                                 let all: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(&pr.id)).collect();
                                 let done = all.iter().filter(|t| t.completed).count();
                                 let frac = if all.is_empty() { 0.0 } else { done as f32 / all.len() as f32 };
-                                let resp = ui.horizontal(|ui| {
-                                    ui.label(RichText::new("#").color(rgb(pr.color)).font(fb(14.0)));
-                                    ui.add_sized([130.0, 18.0], egui::Label::new(RichText::new(&pr.name).size(14.0)).truncate());
-                                    let (r, _) = ui.allocate_exact_size(egui::vec2((ui.available_width() - 60.0).max(40.0), 8.0), Sense::hover());
-                                    ui.painter().rect_filled(r, 4.0, p.hover);
-                                    let mut f = r;
-                                    f.set_width(r.width() * frac);
-                                    ui.painter().rect_filled(f, 4.0, rgb(pr.color));
-                                    ui.label(RichText::new(format!("{done}/{}", all.len())).size(12.0).color(p.dim));
+                                let resp = ui.vertical(|ui| {
+                                    wrap_label(ui, RichText::new(format!("# {}", pr.name)).size(14.0));
+                                    ui.horizontal(|ui| {
+                                        let (r, _) = ui.allocate_exact_size(egui::vec2((ui.available_width() - 50.0).max(40.0), 8.0), Sense::hover());
+                                        ui.painter().rect_filled(r, 4.0, p.hover);
+                                        let mut f = r;
+                                        f.set_width(r.width() * frac);
+                                        ui.painter().rect_filled(f, 4.0, rgb(pr.color));
+                                        ui.label(RichText::new(format!("{done}/{}", all.len())).size(12.0).color(p.dim));
+                                    });
                                 });
                                 if ui.interact(resp.response.rect, ui.id().with(("proj", &pr.id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                                     go_to = Some(View::Project(pr.id.clone()));

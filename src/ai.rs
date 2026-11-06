@@ -507,13 +507,16 @@ pub struct Trace {
     /// The model's raw text, or the error.
     pub response: String,
     pub ok: bool,
+    /// How long the call took.
+    #[serde(default)]
+    pub ms: u64,
 }
 
 thread_local! {
     static TRACE: std::cell::RefCell<Vec<Trace>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
-fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
+fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>, ms: u64) {
     let purpose = PURPOSE.with(|x| x.borrow().clone());
     let t = Trace {
         at: crate::model::now_ms(),
@@ -523,6 +526,7 @@ fn trace_push(cfg: &AiConfig, system: &str, raw: &Result<String, String>) {
         request: system.to_string(),
         response: match raw { Ok(s) => s.clone(), Err(e) => format!("ERROR: {e}") },
         ok: raw.is_ok(),
+        ms,
     };
     TRACE.with(|x| x.borrow_mut().push(t));
 }
@@ -553,8 +557,9 @@ pub fn parse_json_object(text: &str) -> Result<Value, String> {
 /// One completion that should return a JSON object. `temperature` None = provider default.
 /// One raw call; returns the model's text. Every call (success or failure) is added to the trace.
 pub fn complete_json_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) -> Result<Value, String> {
+    let t0 = std::time::Instant::now();
     let raw = complete_text_once(cfg, system, temperature);
-    trace_push(cfg, system, &raw);
+    trace_push(cfg, system, &raw, t0.elapsed().as_millis() as u64);
     raw.and_then(|t| parse_json_object(&t))
 }
 
@@ -577,7 +582,15 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
             Ok(text)
         }
         "claude-code" | "codex-cli" => {
-            let text = run_cli_plain(&cfg.provider, system, user)?;
+            // the intake's waits use faster models on the Claude Code CLI: sorting an answer is a
+            // small judgement (haiku); the next question must arrive inside the 15 s limit (sonnet)
+            let purpose = PURPOSE.with(|x| x.borrow().clone());
+            let model = match (cfg.model.trim().is_empty() && cfg.provider == "claude-code", purpose.as_str()) {
+                (true, "intake:classify") => "haiku".to_string(),
+                (true, "intake:next-question") => "sonnet".to_string(),
+                _ => cfg.model.trim().to_string(),
+            };
+            let text = run_cli_plain_model(&cfg.provider, system, user, &model)?;
             record_usage(&cfg.provider, "subscription", 0, 0);
             Ok(text)
         }
@@ -646,7 +659,12 @@ pub fn current_config() -> AiConfig {
 }
 
 /// A plain (no tools) prompt through the Claude Code / Codex CLI.
+#[allow(dead_code)]
 fn run_cli_plain(provider: &str, system: &str, prompt: &str) -> Result<String, String> {
+    run_cli_plain_model(provider, system, prompt, "")
+}
+
+fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) -> Result<String, String> {
     use std::io::Write;
     let work = std::env::temp_dir().join(format!("resolve-2-plain-{}-{}", std::process::id(), crate::model::new_id()));
     std::fs::create_dir_all(&work).map_err(|e| e.to_string())?;
@@ -666,9 +684,13 @@ fn run_cli_plain(provider: &str, system: &str, prompt: &str) -> Result<String, S
         let claude = find_cli("claude").ok_or("Claude Code isn't installed.")?;
         let sys = work.join("system.txt");
         std::fs::write(&sys, system).map_err(|e| e.to_string())?;
-        let mut child = std::process::Command::new(claude)
-            .current_dir(&work)
-            .args(["-p", "--strict-mcp-config", "--output-format", "text", "--system-prompt-file"])
+        let mut cmd = std::process::Command::new(claude);
+        cmd.current_dir(&work).args(["-p", "--strict-mcp-config", "--output-format", "text"]);
+        if !model.is_empty() {
+            cmd.arg("--model").arg(model);
+        }
+        let mut child = cmd
+            .arg("--system-prompt-file")
             .arg(&sys)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())

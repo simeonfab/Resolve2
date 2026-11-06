@@ -109,16 +109,22 @@ impl App {
                 ui.vertical(|ui| {
                     ui.set_width(col);
                     if busy {
+                        let secs = self.wait_secs();
                         card(ui, p, |ui| {
                             ui.horizontal(|ui| {
                                 ui.spinner();
                                 ui.label(RichText::new(&self.resolve_ui.busy).font(fs(size::SECTION)));
                             });
                             let cfg = journey::cfg_for(&it);
-                            ui.label(RichText::new(match cfg { Some(c) => format!("Using {} · {}", c.provider, if c.model.is_empty() { "default model".into() } else { c.model }), None => "No AI — fixed question set".into() }).size(size::TINY).color(p.faint));
+                            let who = match cfg { Some(c) => format!("{} · {}", c.provider, if c.model.is_empty() { "default model".into() } else { c.model }), None => "No AI — fixed question set".into() };
+                            let note = if self.resolve_ui.fg.as_ref().map_or(false, |f| f.1 == "next") { " · if it takes over 15 s, Resolve asks from its fixed questions" } else { "" };
+                            ui.label(RichText::new(format!("{secs:.0} s · {who}{note}")).size(size::TINY).color(p.faint));
                         });
+                        ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
                         return;
                     }
+                    // get the next screen ready while the person reads or types
+                    self.ij_precompute(&it);
                     if !it.last_error.is_empty() && it.stage != "bridge" {
                         egui::Frame::none().fill(p.callout).rounding(space::RADIUS_SMALL).inner_margin(10.0).show(ui, |ui| {
                             ui.set_width(ui.available_width());

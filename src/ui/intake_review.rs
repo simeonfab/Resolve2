@@ -85,18 +85,11 @@ fn item_list(ui: &mut egui::Ui, p: &Pal, salt: &str, items: &mut Vec<Item>, phas
 impl App {
     // ---------------------------------------------------------------- 5. proposal review
 
-    pub(super) fn ij_proposal(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
-        let Some(mut pr) = it.proposal.clone() else {
-            if it.last_error.is_empty() {
-                self.ij_spawn_proposal_pub(it, None);
-            } else if ui.add(cta(p, "Try again")).clicked() {
-                it.last_error.clear();
-                self.ij_spawn_proposal_pub(it, None);
-            }
-            return;
-        };
+    /// "See and edit everything": the full proposal editor (H0, Hx/NHx, E0, uncertainties, pages…).
+    pub(super) fn ij_editor(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
+        let Some(mut pr) = it.proposal.clone() else { return };
         let ai = journey::cfg_for(it).is_some() && !pr.offline;
-        ui.label(RichText::new("Here's your proposal.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Everything in your proposal.").font(fserif(size::HERO)));
         ui.label(RichText::new("Edit, remove or regenerate anything. Nothing is created until you press Adopt. Labels show what each item rests on.").size(size::SMALL).color(p.dim));
         if pr.offline {
             ui.label(RichText::new("Made without AI, from your own words only — add roadmap items and tasks yourself, or connect a model and regenerate.").size(size::SMALL).color(p.orange));
@@ -227,8 +220,8 @@ impl App {
         ui.add_space(8.0);
         let ok = !pr.name.trim().is_empty();
         let (mut back, mut all, mut adopt) = (false, false, false);
-        ui.horizontal(|ui| {
-            back = ui.button("Back").clicked();
+        ui.horizontal_wrapped(|ui| {
+            back = ui.button("← Back to the summary").clicked();
             if ai {
                 all = ui.button("↻ Regenerate everything").clicked();
             }
@@ -236,32 +229,51 @@ impl App {
         });
         ui.label(RichText::new("Adopt confirms the name and writes the project, roadmap, tasks, validation and pages. You can undo it.").size(size::TINY).color(p.faint));
         if back {
-            it.stage = "confirm".into();
+            it.editor = false;
         } else if let Some(s) = regen {
             self.ij_spawn_proposal_pub(it, Some(s));
         } else if all {
             self.ij_spawn_proposal_pub(it, Some("all"));
         } else if adopt {
-            let snapshot = it.clone();
-            if let Some(p2) = it.proposal.as_mut() {
-                journey::sanitise(p2, &snapshot);
-            }
-            it.stage = "bridge".into();
-            self.put_intake(it);
-            self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
+            self.adopt_begin(it);
         }
     }
 
     pub(super) fn ij_spawn_proposal_pub(&mut self, it: &Intake, section: Option<&str>) {
+        self.ij_spawn_proposal(it, section, true);
+    }
+
+    /// Adopt: in this workspace, or — for "Start something new with Resolve" — in a new workspace
+    /// named after the project, which then becomes the current workspace.
+    pub(super) fn adopt_begin(&mut self, it: &mut Intake) {
         let snapshot = it.clone();
-        let cfg = journey::cfg_for(it);
-        let id = it.id.clone();
-        let sec = section.map(|s| s.to_string());
+        if let Some(p2) = it.proposal.as_mut() {
+            journey::sanitise(p2, &snapshot);
+        }
+        it.stage = "bridge".into();
+        it.editor = false;
+        if it.new_workspace && !self.testlab {
+            let name = it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_else(|| "New workspace".into());
+            let meta = self.reg.create(&name, [200, 160, 64]);
+            // move this intake into the new workspace; the bridge continues there
+            let mut moved = it.clone();
+            moved.new_workspace = false;
+            moved.touch();
+            let mut ws = crate::store::Store::open(meta.clone());
+            ws.data.intakes.push(moved);
+            let _ = ws.save();
+            let old = it.id.clone();
+            self.store.data.bury(&old);
+            self.store.data.intakes.retain(|x| x.id != old);
+            self.touch();
+            self.save_now();
+            self.resolve_ui.adopt = None;
+            self.switch_workspace(&meta.id);
+            self.go(View::Intake(old));
+            return;
+        }
         self.put_intake(it);
-        self.spawn_job(if section.is_some() { "Regenerating…" } else { "Shaping your proposal… sequencing the work" }, move || {
-            let (r, calls) = journey::run_proposal(cfg, &snapshot, sec.as_deref());
-            super::resolve::JobOut::Proposed(id, sec, r, calls)
-        });
+        self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
     }
 
     // ---------------------------------------------------------------- 6. bridge (real progress)
@@ -282,7 +294,12 @@ impl App {
             });
         }
         ui.ctx().request_repaint();
-        // one real step per frame
+        // one real step at a time, each visible for a moment (the writes themselves take milliseconds)
+        if self.now - self.resolve_ui.adopt_t < 0.3 {
+            self.resolve_ui.adopt = Some((iid, step, st, snap));
+            return;
+        }
+        self.resolve_ui.adopt_t = self.now;
         match journey::adopt_step(&mut self.store.data, &iid, step, &mut st) {
             Ok(true) => {
                 let name = it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_default();

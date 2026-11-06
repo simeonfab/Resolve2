@@ -31,6 +31,16 @@ fn next_basis(b: &str) -> &'static str {
     }
 }
 
+/// Answers given so far (freshness key for the precomputed understanding).
+pub(super) fn answered(i: &Intake) -> usize {
+    i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + usize::from(!i.input.trim().is_empty())
+}
+
+/// Freshness key for the precomputed proposal: the confirmed cards.
+pub(super) fn und_key(i: &Intake) -> String {
+    i.understanding.as_ref().map(|u| format!("{}|{}|{}|{}|{}", u.project, u.goal, u.state, u.uncertainty, u.outcome)).unwrap_or_default()
+}
+
 fn kind_color(p: &Pal, k: &str) -> Color32 {
     match k {
         "evidence" => p.green,
@@ -40,38 +50,113 @@ fn kind_color(p: &Pal, k: &str) -> Color32 {
 }
 
 impl App {
-    fn ij_spawn_answer(&mut self, it: &Intake, qa: Option<String>, want_next: bool, label: &str) {
+    /// After an answer: sorting it ("heard") runs in the background and never blocks; choosing
+    /// the next question is the only wait, run side by side with the sorting, cut off at 15 s.
+    pub(super) fn ij_spawn_answer(&mut self, it: &Intake, qa: Option<String>, want_next: bool, label: &str) {
         self.put_intake(it);
-        let snapshot = it.clone();
         let cfg = journey::cfg_for(it);
         let id = it.id.clone();
-        self.spawn_job(label, move || {
-            let out = journey::run_answer(cfg, &snapshot, qa.as_deref(), want_next);
-            JobOut::Answer(id, out)
-        });
+        if cfg.is_none() {
+            // fixed question set: instant, one job
+            let snapshot = it.clone();
+            self.spawn_job(label, move || {
+                let out = journey::run_answer(None, &snapshot, qa.as_deref(), want_next);
+                JobOut::Answer(id, out)
+            });
+            return;
+        }
+        if let Some(q) = qa.clone() {
+            let (snapshot, c, i2) = (it.clone(), cfg.clone(), id.clone());
+            self.spawn_bg("sorting the answer", move || {
+                let out = journey::run_answer(c, &snapshot, Some(&q), false);
+                JobOut::Answer(i2, out)
+            });
+        }
+        if want_next {
+            let snapshot = it.clone();
+            self.spawn_job_kind(label, &id.clone(), "next", move || {
+                let out = journey::run_answer(cfg, &snapshot, None, true);
+                JobOut::Answer(id, out)
+            });
+        }
     }
 
-    fn ij_spawn_understand(&mut self, it: &Intake) {
+    /// Understanding: in the foreground (the person is waiting) or in the background (precompute).
+    pub(super) fn ij_spawn_understand(&mut self, it: &Intake, foreground: bool) {
         self.put_intake(it);
         let snapshot = it.clone();
         let cfg = journey::cfg_for(it);
         let id = it.id.clone();
-        self.spawn_job("Reading everything you said… separating what's decided from what's open", move || {
+        let n = answered(it);
+        let job = move || {
             let (r, calls) = journey::run_understanding(cfg, &snapshot);
-            JobOut::Understood(id, r, calls)
-        });
+            JobOut::Understood(id, n, r, calls)
+        };
+        if foreground {
+            self.spawn_job("Reading everything you said… separating what's decided from what's open", job);
+        } else {
+            self.resolve_ui.bg_understand = Some((it.id.clone(), n));
+            self.spawn_bg("understanding", job);
+        }
     }
 
-    fn ij_spawn_proposal(&mut self, it: &Intake, section: Option<&str>) {
+    pub(super) fn ij_spawn_proposal(&mut self, it: &Intake, section: Option<&str>, foreground: bool) {
         self.put_intake(it);
         let snapshot = it.clone();
         let cfg = journey::cfg_for(it);
         let id = it.id.clone();
         let sec = section.map(|s| s.to_string());
-        self.spawn_job(if section.is_some() { "Regenerating that section…" } else { "Shaping your proposal… sequencing the work" }, move || {
+        let key = und_key(it);
+        let k2 = key.clone();
+        let job = move || {
             let (r, calls) = journey::run_proposal(cfg, &snapshot, sec.as_deref());
-            JobOut::Proposed(id, sec, r, calls)
-        });
+            JobOut::Proposed(id, sec, k2, r, calls)
+        };
+        if foreground {
+            self.spawn_job(if section.is_some() { "Regenerating that part…" } else { "Writing your plan and your validation side by side…" }, job);
+        } else {
+            self.resolve_ui.bg_propose = Some((it.id.clone(), key));
+            self.spawn_bg("proposal", job);
+        }
+    }
+
+    /// Precompute while the person reads or types, so the next screen is ready.
+    pub(super) fn ij_precompute(&mut self, it: &Intake) {
+        // screenshots never start AI work
+        if self.shot.is_some() || journey::cfg_for(it).is_none() {
+            return; // offline steps are instant
+        }
+        match it.stage.as_str() {
+            "questions" => {
+                let n = answered(it);
+                let ready = it.suggest_stop || it.coverage() >= 0.6;
+                let pending = self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, k)| x == &it.id && *k == n);
+                let fresh = it.understanding.is_some() && it.understood_n == n;
+                if ready && n > 0 && !fresh && !pending && self.resolve_ui.bg_understand.is_none() {
+                    self.ij_spawn_understand(it, false);
+                }
+                // once Resolve suggests stopping and the understanding is current, start the
+                // proposal too (it is the longest wait); editing the cards later redoes it
+                if it.suggest_stop && fresh {
+                    let key = und_key(it);
+                    let pending = self.resolve_ui.bg_propose.as_ref().map_or(false, |(x, k)| x == &it.id && *k == key);
+                    if (it.proposal.is_none() || it.proposed_from != key) && !pending && self.resolve_ui.bg_propose.is_none() {
+                        self.ij_spawn_proposal(it, None, false);
+                    }
+                }
+            }
+            "confirm" => {
+                if it.editing || it.understanding.is_none() {
+                    return;
+                }
+                let key = und_key(it);
+                let pending = self.resolve_ui.bg_propose.as_ref().map_or(false, |(x, k)| x == &it.id && *k == key);
+                if (it.proposal.is_none() || it.proposed_from != key) && !pending && self.resolve_ui.bg_propose.is_none() {
+                    self.ij_spawn_proposal(it, None, false);
+                }
+            }
+            _ => {}
+        }
     }
 
     // ---------------------------------------------------------------- 1. name and welcome
@@ -294,8 +379,10 @@ impl App {
                 ui.add_space(6.0);
                 ui.label(RichText::new(title).size(size::SMALL).color(kind_color(p, kind)).strong());
                 for i in idx {
+                    // label and remove on one line, the words underneath, wrapped to the panel
+                    let h = &mut it.heard[i];
+                    ui.add_space(2.0);
                     ui.horizontal(|ui| {
-                        let h = &mut it.heard[i];
                         if chip(ui, &h.kind, kind_color(p, &h.kind)).on_hover_text("Change: evidence → assumption → question").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                             h.kind = match h.kind.as_str() {
                                 "evidence" => "assumption".into(),
@@ -304,13 +391,16 @@ impl App {
                             };
                             h.corrected = true;
                         }
-                        if ui.add(egui::TextEdit::singleline(&mut h.text).desired_width(ui.available_width() - 28.0).font(fp(size::SMALL))).changed() {
-                            h.corrected = true;
-                        }
-                        if ui.small_button("×").on_hover_text("Remove").clicked() {
-                            remove = Some(i);
-                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if ui.small_button("×").on_hover_text("Remove").clicked() {
+                                remove = Some(i);
+                            }
+                        });
                     });
+                    if ui.add(egui::TextEdit::multiline(&mut h.text).desired_rows(1).desired_width(f32::INFINITY).font(fp(size::SMALL))).changed() {
+                        h.text = h.text.replace(['\n', '\r'], " ");
+                        h.corrected = true;
+                    }
                 }
             }
             if let Some(i) = remove {
@@ -322,58 +412,100 @@ impl App {
     // ---------------------------------------------------------------- 4. confirm understanding
 
     pub(super) fn ij_confirm(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
-        if it.understanding.is_none() {
-            self.ij_spawn_understand(it);
+        let n = answered(it);
+        // (a screenshot shows what's there rather than starting AI work)
+        let stale = it.understanding.is_none() || (it.understood_n != n && !it.editing && self.shot.is_none());
+        if stale {
+            // precomputed in the background? wait for it (with visible progress), else ask now
+            let pending = self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, k)| x == &it.id && *k == n);
+            if pending {
+                self.ij_waiting(ui, p, "Reading everything you said… separating what's decided from what's open", "understanding");
+            } else {
+                self.ij_spawn_understand(it, true);
+            }
+            return;
+        }
+        if ui.add(egui::Label::new(RichText::new("← Back to the questions").size(size::SMALL).color(p.faint)).sense(Sense::click())).clicked() {
+            it.stage = "questions".into();
+            it.editing = false;
             return;
         }
         ui.label(RichText::new("Here's what Resolve understood.").font(fserif(size::HERO)));
-        ui.label(RichText::new("Correct anything wrong — it shapes everything that follows.").size(size::SMALL).color(p.dim));
+        ui.label(RichText::new(if it.editing { "Change anything that's wrong — the outcome in your own words." } else { "Check it — it shapes everything that follows." }).size(size::SMALL).color(p.dim));
         ui.add_space(12.0);
+        let editing = it.editing;
         let mut u = it.understanding.clone().unwrap_or_default();
+        // cards grow to fit their text; in edit mode they become editable
         let field = |ui: &mut egui::Ui, label: &str, v: &mut String| {
-            egui::Frame::none().fill(p.card).stroke(Stroke::new(1.0, p.line)).rounding(space::RADIUS).inner_margin(12.0).show(ui, |ui| {
+            egui::Frame::none().fill(p.card).stroke(Stroke::new(1.0, if editing { p.accent } else { p.line })).rounding(space::RADIUS).inner_margin(12.0).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.label(RichText::new(label).size(size::SMALL).color(p.eyebrow).strong());
-                ui.add(egui::TextEdit::multiline(v).desired_rows(2).desired_width(f32::INFINITY).frame(false).font(fp(size::BODY)));
+                ui.vertical(|ui| {
+                    ui.label(RichText::new(label).size(size::SMALL).color(p.eyebrow).strong());
+                    if editing {
+                        let rows = (v.len() / 48 + 1).clamp(2, 8);
+                        ui.add(egui::TextEdit::multiline(v).desired_rows(rows).desired_width(f32::INFINITY).font(fp(size::BODY)));
+                    } else if v.trim().is_empty() {
+                        wrap_label(ui, RichText::new("Not said yet — press \"Something's wrong\" to add it").size(size::BODY).color(p.faint));
+                    } else {
+                        wrap_label(ui, RichText::new(v.as_str()).size(size::BODY));
+                    }
+                });
             });
         };
         ui.columns(2, |c| {
-            field(&mut c[0], "Project", &mut u.project);
-            field(&mut c[1], "What you want", &mut u.goal);
+            c[0].vertical(|ui| field(ui, "Project", &mut u.project));
+            c[1].vertical(|ui| field(ui, "What you want", &mut u.goal));
         });
         ui.add_space(6.0);
         ui.columns(2, |c| {
-            field(&mut c[0], "Where it is", &mut u.state);
-            field(&mut c[1], "Biggest uncertainty", &mut u.uncertainty);
+            c[0].vertical(|ui| field(ui, "Where it is", &mut u.state));
+            c[1].vertical(|ui| field(ui, "Biggest uncertainty", &mut u.uncertainty));
         });
         ui.add_space(6.0);
         let before_outcome = u.outcome.clone();
-        field(ui, "The outcome — who is better off, and how you'd know (your words)", &mut u.outcome);
+        field(ui, "The outcome — who is better off, and how you'd know", &mut u.outcome);
         if u.outcome != before_outcome {
-            it.outcome_confirmed = false;
+            // editing the outcome is writing it in your own words: that confirms it
+            it.outcome_confirmed = true;
         }
-        ui.checkbox(&mut it.outcome_confirmed, "Yes — this is the outcome, in my words");
         it.understanding = Some(u.clone());
         ui.add_space(14.0);
-        let ok = it.outcome_confirmed && !u.outcome.trim().is_empty() && !u.project.trim().is_empty();
-        let (mut back, mut go, mut reread) = (false, false, false);
-        ui.horizontal(|ui| {
-            back = ui.button("Back").clicked();
-            go = ui.add_enabled(ok, cta(p, "This looks right — show me the proposal  →")).clicked();
-            reread = ui.button("Re-read my answers").on_hover_text("Ask Resolve to read the conversation again (replaces these cards)").clicked();
+        let ok = !u.outcome.trim().is_empty() && !u.project.trim().is_empty();
+        let (mut go, mut change) = (false, false);
+        ui.horizontal_wrapped(|ui| {
+            go = ui.add_enabled(ok, cta(p, "This looks right, show me the proposal  →")).clicked();
+            if !editing {
+                change = ui.button("Something's wrong, let me change it").clicked();
+            }
         });
         if !ok {
-            ui.label(RichText::new("Confirm the outcome in your words to continue").size(size::TINY).color(p.faint));
+            ui.label(RichText::new("Add the project and the outcome to continue").size(size::TINY).color(p.faint));
         }
-        if back {
-            it.stage = "questions".into();
-        } else if reread {
-            it.understanding = None;
+        if change {
+            it.editing = true;
         } else if go {
-            it.stage = "proposal".into();
-            if it.proposal.is_none() {
-                self.ij_spawn_proposal(it, None);
+            // pressing "This looks right" is the confirmation; edits stay as written
+            for v in [&mut u.project, &mut u.goal, &mut u.state, &mut u.uncertainty, &mut u.outcome] {
+                *v = journey::humanise(v);
             }
+            it.understanding = Some(u);
+            it.outcome_confirmed = true;
+            it.editing = false;
+            it.stage = "proposal".into();
         }
+    }
+
+    /// A wait screen with visible progress: what's happening and how long it has taken.
+    pub(super) fn ij_waiting(&mut self, ui: &mut egui::Ui, p: &Pal, label: &str, bg_kind: &str) {
+        let started = self.temp.entry(format!("wait:{bg_kind}")).or_insert_with(|| format!("{}", self.now)).parse::<f64>().unwrap_or(self.now);
+        let secs = (self.now - started).max(0.0);
+        card(ui, p, |ui| {
+            ui.horizontal(|ui| {
+                ui.spinner();
+                ui.label(RichText::new(label).font(fs(size::SECTION)));
+            });
+            ui.label(RichText::new(format!("{secs:.0} s — this started while you were answering, so it's nearly ready")).size(size::TINY).color(p.faint));
+        });
+        ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
     }
 }

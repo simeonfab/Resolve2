@@ -31,6 +31,7 @@ fn reply(system: &str, proposals: &AtomicUsize) -> Value {
             json!({"name": "Resolve is a project to create and deliver Doom Clock events", "summary": "s", "objective": "o", "h0": {"title": "Companies want it"}, "roadmap": [{"title": "Validate", "phase": "Now"}], "tasks": [], "pages": [{"title": "Project brief", "detail": "# Brief"}]})
         } else {
             json!({"name": "Doom Clock corporate events", "summary": "Sell escape-room style team events to companies.", "objective": "Book repeat corporate events",
+                "next_move": "Send both HR contacts a quote", "why": "The user already has two warm leads asking for a price.",
                 "h0": {"title": "Companies want Doom Clock team events", "negation": "Companies do not want Doom Clock team events", "basis": "uncertain"},
                 "hypotheses": [{"title": "The user is making the assumption that HR teams will pay £2,000", "negation": "HR teams won't pay £2,000", "basis": "evidence", "sources": []}],
                 "uncertainties": [{"title": "Whether bookings repeat"}],
@@ -85,7 +86,7 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     }
     off.understanding = Some(offline_understanding(&off));
     let op = offline_proposal(&off, off.understanding.as_ref().unwrap());
-    t.check("without AI, the proposal uses only the user's words (no invented roadmap or tasks)", op.offline && op.roadmap.is_empty() && op.tasks.is_empty() && op.pages.len() == 1 && op.outcome == "answer outcome", format!("{op:?}").chars().take(200).collect::<String>());
+    t.check("without AI, the proposal uses only the user's words (no invented roadmap or tasks)", op.offline && op.roadmap.is_empty() && op.tasks.is_empty() && op.pages.len() == 1 && op.outcome == "Answer outcome" && op.next_move.is_empty(), format!("{op:?}").chars().take(200).collect::<String>());
 
     // ---- with the stand-in model
     let stop = Arc::new(AtomicBool::new(false));
@@ -137,7 +138,9 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
     i.understanding = Some(u);
     i.outcome_confirmed = true;
     let (p, calls) = run_proposal(cfg.clone(), &i, None);
-    t.check("a proposal breaking the rules (app-name title, 'Validate') is rejected and retried", p.is_ok() && calls.len() == 2, format!("{} calls, {:?}", calls.len(), p.as_ref().err()));
+    t.check("the proposal is written in two parallel calls (plan / validation); a part breaking the rules is retried", p.is_ok() && calls.len() == 3 && calls.iter().any(|c| c.purpose == "intake:proposal:plan") && calls.iter().any(|c| c.purpose == "intake:proposal:validation"), format!("{} calls, {:?}", calls.len(), p.as_ref().err()));
+    t.check("the next move and why come back in second person", p.as_ref().map_or(false, |x| x.next_move == "Send both HR contacts a quote" && x.why.starts_with("You already have")), format!("{:?}", p.as_ref().map(|x| x.why.clone())));
+    t.check("card text never says 'the user' and starts with a capital", journey::humanise("the user has sketched some screens but hasn't built anything") == "You have sketched some screens but haven't built anything", journey::humanise("the user has sketched some screens but hasn't built anything"));
     let p = p.unwrap_or_default();
     t.check("proposal name is short and real", p.name == "Doom Clock corporate events", &p.name);
     t.check("long task titles are shortened, the detail kept", p.tasks.first().map_or(false, |x| x.title.split_whitespace().count() <= 8 && x.detail.contains("12-person")), format!("{:?}", p.tasks.first()));
