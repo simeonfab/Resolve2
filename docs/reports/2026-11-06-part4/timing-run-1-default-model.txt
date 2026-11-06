@@ -1,0 +1,42 @@
+﻿provider: claude-code / 
+Q1 [problem] From a café owner's point of view, what goes wrong today with how their bookkeeping gets done that a fixed monthly package would fix?
+    why: Tests whether the package solves a problem cafés actually feel, or mainly suits the bookkeeper — separating real customer demand from the founder's own motivation.
+    A: Hourly billing makes clients nervous about costs and makes my income lumpy.
+    time: 14.0s [intake:classify 6.5s, intake:next-question 7.5s]
+Q2 [evidence] Have any café owners actually told you that the cost uncertainty of hourly billing is a real worry for them — and if so, what did they say?
+    why: Tests the core assumption that cafés want fixed pricing rather than that being the bookkeeper's own inference from their income worries.
+    A: Three existing café clients; two said they'd prefer a fixed fee. I spend roughly 5 hours a month per café.
+    time: 23.2s [intake:classify 4.0s, intake:next-question 19.2s]
+Q3 [outcome] If you switched those café clients to a fixed monthly fee and it was working well a year from now, what would be different for you and for them that would tell you it was a success?
+    why: Tests H0's assumed outcome — that fixed pricing actually fixes lumpy income and client nervousness — and surfaces, in their own terms, who is better off and the signal they'd read as success.
+    A: Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end; I'd see it in on-time monthly records.
+    time: 14.0s [intake:classify 4.6s, intake:next-question 9.4s]
+Q4 [assumptions] You mentioned roughly 5 hours a month per café — how much does that actually vary month to month, like between a quiet month and the year-end shoebox rush?
+    why: Tests the core assumption that per-café workload is predictable enough to fix a price without a lumpy month wiping out the margin.
+    A: That cafés will pay about £150 a month; that the work per café is predictable.
+    time: 16.9s [intake:classify 5.5s, intake:next-question 11.4s]
+Q5 [uncertainties] Think of your busiest month with a café versus your quietest — roughly how many hours did each actually take?
+    why: Tests the assumption that work per café is predictable, which is what makes a fixed fee safe or risky; their last answer asserted predictability without giving the actual spread.
+    A: The right price, and how to find cafés beyond word of mouth.
+    time: 38.0s [intake:classify 5.3s, intake:next-question 32.8s]
+Q6 [who] The two café owners who said they'd prefer a fixed fee — how similar are they to the wider pool of cafés you'd want as clients, say in how tidy or messy their books tend to be?
+    why: Your evidence that cafés will pay a flat fee and that the work is predictable rests on 3 clients you already know well; this tests whether that holds for the cafés you'd actually be selling to.
+    A: Independent cafés with 2-10 staff that do their own books badly.
+    time: 26.3s [intake:classify 6.9s, intake:next-question 19.3s]
+heard (assumption) Hourly billing makes clients nervous about costs
+heard (assumption) Hourly billing makes my income lumpy
+heard (evidence) Two of my three existing café clients said they'd prefer a fixed fee
+heard (evidence) I spend roughly 5 hours a month on each café
+heard (assumption) Café owners will know their monthly cost up front
+heard (assumption) Café owners will stop sending me shoeboxes of receipts at year end
+heard (assumption) Cafés will pay about £150 a month
+heard (assumption) The work per café is predictable
+heard (question) I don't know how to find cafés beyond word of mouth
+heard (assumption) The cafés I'd want as clients are independent cafés with 2-10 staff that do their own books badly
+    time: 24.5s [intake:understand 24.5s]
+understood: project=You are a freelance bookkeeper turning your hourly café bookkeeping work into a fixed-price monthly package (around £150/month) aimed at small independent cafés. | outcome=Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end; I'd see it in on-time monthly records.
+    time: 60.9s [intake:proposal:plan 40.8s, intake:proposal:validation 60.9s]
+proposal: Café flat-fee bookkeeping — Turning your hourly café bookkeeping into a fixed ~£150/month package, starting with the three clients you already have.
+exported: C:\Users\simeo\Documents\Craft Anything\build-me-a-single-productivity-copy\app\shots\firstrun\exports\run-You-are-a-freelance-bookkeeper-turning-y-c963a7.md
+          C:\Users\simeo\Documents\Craft Anything\build-me-a-single-productivity-copy\app\shots\firstrun\exports\run-You-are-a-freelance-bookkeeper-turning-y-c963a7.json
+seconds: 226.8

@@ -84,4 +84,76 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
         let _ = th.join();
         t.check("Ask AI flags a model that claims a change its tool call didn't make (the Ollama case)", out.as_ref().map_or(false, |o| o.starts_with("⚠ Mismatch") && o.contains("✗ update task")), format!("{out:?}"));
     }
+
+    navigation(t, &mut s);
+}
+
+/// Part 4: Undo / Redo at the top of the sidebar, the navigation config, AI Team conversations
+/// and the cut list.
+fn navigation(t: &mut T, s: &mut Store) {
+    println!("\n-- Navigation (Part 4) --");
+    let tid = {
+        let task = Task::new("Undo/redo me");
+        let id = task.id.clone();
+        s.data.tasks.push(task);
+        id
+    };
+    let tid2 = tid.clone();
+    let cs = s.data.record_change("Deleted task \"Undo/redo me\"", "delete", |d| d.delete_task(&tid2));
+    t.check("Undo targets the newest change", s.data.undo_target().map(|c| Some(&c.id) == cs.as_ref()).unwrap_or(false), "wrong target");
+    let r = s.data.undo_recorded(cs.as_deref().unwrap_or(""));
+    t.check("Undo (recorded) brings the task back", r.is_ok() && s.data.task(&tid).is_some(), format!("{r:?}"));
+    t.check("after an undo, Redo is offered", s.data.redo_target().is_some(), "no redo");
+    let r = s.data.redo_last();
+    t.check("Redo deletes it again", r.is_ok() && s.data.task(&tid).is_none(), format!("{r:?}"));
+    t.check("Redo can itself be undone", s.data.undo_target().map_or(false, |c| c.kind == "redo"), "redo not undoable");
+    let r = s.data.undo_recorded(&s.data.undo_target().map(|c| c.id.clone()).unwrap_or_default());
+    t.check("undoing the redo restores the task", r.is_ok() && s.data.task(&tid).is_some(), format!("{r:?}"));
+    // a new change clears Redo
+    let tid3 = tid.clone();
+    s.data.record_change("Completed", "complete", |d| {
+        if let Some(x) = d.task_mut(&tid3) {
+            x.complete();
+        }
+    });
+    t.check("a new change clears Redo", s.data.redo_target().is_none(), "redo still offered");
+
+    // the sidebar comes from one config, in the brief's order, and nothing appears twice
+    use crate::ui::nav::{Section, Target, NAV, UTILITIES, FRAMEWORKS};
+    let labels: Vec<&str> = NAV.iter().flat_map(|g| g.items.iter().map(|i| i.label)).collect();
+    t.check("sidebar groups: Workspace, Product management (with picker), Collaboration", NAV.iter().map(|g| g.label).collect::<Vec<_>>() == ["Workspace", "Product management", "Collaboration"] && NAV[1].picker, NAV.iter().map(|g| g.label).collect::<Vec<_>>().join(", "));
+    t.check("sidebar items in the brief's order", labels == ["Home", "Projects", "Calendar", "Overview", "Roadmap", "Tasks", "Frameworks", "Knowledge", "AI Team", "Handoffs"], labels.join(", "));
+    let utils: Vec<&str> = UTILITIES.iter().map(|i| i.label).collect();
+    t.check("bottom: Search, Settings, Help", utils.len() == 3 && utils[0] == "Search" && utils[1].starts_with("Settings") && utils[2].starts_with("Help"), utils.join(", "));
+    let mut targets: Vec<Target> = NAV.iter().flat_map(|g| g.items.iter().map(|i| i.target)).chain(UTILITIES.iter().map(|i| i.target)).collect();
+    let n = targets.len();
+    targets.dedup();
+    t.check("no destination appears twice in the sidebar", targets.len() == n, n);
+    t.check("Frameworks registry starts with Hypothesis Zero", FRAMEWORKS.first().map_or(false, |f| f.name == "Hypothesis Zero"), "");
+    let ask = |s: Section| NAV.iter().flat_map(|g| g.items.iter()).find(|i| i.target == Target::Sec(s)).map(|i| i.ask.placeholder).unwrap_or("");
+    t.check("Ask Resolve wording changes per section (Roadmap vs Overview)", ask(Section::Roadmap) == "Ask about your roadmap" && ask(Section::Overview) != ask(Section::Roadmap), ask(Section::Roadmap));
+
+    // AI Team conversations live in the workspace data and merge like everything else
+    let mut a = WorkspaceData::default();
+    let mut c = Conversation { id: new_id(), agent: "general".into(), updated: 1, ..Default::default() };
+    a.conversations.push(c.clone());
+    let mut b = a.clone();
+    c.messages.push(ChatMessage { role: "user".into(), text: "Hello".into(), at: 2, ..Default::default() });
+    c.updated = 2;
+    b.conversations[0] = c;
+    a.merge(&b);
+    t.check("AI Team conversations merge (newest wins)", a.conversations.len() == 1 && a.conversations[0].messages.len() == 1, a.conversations.len());
+    t.check("the Ask AI conversation is the General assistant's", crate::resolve::team::specialist(crate::resolve::team::GENERAL).name == "General assistant" && crate::resolve::team::TEAM.len() == 5, "");
+
+    // a theme left off the roadmap during the intake lands on the project's cut list
+    let mut d = WorkspaceData::default();
+    let mut i = crate::resolve::Intake::default();
+    i.id = new_id();
+    i.proposal = Some(crate::resolve::journey::Proposal { name: "Cut test".into(), cut: vec!["Redesign the logo".into()], ..Default::default() });
+    let iid = i.id.clone();
+    d.intakes.push(i);
+    let pid = crate::resolve::journey::adopt_all(&mut d, &iid).unwrap_or_default();
+    let cut = d.context_for(&pid).map(|c| c.recommendation.do_not_yet.iter().map(|n| n.item.clone()).collect::<Vec<_>>()).unwrap_or_default();
+    t.check("themes left off the roadmap are kept on the cut list", cut == ["Redesign the logo"], format!("{cut:?}"));
+    let _ = s.save();
 }

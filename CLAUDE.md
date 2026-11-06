@@ -14,11 +14,13 @@ page, MCP over HTTP, `/sync`), ureq + Windows `curl.exe` for outgoing HTTP. Stor
 | `src/main.rs` | Entry point and command-line modes (`--selftest`, `--test-ai`, `--mcp`, `--serve`, `--ask`, `--screenshot`) |
 | `src/model.rs` | Shared data model + merge (newest edit per item wins, tombstones) |
 | `src/store.rs` | Data folder, workspaces, atomic saves, backups, sync, app settings |
-| `src/resolve/` | Resolve logic: `journey.rs` (the intake: questions, heard, proposal, adopt), `testlab.rs` (Test Intake), `intake.rs` (original intake prompts, reused), `context.rs`, `records.rs` (incl. Hypothesis Zero), `assess.rs`, `roles.rs` |
+| `src/resolve/` | Resolve logic: `journey.rs` (the intake: questions, heard, proposal, adopt), `testlab.rs` (Test Intake), `intake.rs` (original intake prompts, reused), `context.rs`, `records.rs` (incl. Hypothesis Zero), `assess.rs`, `roles.rs`, `team.rs` (AI Team roles) |
 | `src/history.rs` | Undo / soft delete (change sets) for every delete, complete, adopt and AI write |
 | `src/ai.rs` | Provider layer (Anthropic, OpenAI, Ollama/OpenAI-compatible, Claude Code/Codex CLI), usage + budget |
 | `src/mcp.rs` | MCP server (stdio + HTTP) |
-| `src/ui/` | Views. `mod.rs` (App, View enum, sidebar, routing), `intake.rs` + `intake_steps.rs` + `intake_review.rs` (full-screen journey), `testlab.rs`, `cockpit.rs`, `resolve.rs` (jobs), `dashboard.rs`, `tasks.rs`, `pages.rs`, `databases.rs`, `calendar.rs`, `settings.rs`, `assistant.rs` |
+| `src/ui/nav.rs` | **Navigation config**: the sidebar groups and items, the project picker, Undo/Redo, the Frameworks registry, Knowledge tabs and the Ask Resolve wording per section. Edit the tables to change navigation. |
+| `src/ui/sections.rs`, `knowledge.rs`, `team.rs` | Sections: Projects, Overview, Roadmap · Frameworks, Knowledge · AI Team, Handoffs (ported from Control Centre, adapted to this data model) |
+| `src/ui/` | Views. `mod.rs` (App, View enum, routing), `intake.rs` + `intake_steps.rs` + `intake_review.rs` (full-screen journey), `testlab.rs`, `cockpit.rs`, `resolve.rs` (jobs), `dashboard.rs`, `tasks.rs`, `pages.rs`, `databases.rs`, `calendar.rs`, `settings.rs`, `assistant.rs` |
 | `src/ui/theme.rs` | **Design tokens** (colours, fonts, text styles, radii, spacing) — the one tokens file |
 | `src/ui/widgets.rs` | Shared component styling (cards, pills, buttons, nav items, chips) |
 | `resolveos/` | Original ResolveOS role/governance prompt files, `h0.md` (the H0 method + question-set slot), `intake-scenarios.json` |

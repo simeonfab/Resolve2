@@ -212,6 +212,44 @@ impl WorkspaceData {
         Ok((done, skipped))
     }
 
+    /// Undo a change set and keep the undo itself as a change set (kind "undo"), so it can be
+    /// redone. Returns (restored, skipped).
+    pub fn undo_recorded(&mut self, cs_id: &str) -> Result<(usize, usize), String> {
+        let label = self.history.iter().find(|c| c.id == cs_id).map(|c| c.label.clone()).ok_or("That change is no longer in the history")?;
+        let mut res = Ok((0, 0));
+        self.record_change(&format!("Undo: {label}"), "undo", |d| res = d.undo_change(cs_id));
+        res
+    }
+
+    /// The change Undo (top of the sidebar, Ctrl+Z) would reverse: the newest one not yet undone.
+    pub fn undo_target(&self) -> Option<&ChangeSet> {
+        self.history.iter().filter(|c| !c.undone && c.kind != "undo").max_by_key(|c| c.created)
+    }
+
+    /// The undo Redo would reverse. Only while nothing new has happened since the undo.
+    pub fn redo_target(&self) -> Option<&ChangeSet> {
+        // newest first; changes made in the same millisecond keep their order in the history
+        let mut v: Vec<(usize, &ChangeSet)> = self.history.iter().enumerate().collect();
+        v.sort_by_key(|(i, c)| std::cmp::Reverse((c.created, *i)));
+        for (_, c) in v {
+            match (c.kind.as_str(), c.undone) {
+                ("redo", _) | ("undo", true) => continue,
+                ("undo", false) => return Some(c),
+                _ => return None,
+            }
+        }
+        None
+    }
+
+    /// Redo: reverse the latest undo (kept as a "redo" change set, so it can be undone again).
+    pub fn redo_last(&mut self) -> Result<(String, usize), String> {
+        let u = self.redo_target().cloned().ok_or("Nothing to redo")?;
+        let label = u.label.trim_start_matches("Undo: ").to_string();
+        let mut res = Ok((0, 0));
+        self.record_change(&format!("Redo: {label}"), "redo", |d| res = d.undo_change(&u.id));
+        res.map(|(n, _)| (label, n))
+    }
+
     /// "Recently deleted": change sets that removed something and haven't been undone, newest first.
     pub fn recently_deleted(&self) -> Vec<&ChangeSet> {
         let mut v: Vec<&ChangeSet> = self.history.iter().filter(|c| !c.undone && c.removed() > 0).collect();

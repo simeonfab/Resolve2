@@ -295,7 +295,8 @@ impl App {
         }
         ui.ctx().request_repaint();
         // one real step at a time, each visible for a moment (the writes themselves take milliseconds)
-        if self.now - self.resolve_ui.adopt_t < 0.3 {
+        // (a screenshot shows the steps without writing anything)
+        if self.now - self.resolve_ui.adopt_t < 0.3 || self.shot.is_some() {
             self.resolve_ui.adopt = Some((iid, step, st, snap));
             return;
         }

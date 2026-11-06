@@ -74,7 +74,7 @@ impl App {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new("⊕").size(20.0).color(p.accent));
                         let text = self.temp.entry("dash_capture".into()).or_default();
-                        let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture — e.g. Call the garage tomorrow 9am p1 #Home").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
+                        let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture — e.g. Call the garage tomorrow 9am").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
                         if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             submit = true;
                         }
@@ -150,7 +150,8 @@ impl App {
                     self.launch_testlab();
                 }
                 if let Some(pid) = open_resolve {
-                    self.go(View::Resolve(pid));
+                    self.select_project(Some(pid));
+                    self.go(View::Sec(nav::Section::Overview));
                     return;
                 }
                 ui.add_space(14.0);
@@ -196,7 +197,7 @@ impl App {
                         let ui = &mut cols[0];
                         card(ui, p, |ui| {
                             ui.horizontal(|ui| {
-                                ui.label(RichText::new("Today's tasks").font(fb(17.0)));
+                                ui.label(RichText::new("Today").font(fb(17.0)));
                                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                     if overdue > 0 && ghost_button(ui, RichText::new("Reschedule overdue → today").size(12.0).color(p.accent)).clicked() {
                                         reschedule = true;
@@ -223,6 +224,31 @@ impl App {
                                 if ghost_button(ui, RichText::new(format!("+ {} more in Today", list.len() - 9)).color(p.accent)).clicked() {
                                     go_to = Some(View::Today);
                                 }
+                            }
+                        });
+                        ui.add_space(12.0);
+                        // Captured: tasks not in a project yet (what used to be the Inbox)
+                        card(ui, p, |ui| {
+                            let mut cap: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).collect();
+                            cap.sort_by_key(|t| -t.created);
+                            ui.horizontal(|ui| {
+                                ui.label(RichText::new("Captured").font(fb(17.0)));
+                                ui.label(RichText::new(format!("{} not in a project yet", cap.len())).size(12.0).color(p.dim));
+                            });
+                            if cap.is_empty() {
+                                wrap_label(ui, RichText::new("Nothing waiting. Use the capture bar above or Add task.").color(p.dim));
+                            }
+                            for t in cap.iter().take(6) {
+                                let r = task_row(ui, p, d, t, false, 0.0);
+                                if r.toggled {
+                                    toggles.push(t.id.clone());
+                                }
+                                if r.opened {
+                                    open_task = Some(t.id.clone());
+                                }
+                            }
+                            if cap.len() > 6 && ghost_button(ui, RichText::new(format!("+ {} more in Tasks → Captured", cap.len() - 6)).color(p.accent)).clicked() {
+                                go_to = Some(View::Inbox);
                             }
                         });
                         ui.add_space(12.0);
@@ -348,7 +374,7 @@ impl App {
                                     });
                                 });
                                 if ui.interact(resp.response.rect, ui.id().with(("proj", &pr.id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                                    go_to = Some(View::Project(pr.id.clone()));
+                                    go_to = Some(View::Resolve(pr.id.clone()));
                                 }
                             }
                         });

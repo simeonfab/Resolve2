@@ -38,6 +38,8 @@ pub enum Kind {
     Guidance,
     /// A roadmap item (outcome or workstream) in Now / Next / Later. Tasks link to it.
     Roadmap,
+    /// A self-contained brief for Claude, Codex or a person (Handoffs).
+    Handoff,
 }
 
 pub struct FieldDef {
@@ -56,7 +58,7 @@ const fn locked(key: &'static str, label: &'static str) -> FieldDef {
 }
 
 impl Kind {
-    pub const ALL: [Kind; 14] = [
+    pub const ALL: [Kind; 15] = [
         Kind::Roadmap,
         Kind::Hypothesis,
         Kind::Experiment,
@@ -71,6 +73,7 @@ impl Kind {
         Kind::Milestone,
         Kind::Update,
         Kind::Guidance,
+        Kind::Handoff,
     ];
     pub fn label(self) -> &'static str {
         match self {
@@ -88,6 +91,7 @@ impl Kind {
             Kind::Update => "Progress update",
             Kind::Guidance => "Guidance",
             Kind::Roadmap => "Roadmap item",
+            Kind::Handoff => "Handoff",
         }
     }
     pub fn plural(self) -> &'static str {
@@ -106,6 +110,7 @@ impl Kind {
             Kind::Update => "Updates",
             Kind::Guidance => "Guidance",
             Kind::Roadmap => "Roadmap",
+            Kind::Handoff => "Handoffs",
         }
     }
     pub fn icon(self) -> &'static str {
@@ -124,6 +129,7 @@ impl Kind {
             Kind::Update => "↻",
             Kind::Guidance => "✦",
             Kind::Roadmap => "▤",
+            Kind::Handoff => "⇄",
         }
     }
     pub fn key(self) -> &'static str {
@@ -142,6 +148,7 @@ impl Kind {
             Kind::Update => "update",
             Kind::Guidance => "guidance",
             Kind::Roadmap => "roadmap",
+            Kind::Handoff => "handoff",
         }
     }
     pub fn parse(s: &str) -> Option<Kind> {
@@ -164,6 +171,7 @@ impl Kind {
             Kind::Milestone => &["Planned", "Reached", "Missed"],
             Kind::Update | Kind::Guidance => &["Recorded"],
             Kind::Roadmap => &["Planned", "Active", "Done", "Dropped"],
+            Kind::Handoff => &["Draft", "Sent", "Done"],
         }
     }
     /// Is a record in this status still something to act on?
@@ -180,6 +188,7 @@ impl Kind {
             Kind::Blocker => status == "Blocking",
             Kind::Milestone => status == "Planned",
             Kind::Roadmap => status == "Planned" || status == "Active",
+            Kind::Handoff => status == "Draft" || status == "Sent",
             Kind::Evidence | Kind::Update | Kind::Guidance => false,
         }
     }
@@ -236,6 +245,7 @@ impl Kind {
         const MIL: &[FieldDef] = &[f("date", "Target date", false), f("criteria", "Done when…", true)];
         const UPD: &[FieldDef] = &[f("date", "Date", false)];
         const RMP: &[FieldDef] = &[f("phase", "Now, Next or Later", false), f("detail", "What it involves", true), f("basis", "Basis: evidence, assumption or uncertain", false)];
+        const HND: &[FieldDef] = &[f("to", "For (Claude Code, Codex, a person…)", false), f("focus", "What they should do", true)];
         const GUI: &[FieldDef] = &[f("role", "Role", false), f("action", "Action", false), f("provider", "Model / provider", false)];
         match self {
             Kind::Hypothesis => HYP,
@@ -252,6 +262,7 @@ impl Kind {
             Kind::Update => UPD,
             Kind::Guidance => GUI,
             Kind::Roadmap => RMP,
+            Kind::Handoff => HND,
         }
     }
 }

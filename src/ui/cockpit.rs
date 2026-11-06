@@ -3,6 +3,7 @@
 //! Records · Team (roles) · Handoff.
 
 use super::resolve::{amber, JobOut};
+use super::nav::Section;
 use super::theme::*;
 use super::widgets::*;
 use super::*;
@@ -24,76 +25,7 @@ fn status_color(r: &Record, p: &Pal) -> Color32 {
 }
 
 impl App {
-    pub fn resolve_view(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
-        if self.store.data.project(pid).is_none() {
-            self.view = View::Dashboard;
-            return;
-        }
-        if self.store.data.context_for(pid).is_none() {
-            // an existing project: adopt it (nothing guessed — fields start empty)
-            if let Some(c) = ProjectContext::adopt(&self.store.data, pid) {
-                self.store.data.contexts.push(c);
-                self.touch();
-            }
-        }
-        let ctx = self.store.data.context_for(pid).cloned().unwrap_or_default();
-        let name = self.store.data.project(pid).map(|x| x.name.clone()).unwrap_or_default();
-        let page_id = ctx.page_id.clone();
-        self.top_bar(ui, p, |app, ui| {
-            if ui.button("☰ Tasks board").on_hover_text("This project's tasks, sections and board").clicked() {
-                app.go(View::Project(pid.to_string()));
-            }
-            if let Some(pg) = page_id.clone().filter(|x| app.store.data.page(x).is_some()) {
-                if ui.button("📄 Plan page").clicked() {
-                    app.go(View::Page(pg));
-                }
-            }
-        });
-        if self.view != View::Resolve(pid.to_string()) {
-            return;
-        }
-        egui::ScrollArea::vertical().auto_shrink([false, false]).id_salt("resolve-scroll").show(ui, |ui| {
-            centered(ui, 1080.0, |ui| {
-                ui.add_space(6.0);
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new("✦").size(22.0).color(amber()));
-                    ui.label(RichText::new(&name).font(fserif(30.0)));
-                });
-                if !ctx.outcome.is_empty() {
-                    ui.horizontal_wrapped(|ui| {
-                        ui.label(RichText::new(format!("Outcome: {}", ctx.outcome)).size(13.5).color(p.dim));
-                        chip(ui, if ctx.outcome_confirmed { "confirmed" } else { "not yet confirmed" }, if ctx.outcome_confirmed { p.green } else { p.orange });
-                    });
-                }
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    for (i, t) in ["Overview", "Validation", "Records", "Team", "Handoff"].iter().enumerate() {
-                        if pill(ui, p, t, self.resolve_ui.tab == i).clicked() {
-                            self.resolve_ui.tab = i;
-                        }
-                    }
-                    if self.resolve_ui.rx.is_some() {
-                        ui.spinner();
-                        ui.label(RichText::new(&self.resolve_ui.busy).size(12.0).color(p.dim));
-                    }
-                });
-                if !self.resolve_ui.error.is_empty() {
-                    ui.label(RichText::new(format!("⚠ {}", self.resolve_ui.error)).size(12.5).color(p.orange));
-                }
-                ui.add_space(10.0);
-                match self.resolve_ui.tab {
-                    0 => self.cockpit_overview(ui, p, pid, &ctx),
-                    1 => self.cockpit_validation(ui, p, pid),
-                    2 => self.cockpit_records(ui, p, pid),
-                    3 => self.cockpit_team(ui, p, pid, &ctx),
-                    _ => self.cockpit_handoff(ui, p, pid, &ctx),
-                }
-                ui.add_space(40.0);
-            });
-        });
-    }
-
-    fn cockpit_overview(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
+    pub(super) fn cockpit_overview(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
         let a = assess::assess(&self.store.data, ctx);
         // keep the pinned win stable (ResolvePM rule) — re-pick only when it's done
         if a.win != ctx.win_task_id {
@@ -157,9 +89,9 @@ impl App {
                 g.fields.insert("provider".into(), "deterministic".into());
                 self.store.data.records.push(g);
                 self.touch();
-                self.toast("Saved to the project's guidance log (Team tab)");
+                self.toast("Saved to the project's history (Knowledge → Evidence & Records)");
             }
-            Some("handoff") => self.resolve_ui.tab = 4,
+            Some("handoff") => self.go(View::Sec(Section::Handoffs)),
             Some(id) => {
                 let label = roles::ACTIONS.iter().find(|a| a.id == id).map(|a| a.label).unwrap_or("Working");
                 let cfg = crate::ai::current_config();
@@ -192,7 +124,9 @@ impl App {
             if self.store.data.task(&id).is_some() {
                 self.open_task = Some(id);
             } else {
-                self.resolve_ui.tab = if self.store.data.record(&id).map_or(false, |r| matches!(r.kind, Kind::Hypothesis | Kind::Experiment | Kind::Evidence)) { 1 } else { 2 };
+                let h0 = self.store.data.record(&id).map_or(false, |r| matches!(r.kind, Kind::Hypothesis | Kind::Experiment));
+                self.resolve_ui.knowledge_tab = 3;
+                self.go(View::Sec(if h0 { Section::Frameworks } else { Section::Knowledge }));
                 self.resolve_ui.sel_record = Some(id);
             }
         }
@@ -319,7 +253,7 @@ impl App {
         }
     }
 
-    fn cockpit_validation(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
+    pub(super) fn cockpit_validation(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
         ui.label(RichText::new("Hypothesis Zero").font(fs(16.0)));
         ui.label(RichText::new("Any hypothesis can have sub-hypotheses and experiments, in any order. State the negation, keep contradicting evidence, and fix an experiment's thresholds before running it.").size(12.5).color(p.dim));
         let mut add = false;
@@ -353,7 +287,7 @@ impl App {
                         _ => p.green,
                     };
                     chip(ui, r.kind.icon(), col);
-                    let lab = ui.add(egui::Label::new(RichText::new(&r.title).size(13.5).color(if is_sel { amber() } else { p.text })).sense(Sense::click()).truncate());
+                    let lab = ui.add(egui::Label::new(RichText::new(&r.title).size(13.5).color(if is_sel { amber() } else { p.text })).sense(Sense::click()).wrap());
                     if lab.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                         pick = Some(r.id.clone());
                     }
@@ -371,14 +305,14 @@ impl App {
         }
     }
 
-    fn cockpit_records(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
+    pub(super) fn cockpit_records(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
         ui.horizontal_wrapped(|ui| {
             if pill(ui, p, "All", self.resolve_ui.kind_filter.is_none()).clicked() {
                 self.resolve_ui.kind_filter = None;
             }
             for k in Kind::ALL {
                 let n = self.store.data.records.iter().filter(|r| r.kind == k && r.project_id.as_deref() == Some(pid)).count();
-                if n > 0 && k != Kind::Guidance && pill(ui, p, &format!("{} {n}", k.plural()), self.resolve_ui.kind_filter == Some(k)).clicked() {
+                if n > 0 && pill(ui, p, &format!("{} {n}", k.plural()), self.resolve_ui.kind_filter == Some(k)).clicked() {
                     self.resolve_ui.kind_filter = Some(k);
                 }
             }
@@ -387,7 +321,7 @@ impl App {
         ui.horizontal(|ui| {
             egui::ComboBox::from_id_salt("new-kind").selected_text(self.resolve_ui.new_kind.label()).show_ui(ui, |ui| {
                 for k in Kind::ALL {
-                    if k != Kind::Guidance {
+                    if !matches!(k, Kind::Guidance | Kind::Handoff) {
                         ui.selectable_value(&mut self.resolve_ui.new_kind, k, k.label());
                     }
                 }
@@ -404,7 +338,7 @@ impl App {
             self.touch();
         }
         ui.add_space(6.0);
-        let mut list: Vec<Record> = self.store.data.records.iter().filter(|r| r.project_id.as_deref() == Some(pid) && r.kind != Kind::Guidance).filter(|r| self.resolve_ui.kind_filter.map_or(true, |k| r.kind == k)).cloned().collect();
+        let mut list: Vec<Record> = self.store.data.records.iter().filter(|r| r.project_id.as_deref() == Some(pid) && r.kind != Kind::Handoff).filter(|r| self.resolve_ui.kind_filter.map_or(true, |k| r.kind == k)).cloned().collect();
         list.sort_by_key(|r| (!r.is_open(), r.kind, std::cmp::Reverse(r.updated)));
         let sel = self.resolve_ui.sel_record.clone();
         let mut pick: Option<Id> = None;
@@ -416,7 +350,7 @@ impl App {
                 let is_sel = sel.as_deref() == Some(r.id.as_str());
                 cols[0].horizontal(|ui| {
                     chip(ui, r.kind.label(), p.dim);
-                    let lab = ui.add(egui::Label::new(RichText::new(&r.title).size(13.5).color(if is_sel { amber() } else { p.text })).sense(Sense::click()).truncate());
+                    let lab = ui.add(egui::Label::new(RichText::new(&r.title).size(13.5).color(if is_sel { amber() } else { p.text })).sense(Sense::click()).wrap());
                     if lab.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                         pick = Some(r.id.clone());
                     }
@@ -435,7 +369,7 @@ impl App {
     }
 
     /// Edit any record using its kind's field schema.
-    fn record_editor(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, id: &str) {
+    pub(super) fn record_editor(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, id: &str) {
         let Some(orig) = self.store.data.record(id).cloned() else { return };
         let mut r = orig.clone();
         let mut delete = false;
@@ -572,79 +506,7 @@ impl App {
         }
     }
 
-    fn cockpit_team(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
-        ui.label(RichText::new("Your leads").font(fs(16.0)));
-        ui.horizontal_wrapped(|ui| {
-            if pill(ui, p, "Stand-up (Resolve picks who answers)", self.resolve_ui.chat_role.is_empty()).clicked() {
-                self.resolve_ui.chat_role.clear();
-            }
-            for r in roles::ROLES.iter() {
-                if pill(ui, p, &format!("{} · {}", r.name, r.tag), self.resolve_ui.chat_role == r.id).clicked() {
-                    self.resolve_ui.chat_role = r.id.into();
-                }
-            }
-        });
-        ui.label(RichText::new("The Implementation Engineer isn't a chat role — use Handoff to brief Codex or Claude Code.").size(11.5).color(p.faint));
-        ui.add_space(8.0);
-        let mut log: Vec<Record> = self.store.data.records.iter().filter(|r| r.kind == Kind::Guidance && r.project_id.as_deref() == Some(pid)).cloned().collect();
-        log.sort_by_key(|r| r.created);
-        if log.is_empty() {
-            ui.label(RichText::new("No conversation yet. Ask a question below — your leads already know the project context.").color(p.faint));
-        }
-        let shown = log.len().saturating_sub(30);
-        for g in &log[shown..] {
-            let role = g.field("role").to_string();
-            let who = roles::role(&role).map(|r| r.name.to_string()).unwrap_or_else(|| if role == "founder" { "You".into() } else { "ResolveOS".into() });
-            egui::Frame::none().fill(if role == "founder" { p.accent_soft } else { p.card }).stroke(Stroke::new(1.0, p.line)).rounding(8.0).inner_margin(10.0).show(ui, |ui| {
-                ui.set_width(ui.available_width());
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new(&who).font(fs(13.0)).color(if role == "founder" { amber() } else { p.text }));
-                    let t = chrono::DateTime::from_timestamp_millis(g.created).map(|x| x.with_timezone(&chrono::Local).format("%-d %b %H:%M").to_string()).unwrap_or_default();
-                    ui.label(RichText::new(t).size(11.0).color(p.faint));
-                });
-                ui.label(RichText::new(if g.body.is_empty() { &g.title } else { &g.body }).size(13.5));
-            });
-            ui.add_space(4.0);
-        }
-        ui.add_space(6.0);
-        let busy = self.resolve_ui.rx.is_some();
-        let mut send = false;
-        ui.horizontal(|ui| {
-            let r = ui.add(egui::TextEdit::multiline(&mut self.resolve_ui.chat).hint_text("Ask your team, or start a stand-up").desired_rows(2).desired_width(ui.available_width() - 90.0));
-            let enter = r.has_focus() && ui.input(|i| i.key_pressed(Key::Enter) && i.modifiers.ctrl);
-            if ui.add_enabled(!busy, egui::Button::new("Send")).clicked() || enter {
-                send = true;
-            }
-        });
-        if send && !busy && !self.resolve_ui.chat.trim().is_empty() {
-            let msg = self.resolve_ui.chat.trim().to_string();
-            self.resolve_ui.chat.clear();
-            let mut f = Record::new(Kind::Guidance, Some(pid.to_string()), msg.chars().take(80).collect::<String>());
-            f.body = msg.clone();
-            f.fields.insert("role".into(), "founder".into());
-            self.store.data.records.push(f);
-            self.touch();
-            let history: Vec<(String, String)> = log.iter().rev().take(12).rev().map(|g| (if g.field("role") == "founder" { "Founder".to_string() } else { g.field("role").to_string() }, g.body.clone())).collect();
-            let context = ctx.fenced_text(&self.store.data);
-            let cfg = crate::ai::current_config();
-            let fixed = self.resolve_ui.chat_role.clone();
-            let pid2 = pid.to_string();
-            self.spawn_job("Your team is thinking…", move || {
-                let who: Result<Vec<&str>, String> = if fixed.is_empty() { roles::route(&cfg, &context, &msg) } else { Ok(vec![roles::role(&fixed).map(|r| r.id).unwrap_or("product-director")]) };
-                let r = who.and_then(|ids| {
-                    let mut out = vec![];
-                    for id in ids {
-                        out.push((id.to_string(), roles::reply(&cfg, id, &context, &history, &msg)?));
-                    }
-                    Ok(out)
-                });
-                JobOut::Team(pid2, r)
-            });
-        }
-        ui.label(RichText::new("Ctrl+Enter to send. Conversations are saved with the project.").size(11.0).color(p.faint));
-    }
-
-    fn cockpit_handoff(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
+    pub(super) fn cockpit_handoff(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
         let brief = roles::handoff_brief(&self.store.data, ctx);
         ui.label(RichText::new("Hand off to an execution tool").font(fs(16.0)));
         ui.label(RichText::new("A self-contained brief built from the project's real state — paste it into Codex, Claude Code, Cursor or ChatGPT. They can also read and update this workspace directly over MCP (Settings → AI & MCP).").size(12.5).color(p.dim));

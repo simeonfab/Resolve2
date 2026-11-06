@@ -719,6 +719,38 @@ pub struct WorkspaceData {
     /// Undo / soft-delete history (see src/history.rs).
     #[serde(default)]
     pub history: Vec<crate::history::ChangeSet>,
+    /// AI Team conversations (one per role and project; Ask AI is the General assistant's).
+    #[serde(default)]
+    pub conversations: Vec<Conversation>,
+}
+
+/// A conversation with one AI Team role, about one project or the whole workspace.
+/// Ported from Control Centre's model (Conversation / ChatMessage).
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct Conversation {
+    pub id: Id,
+    #[serde(default)]
+    pub project_id: Option<Id>,
+    /// Role id: "general", "product-director", "validation", "growth-lead", "tech-lead".
+    pub agent: String,
+    #[serde(default)]
+    pub title: String,
+    #[serde(default)]
+    pub messages: Vec<ChatMessage>,
+    pub updated: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone, Debug, Default)]
+pub struct ChatMessage {
+    /// "user" or the role id that answered.
+    pub role: String,
+    pub text: String,
+    pub at: i64,
+    /// Which AI answered (shown under the message).
+    #[serde(default)]
+    pub via: String,
+    #[serde(default)]
+    pub error: bool,
 }
 
 trait Stamped {
@@ -747,6 +779,7 @@ stamped!(crate::resolve::Record);
 stamped!(crate::resolve::Intake);
 stamped!(crate::resolve::ProjectContext);
 stamped!(crate::history::ChangeSet);
+stamped!(Conversation);
 
 fn merge_vec<T: Stamped + Clone>(local: &mut Vec<T>, remote: &[T], dead: &HashMap<String, i64>) {
     let mut index: HashMap<String, usize> = HashMap::new();
@@ -787,6 +820,7 @@ impl WorkspaceData {
         merge_vec(&mut self.intakes, &other.intakes, &dead);
         merge_vec(&mut self.contexts, &other.contexts, &dead);
         merge_vec(&mut self.history, &other.history, &dead);
+        merge_vec(&mut self.conversations, &other.conversations, &dead);
         // keep tombstones for 60 days
         let cutoff = now_ms() - 60 * 24 * 3600 * 1000;
         self.tombstones = dead

@@ -175,7 +175,11 @@ impl App {
             it.theme_ix += 1;
         } else if drop {
             self.resolve_ui.theme_edit = false;
-            pr.roadmap.remove(k);
+            let gone = pr.roadmap.remove(k);
+            // kept on the project's cut list (Knowledge → Cut list), not lost
+            if !gone.title.trim().is_empty() {
+                pr.cut.push(gone.title);
+            }
             // tasks pointing at later themes shift down
             for t in pr.tasks.iter_mut() {
                 t.parent = match t.parent {
