@@ -2,6 +2,8 @@ pub mod theme;
 pub mod widgets;
 mod calendar;
 mod cockpit;
+pub mod connect;
+mod import_ui;
 mod intake;
 mod intake_ending;
 mod intake_review;
@@ -52,6 +54,8 @@ pub enum View {
     Sec(nav::Section),
     /// Test Intake home (only in the sandbox process).
     TestLab,
+    /// "Connect your AI" (first launch, full screen).
+    ConnectAi,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -214,6 +218,8 @@ pub struct App {
     pub lab: testlab::LabUi,
     /// The project picked in the sidebar (None = All projects).
     pub current_project: Option<Id>,
+    pub connect: connect::ConnectUi,
+    pub import: import_ui::ImportUi,
 }
 
 impl App {
@@ -288,6 +294,8 @@ impl App {
             testlab: opts.testlab,
             lab: testlab::LabUi::default(),
             current_project: None,
+            connect: connect::ConnectUi::default(),
+            import: import_ui::ImportUi::default(),
         };
         app.page_ui.ai_open = open_ai;
         // --view <section>[@p]: open a section; "@p" picks the most recently guided project
@@ -318,6 +326,12 @@ impl App {
             }
             if let Some(s) = sec {
                 app.view = View::Sec(s);
+            } else if let Some(n) = name.strip_prefix("help-").and_then(|n| n.parse::<usize>().ok()) {
+                app.temp.insert("help_section".into(), n.to_string());
+                app.view = View::Help;
+            } else if let Some(n) = name.strip_prefix("settings-").and_then(|n| n.parse::<usize>().ok()) {
+                app.settings_ui.tab = n;
+                app.view = View::Settings;
             } else if name == "projects" {
                 app.view = View::Projects;
             } else if name == "tasks" {
@@ -336,7 +350,10 @@ impl App {
         } else {
             app.ensure_server();
             match opts.view.as_deref() {
+                // a fresh copy: Connect your AI first, then the intake
+                None if !app.reg.settings.ai_setup_done => app.view = View::ConnectAi,
                 None => app.open_intake_if_new(),
+                Some("connect") => app.view = View::ConnectAi,
                 // --view intake-<stage>[-<ending step>]: show the newest intake at that stage
                 // (screenshots / checks). In memory only; nothing is saved.
                 Some(v) if v.starts_with("intake") => {
@@ -377,7 +394,11 @@ impl App {
     }
 
     pub fn toast(&mut self, s: impl Into<String>) {
-        self.toasts.push((s.into(), self.now + 4.0));
+        let s: String = s.into();
+        if s.starts_with('⚠') || s.starts_with("Couldn't") {
+            crate::ai::set_last_error(&s);
+        }
+        self.toasts.push((s, self.now + 4.0));
     }
 
     pub fn go(&mut self, v: View) {
@@ -1203,6 +1224,7 @@ impl App {
             View::Projects => self.projects_view(ui, p),
             View::Sec(s) => self.section_view(ui, p, s),
             View::TestLab => self.testlab_view(ui, p),
+            View::ConnectAi => self.connect_view(ui, p),
         }
     }
 
@@ -1249,6 +1271,7 @@ impl eframe::App for App {
         }
         self.resolve_poll(ctx);
         self.poll_team(ctx);
+        self.poll_import(ctx);
         self.check_reminders(ctx);
         self.shortcuts(ctx);
         self.hub_tick(false);
@@ -1280,7 +1303,7 @@ impl eframe::App for App {
         }
 
         // the intake (and the Test Intake lab) are full screen: no sidebar, no app chrome
-        let full_screen = self.testlab || matches!(self.view, View::Intake(_));
+        let full_screen = self.testlab || matches!(self.view, View::Intake(_) | View::ConnectAi);
         if !full_screen {
             self.nav_sidebar(ctx, &p);
         }

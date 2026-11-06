@@ -765,7 +765,7 @@ pub fn fetch_text(url: &str) -> Result<String, String> {
     if !(url.starts_with("http://") || url.starts_with("https://")) {
         return Err("The link must start with https://".into());
     }
-    let out = std::process::Command::new("curl.exe")
+    let out = crate::ai::cmd("curl.exe")
         .args(["-sSL", "--max-time", "40", "-A", "Resolve 2-calendar/1.0", &url])
         .output()
         .map_err(|e| format!("Couldn't run curl: {e}"))?;

@@ -15,6 +15,8 @@ use std::time::SystemTime;
 
 static ROOT: OnceLock<PathBuf> = OnceLock::new();
 pub const SAMPLE_NAME: &str = "Sample (demo data)";
+/// Shown in Help and Settings, and in Report a problem.
+pub const VERSION: &str = "Alpha 0.1, 6 Nov 2026";
 static WRITE_LOCK: Mutex<()> = Mutex::new(());
 
 pub fn set_root(p: PathBuf) {
@@ -81,6 +83,9 @@ pub struct AppSettings {
     pub price_out_per_m: f64,
     #[serde(default)]
     pub monthly_budget: f64,
+    /// "Connect your AI" has been passed (a test succeeded) or skipped.
+    #[serde(default)]
+    pub ai_setup_done: bool,
 }
 
 fn yes() -> bool {
@@ -113,6 +118,7 @@ impl Default for AppSettings {
             price_in_per_m: 0.0,
             price_out_per_m: 0.0,
             monthly_budget: 0.0,
+            ai_setup_done: false,
         }
     }
 }
@@ -141,16 +147,10 @@ impl Registry {
             let mut data = WorkspaceData::default();
             crate::seed::seed_empty(&mut data);
             let _ = write_json_atomic(&dir.join("data.json"), &data);
-            let sample = WorkspaceMeta { id: new_id(), name: SAMPLE_NAME.into(), color: [120, 120, 130], icon: "S".into(), created: now_ms(), owner: local_owner() };
-            let dir = workspace_dir(&sample.id);
-            let _ = fs::create_dir_all(&dir);
-            let mut data = WorkspaceData::default();
-            crate::seed::seed(&mut data);
-            let _ = write_json_atomic(&dir.join("data.json"), &data);
-            // a new user lands in their own (empty) workspace, which opens straight into the intake
+            // a fresh copy starts empty (alpha brief): no demo workspace. A new user lands in
+            // their own empty workspace: Connect your AI first, then the intake.
             reg.settings.last_workspace = Some(personal.id.clone());
             reg.workspaces.push(personal);
-            reg.workspaces.push(sample);
             reg.save();
         }
         reg
@@ -244,7 +244,7 @@ pub fn hub_exchange(url: &str, token: &str, data: &WorkspaceData) -> Result<Work
     } else {
         let tmp = std::env::temp_dir().join(format!("resolve2-hub-{}.json", std::process::id()));
         fs::write(&tmp, &body).map_err(|e| e.to_string())?;
-        let out = std::process::Command::new("curl.exe")
+        let out = crate::ai::cmd("curl.exe")
             .args(["-sS", "--fail-with-body", "--max-time", "60", "-X", "POST", "-H", "Content-Type: application/json", "--data-binary"])
             .arg(format!("@{}", tmp.display()))
             .arg(&endpoint)

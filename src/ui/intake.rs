@@ -44,7 +44,7 @@ impl App {
         if !it.is_v2() {
             // an intake from the earlier flow continues in the new one, keeping its text
             it.v = 2;
-            it.stage = if it.input.trim().is_empty() { "bring".into() } else { "questions".into() };
+            it.stage = if it.input.trim().is_empty() && it.attachments.is_empty() { "bring".into() } else { "questions".into() };
             if it.name.is_empty() {
                 it.stage = "name".into();
             }

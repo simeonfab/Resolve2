@@ -6,18 +6,17 @@ Resolve 2 keeps your pages, databases, tasks and calendars in one app on your PC
 
 ## 0. Opening Resolve 2 and where things are
 
-- **The first time**: open it from Craft Anything (Play), or double-click **Open Resolve 2.cmd** in the project's `app` folder (`Documents\Craft Anything\build-me-a-single-productivity-copy\app`).
-- **Then make it a normal app**: Settings → General → **Put Resolve 2 on my desktop and Start menu**. After that, double-click the Resolve 2 icon or press Windows and type *Resolve 2*. You can pin it to the taskbar.
-- **The program itself**: `...\build-me-a-single-productivity-copy\app\target\debug\resolve2.exe`.
-- Resolve 2 is separate from Control Centre (Resolve Beta): different program, data folder and AI connections.
+- **The first time**: unzip the download and double-click **resolve2.exe**. Windows SmartScreen may warn that the app is unrecognised (it isn't signed yet): click **More info**, then **Run anyway**.
+- **Then make it a normal app**: Settings → Advanced → **Put Resolve 2 on my desktop and Start menu**. After that, double-click the Resolve 2 icon or press Windows and type *Resolve 2*. You can pin it to the taskbar.
+- The first screen is **Connect your AI**; then the intake (**Start something new with Resolve**) begins.
 
 ## Start a project with Resolve (the intake)
 
-- **New project** (Home, or **+** next to My Projects) opens the intake full screen. A brand-new workspace opens straight into it.
+- **New project** (Home, Projects, or the project picker in the sidebar) opens the intake full screen. A brand-new copy opens straight into it after Connect your AI. On the first screen you can attach a brief or notes (.md, .txt, .docx, .pdf).
 - Tell Resolve what's going on in your own words, then answer one question at a time. **Enter** continues, **Shift+Enter** adds a new line, **Esc** leaves with everything saved — come back any time and it resumes where you stopped.
 - On the right, **What Resolve has heard** sorts your answers into evidence, assumptions and open questions. Click a label to change it, or edit the words.
 - Jump back to any question with the numbers at the top; if you change an earlier answer, later answers built on it are flagged for review. **Why this question?** shows the reasoning (Hypothesis Zero).
-- Stop whenever you like with **Show me the proposal**. Confirm what Resolve understood (the outcome is in your words and needs your tick), then review the proposal: every part can be edited, removed or regenerated, and each item is labelled evidence, assumption or uncertain.
+- Stop whenever you like with **Show me the proposal**; after 8 questions Resolve moves on by itself. Check what Resolve understood (**This looks right** or **Something's wrong, let me change it**), then go through your next move, the roadmap themes one at a time, your first week and the whole picture. **See and edit everything** opens the full proposal: every part can be edited, removed or regenerated, and each item is labelled evidence, assumption or uncertain.
 - **Adopt** creates the project — roadmap (Now / Next / Later), tasks, Hypothesis Zero hypotheses and experiments, evidence and assumptions, a project brief and the intake transcript. Then **Open my project**. Adopt can be undone.
 - Without AI connected, the intake still works with a fixed set of questions and builds the proposal only from your own words.
 
@@ -34,17 +33,14 @@ Resolve 2 keeps your pages, databases, tasks and calendars in one app on your PC
 
 The left sidebar is your map:
 
-- **Workspace name** (top left): switch workspaces or make a new one. Each workspace is completely private: its own files, backups, sync and AI access.
-- **Add task**: the red button, the same as Ctrl+Q.
-- **Search**: finds pages, tasks, events, projects and database rows.
-- **Home**: your dashboard, with today's tasks, today's schedule, the next 7 days, recent pages and project progress.
-- **Inbox, Today, Upcoming, Filters & Labels**: your task lists.
-- **Calendar**: day, week and month views.
-- **My Projects, Favorites, Pages, Databases**: everything you've made. Each **+** button opens a menu, including templates.
-- **Settings, sync & AI** (bottom): import, backups, phone, AI connections. The line under it tells you when your work was last saved and synced.
+- **Top**: the workspace menu (switch workspaces, or **Start something new with Resolve**), **Undo ↶ / Redo ↷**, then **Add task** (Ctrl+Q) and **Ask AI**.
+- **Workspace**: Home, Projects, Calendar.
+- **Product management**: pick a project (or *All projects*), then Overview, Roadmap, Tasks, Frameworks and Knowledge.
+- **Collaboration**: AI Team and Handoffs.
+- **Bottom**: Search (finds pages, tasks, events, projects and database rows), Settings, Help, and the line that tells you when your work was last saved.
 - The **☀ / 🌙** button at the top switches light and dark mode.
 
-You start in **"Sample (demo data)"**, a practice workspace full of examples. Your real workspace is **"Personal"**: switch to it from the workspace menu or the banner on Home. Nothing you do in Sample touches Personal.
+Your workspace is **"Personal"**. Each workspace is completely private: its own files, backups, sync and AI access.
 
 ## 2. Tasks
 
