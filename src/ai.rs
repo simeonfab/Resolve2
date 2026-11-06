@@ -21,6 +21,32 @@ impl AiJob {
     }
 }
 
+/// A command that runs without flashing a console window (the release build is a windowed app,
+/// so every helper program it starts — curl, Claude Code, Codex — must start hidden).
+pub fn cmd(program: impl AsRef<std::ffi::OsStr>) -> std::process::Command {
+    #[allow(unused_mut)]
+    let mut c = std::process::Command::new(program);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        c.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    c
+}
+
+static LAST_ERROR: std::sync::Mutex<String> = std::sync::Mutex::new(String::new());
+
+/// Remember the most recent error a tester saw (for Help → Report a problem).
+pub fn set_last_error(e: &str) {
+    if let Ok(mut x) = LAST_ERROR.lock() {
+        *x = format!("{} — {}", chrono::Local::now().format("%d %b %H:%M"), e.chars().take(400).collect::<String>());
+    }
+}
+
+pub fn last_error() -> String {
+    LAST_ERROR.lock().map(|x| x.clone()).unwrap_or_default()
+}
+
 fn base(url: &str) -> String {
     url.trim().trim_end_matches('/').to_string()
 }
@@ -178,7 +204,7 @@ pub fn usage_since(since_ms: i64) -> UsageTotals {
 fn post_https(url: &str, headers: &[(&str, String)], body: &Value) -> Result<Value, String> {
     let tmp = std::env::temp_dir().join(format!("resolve2-ai-{}-{}.json", std::process::id(), crate::model::new_id()));
     std::fs::write(&tmp, serde_json::to_vec(body).map_err(|e| e.to_string())?).map_err(|e| e.to_string())?;
-    let mut cmd = std::process::Command::new("curl.exe");
+    let mut cmd = crate::ai::cmd("curl.exe");
     cmd.args(["-sS", "--max-time", "600", "-X", "POST", "-H", "content-type: application/json"]);
     for (k, v) in headers {
         cmd.arg("-H").arg(format!("{k}: {v}"));
@@ -250,8 +276,72 @@ pub fn cli_status(provider: &str) -> Result<String, String> {
             "Codex isn't installed. Install it with `npm install -g @openai/codex`, then run `codex` once and choose Sign in with ChatGPT.".to_string()
         }
     })?;
-    let out = std::process::Command::new(&path).arg("--version").output().map_err(|e| e.to_string())?;
+    let out = crate::ai::cmd(&path).arg("--version").output().map_err(|e| e.to_string())?;
     Ok(format!("Found {} {}", name, String::from_utf8_lossy(&out.stdout).trim()))
+}
+
+/// Claude Code on this PC: (installed, looks signed in). Signing in leaves a credentials file in
+/// the user's `.claude` folder; we only check it exists (never read it). Test proves it for real.
+pub fn claude_code_state() -> (bool, bool) {
+    let installed = find_cli("claude").is_some();
+    let home = std::env::var("USERPROFILE").or_else(|_| std::env::var("HOME")).unwrap_or_default();
+    let signed = !home.is_empty() && std::path::Path::new(&home).join(".claude").join(".credentials.json").is_file();
+    (installed, signed)
+}
+
+/// A real round trip to the AI: Ok(its reply) or a plain-English error. Used by Connect your AI.
+pub fn test_connection(cfg: &AiConfig) -> Result<String, String> {
+    set_purpose("connect:test");
+    let r = complete_json(cfg, Some(0.0), |_| "This is a connection test from the Resolve app. Return ONLY JSON: {\"reply\": \"<one short friendly sentence saying you're connected and ready>\"}".to_string(), |v| {
+        v.get("reply").and_then(|x| x.as_str()).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()).ok_or_else(|| "The AI answered, but not in the expected form".to_string())
+    });
+    r.map_err(|e| plain_error(&cfg.provider, &e))
+}
+
+/// Turn a provider error into one plain sentence a tester can act on.
+pub fn plain_error(provider: &str, e: &str) -> String {
+    let l = e.to_lowercase();
+    match provider {
+        "claude-code" if l.contains("isn't installed") => "Claude Code isn't installed on this PC yet.".into(),
+        "claude-code" if l.contains("login") || l.contains("log in") || l.contains("auth") || l.contains("credential") => "Claude Code is installed but not signed in. Open a terminal, type claude, and sign in.".into(),
+        "anthropic" if l.contains("401") || l.contains("invalid x-api-key") || l.contains("authentication") => "That API key was refused. Check you copied the whole key (it starts with sk-ant-).".into(),
+        "anthropic" if l.contains("credit") || l.contains("billing") => "The key works, but the account has no credit. Add credit in your Anthropic console.".into(),
+        "ollama" | "openai" if l.contains("no local ai") || l.contains("connect") || l.contains("refused") => "Ollama isn't running. Start Ollama (it runs in the background after you install it), then press Test again.".into(),
+        "ollama" if l.contains("not found") || l.contains("pull") => "That model isn't downloaded yet. Use \"Download qwen3\" first.".into(),
+        _ => e.chars().take(300).collect(),
+    }
+}
+
+/// Download an Ollama model in the background. `progress` shows what's happening; the receiver
+/// gets the result once it's done.
+pub fn pull_model_async(url: &str, model: &str, progress: std::sync::Arc<std::sync::Mutex<String>>) -> Receiver<Result<(), String>> {
+    let (tx, rx) = channel();
+    let (u, m) = (base(url), model.to_string());
+    std::thread::spawn(move || {
+        let run = || -> Result<(), String> {
+            let agent = ureq::AgentBuilder::new().timeout_connect(Duration::from_secs(5)).build();
+            let resp = agent.post(&format!("{u}/api/pull")).send_json(json!({"name": m, "stream": true})).map_err(|e| explain(e, &u))?;
+            let reader = std::io::BufReader::new(resp.into_reader());
+            for line in std::io::BufRead::lines(reader) {
+                let line = line.map_err(|e| e.to_string())?;
+                let v: Value = serde_json::from_str(&line).unwrap_or_default();
+                if let Some(err) = v["error"].as_str() {
+                    return Err(err.to_string());
+                }
+                let status = v["status"].as_str().unwrap_or("").to_string();
+                let text = match (v["completed"].as_f64(), v["total"].as_f64()) {
+                    (Some(c), Some(t)) if t > 0.0 => format!("{status} — {:.0}% of {:.1} GB", c / t * 100.0, t / 1e9),
+                    _ => status,
+                };
+                if let Ok(mut p) = progress.lock() {
+                    *p = text;
+                }
+            }
+            Ok(())
+        };
+        let _ = tx.send(run());
+    });
+    rx
 }
 
 fn counts(d: &crate::model::WorkspaceData) -> [usize; 5] {
@@ -271,7 +361,7 @@ fn run_cli(provider: &str, system: &str, prompt: &str, meta: crate::store::Works
     let output = if provider == "codex-cli" {
         let codex = find_cli("codex").ok_or("Codex isn't installed. Install it with `npm install -g @openai/codex`, then run `codex` and sign in with ChatGPT.")?;
         let full = format!("{system}\n\n{prompt}{}", if read_only { "\n\n(Read-only: don't change anything.)" } else { "" });
-        let mut child = std::process::Command::new(codex)
+        let mut child = crate::ai::cmd(codex)
             .current_dir(&work)
             .args(["exec", "--skip-git-repo-check", "-c", "approval_policy=\"never\""])
             .arg("-c")
@@ -295,7 +385,7 @@ fn run_cli(provider: &str, system: &str, prompt: &str, meta: crate::store::Works
         let sys = work.join("system.txt");
         std::fs::write(&sys, system).map_err(|e| e.to_string())?;
         let allowed = if read_only { read_tools.iter().map(|t| format!("mcp__cc__{t}")).collect::<Vec<_>>().join(",") } else { "mcp__cc".to_string() };
-        let mut child = std::process::Command::new(claude)
+        let mut child = crate::ai::cmd(claude)
             .current_dir(&work)
             .arg("-p")
             .arg("--mcp-config")
@@ -411,7 +501,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
     const MAX_STEPS: usize = 16;
     if cfg.provider == "anthropic" {
         if cfg.key.trim().is_empty() {
-            return Err("Add your Anthropic API key in Settings → AI & MCP first.".into());
+            return Err("Add your Anthropic API key in Settings → AI first.".into());
         }
         let tools: Vec<Value> = tool_list.iter().map(|t| json!({"name": t["name"], "description": t["description"], "input_schema": t["inputSchema"]})).collect();
         let mut messages = vec![json!({"role": "user", "content": prompt})];
@@ -449,7 +539,7 @@ pub(crate) fn run_agent(cfg: &AiConfig, system: &str, prompt: &str, meta: crate:
     let (endpoint, headers): (String, Vec<(&str, String)>) = match cfg.provider.as_str() {
         "openai-cloud" => {
             if cfg.key.trim().is_empty() {
-                return Err("Add your OpenAI API key in Settings → AI & MCP first.".into());
+                return Err("Add your OpenAI API key in Settings → AI → Other AI options first.".into());
             }
             ("https://api.openai.com/v1/chat/completions".into(), vec![("Authorization", format!("Bearer {}", cfg.key.trim()))])
         }
@@ -568,7 +658,7 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
     match cfg.provider.as_str() {
         "anthropic" => {
             if cfg.key.trim().is_empty() {
-                return Err("Add your Anthropic API key in Settings → AI & MCP first.".into());
+                return Err("Add your Anthropic API key in Settings → AI first.".into());
             }
             let model = if cfg.model.trim().is_empty() { CLAUDE_MODEL.to_string() } else { cfg.model.trim().to_string() };
             let headers = [("x-api-key", cfg.key.trim().to_string()), ("anthropic-version", "2026-10-21".to_string())];
@@ -586,7 +676,7 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
             // small judgement (haiku); the next question must arrive inside the 15 s limit (sonnet)
             let purpose = PURPOSE.with(|x| x.borrow().clone());
             let model = match (cfg.model.trim().is_empty() && cfg.provider == "claude-code", purpose.as_str()) {
-                (true, "intake:classify") => "haiku".to_string(),
+                (true, "intake:classify") | (true, "connect:test") => "haiku".to_string(),
                 (true, "intake:next-question") => "sonnet".to_string(),
                 _ => cfg.model.trim().to_string(),
             };
@@ -598,7 +688,7 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
             let (endpoint, headers): (String, Vec<(&str, String)>) = match cfg.provider.as_str() {
                 "openai-cloud" => {
                     if cfg.key.trim().is_empty() {
-                        return Err("Add your OpenAI API key in Settings → AI & MCP first.".into());
+                        return Err("Add your OpenAI API key in Settings → AI → Other AI options first.".into());
                     }
                     ("https://api.openai.com/v1/chat/completions".into(), vec![("Authorization", format!("Bearer {}", cfg.key.trim()))])
                 }
@@ -620,11 +710,15 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
 pub fn complete_json<T>(cfg: &AiConfig, temperature: Option<f64>, build: impl Fn(bool) -> String, validate: impl Fn(&Value) -> Result<T, String>) -> Result<T, String> {
     check_budget()?;
     let first = complete_json_once(cfg, &build(false), temperature).and_then(|v| validate(&v));
-    match first {
+    let r = match first {
         Ok(x) => Ok(x),
         Err(e) if e.starts_with("Add your") || e.contains("Couldn't reach") || e.contains("No local AI") || e.contains("isn't installed") || e.contains("budget") => Err(e),
         Err(_) => complete_json_once(cfg, &build(true), temperature).and_then(|v| validate(&v)).map_err(|e| format!("The AI's answer didn't come back in the right shape, even after one retry ({e}). Try again, or pick a stronger model.")),
+    };
+    if let Err(e) = &r {
+        set_last_error(&format!("{} ({}): {e}", PURPOSE.with(|x| x.borrow().clone()), cfg.provider));
     }
+    r
 }
 
 /// Stop AI calls once this month's estimated spend reaches the user's budget (if set).
@@ -642,7 +736,7 @@ pub fn check_budget() -> Result<(), String> {
     let u = usage_since(since);
     let cost = (u.input as f64 * s.price_in_per_m + u.output as f64 * s.price_out_per_m) / 1_000_000.0;
     if cost >= s.monthly_budget {
-        return Err(format!("This month's AI budget (${:.2}) has been reached (≈ ${cost:.2}). Raise it in Settings → AI & MCP, or continue manually.", s.monthly_budget));
+        return Err(format!("This month's AI budget (${:.2}) has been reached (≈ ${cost:.2}). Raise it in Settings → AI, or continue manually.", s.monthly_budget));
     }
     Ok(())
 }
@@ -670,7 +764,7 @@ fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) 
     std::fs::create_dir_all(&work).map_err(|e| e.to_string())?;
     let output = if provider == "codex-cli" {
         let codex = find_cli("codex").ok_or("Codex isn't installed.")?;
-        let mut child = std::process::Command::new(codex)
+        let mut child = crate::ai::cmd(codex)
             .current_dir(&work)
             .args(["exec", "--skip-git-repo-check", "-"])
             .stdin(std::process::Stdio::piped())
@@ -684,7 +778,7 @@ fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) 
         let claude = find_cli("claude").ok_or("Claude Code isn't installed.")?;
         let sys = work.join("system.txt");
         std::fs::write(&sys, system).map_err(|e| e.to_string())?;
-        let mut cmd = std::process::Command::new(claude);
+        let mut cmd = crate::ai::cmd(claude);
         cmd.current_dir(&work).args(["-p", "--strict-mcp-config", "--output-format", "text"]);
         if !model.is_empty() {
             cmd.arg("--model").arg(model);

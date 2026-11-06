@@ -169,23 +169,33 @@ impl App {
         if self.resolve_ui.agent.is_empty() || !TEAM.iter().any(|r| r.id == self.resolve_ui.agent) {
             self.resolve_ui.agent = "product-director".into();
         }
-        ui.horizontal_wrapped(|ui| {
-            for sp in TEAM.iter() {
-                let on = self.resolve_ui.agent == sp.id;
-                let r = egui::Frame::none().fill(if on { p.accent_soft } else { p.card }).stroke(Stroke::new(1.0, if on { p.accent } else { p.line })).rounding(space::RADIUS_SMALL).inner_margin(egui::Margin::symmetric(10.0, 6.0)).show(ui, |ui| {
-                    ui.horizontal(|ui| {
+        // one row of equal cards: same width and height; the selected one only gets a highlight
+        // border (same size, same place, so nothing moves)
+        let mut pick: Option<&'static str> = None;
+        let current = self.resolve_ui.agent.clone();
+        ui.columns(TEAM.len(), |cols| {
+            for (i, sp) in TEAM.iter().enumerate() {
+                let ui = &mut cols[i];
+                let on = current == sp.id;
+                let r = egui::Frame::none().fill(p.card).stroke(Stroke::new(if on { 2.0 } else { 1.0 }, if on { p.accent } else { p.line })).rounding(space::RADIUS_SMALL).inner_margin(egui::Margin::same(if on { 9.0 } else { 10.0 })).show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    ui.set_height(58.0);
+                    ui.horizontal_top(|ui| {
                         avatar(ui, sp.avatar, if on { p.accent } else { p.purple }, 24.0);
                         ui.vertical(|ui| {
-                            ui.label(RichText::new(sp.name).font(fs(13.0)));
-                            ui.label(RichText::new(sp.tag).size(size::TINY).color(p.dim));
+                            ui.add(egui::Label::new(RichText::new(sp.name).font(fs(13.0))).truncate());
+                            ui.add(egui::Label::new(RichText::new(sp.tag).size(size::TINY).color(p.dim)).wrap());
                         });
                     });
                 });
-                if ui.interact(r.response.rect, ui.id().with(("sp", sp.id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                    self.resolve_ui.agent = sp.id.to_string();
+                if ui.interact(r.response.rect, ui.id().with(("sp", sp.id)), Sense::click()).on_hover_text(sp.name).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                    pick = Some(sp.id);
                 }
             }
         });
+        if let Some(id) = pick {
+            self.resolve_ui.agent = id.to_string();
+        }
         ui.add_space(8.0);
         let agent = self.resolve_ui.agent.clone();
         let sp = team::specialist(&agent);
@@ -251,7 +261,36 @@ impl App {
 
     // ------------------------------------------------------------ Handoffs
 
+    /// The AI's rewrite of a new handoff arrives: it replaces the draft (which stays if it fails).
+    pub(super) fn poll_handoff(&mut self, ctx: &egui::Context) {
+        let done = match &self.resolve_ui.handoff_job {
+            Some((rid, rx)) => rx.try_recv().ok().map(|r| (rid.clone(), r)),
+            None => None,
+        };
+        if let Some((rid, r)) = done {
+            let via = self.provider_label();
+            if let Some(rec) = self.store.data.record_mut(&rid) {
+                match r {
+                    Ok(brief) => {
+                        rec.body = format!("{brief}\n\n---\nWritten by {via} from your request and the project's context.");
+                        rec.fields.insert("writer".into(), via);
+                    }
+                    Err(e) => {
+                        rec.fields.insert("writer".into(), format!("Resolve (the AI couldn't write it: {})", e.chars().take(120).collect::<String>()));
+                    }
+                }
+                rec.updated = now_ms();
+            }
+            self.resolve_ui.handoff_job = None;
+            self.touch();
+        }
+        if self.resolve_ui.handoff_job.is_some() {
+            ctx.request_repaint_after(std::time::Duration::from_millis(300));
+        }
+    }
+
     pub(super) fn handoffs_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        self.poll_handoff(ui.ctx());
         let scope = self.current_project.clone();
         let mut make = false;
         let mut list: Vec<Record> = self.store.data.records.iter().filter(|r| r.kind == Kind::Handoff && scope.as_ref().map_or(true, |s| r.project_id.as_ref() == Some(s))).cloned().collect();
@@ -259,7 +298,7 @@ impl App {
         card(ui, p, |ui| {
             ui.label(RichText::new("New handoff").font(fs(size::SECTION)));
             if scope.is_some() {
-                wrap_label(ui, RichText::new("Written from the project's real state: outcome, decisions, open questions, the cut list and the next tasks. Claude and Codex can also read and update this workspace over MCP (Settings → AI & MCP).").size(size::TINY).color(p.faint));
+                wrap_label(ui, RichText::new("Written from the project's real state: outcome, decisions, open questions, the cut list and the next tasks. Claude and Codex can also read and update this workspace over MCP (Settings → Advanced).").size(size::TINY).color(p.faint));
                 ui.horizontal_wrapped(|ui| {
                     ui.add(egui::TextEdit::singleline(&mut self.resolve_ui.handoff_for).hint_text("For (Claude Code, Codex, Sam…)").desired_width(200.0));
                     ui.add(egui::TextEdit::singleline(&mut self.resolve_ui.handoff_focus).hint_text("What they should do").desired_width(340.0));
@@ -301,6 +340,13 @@ impl App {
                     }
                     let when = chrono::DateTime::from_timestamp_millis(r.created).map(|x| x.with_timezone(&chrono::Local).format("%-d %b %H:%M").to_string()).unwrap_or_default();
                     ui.label(RichText::new(when).size(size::TINY).color(p.faint));
+                    let writer = r.field("writer");
+                    if !writer.is_empty() {
+                        if writer.starts_with("writing") {
+                            ui.spinner();
+                        }
+                        ui.label(RichText::new(format!("· {writer}")).size(size::TINY).color(p.faint));
+                    }
                     if ui.small_button("Copy brief").clicked() {
                         copy = Some(r.body.clone());
                     }
@@ -332,15 +378,26 @@ impl App {
                 let to = std::mem::take(&mut self.resolve_ui.handoff_for).trim().to_string();
                 let focus = std::mem::take(&mut self.resolve_ui.handoff_focus).trim().to_string();
                 let for_whom = if to.is_empty() { String::new() } else { format!(" for {to}") };
-                let mut body = format!("# Handoff{for_whom}\n\n");
-                if !focus.is_empty() {
-                    body.push_str(&format!("## What to do\n{focus}\n\n"));
-                }
-                body.push_str(&roles::handoff_brief(&self.store.data, &ctx));
-                let mut r = Record::new(Kind::Handoff, Some(pid.clone()), format!("Handoff{for_whom}"));
+                // written for this request: what you typed + the parts of the project that bear on it
+                let body = roles::handoff_for(&self.store.data, &ctx, &to, &focus);
+                let title = if focus.is_empty() { format!("Handoff{for_whom}") } else { format!("{}{for_whom}", focus.chars().take(60).collect::<String>()) };
+                let mut r = Record::new(Kind::Handoff, Some(pid.clone()), title);
                 r.body = body;
-                r.fields.insert("to".into(), to);
-                r.fields.insert("focus".into(), focus);
+                r.fields.insert("to".into(), to.clone());
+                r.fields.insert("focus".into(), focus.clone());
+                // with an AI connected, it rewrites the brief from the request and the full context
+                let cfg = self.ai_config();
+                if cfg.provider != "offline" && self.resolve_ui.handoff_job.is_none() {
+                    r.fields.insert("writer".into(), "writing with AI…".into());
+                    let (d, c, rid) = (self.store.data.clone(), ctx.clone(), r.id.clone());
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    std::thread::spawn(move || {
+                        let _ = tx.send(roles::handoff_ai(&cfg, &d, &c, &to, &focus));
+                    });
+                    self.resolve_ui.handoff_job = Some((rid, rx));
+                } else {
+                    r.fields.insert("writer".into(), "Resolve (no AI connected)".into());
+                }
                 self.resolve_ui.sel_record = Some(r.id.clone());
                 self.store.data.records.push(r);
                 self.touch();

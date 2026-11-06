@@ -35,6 +35,13 @@ pub fn model_note(provider: &str, model: &str) -> Option<&'static str> {
     }
 }
 
+/// Longer explanations live behind a "Learn more" toggle.
+fn learn_more(ui: &mut egui::Ui, p: &Pal, id: &str, text: &str) {
+    egui::CollapsingHeader::new(RichText::new("Learn more").size(size::SMALL).color(p.dim)).id_salt(("learn", id)).show(ui, |ui| {
+        wrap_label(ui, RichText::new(text).size(size::SMALL).color(p.dim));
+    });
+}
+
 fn badge(ui: &mut egui::Ui, p: &Pal, ok: bool, text: &str) {
     chip(ui, text, if ok { p.green } else { p.orange });
 }
@@ -112,10 +119,10 @@ pub(crate) fn add_to_claude_desktop(name: &str, exe: &str, ws: &str) -> Result<S
 pub(crate) fn add_to_claude_code(name: &str, exe: &str, ws: &str) -> Result<String, String> {
     let claude = ["claude.cmd", "claude.exe", "claude"]
         .iter()
-        .find_map(|c| std::process::Command::new(c).arg("--version").output().ok().filter(|o| o.status.success()).map(|_| c.to_string()))
+        .find_map(|c| crate::ai::cmd(c).arg("--version").output().ok().filter(|o| o.status.success()).map(|_| c.to_string()))
         .ok_or("Claude Code isn't installed (claude.com/claude-code)")?;
-    let _ = std::process::Command::new(&claude).args(["mcp", "remove", "--scope", "user", name]).output();
-    let out = std::process::Command::new(&claude).args(["mcp", "add", "--scope", "user", name, "--", exe, "--mcp", "--workspace", ws]).output().map_err(|e| e.to_string())?;
+    let _ = crate::ai::cmd(&claude).args(["mcp", "remove", "--scope", "user", name]).output();
+    let out = crate::ai::cmd(&claude).args(["mcp", "add", "--scope", "user", name, "--", exe, "--mcp", "--workspace", ws]).output().map_err(|e| e.to_string())?;
     if out.status.success() {
         Ok(format!("Added to Claude Code as '{name}' (all folders). Start a new Claude Code session to use it."))
     } else {
@@ -131,7 +138,7 @@ pub(crate) fn make_shortcuts(exe: &str) -> String {
         exe.replace('\'', "''"),
         dir.replace('\'', "''")
     );
-    match std::process::Command::new("powershell").args(["-NoProfile", "-NonInteractive", "-Command", &script]).output() {
+    match crate::ai::cmd("powershell").args(["-NoProfile", "-NonInteractive", "-Command", &script]).output() {
         Ok(o) if o.status.success() => "Added a Resolve 2 shortcut to your desktop and Start menu.".into(),
         Ok(o) => format!("⚠ Couldn't make the shortcuts: {}", String::from_utf8_lossy(&o.stderr).trim()),
         Err(e) => format!("⚠ Couldn't make the shortcuts: {e}"),
@@ -159,10 +166,10 @@ fn add_to_codex(name: &str, exe: &str, ws: &str) -> Result<String, String> {
 impl App {
     pub fn settings_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         self.top_bar(ui, p, |_, _| {});
-        let tabs = ["General", "Import & export", "Backups", "Sync & phone", "AI & MCP", "Calendars"];
+        let tabs = ["AI", "General", "Your data", "Advanced"];
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             centered(ui, 860.0, |ui| {
-                view_title(ui, p, "Settings", Some(&format!("Workspace: {} — everything here is stored on this PC", self.store.meta.name)));
+                view_title(ui, p, "Settings", Some(&format!("{} · workspace: {} · everything here is stored on this PC", crate::store::VERSION, self.store.meta.name)));
                 ui.horizontal_wrapped(|ui| {
                     for (i, t) in tabs.iter().enumerate() {
                         if pill(ui, p, t, self.settings_ui.tab == i).clicked() {
@@ -179,13 +186,34 @@ impl App {
                     });
                     ui.add_space(8.0);
                 }
-                match self.settings_ui.tab {
-                    0 => self.settings_general(ui, p),
-                    1 => self.settings_import(ui, p),
-                    2 => self.settings_backups(ui, p),
-                    3 => self.settings_sync(ui, p),
-                    4 => self.settings_ai(ui, p),
-                    _ => self.settings_calendars(ui, p),
+                match self.settings_ui.tab.min(3) {
+                    0 => {
+                        card(ui, p, |ui| {
+                            ui.label(RichText::new("Connect your AI").font(fb(16.0)));
+                            ui.label(RichText::new("Pick the AI Resolve uses, and press Test to prove it replies.").size(12.5).color(p.dim));
+                        });
+                        ui.add_space(8.0);
+                        self.connect_cards(ui, p);
+                        ui.add_space(10.0);
+                        self.settings_ai_more(ui, p);
+                        ui.add_space(10.0);
+                        self.report_problem_button(ui, p);
+                    }
+                    1 => self.settings_general(ui, p),
+                    2 => {
+                        self.settings_backups(ui, p);
+                        ui.add_space(10.0);
+                        self.settings_import(ui, p);
+                    }
+                    _ => {
+                        self.settings_sync(ui, p);
+                        ui.add_space(10.0);
+                        self.settings_mcp(ui, p);
+                        ui.add_space(10.0);
+                        self.settings_calendars(ui, p);
+                        ui.add_space(10.0);
+                        self.settings_places(ui, p);
+                    }
                 }
                 ui.add_space(40.0);
             });
@@ -195,6 +223,7 @@ impl App {
     fn settings_general(&mut self, ui: &mut egui::Ui, p: &Pal) {
         card(ui, p, |ui| {
             ui.label(RichText::new("Appearance").font(fb(16.0)));
+            ui.label(RichText::new("Dark or light.").size(12.5).color(p.dim));
             ui.horizontal(|ui| {
                 if pill(ui, p, "🌙 Dark", self.reg.settings.dark).clicked() {
                     self.reg.settings.dark = true;
@@ -209,7 +238,7 @@ impl App {
         ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("This workspace").font(fb(16.0)));
-            ui.label(RichText::new("Each workspace is private and isolated: its own folder, backups, sync file, phone token and AI access switch.").size(12.5).color(p.dim));
+            ui.label(RichText::new("Its name and colour. Each workspace is private: its own data, backups and AI access.").size(12.5).color(p.dim));
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 ui.label("Name");
@@ -233,24 +262,42 @@ impl App {
                     }
                 }
             });
-            ui.horizontal(|ui| {
-                ui.label(RichText::new(format!("Stored in {}", self.store.dir.display())).size(12.0).color(p.dim));
-                if ui.small_button("Open folder").clicked() {
-                    open_folder(&self.store.dir);
-                }
-            });
+
         });
         ui.add_space(10.0);
         let mut lab = false;
         card(ui, p, |ui| {
             ui.label(RichText::new("🧪 Test Intake").font(fb(16.0)));
-            ui.label(RichText::new(format!("Run the whole intake journey on sample scenarios or your own answers, choose the AI per run, inspect each question's reasoning and the raw AI calls, compare runs and export them. It opens in its own window with sandbox data in {} — never your real workspaces, never shared over MCP.", crate::resolve::testlab::default_root().display())).size(12.0).color(p.dim));
+            ui.label(RichText::new("Try the intake on sample scenarios in its own window, without touching your workspaces.").size(12.5).color(p.dim));
+            learn_more(ui, p, "testlab", "Choose the AI per run, see why each question was asked and the raw AI calls, compare runs side by side and export them. Test Intake keeps its own sandbox data, never your real workspaces, and it is never shared with AI apps over MCP.");
             lab = primary_button(ui, p, "Open Test Intake").clicked();
         });
         if lab {
             self.launch_testlab();
         }
         ui.add_space(10.0);
+        card(ui, p, |ui| {
+            ui.label(RichText::new("Keyboard shortcuts").font(fb(16.0)));
+            ui.label(RichText::new("Keys that work anywhere in Resolve.").size(12.5).color(p.dim));
+            for (k, v) in [
+                ("Ctrl+Q", "Quick add a task (natural language: dates, times, p1–p4, #project, @label, every …, remind 30m)"),
+                ("Ctrl+E", "Quick add an event"),
+                ("Ctrl+K", "Search everything / jump anywhere"),
+                ("Ctrl+N", "New page"),
+                ("/", "Block menu inside a page"),
+                ("[[", "Link to another page"),
+                ("Esc", "Close dialogs and panels"),
+            ] {
+                ui.horizontal(|ui| {
+                    ui.add_sized([70.0, 18.0], egui::Label::new(RichText::new(k).monospace().color(p.accent)));
+                    ui.label(RichText::new(v).size(13.0));
+                });
+            }
+        });
+    }
+
+    /// Advanced: where files are, opening the app, all workspaces.
+    fn settings_places(&mut self, ui: &mut egui::Ui, p: &Pal) {
         card(ui, p, |ui| {
             ui.label(RichText::new("📁 Where your files are").font(fb(16.0)));
             ui.label(RichText::new("Everything is plain files on this PC. Resolve 2 never reads or writes Resolve Beta's folder (%APPDATA%\\Weave).").size(12.0).color(p.faint));
@@ -345,62 +392,37 @@ impl App {
             }
         });
         ui.add_space(10.0);
-        card(ui, p, |ui| {
-            ui.label(RichText::new("Keyboard shortcuts").font(fb(16.0)));
-            for (k, v) in [
-                ("Ctrl+Q", "Quick add a task (natural language: dates, times, p1–p4, #project, @label, every …, remind 30m)"),
-                ("Ctrl+E", "Quick add an event"),
-                ("Ctrl+K", "Search everything / jump anywhere"),
-                ("Ctrl+N", "New page"),
-                ("/", "Block menu inside a page"),
-                ("[[", "Link to another page"),
-                ("Esc", "Close dialogs and panels"),
-            ] {
-                ui.horizontal(|ui| {
-                    ui.add_sized([70.0, 18.0], egui::Label::new(RichText::new(k).monospace().color(p.accent)));
-                    ui.label(RichText::new(v).size(13.0));
-                });
-            }
-        });
     }
 
     fn settings_import(&mut self, ui: &mut egui::Ui, p: &Pal) {
         card(ui, p, |ui| {
             ui.label(RichText::new("Import").font(fb(16.0)));
-            ui.label(RichText::new("A backup is made before every import. Importing the same file twice won't duplicate pages, databases or events.").size(12.5).color(p.dim));
-            ui.add_space(8.0);
+            ui.label(RichText::new("Bring in pages, tasks and calendars from Notion, Todoist or Google Calendar.").size(12.5).color(p.dim));
+            ui.add_space(6.0);
             let mut run: Option<(&str, std::path::PathBuf)> = None;
-            ui.label(RichText::new("📄 Notion").font(fs(14.0)));
-            ui.label(RichText::new("In Notion: Settings → Export all workspace content → Markdown & CSV (include subpages). Pages, nested pages, links and databases come across.").size(12.5).color(p.dim));
-            ui.horizontal(|ui| {
-                if ui.button("Choose export .zip…").clicked() {
+            ui.horizontal_wrapped(|ui| {
+                if ui.button("📄 Notion export (.zip)…").clicked() {
                     if let Some(f) = rfd::FileDialog::new().add_filter("Notion export", &["zip"]).pick_file() {
                         run = Some(("notion", f));
                     }
                 }
-                if ui.button("Choose unzipped folder…").clicked() {
+                if ui.button("📄 Notion (unzipped folder)…").clicked() {
                     if let Some(f) = rfd::FileDialog::new().pick_folder() {
                         run = Some(("notion", f));
                     }
                 }
+                if ui.button("✔ Todoist (.zip or .csv)…").clicked() {
+                    if let Some(f) = rfd::FileDialog::new().add_filter("Todoist", &["zip", "csv"]).pick_file() {
+                        run = Some(("todoist", f));
+                    }
+                }
+                if ui.button("📆 Calendar (.zip or .ics)…").clicked() {
+                    if let Some(f) = rfd::FileDialog::new().add_filter("Calendar", &["zip", "ics"]).pick_file() {
+                        run = Some(("ics", f));
+                    }
+                }
             });
-            ui.add_space(8.0);
-            ui.label(RichText::new("✔ Todoist").font(fs(14.0)));
-            ui.label(RichText::new("In Todoist: Settings → Backups → download a backup (.zip of CSVs), or open a project → ⋯ → Export as CSV. Projects, sections, subtasks, priorities, dates and repeats come across.").size(12.5).color(p.dim));
-            if ui.button("Choose Todoist .zip or .csv…").clicked() {
-                if let Some(f) = rfd::FileDialog::new().add_filter("Todoist", &["zip", "csv"]).pick_file() {
-                    run = Some(("todoist", f));
-                }
-            }
-            ui.add_space(8.0);
-            ui.label(RichText::new("📆 Google Calendar (or any .ics)").font(fs(14.0)));
-            ui.label(RichText::new("In Google Calendar: Settings → Import & export → Export (a .zip with one .ics per calendar). Each becomes its own calendar. To keep a calendar live instead, subscribe to it in the Calendars tab.").size(12.5).color(p.dim));
-            if ui.button("Choose .zip or .ics…").clicked() {
-                if let Some(f) = rfd::FileDialog::new().add_filter("Calendar", &["zip", "ics"]).pick_file() {
-                    run = Some(("ics", f));
-                }
-            }
-            if let Some((kind, path)) = run {
+            learn_more(ui, p, "import", "A backup is made before every import, and importing the same file twice won't duplicate anything.\n\nNotion: Settings → Export all workspace content → Markdown & CSV (include subpages).\nTodoist: Settings → Backups → download a backup, or a project's ⋯ → Export as CSV.\nGoogle Calendar: Settings → Import & export → Export (one .ics per calendar). To keep a calendar live instead, subscribe to it under Advanced → Calendars.\n\nTo add a brief, notes or research to a project, use Knowledge → Add files instead.");            if let Some((kind, path)) = run {
                 let _ = self.store.backup_now();
                 let res = match kind {
                     "notion" => crate::import::import_notion(&path, &mut self.store.data),
@@ -440,6 +462,7 @@ impl App {
         ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("Backups").font(fb(16.0)));
+            ui.label(RichText::new("Copies of this workspace, made automatically. Restore any of them here.").size(12.5).color(p.dim));
             ui.horizontal(|ui| {
                 if ui.checkbox(&mut self.store.settings.auto_backup, "Back up automatically every day").changed() {
                     self.store.save_settings();
@@ -454,7 +477,7 @@ impl App {
                 if primary_button(ui, p, "Back up now").clicked() {
                     self.save_now();
                     self.settings_ui.message = match self.store.backup_now() {
-                        Ok(pth) => format!("Backed up to {}", pth.display()),
+                        Ok(_) => "Backed up.".into(),
                         Err(e) => format!("⚠ {e}"),
                     };
                 }
@@ -463,7 +486,7 @@ impl App {
                     open_folder(&self.store.backups_dir());
                 }
             });
-            ui.label(RichText::new("Tip: point the sync folder at OneDrive/Google Drive, or copy the backups folder to a USB drive, for an off-PC copy.").size(12.0).color(p.dim));
+            learn_more(ui, p, "backups", "For a copy off this PC, point the sync folder at OneDrive or Google Drive (Advanced), or copy the backups folder to a USB drive. Restoring backs up your current state first.");
             ui.add_space(8.0);
             let list = self.store.list_backups();
             if list.is_empty() {
@@ -639,12 +662,13 @@ impl App {
         });
     }
 
-    fn settings_ai(&mut self, ui: &mut egui::Ui, p: &Pal) {
+    /// Advanced: AI apps (Claude Desktop, Claude Code, Codex, ChatGPT) reaching this workspace over MCP.
+    fn settings_mcp(&mut self, ui: &mut egui::Ui, p: &Pal) {
         let exe = std::env::current_exe().map(|x| x.display().to_string()).unwrap_or_else(|_| "resolve2.exe".into());
         let ws = self.store.meta.id.clone();
         let sname = format!("resolve2_{}", crate::store::sanitize(&self.store.meta.name).to_lowercase().replace([' ', '-', '.'], "_"));
         card(ui, p, |ui| {
-            ui.label(RichText::new("🔐 AI access to this workspace").font(fb(16.0)));
+            ui.label(RichText::new("🔐 AI apps and this workspace (MCP)").font(fb(16.0)));
             ui.label(RichText::new("Assistants connect through MCP (Model Context Protocol) and only ever see the workspace you name in their settings. No subscription to Notion AI needed — use the assistant you already have.").size(12.5).color(p.dim));
             if ui.checkbox(&mut self.store.settings.ai_access, "Allow AI assistants to open this workspace").changed() {
                 self.store.save_settings();
@@ -691,14 +715,17 @@ impl App {
                 ui.label(RichText::new("ChatGPT").font(fb(15.0)));
                 badge(ui, p, false, "needs extra setup");
             });
-            ui.label(RichText::new("ChatGPT connects from OpenAI's servers, so it needs a public HTTPS address for this PC. 1) Turn on the phone page/HTTP server (Sync & phone tab). 2) Run a free tunnel such as `cloudflared tunnel --url http://localhost:PORT` (or Tailscale Funnel). 3) In ChatGPT → Settings → Apps & Connectors → Developer mode → create a connector with the https address below (no authentication; the token is in the link). Keep the link private.").size(12.5).color(p.dim));
+            ui.label(RichText::new("ChatGPT connects from OpenAI's servers, so it needs a public HTTPS address for this PC. 1) Turn on the phone page/HTTP server (Sync & phone, above). 2) Run a free tunnel such as `cloudflared tunnel --url http://localhost:PORT` (or Tailscale Funnel). 3) In ChatGPT → Settings → Apps & Connectors → Developer mode → create a connector with the https address below (no authentication; the token is in the link). Keep the link private.").size(12.5).color(p.dim));
             code_box(ui, p, &format!("https://<your-tunnel-address>/mcp?token={}", self.store.settings.token));
             ui.label(RichText::new(format!("Local test address: http://localhost:{}/mcp?token=…", self.store.settings.server_port)).size(11.5).color(p.faint));
         });
-        ui.add_space(10.0);
+    }
+
+    /// AI tab: the other providers (OpenAI, other local servers, Codex) and usage.
+    fn settings_ai_more(&mut self, ui: &mut egui::Ui, p: &Pal) {
         card(ui, p, |ui| {
-            ui.label(RichText::new("✨ The in-app assistant (like Notion AI)").font(fb(16.0)));
-            ui.label(RichText::new("Powers ✨ Ask AI in the sidebar: it answers questions and, if you let it, makes changes for you — writes pages, creates tasks and events, fills in database rows. Pick who does the thinking:").size(12.5).color(p.dim));
+            ui.label(RichText::new("Other AI options").font(fb(16.0)));
+            ui.label(RichText::new("The AI Resolve uses now. Connect your AI (above) sets this for you; other providers are here.").size(12.5).color(p.dim));
             let mut changed = false;
             let before = self.reg.settings.ai_provider.clone();
             ui.label(RichText::new("API providers (pay per use, tracked below):").size(12.5).color(p.dim));

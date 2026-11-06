@@ -140,7 +140,7 @@ impl App {
             View::Page(_) | View::Database(_) => Target::Sec(Section::Knowledge),
             View::Settings => Target::Settings,
             View::Help => Target::Help,
-            View::Intake(_) | View::TestLab => return None,
+            View::Intake(_) | View::TestLab | View::ConnectAi => return None,
         })
     }
 

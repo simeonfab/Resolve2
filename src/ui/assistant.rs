@@ -52,7 +52,7 @@ impl App {
                         self.page_ui.ai_open = false;
                     }
                     if ghost_button(ui, RichText::new("⚙").color(p.dim)).on_hover_text("Choose Claude, ChatGPT or a local model").clicked() {
-                        self.settings_ui.tab = 4;
+                        self.settings_ui.tab = 0;
                         self.go(View::Settings);
                     }
                 });

@@ -85,6 +85,8 @@ pub struct ResolveUi {
     pub chat_started_ms: i64,
     pub handoff_for: String,
     pub handoff_focus: String,
+    /// The AI rewriting a new handoff: (record id, result).
+    pub handoff_job: Option<(Id, Receiver<Result<String, String>>)>,
 }
 
 pub fn amber() -> Color32 {

@@ -78,7 +78,7 @@ pub fn run(t: &mut T, meta: WorkspaceMeta, port: u16) {
             break;
         }
     }
-    t.check("without AI, a fixed question set covers all nine targets", asked == 9 && off.coverage() > 0.99, asked);
+    t.check("without AI, the fixed question set asks up to the 8-question cap", asked == crate::resolve::journey::MAX_QUESTIONS && off.coverage() > 0.85, asked);
     let ev = off.qas.iter().find(|q| q.target == "evidence").cloned().unwrap_or_default();
     t.check("without AI, answers are sorted by their target (evidence stays evidence)", offline_classify(&ev).first().map_or(false, |h| h.kind == "evidence"), "kind");
     for q in off.qas.clone() {

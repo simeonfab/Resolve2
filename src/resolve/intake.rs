@@ -152,6 +152,20 @@ pub struct ProjectPlan {
 pub const READINESS_AREAS: [&str; 4] = ["Direction is clear", "Planning is usable", "Ready to act", "Evidence is strong enough"];
 pub const READINESS_STATUS: [&str; 4] = ["Ready", "Partially ready", "Blocked", "Not ready"];
 
+/// A file attached to an intake, and where it will go in Knowledge.
+#[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
+pub struct Attachment {
+    pub name: String,
+    pub text: String,
+    /// Knowledge place (see resolve::files::CATEGORIES) and how it was chosen ("ai" / "guess" / "you").
+    #[serde(default)]
+    pub place: String,
+    #[serde(default)]
+    pub how: String,
+    #[serde(default)]
+    pub why: String,
+}
+
 /// One intake session. Saved after every step, so closing the app mid-way loses nothing.
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Intake {
@@ -252,6 +266,10 @@ pub struct Intake {
     /// The understanding the current proposal was computed from (precompute freshness).
     #[serde(default)]
     pub proposed_from: String,
+    /// Files attached on the bring-it-in screen: they feed the questions and the proposal like
+    /// typed text, and are filed in Knowledge on Adopt.
+    #[serde(default)]
+    pub attachments: Vec<Attachment>,
     pub created: i64,
     pub updated: i64,
 }

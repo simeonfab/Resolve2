@@ -11,6 +11,10 @@
 //!   resolve2 --selftest                       run the end-to-end checks
 //!   resolve2 --list-workspaces
 //!   resolve2 --install-shortcuts            add Resolve 2 to the desktop and Start menu
+//!   resolve2 --test-connection claude-code|ollama|anthropic   one real test reply (Connect your AI)
+
+// the release build (what testers get) opens as a normal windowed app, with no console window
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
 mod ai;
 mod history;
@@ -25,6 +29,7 @@ mod selftest;
 mod selftest_resolve;
 mod selftest_safety;
 mod selftest_journey;
+mod selftest_alpha;
 mod server;
 mod store;
 mod templates;
@@ -46,6 +51,85 @@ fn main() {
     } else if testlab {
         // Test Intake never touches the real data folder
         store::set_root(resolve::testlab::default_root());
+    }
+    // resolve2 --test-connection PROVIDER: the same real round trip as Connect your AI's Test button
+    if let Some(which) = arg_value(&args, "--test-connection") {
+        let s = store::Registry::load().settings;
+        let cfg = match which.as_str() {
+            "claude-code" => ai::AiConfig { provider: which.clone(), url: String::new(), model: String::new(), key: String::new() },
+            "anthropic" => ai::AiConfig { provider: which.clone(), url: String::new(), model: ai::CLAUDE_MODEL.into(), key: s.anthropic_key },
+            _ => {
+                let models = ai::list_models("ollama", ui::connect::OLLAMA_URL).unwrap_or_default();
+                let m = models.iter().find(|m| m.starts_with("qwen3")).or(models.first()).cloned().unwrap_or_else(|| "qwen3".into());
+                ai::AiConfig { provider: "ollama".into(), url: ui::connect::OLLAMA_URL.into(), model: m, key: String::new() }
+            }
+        };
+        let t0 = std::time::Instant::now();
+        match ai::test_connection(&cfg) {
+            Ok(r) => println!("✓ {} / {} replied in {:.1}s: {r}", cfg.provider, if cfg.model.is_empty() { "default" } else { &cfg.model }, t0.elapsed().as_secs_f32()),
+            Err(e) => {
+                println!("✗ {}: {e}", cfg.provider);
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
+    // resolve2 --import FILE... [--no-ai]: read each file, sort it, file it in Knowledge (newest
+    // guided project), and say where it went — the same steps as Knowledge → Add files
+    if args.iter().any(|a| a == "--import") {
+        let paths: Vec<PathBuf> = args.iter().skip_while(|a| *a != "--import").skip(1).take_while(|a| !a.starts_with("--")).map(PathBuf::from).collect();
+        let reg = store::Registry::load();
+        let meta = reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone());
+        let mut st = store::Store::open(meta);
+        let pid = st.data.contexts.iter().filter(|c| st.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
+        let cfg = ai::current_config();
+        let use_ai = cfg.provider != "offline" && !args.iter().any(|a| a == "--no-ai");
+        for p in paths {
+            let t0 = std::time::Instant::now();
+            match resolve::files::extract(&p) {
+                Ok((title, text)) => {
+                    let (place, why, how) = if use_ai {
+                        match resolve::files::sort_with_ai(&cfg, &title, &text) {
+                            Ok((pl, w)) => (pl, format!("sorted by the AI: {w}"), "ai"),
+                            Err(e) => {
+                                let (pl, w) = resolve::files::guess(&title, &text);
+                                (pl, format!("{w} (AI failed: {e})"), "guess")
+                            }
+                        }
+                    } else {
+                        let (pl, w) = resolve::files::guess(&title, &text);
+                        (pl, w, "guess")
+                    };
+                    resolve::files::place(&mut st.data, pid.as_deref(), &title, &text, &place, how);
+                    println!("{} → {} ({} words, {:.1}s) — {why}", p.display(), resolve::files::label(&place), text.split_whitespace().count(), t0.elapsed().as_secs_f32());
+                }
+                Err(e) => println!("{} → not imported: {e}", p.display()),
+            }
+        }
+        let _ = st.save();
+        return;
+    }
+    // resolve2 --handoff "REQUEST" [--to WHO] [--ai]: print the handoff brief Resolve writes for
+    // the newest guided project (deterministic; with --ai, rewritten by the AI in Settings)
+    if let Some(focus) = arg_value(&args, "--handoff") {
+        let reg = store::Registry::load();
+        let meta = reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone());
+        let st = store::Store::open(meta);
+        let Some(ctx) = st.data.contexts.iter().filter(|c| st.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).cloned() else {
+            println!("No guided project in this data folder.");
+            std::process::exit(1);
+        };
+        let to = arg_value(&args, "--to").unwrap_or_default();
+        if args.iter().any(|a| a == "--ai") {
+            let t0 = std::time::Instant::now();
+            match resolve::roles::handoff_ai(&ai::current_config(), &st.data, &ctx, &to, &focus) {
+                Ok(b) => println!("{b}\n\n(written by {} in {:.1}s)", ai::current_config().provider, t0.elapsed().as_secs_f32()),
+                Err(e) => println!("AI failed: {e}"),
+            }
+        } else {
+            println!("{}", resolve::roles::handoff_for(&st.data, &ctx, &to, &focus));
+        }
+        return;
     }
     // resolve2 --promote RUN.json [--workspace NAME]: adopt a Test Intake run into the real data folder
     if let Some(f) = arg_value(&args, "--promote") {

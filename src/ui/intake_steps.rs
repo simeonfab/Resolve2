@@ -207,6 +207,8 @@ impl App {
             it.flag_dependents("input");
         }
         ui.add_space(6.0);
+        self.attach_row(ui, p, it);
+        ui.add_space(6.0);
         if ui.add(egui::Label::new(RichText::new(if self.resolve_ui.show_import { "▾ Already started this somewhere else? Get a prompt to pull it in" } else { "▸ Already started this somewhere else? Get a prompt to pull it in" }).size(size::SMALL).color(p.dim)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
             self.resolve_ui.show_import = !self.resolve_ui.show_import;
         }
@@ -222,7 +224,7 @@ impl App {
             });
         }
         ui.add_space(12.0);
-        let ok = !it.input.trim().is_empty();
+        let ok = !it.input.trim().is_empty() || !it.attachments.is_empty();
         let mut go = false;
         ui.horizontal(|ui| {
             if ui.button("Back").clicked() {

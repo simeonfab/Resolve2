@@ -13,6 +13,7 @@
 
 pub mod assess;
 pub mod context;
+pub mod files;
 pub mod intake;
 pub mod journey;
 pub mod testlab;

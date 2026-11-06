@@ -370,6 +370,9 @@ impl Intake {
     }
     pub fn transcript(&self) -> String {
         let mut s = format!("OPENING (in their own words):\n{}\n", self.input.trim());
+        for a in &self.attachments {
+            s.push_str(&format!("\n{}\n", super::files::as_intake_text(&a.name, &a.text)));
+        }
         for q in &self.qas {
             s.push_str(&format!("\n[{}] Q: {}\nA: {}\n", q.id, q.question, if q.answer.trim().is_empty() { "(skipped)" } else { q.answer.trim() }));
         }
@@ -380,10 +383,18 @@ impl Intake {
     }
 }
 
-/// Next question without AI: the first target not yet asked.
+/// The intake never asks more than this many questions; after the last one it goes on to the
+/// proposal with what it has (alpha brief §3).
+pub const MAX_QUESTIONS: usize = 8;
+
+/// Next question without AI: the first target not yet asked (never past the cap, never a
+/// question already asked in other words).
 pub fn offline_next(i: &Intake) -> Option<Qa> {
+    if i.qas.len() >= MAX_QUESTIONS {
+        return None;
+    }
     let asked: Vec<&str> = i.qas.iter().map(|q| q.target.as_str()).collect();
-    TARGETS.iter().find(|t| !asked.contains(&t.0)).map(|t| Qa {
+    TARGETS.iter().filter(|t| !i.qas.iter().any(|q| similar(&q.question, t.2))).find(|t| !asked.contains(&t.0)).map(|t| Qa {
         id: new_id(),
         target: t.0.into(),
         question: t.2.into(),
@@ -1216,6 +1227,11 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
                     c.page_id = Some(b);
                 }
             }
+            // files attached during the intake are filed in Knowledge, in the place chosen for them
+            for a in &i.attachments {
+                let (cat, how) = if a.place.is_empty() { (super::files::guess(&a.name, &a.text).0, "guess".to_string()) } else { (a.place.clone(), a.how.clone()) };
+                super::files::place(d, Some(&st.project_id), &a.name, &a.text, &cat, &how);
+            }
         }
         5 => {
             // transcript + decision trail, kept with the project
@@ -1370,6 +1386,11 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             out.heard = Some((qa.id.clone(), items));
         }
     }
+    // the cap: after the 8th question, no more questions
+    let want_next = want_next && i.qas.len() < MAX_QUESTIONS;
+    if i.qas.len() >= MAX_QUESTIONS {
+        out.done = true;
+    }
     if want_next {
         // the next question sees this answer's classification
         let mut view = i.clone();
@@ -1402,6 +1423,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
 
 /// Apply an answer job's result to the session.
 pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
+    let answered_last = out.heard.as_ref().map_or(false, |(qid, _)| i.qas.last().map_or(false, |q| &q.id == qid));
     if let Some((qid, items)) = out.heard {
         i.heard.retain(|h| h.from != qid || h.corrected);
         i.heard.extend(items);
@@ -1419,7 +1441,14 @@ pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
     if out.done {
         i.suggest_stop = true;
     }
-    if let Some(mut q) = out.next {
+    // never past the cap, never the same question twice (in any wording)
+    let out_next = out.next.filter(|q| i.qas.len() < MAX_QUESTIONS && !i.qas.iter().any(|x| similar(&x.question, &q.question)));
+    if i.qas.len() >= MAX_QUESTIONS && i.stage == "questions" && answered_last {
+        // the 8th question is answered: on to the proposal with what Resolve has
+        i.suggest_stop = true;
+        i.stage = "confirm".into();
+    }
+    if let Some(mut q) = out_next {
         if !out.note.is_empty() && q.source == "fixed question set" {
             q.why = format!("{} {}", out.note, q.why);
         }

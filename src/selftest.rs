@@ -37,7 +37,8 @@ pub fn run() -> i32 {
 
     // ---- workspaces
     let mut reg = Registry::load();
-    t.check("first run creates a private Personal workspace and a separate Sample workspace", reg.workspaces.len() == 2 && reg.find("Personal").is_some(), format!("{} workspaces", reg.workspaces.len()));
+    t.check("a fresh copy starts with one empty Personal workspace (no demo workspace)", reg.workspaces.len() == 1 && reg.find("Personal").is_some(), format!("{} workspaces", reg.workspaces.len()));
+    t.check("a fresh copy starts at Connect your AI (not set up yet)", !reg.settings.ai_setup_done && reg.settings.anthropic_key.is_empty() && reg.settings.openai_key.is_empty(), "already set up, or a key is present");
     let personal = reg.find("Personal").cloned().unwrap();
     let personal_empty = Store::open(personal.clone());
     t.check("your real workspace starts without demo data", personal_empty.data.tasks.is_empty() && personal_empty.data.events.is_empty(), format!("{} tasks", personal_empty.data.tasks.len()));
@@ -326,8 +327,9 @@ pub fn run() -> i32 {
     crate::selftest_resolve::run(&mut t, personal.clone(), port + 7);
     crate::selftest_safety::run(&mut t, personal.clone(), port + 9);
     crate::selftest_journey::run(&mut t, personal.clone(), port + 11);
+    crate::selftest_alpha::run(&mut t, &base);
     reg = Registry::load();
-    t.check("workspace list persists", reg.workspaces.len() == 3, reg.workspaces.len());
+    t.check("workspace list persists (Personal + the one made in the test)", reg.workspaces.len() == 2, reg.workspaces.len());
     println!("\n{} passed, {} failed", t.pass, t.fail);
     let _ = std::fs::remove_dir_all(&base);
     t.fail as i32

@@ -75,6 +75,8 @@ impl App {
             }
         });
         self.resolve_ui.knowledge_tab = tab;
+        ui.add_space(6.0);
+        self.add_files_bar(ui, p);
         ui.add_space(10.0);
         let pid = self.current_project.clone();
         match tab {
@@ -111,6 +113,9 @@ impl App {
     }
 
     fn knowledge_docs(&mut self, ui: &mut egui::Ui, p: &Pal, pid: Option<&str>) {
+        let brief = pid.and_then(|x| self.brief_of(x));
+        self.imported_files_card(ui, p, brief);
+        ui.add_space(10.0);
         if let Some(pid) = pid {
             let brief = self.brief_of(pid);
             let mut create = false;

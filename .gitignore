@@ -24,3 +24,5 @@ ai-usage.jsonl
 *.pem
 *.pfx
 secrets*
+/target-rel/
+/dist/

@@ -428,10 +428,10 @@ fn ai_backup_before_write(store: &mut Store) {
 /// Run one tool against the workspace. Returns JSON text for the assistant.
 pub fn call(store: &mut Store, name: &str, a: &Value) -> Result<String, String> {
     if !store.settings.ai_access {
-        return Err(format!("AI access is turned off for the workspace '{}'. Turn it on in Resolve 2 → Settings → AI & MCP.", store.meta.name));
+        return Err(format!("AI access is turned off for the workspace '{}'. Turn it on in Resolve 2 → Settings → Advanced → AI apps (MCP).", store.meta.name));
     }
     if store.settings.ai_read_only && WRITE_TOOLS.contains(&name) {
-        return Err("This workspace is read-only for AI assistants. Change it in Resolve 2 → Settings → AI & MCP.".into());
+        return Err("This workspace is read-only for AI assistants. Change it in Resolve 2 → Settings → Advanced → AI apps (MCP).".into());
     }
     store.reload_if_changed();
     let writes = WRITE_TOOLS.contains(&name);

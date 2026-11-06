@@ -509,7 +509,7 @@ impl App {
     pub(super) fn cockpit_handoff(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
         let brief = roles::handoff_brief(&self.store.data, ctx);
         ui.label(RichText::new("Hand off to an execution tool").font(fs(16.0)));
-        ui.label(RichText::new("A self-contained brief built from the project's real state — paste it into Codex, Claude Code, Cursor or ChatGPT. They can also read and update this workspace directly over MCP (Settings → AI & MCP).").size(12.5).color(p.dim));
+        ui.label(RichText::new("A self-contained brief built from the project's real state — paste it into Codex, Claude Code, Cursor or ChatGPT. They can also read and update this workspace directly over MCP (Settings → Advanced).").size(12.5).color(p.dim));
         let (mut copy, mut save) = (false, false);
         ui.horizontal(|ui| {
             copy = primary_button(ui, p, "Copy brief").clicked();
