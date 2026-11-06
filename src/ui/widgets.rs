@@ -10,9 +10,20 @@ pub fn card<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
         .inner_margin(egui::Margin::same(16.0))
         .show(ui, |ui| {
             ui.set_width(ui.available_width());
-            add(ui)
+            // a plain top-down layout: text wraps inside the card instead of being stretched
+            ui.vertical(|ui| add(ui)).inner
         })
         .inner
+}
+
+/// A label that always wraps within the space it's given (never pushes past its column).
+pub fn wrap_label(ui: &mut Ui, text: RichText) -> Response {
+    ui.add(egui::Label::new(text).wrap())
+}
+
+/// A clickable wrapped label.
+pub fn wrap_link(ui: &mut Ui, text: RichText) -> Response {
+    ui.add(egui::Label::new(text).wrap().sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// Lay out content in a centred column no wider than `max_w`.

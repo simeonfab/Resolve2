@@ -95,7 +95,8 @@ fn default_ai_url() -> String {
     "http://localhost:11434".into()
 }
 fn default_ai_model() -> String {
-    "llama3.2".into()
+    // recommended local model for the Resolve intake
+    "qwen3".into()
 }
 
 impl Default for AppSettings {
@@ -146,7 +147,8 @@ impl Registry {
             let mut data = WorkspaceData::default();
             crate::seed::seed(&mut data);
             let _ = write_json_atomic(&dir.join("data.json"), &data);
-            reg.settings.last_workspace = Some(sample.id.clone());
+            // a new user lands in their own (empty) workspace, which opens straight into the intake
+            reg.settings.last_workspace = Some(personal.id.clone());
             reg.workspaces.push(personal);
             reg.workspaces.push(sample);
             reg.save();

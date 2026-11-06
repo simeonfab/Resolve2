@@ -3,6 +3,7 @@ pub mod widgets;
 mod calendar;
 mod cockpit;
 mod intake;
+mod intake_ending;
 mod intake_review;
 mod intake_steps;
 pub mod resolve;
@@ -289,8 +290,16 @@ impl App {
             };
         } else {
             app.ensure_server();
-            if opts.view.is_none() {
-                app.open_intake_if_new();
+            match opts.view.as_deref() {
+                None => app.open_intake_if_new(),
+                // --view intake-<stage>: the newest intake at that stage (screenshots / checks)
+                Some(v) if v.starts_with("intake") => {
+                    let stage = v.strip_prefix("intake-").unwrap_or("");
+                    if let Some(i) = app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated) {
+                        app.view = View::Intake(i.id.clone());
+                    }
+                }
+                _ => {}
             }
         }
         app
@@ -688,8 +697,8 @@ impl App {
                             }
                         }
                         ui.separator();
-                        if ui.button("+ New workspace…").clicked() {
-                            self.new_ws = Some(String::new());
+                        if ui.button("+ Start something new with Resolve").on_hover_text("Runs the intake; Adopt creates a new workspace with your project as its first project").clicked() {
+                            self.start_something_new();
                             ui.close_menu();
                         }
                         if ui.button("⚙ Settings").clicked() {
@@ -761,11 +770,6 @@ impl App {
                         });
                     });
                     let intakes = resolve::open_intakes(&self.store.data);
-                    if intakes.is_empty() {
-                        if nav_item(ui, p, "✦", "Start with Resolve", None, false, Some(p.accent)).on_hover_text("Turn an idea, problem or messy project into a clear first move").clicked() {
-                            self.start_intake();
-                        }
-                    }
                     for (id, title, step) in intakes.into_iter().take(4) {
                         let label = format!("{} · step {}/4", title, (step as usize + 1).min(4));
                         if nav_item(ui, p, "◌", &label, None, v == View::Intake(id.clone()), Some(p.accent)).on_hover_text("Unfinished — pick up where you left off").clicked() {

@@ -19,8 +19,12 @@ pub enum JobOut {
     Proposals(Id, String, Result<(String, Vec<Proposal>), String>),
     // ---- intake journey (v2)
     Answer(Id, crate::resolve::journey::AnswerOut),
-    Understood(Id, Result<Understanding, String>, Vec<crate::ai::Trace>),
-    Proposed(Id, Option<String>, Result<crate::resolve::journey::Proposal, String>, Vec<crate::ai::Trace>),
+    /// (intake, answers it was computed from, result, calls)
+    Understood(Id, usize, Result<Understanding, String>, Vec<crate::ai::Trace>),
+    /// (intake, section, understanding key it was computed from, result, calls)
+    Proposed(Id, Option<String>, String, Result<crate::resolve::journey::Proposal, String>, Vec<crate::ai::Trace>),
+    /// A background job's result with how long it took.
+    Timed(String, f64, Box<JobOut>),
 }
 
 #[derive(Default)]
@@ -47,6 +51,21 @@ pub struct ResolveUi {
     pub focus_qa: Option<Id>,
     pub show_why: bool,
     pub inspector: bool,
+    // ---- speed: background work and wait timing
+    /// Background jobs (classification, precomputed understanding and proposal): (label, receiver).
+    pub bg: Vec<(String, Receiver<JobOut>)>,
+    /// When the foreground job started (app clock, seconds) and what it is: (intake id, kind).
+    pub busy_since: f64,
+    pub fg: Option<(Id, &'static str)>,
+    /// Precompute bookkeeping: (intake id, key) of the understanding / proposal being computed.
+    pub bg_understand: Option<(Id, usize)>,
+    pub bg_propose: Option<(Id, String)>,
+    /// Per-step timings this session (step, seconds) — shown in the inspector and the report.
+    pub timings: Vec<(String, f64)>,
+    /// Ending: the current theme card is being corrected ("Not quite").
+    pub theme_edit: bool,
+    /// Bridge: when the last adopt step ran (so each real step stays visible briefly).
+    pub adopt_t: f64,
 }
 
 pub fn amber() -> Color32 {
@@ -61,7 +80,32 @@ impl App {
         });
         self.resolve_ui.rx = Some(rx);
         self.resolve_ui.busy = label.to_string();
+        self.resolve_ui.busy_since = self.now;
+        self.resolve_ui.fg = None;
         self.resolve_ui.error.clear();
+    }
+
+    /// A foreground job the intake may give up on after 15 s (kind "next" falls back to the fixed question set).
+    pub(super) fn spawn_job_kind(&mut self, label: &str, intake: &str, kind: &'static str, f: impl FnOnce() -> JobOut + Send + 'static) {
+        self.spawn_job(label, f);
+        self.resolve_ui.fg = Some((intake.to_string(), kind));
+    }
+
+    /// Work that runs while the person reads or types; its result is applied when it arrives.
+    pub(super) fn spawn_bg(&mut self, label: &str, f: impl FnOnce() -> JobOut + Send + 'static) {
+        let (tx, rx) = channel();
+        let t0 = std::time::Instant::now();
+        let lbl = label.to_string();
+        std::thread::spawn(move || {
+            let out = f();
+            let _ = tx.send(JobOut::Timed(lbl, t0.elapsed().as_secs_f64(), Box::new(out)));
+        });
+        self.resolve_ui.bg.push((label.to_string(), rx));
+    }
+
+    /// Seconds the current foreground wait has lasted.
+    pub fn wait_secs(&self) -> f64 {
+        if self.resolve_ui.rx.is_some() { self.now - self.resolve_ui.busy_since } else { 0.0 }
     }
 
     pub(super) fn intake_mut(&mut self, id: &str) -> Option<&mut Intake> {
@@ -101,6 +145,21 @@ impl App {
         self.go(View::Intake(id));
     }
 
+    /// "Start something new with Resolve": the full-screen intake; Adopt creates a new workspace
+    /// (named after the project) with the adopted project as its first project.
+    pub fn start_something_new(&mut self) {
+        let mut i = Intake::new();
+        i.new_workspace = true;
+        if let Some(last) = self.store.data.intakes.iter().filter(|x| !x.name.is_empty()).max_by_key(|x| x.updated) {
+            i.name = last.name.clone();
+            i.stage = "bring".into();
+        }
+        let id = i.id.clone();
+        self.store.data.intakes.push(i);
+        self.touch();
+        self.go(View::Intake(id));
+    }
+
     /// Open Test Intake: a separate window and process, with its own sandbox data folder.
     pub fn launch_testlab(&mut self) {
         let exe = std::env::current_exe().unwrap_or_default();
@@ -122,11 +181,49 @@ impl App {
 
     /// Apply finished background work. Called every frame.
     pub fn resolve_poll(&mut self, ctx: &egui::Context) {
+        // background work first: apply whatever has finished
+        if !self.resolve_ui.bg.is_empty() {
+            ctx.request_repaint_after(std::time::Duration::from_millis(200));
+            let mut done = vec![];
+            let mut keep = vec![];
+            for (label, rx) in std::mem::take(&mut self.resolve_ui.bg) {
+                match rx.try_recv() {
+                    Ok(o) => done.push(o),
+                    Err(std::sync::mpsc::TryRecvError::Empty) => keep.push((label, rx)),
+                    Err(_) => {}
+                }
+            }
+            self.resolve_ui.bg = keep;
+            for o in done {
+                self.apply_job(o);
+            }
+        }
         let Some(rx) = &self.resolve_ui.rx else { return };
         ctx.request_repaint_after(std::time::Duration::from_millis(150));
         let out = match rx.try_recv() {
             Ok(o) => o,
-            Err(std::sync::mpsc::TryRecvError::Empty) => return,
+            Err(std::sync::mpsc::TryRecvError::Empty) => {
+                // no wait passes 15 s: the next question falls back to the fixed set
+                if let Some((iid, "next")) = self.resolve_ui.fg.clone() {
+                    if self.wait_secs() > 15.0 {
+                        self.resolve_ui.rx = None;
+                        self.resolve_ui.busy.clear();
+                        self.resolve_ui.fg = None;
+                        self.resolve_ui.timings.push(("next question (timed out)".into(), 15.0));
+                        if let Some(i) = self.intake_mut(&iid) {
+                            let out = crate::resolve::journey::AnswerOut { next: crate::resolve::journey::offline_next(i), note: "The AI took longer than 15 seconds, so Resolve asked this from its fixed question set.".into(), ..Default::default() };
+                            let none_left = out.next.is_none();
+                            crate::resolve::journey::apply_answer(i, out);
+                            if none_left {
+                                i.suggest_stop = true;
+                            }
+                        }
+                        self.resolve_ui.focus_qa = None;
+                        self.touch();
+                    }
+                }
+                return;
+            }
             Err(_) => {
                 self.resolve_ui.rx = None;
                 self.resolve_ui.busy.clear();
@@ -134,9 +231,20 @@ impl App {
                 return;
             }
         };
+        let label = std::mem::take(&mut self.resolve_ui.busy);
+        let secs = self.wait_secs().max(self.now - self.resolve_ui.busy_since);
         self.resolve_ui.rx = None;
-        self.resolve_ui.busy.clear();
+        self.resolve_ui.fg = None;
+        self.resolve_ui.timings.push((label, secs));
+        self.apply_job(out);
+    }
+
+    fn apply_job(&mut self, out: JobOut) {
         match out {
+            JobOut::Timed(label, secs, inner) => {
+                self.resolve_ui.timings.push((format!("{label} (background)"), secs));
+                self.apply_job(*inner);
+            }
             JobOut::Answer(id, out) => {
                 if let Some(i) = self.intake_mut(&id) {
                     crate::resolve::journey::apply_answer(i, out);
@@ -144,28 +252,45 @@ impl App {
                 }
                 self.touch();
             }
-            JobOut::Understood(id, r, calls) => {
+            JobOut::Understood(id, n, r, calls) => {
+                self.temp.remove("wait:understanding");
+                if self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, _)| x == &id) {
+                    self.resolve_ui.bg_understand = None;
+                }
                 if let Some(i) = self.intake_mut(&id) {
                     crate::resolve::journey::keep_trace(i, calls);
-                    match r {
-                        Ok(u) => {
-                            i.understanding = Some(u);
-                            i.last_error.clear();
+                    // never overwrite cards the person is editing
+                    if !i.editing {
+                        match r {
+                            Ok(u) => {
+                                i.understanding = Some(u);
+                                i.understood_n = n;
+                                i.last_error.clear();
+                            }
+                            Err(e) => i.last_error = e,
                         }
-                        Err(e) => i.last_error = e,
                     }
                     i.touch();
                 }
                 self.touch();
             }
-            JobOut::Proposed(id, section, r, calls) => {
+            JobOut::Proposed(id, section, key, r, calls) => {
+                self.temp.remove("wait:proposal");
+                if self.resolve_ui.bg_propose.as_ref().map_or(false, |(x, _)| x == &id) {
+                    self.resolve_ui.bg_propose = None;
+                }
                 if let Some(i) = self.intake_mut(&id) {
                     crate::resolve::journey::keep_trace(i, calls);
                     match r {
                         Ok(fresh) => {
                             match (section.as_deref(), i.proposal.as_mut()) {
                                 (Some(s), Some(p)) if s != "all" => crate::resolve::journey::merge_section(p, fresh, s),
-                                _ => i.proposal = Some(fresh),
+                                _ => {
+                                    i.proposal = Some(fresh);
+                                    i.proposed_from = key;
+                                    i.ending = 0;
+                                    i.theme_ix = 0;
+                                }
                             }
                             let snapshot = i.clone();
                             if let Some(p) = i.proposal.as_mut() {

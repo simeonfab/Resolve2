@@ -20,6 +20,21 @@ fn code_box(ui: &mut egui::Ui, p: &Pal, text: &str) -> bool {
     copied
 }
 
+/// One-line advice about the chosen local model.
+pub fn model_note(provider: &str, model: &str) -> Option<&'static str> {
+    if provider != "ollama" {
+        return None;
+    }
+    let m = model.to_lowercase();
+    if m.starts_with("llama3.2") {
+        Some("Fine for trying the flow, weak for real projects — qwen3 is recommended for the intake.")
+    } else if m.is_empty() {
+        Some("Recommended for the intake: qwen3.")
+    } else {
+        None
+    }
+}
+
 fn badge(ui: &mut egui::Ui, p: &Pal, ok: bool, text: &str) {
     chip(ui, text, if ok { p.green } else { p.orange });
 }
@@ -702,7 +717,7 @@ impl App {
                     "anthropic" => ("https://api.anthropic.com", crate::ai::CLAUDE_MODEL),
                     "openai-cloud" => ("https://api.openai.com", ""),
                     "openai" => ("http://localhost:1234", ""),
-                    _ => ("http://localhost:11434", "llama3.2"),
+                    _ => ("http://localhost:11434", "qwen3"),
                 };
                 self.reg.settings.ai_url = url.into();
                 self.reg.settings.ai_model = model.into();
@@ -734,7 +749,7 @@ impl App {
                     ui.label(RichText::new("Get a key at platform.openai.com → API keys, and type the model name your account offers. A ChatGPT Plus subscription doesn't include API use; to use your subscription instead, connect ChatGPT through MCP (above).").size(11.5).color(p.faint));
                 }
                 _ => {
-                    ui.label(RichText::new("Free and private. Install Ollama from ollama.com, then run `ollama pull llama3.2` (small, any PC) or `ollama pull qwen3` (better at taking actions, needs more memory). Press Detect models below.").size(11.5).color(p.faint));
+                    ui.label(RichText::new("Free and private. Install Ollama from ollama.com. For the Resolve intake use **qwen3** (`ollama pull qwen3`) — it follows the intake's rules far better than llama3.2. Press Detect models below.").size(11.5).color(p.faint));
                     ui.horizontal(|ui| {
                         ui.label("Address");
                         changed |= ui.text_edit_singleline(&mut self.reg.settings.ai_url).changed();
@@ -749,6 +764,9 @@ impl App {
                     self.settings_ui.models_rx = Some(crate::ai::list_models_async(&self.reg.settings.ai_provider, &self.reg.settings.ai_url));
                 }
             }); }
+            if let Some(note) = model_note(&self.reg.settings.ai_provider, &self.reg.settings.ai_model) {
+                ui.label(RichText::new(note).size(11.5).color(p.orange));
+            }
             if changed {
                 self.reg.save();
             }
@@ -756,7 +774,7 @@ impl App {
                 if let Ok(r) = rx.try_recv() {
                     match r {
                         Ok(m) => {
-                            self.settings_ui.message = if m.is_empty() { "Connected, but no models are installed yet (try: ollama pull llama3.2)".into() } else { format!("Found {} models", m.len()) };
+                            self.settings_ui.message = if m.is_empty() { "Connected, but no models are installed yet (try: ollama pull qwen3)".into() } else { format!("Found {} models", m.len()) };
                             self.settings_ui.models = m;
                         }
                         Err(e) => self.settings_ui.message = format!("⚠ {e}"),

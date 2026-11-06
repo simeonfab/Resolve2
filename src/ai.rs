@@ -577,7 +577,10 @@ fn complete_text_once(cfg: &AiConfig, system: &str, temperature: Option<f64>) ->
             Ok(text)
         }
         "claude-code" | "codex-cli" => {
-            let text = run_cli_plain(&cfg.provider, system, user)?;
+            // small judgement-only calls use a fast model on the Claude Code CLI
+            let purpose = PURPOSE.with(|x| x.borrow().clone());
+            let model = if cfg.model.trim().is_empty() && cfg.provider == "claude-code" && purpose == "intake:classify" { "haiku".to_string() } else { cfg.model.trim().to_string() };
+            let text = run_cli_plain_model(&cfg.provider, system, user, &model)?;
             record_usage(&cfg.provider, "subscription", 0, 0);
             Ok(text)
         }
@@ -646,7 +649,12 @@ pub fn current_config() -> AiConfig {
 }
 
 /// A plain (no tools) prompt through the Claude Code / Codex CLI.
+#[allow(dead_code)]
 fn run_cli_plain(provider: &str, system: &str, prompt: &str) -> Result<String, String> {
+    run_cli_plain_model(provider, system, prompt, "")
+}
+
+fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) -> Result<String, String> {
     use std::io::Write;
     let work = std::env::temp_dir().join(format!("resolve-2-plain-{}-{}", std::process::id(), crate::model::new_id()));
     std::fs::create_dir_all(&work).map_err(|e| e.to_string())?;
@@ -666,9 +674,13 @@ fn run_cli_plain(provider: &str, system: &str, prompt: &str) -> Result<String, S
         let claude = find_cli("claude").ok_or("Claude Code isn't installed.")?;
         let sys = work.join("system.txt");
         std::fs::write(&sys, system).map_err(|e| e.to_string())?;
-        let mut child = std::process::Command::new(claude)
-            .current_dir(&work)
-            .args(["-p", "--strict-mcp-config", "--output-format", "text", "--system-prompt-file"])
+        let mut cmd = std::process::Command::new(claude);
+        cmd.current_dir(&work).args(["-p", "--strict-mcp-config", "--output-format", "text"]);
+        if !model.is_empty() {
+            cmd.arg("--model").arg(model);
+        }
+        let mut child = cmd
+            .arg("--system-prompt-file")
             .arg(&sys)
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
