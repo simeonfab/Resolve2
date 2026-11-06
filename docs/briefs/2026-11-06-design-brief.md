@@ -19,10 +19,12 @@ Rules:
 
 | Source | Use it for |
 |---|---|
+| github.com/simeonfab/resolve-docs, `mockups/` (33 `ResolvePM_*_dc.html` files) | The original screen designs. Start every screen from its mockup (table in 4) |
+| resolve-docs `mockups/Resolve_Flow_Spec.html` and `MOTION-SYSTEM-HANDOFF.md` | Every animation, with exact durations, easings and staggers. Ship the "match-seam" character |
 | `docs/reference/original-resolve/01` to `20` (and the PDF) | Journey, content, tone and look, screen by screen |
 | github.com/simeonfab/ResolveOS-intake-frontend, `public/index.html` | The live web intake: its animations and transitions (below) |
 | github.com/simeonfab/resolve-docs, `mockups/` | The original phone mockups the pictures came from |
-| response.games (repo `simeonfab/response-site`) | Quality bar for motion, polish and typography |
+| response.games home page | Quality bar for motion and polish. Match its level, not its design |
 | `docs/reports/2026-11-06-part4/` screenshots | What each screen holds today |
 
 Animations to carry over from the web intake (`public/index.html`):
@@ -36,14 +38,42 @@ Animations to carry over from the web intake (`public/index.html`):
 
 ## 3. Visual direction
 
-1. Colours: open question for Simeon (section 8). Today's palette is dark warm grey with a gold accent (`src/ui/theme.rs`: background #201F1C, card #282622, text #F5F1E8, accent #C8A040). Keep or replace.
-2. Type: DM Serif Display for headlines, as in the original pictures, with a clean sans for body text. Confirm.
-3. Motion: Response Studios level. Screen changes ease in, cards settle, nothing jumps. Every motion respects the system's reduce-motion setting.
-4. Light and dark themes, both designed.
+1. Colours: the Resolve palette from the mockups and the web intake.
+
+| Token | Hex | Use |
+|---|---|---|
+| `--surface` | #F2EDE4 | Page background |
+| `--card` | #FFFFFF | Cards |
+| `--ink` | #1A1A18 | Main text |
+| `--ink-soft` | #4A4A44 | Secondary text |
+| `--ink-ghost` | #9A9A92 | Hints, disabled |
+| `--border` | #DDD8CE | Lines and borders |
+| `--amber` | #C8A040 | Accent, the through-line colour |
+| `--amber-light` | #FBF5E6 | Accent fills |
+| `--terracotta` | #8B4A2A | Warnings, emphasis |
+| `--green` | #5E7D4F | Done, success |
+| `--nav-bg` | #1E1E1A | Dark sign-in and intake |
+
+2. Type: DM Serif Display for headlines, Inter 400 / 500 / 600 for everything else.
+3. Motion: take every value from `Resolve_Flow_Spec.html`. Easings: `--e-spring` cubic-bezier(.34,1.56,.64,1) for arrivals and sheets, `--e-out` cubic-bezier(.22,.61,.36,1) for reveals, `--e-std` cubic-bezier(.4,0,.2,1) for dims and presses, `--e-in` cubic-bezier(.55,0,.85,.35) for exits. Every motion respects the reduce-motion setting.
+4. Dark for sign-in and the intake, light for the app, joined by the dark-to-light reveal (Flow Spec surfaces A to D). Today's desktop app is dark throughout (`src/ui/theme.rs`); the new screens follow the mockups.
 
 ## 4. Every screen
 
 Desktop is 1280 px and up. Phone is 390 px wide. Every screen needs four states: empty, loading, error and full. Nothing overflows or overlaps at any width from 1280 px up.
+
+### 4.0 Existing mockups (resolve-docs `mockups/`)
+
+The mockups are phone-first. Desktop layouts are new work; content, look and motion come from the mockup.
+
+| Area | Mockups |
+|---|---|
+| Sign-in and intake | `Sign-in`, `Onboarding`, `Bring_It_In`, `Confirm_Understanding`, `Floor_Refusal`, `Next_Move`, `Intake_Transition`, `Roadmap_Cards`, `Todo_List`, `Roadmap_Reveal`, `OS_Reveal`, `Daily_Limit` |
+| Shell and Home | `App_Shell`, `Global_Bar`, `Global_Bar_Contextual`, `Dashboard`, `Dashboard_Content`, `Dashboard_Motion`, `Portfolio`, `Settings` |
+| Project sections | `Roadmap_Tab`, `Roadmap_Motion`, `Work_Tab`, `Work_Motion`, `Work_Packet_Patterns`, `Knowledge_Base_Tab`, `Knowledge_Motion`, `Team_Tab`, `Agent_Chat` |
+| Cross-cutting | `Feedback_Motion` (toast and undo) |
+
+No mockup yet, so these are fully new designs: Calendar, page editor, databases, the Hypothesis Zero tree editor, Handoffs, Search, Help, and the "See and edit everything" proposal editor.
 
 ### 4.1 Pack A: intake journey (design first)
 
@@ -60,7 +90,7 @@ Desktop is 1280 px and up. Phone is 390 px wide. Every screen needs four states:
 | 9 | Whole picture, Now / Next / Later, then Adopt | 09 |
 | 10 | Building your project (bridge animation) | 06 |
 | 11 | Reveal, "Open my project" | 10 |
-| 12 | "See and edit everything" proposal editor (H0, Hx/NHx, E0, uncertainties, knowledge pages) | none, new |
+| 12 | "See and edit everything" proposal editor (H0, Hx/NHx, E0, uncertainties, knowledge pages). Later: not in Pack A. It keeps its current look until Pack C | none, new |
 
 Waits: show what is happening and a seconds counter. No screen sits more than about 5 s without visible progress.
 
@@ -139,9 +169,9 @@ Each pack is designed, approved, then built and checked against the designs (pix
 4. Tokens: colours, type sizes, spacing, radii, shadows.
 5. A note on any screen element with no engine function behind it.
 
-## 8. Open questions for Simeon
+## 8. Decisions
 
-1. Colours: keep the gold-on-warm-dark palette, or supply your own?
-2. Type: confirm DM Serif Display for headlines.
-3. Pack A scope: include the "See and edit everything" proposal editor, or leave it in the old style for now?
-4. Which screens from the Response Studios site set the bar? (Name two or three.)
+1. Colours and fonts: the Resolve palette, DM Serif Display and Inter (section 3).
+2. Motion: the Resolve Flow Spec, "match-seam" character.
+3. The "See and edit everything" proposal editor waits for Pack C.
+4. Quality bar: the response.games home page, for its level of polish, not its design.
