@@ -66,6 +66,25 @@ pub struct ResolveUi {
     pub theme_edit: bool,
     /// Bridge: when the last adopt step ran (so each real step stays visible briefly).
     pub adopt_t: f64,
+    // ---- sections (Part 4 navigation)
+    /// Knowledge tab (see nav::KNOWLEDGE_TABS).
+    pub knowledge_tab: usize,
+    /// Roadmap grouped by theme instead of by phase.
+    pub roadmap_by_theme: bool,
+    pub new_theme: String,
+    pub new_theme_lane: String,
+    pub new_milestone: String,
+    pub new_cut: String,
+    /// AI Team: the selected role, the message being typed, and the running answer
+    /// (conversation id, job, started (app clock), which AI, started (ms, for Undo)).
+    pub agent: String,
+    pub chat_input: String,
+    pub chat_job: Option<(Id, crate::ai::AiJob)>,
+    pub chat_started: f64,
+    pub chat_via: String,
+    pub chat_started_ms: i64,
+    pub handoff_for: String,
+    pub handoff_focus: String,
 }
 
 pub fn amber() -> Color32 {

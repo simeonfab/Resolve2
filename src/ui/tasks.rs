@@ -115,6 +115,30 @@ impl App {
         }
     }
 
+    /// All tasks, filtered: what used to be Inbox, Today, Upcoming and Filters & Labels in the
+    /// sidebar. Picking a project in the sidebar shows that project's tasks (and board) instead.
+    fn task_filters(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        let d = &self.store.data;
+        let captured = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).count();
+        let today_n = d.tasks.iter().filter(|t| !t.completed && t.due.map_or(false, |x| x <= today())).count();
+        let mut go: Option<View> = None;
+        ui.add_space(12.0);
+        ui.horizontal_wrapped(|ui| {
+            for (label, n, v) in [("📥 Captured", Some(captured), View::Inbox), ("📅 Today", Some(today_n), View::Today), ("🗓 Upcoming", None, View::Upcoming), ("🏷 Filters & labels", None, View::Filters)] {
+                let text = match n {
+                    Some(n) if n > 0 => format!("{label} {n}"),
+                    _ => label.to_string(),
+                };
+                if pill(ui, p, &text, self.view == v).clicked() {
+                    go = Some(v);
+                }
+            }
+        });
+        if let Some(v) = go {
+            self.view = v;
+        }
+    }
+
     fn sort_ids(&self, mut v: Vec<&Task>) -> Vec<Id> {
         v.sort_by_key(|t| (t.completed, t.order));
         v.into_iter().map(|t| t.id.clone()).collect()
@@ -152,11 +176,6 @@ impl App {
             });
             if let View::Project(pid) = &view {
                 let pid = pid.clone();
-                let has_ctx = app.store.data.context_for(&pid).is_some();
-                if ui.add(egui::Button::new(RichText::new(if has_ctx { "✦ Resolve" } else { "✦ Open in Resolve" }).color(p.on_accent)).fill(p.accent)).on_hover_text("Guidance, decisions, hypotheses and next move for this project").clicked() {
-                    app.resolve_ui.tab = 0;
-                    app.go(View::Resolve(pid.clone()));
-                }
                 let doc = app.store.data.project(&pid).and_then(|x| x.page_id.clone()).filter(|x| app.store.data.page(x).is_some());
                 if ui.button(if doc.is_some() { "📄 Project doc" } else { "📄 Create project doc" }).clicked() {
                     match doc {
@@ -220,10 +239,13 @@ impl App {
         let show_done = self.tasks_ui.show_completed;
         let max_w = if is_board { 4000.0 } else { 820.0 };
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            if !matches!(view, View::Project(_)) {
+                centered(ui, max_w, |ui| self.task_filters(ui, p));
+            }
             centered(ui, max_w, |ui| match view.clone() {
                 View::Inbox => {
                     let n = self.store.data.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).count();
-                    view_title(ui, p, "Inbox", Some(&format!("{n} tasks")));
+                    view_title(ui, p, "Captured", Some(&format!("{n} tasks not in a project yet (your inbox)")));
                     if is_board {
                         self.board(ui, p, None, &mut acts);
                     } else {
@@ -235,7 +257,7 @@ impl App {
                 View::Today => {
                     let d = &self.store.data;
                     let n = d.tasks.iter().filter(|t| !t.completed && t.due.map_or(false, |x| x <= t0)).count();
-                    view_title(ui, p, "Today", Some(&format!("{n} tasks")));
+                    view_title(ui, p, "Today", Some(&format!("{n} tasks, across all projects")));
                     let mut overdue: Vec<&Task> = d.tasks.iter().filter(|t| t.is_overdue() && t.due.map_or(false, |x| x < t0)).collect();
                     overdue.sort_by_key(|t| (t.due, t.priority));
                     if !overdue.is_empty() {

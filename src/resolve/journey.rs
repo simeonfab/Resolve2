@@ -127,6 +127,9 @@ pub struct Proposal {
     pub next_move: String,
     #[serde(default)]
     pub why: String,
+    /// Roadmap themes the person left off ("Leave it off the roadmap"): the project's cut list.
+    #[serde(default)]
+    pub cut: Vec<String>,
 }
 
 fn base_verb(w: &str) -> Option<&'static str> {
@@ -705,6 +708,7 @@ pub fn validate_part(v: &Value, i: &Intake, u: &Understanding, part: &str) -> Re
         offline: false,
         next_move: humanise(v.get("next_move").and_then(|x| x.as_str()).unwrap_or("")),
         why: humanise(v.get("why").and_then(|x| x.as_str()).unwrap_or("")),
+        cut: vec![],
     };
     if validation && p.h0.title.is_empty() {
         return Err("\"h0\" needs a claim".into());
@@ -1011,6 +1015,7 @@ pub fn offline_proposal(i: &Intake, u: &Understanding) -> Proposal {
         // without AI there is no recommendation: the person writes their own first move
         next_move: String::new(),
         why: String::new(),
+        cut: vec![],
     };
     sanitise(&mut p, i);
     p
@@ -1081,6 +1086,7 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
             };
             ctx.recommendation.top_priorities = p.roadmap.iter().filter(|r| r.phase == "Now").map(|r| r.title.clone()).collect();
             ctx.notes = p.summary.clone();
+            ctx.recommendation.do_not_yet = p.cut.iter().filter(|c| !c.trim().is_empty()).map(|c| intake::NotYet { item: c.clone(), reason: "Left off the roadmap during the intake".into() }).collect();
             d.contexts.push(ctx);
         }
         1 => {

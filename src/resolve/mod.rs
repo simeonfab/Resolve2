@@ -18,6 +18,7 @@ pub mod journey;
 pub mod testlab;
 pub mod records;
 pub mod roles;
+pub mod team;
 
 pub use context::ProjectContext;
 pub use intake::Intake;

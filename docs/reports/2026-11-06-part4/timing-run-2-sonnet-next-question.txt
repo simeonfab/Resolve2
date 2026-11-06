@@ -1,0 +1,29 @@
+﻿provider: claude-code / 
+Q1 [problem] What's going wrong with hourly billing for you or your café clients right now that makes you want to change it?
+    why: Tests the assumption that hourly billing is the actual problem (rather than, say, scope creep or client budgeting), which decides whether a fixed-price package is the right fix.
+    A: Hourly billing makes clients nervous about costs and makes my income lumpy.
+    time: 10.4s [intake:classify 6.1s, intake:next-question 4.3s]
+Q2 [evidence] Has a café client ever told you, or shown you in some way, that hourly billing makes them nervous, and what did they say or do?
+    why: Tests the assumption that clients' cost nervousness is real and tied to hourly billing, rather than your impression or something else, like the total amount they pay. This tells us whether a fixed price would fix the problem.
+    A: Three existing café clients; two said they'd prefer a fixed fee. I spend roughly 5 hours a month per café.
+    time: 13.6s [intake:classify 6.3s, intake:next-question 7.3s]
+Q3 [assumptions] Apart from how you bill, what else might be making your income lumpy, such as the number of clients you have or when they send you their paperwork?
+    why: This tests the assumption that hourly billing is the cause of your lumpy income, by looking for a competing explanation that a fixed monthly fee wouldn't fix.
+    A: That cafés will pay about £150 a month; that the work per café is predictable.
+    time: 10.1s [intake:classify 4.7s, intake:next-question 5.5s]
+Q4 [outcome] If the fixed monthly package works, who is better off and what would you see after a few months that tells you it worked?
+    why: Tests the assumption that a £150 fixed fee for about 5 hours of work will leave you and the cafés better off, by asking what result you'd treat as success before you try it.
+    A: Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end; I'd see it in on-time monthly records.
+    time: 12.0s [intake:classify 5.3s, intake:next-question 6.7s]
+heard (evidence) Hourly billing makes clients nervous about costs
+heard (evidence) Hourly billing makes my income lumpy
+heard (evidence) Two of my three existing café clients said they'd prefer a fixed fee
+heard (evidence) I spend roughly 5 hours a month per café
+heard (assumption) Cafés will pay about £150 a month
+heard (assumption) The work per café is predictable
+heard (assumption) Café owners will know their monthly cost up front
+heard (assumption) Café owners will stop sending me shoeboxes of receipts at year end
+heard (assumption) I'll see the package working in on-time monthly records
+exported: C:\Users\simeo\Documents\Craft Anything\build-me-a-single-productivity-copy\app\shots\timing2\exports\run-I'm-a-freelance-bookkeeper-and-I-want-to-edd835.md
+          C:\Users\simeo\Documents\Craft Anything\build-me-a-single-productivity-copy\app\shots\timing2\exports\run-I'm-a-freelance-bookkeeper-and-I-want-to-edd835.json
+seconds: 49.9

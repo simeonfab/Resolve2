@@ -6,7 +6,11 @@ mod intake;
 mod intake_ending;
 mod intake_review;
 mod intake_steps;
+mod knowledge;
+pub mod nav;
 pub mod resolve;
+mod sections;
+mod team;
 pub mod testlab;
 mod dashboard;
 mod help;
@@ -40,8 +44,12 @@ pub enum View {
     Help,
     /// A Resolve intake session.
     Intake(Id),
-    /// A project's Resolve cockpit (ResolveOS runtime surface).
+    /// Old link to a project's Resolve cockpit: opens Overview for that project.
     Resolve(Id),
+    /// All projects.
+    Projects,
+    /// A product-management or collaboration section (see nav.rs), for the picked project.
+    Sec(nav::Section),
     /// Test Intake home (only in the sandbox process).
     TestLab,
 }
@@ -204,6 +212,8 @@ pub struct App {
     /// Running as Test Intake (sandbox data folder).
     pub testlab: bool,
     pub lab: testlab::LabUi,
+    /// The project picked in the sidebar (None = All projects).
+    pub current_project: Option<Id>,
 }
 
 impl App {
@@ -277,8 +287,43 @@ impl App {
             undo_toasts: vec![],
             testlab: opts.testlab,
             lab: testlab::LabUi::default(),
+            current_project: None,
         };
         app.page_ui.ai_open = open_ai;
+        // --view <section>[@p]: open a section; "@p" picks the most recently guided project
+        if let Some(v) = opts.view.as_deref() {
+            let (name, pick) = match v.split_once('@') {
+                Some((n, _)) => (n, true),
+                None => (v, false),
+            };
+            // knowledge-<n>: a Knowledge tab
+            let name = match name.strip_prefix("knowledge-").and_then(|n| n.parse::<usize>().ok()) {
+                Some(n) => {
+                    app.resolve_ui.knowledge_tab = n;
+                    "knowledge"
+                }
+                None => name,
+            };
+            let sec = match name {
+                "overview" => Some(nav::Section::Overview),
+                "roadmap" => Some(nav::Section::Roadmap),
+                "frameworks" => Some(nav::Section::Frameworks),
+                "knowledge" => Some(nav::Section::Knowledge),
+                "team" => Some(nav::Section::AiTeam),
+                "handoffs" => Some(nav::Section::Handoffs),
+                _ => None,
+            };
+            if pick {
+                app.current_project = app.store.data.contexts.iter().filter(|c| app.store.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
+            }
+            if let Some(s) = sec {
+                app.view = View::Sec(s);
+            } else if name == "projects" {
+                app.view = View::Projects;
+            } else if name == "tasks" {
+                app.view = app.current_project.clone().map(View::Project).unwrap_or(View::Today);
+            }
+        }
         if app.testlab {
             // --view intake-<stage> opens the newest run at that stage (screenshots / checks)
             app.view = match opts.view.as_deref() {
@@ -539,7 +584,8 @@ impl App {
     pub fn undo(&mut self, cs: &str) {
         let (mut n, mut skipped, mut err) = (0, 0, None);
         for id in cs.split(',').rev() {
-            match self.store.data.undo_change(id) {
+            // kept as an "undo" change set, so Redo can bring it back
+            match self.store.data.undo_recorded(id) {
                 Ok((a, b)) => {
                     n += a;
                     skipped += b;
@@ -651,6 +697,20 @@ impl App {
     }
 
     fn shortcuts(&mut self, ctx: &egui::Context) {
+        // Ctrl+Z / Ctrl+Y undo and redo workspace changes, but only when no text box has the
+        // keyboard (there they edit the text, as usual)
+        let typing = ctx.memory(|m| m.focused().is_some());
+        let (undo, redo) = if typing || matches!(self.view, View::Intake(_)) {
+            (false, false)
+        } else {
+            ctx.input_mut(|i| (i.consume_key(Modifiers::COMMAND, Key::Z), i.consume_key(Modifiers::COMMAND, Key::Y)))
+        };
+        if undo {
+            self.do_undo();
+        }
+        if redo {
+            self.do_redo();
+        }
         let (k, q, n, esc, e) = ctx.input_mut(|i| {
             (
                 i.consume_key(Modifiers::COMMAND, Key::K),
@@ -686,245 +746,6 @@ impl App {
                 self.open_task = None;
             }
         }
-    }
-
-    fn sidebar(&mut self, ctx: &egui::Context, p: &Pal) {
-        let d = &self.store.data;
-        let inbox_n = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).count();
-        let today_n = d.tasks.iter().filter(|t| !t.completed && t.due.map_or(false, |x| x <= today())).count();
-        egui::SidePanel::left("sidebar")
-            .resizable(true)
-            .default_width(268.0)
-            .width_range(220.0..=380.0)
-            .frame(egui::Frame::none().fill(p.side).inner_margin(egui::Margin { left: 10.0, right: 10.0, top: 12.0, bottom: 8.0 }))
-            .show(ctx, |ui| {
-                // workspace switcher
-                ui.horizontal(|ui| {
-                    let meta = self.store.meta.clone();
-                    avatar(ui, &meta.name.chars().next().unwrap_or('W').to_string(), rgb(meta.color), 26.0);
-                    let mut switch_to: Option<Id> = None;
-                    ui.menu_button(RichText::new(format!("{} ⏷", meta.name)).font(fs(14.0)), |ui| {
-                        ui.set_min_width(220.0);
-                        ui.label(RichText::new("Workspaces — each is private").size(12.0).color(p.dim));
-                        for w in self.reg.workspaces.clone() {
-                            let sel = w.id == meta.id;
-                            if ui.selectable_label(sel, format!("●  {}", w.name)).clicked() {
-                                switch_to = Some(w.id.clone());
-                                ui.close_menu();
-                            }
-                        }
-                        ui.separator();
-                        if ui.button("+ Start something new with Resolve").on_hover_text("Runs the intake; Adopt creates a new workspace with your project as its first project").clicked() {
-                            self.start_something_new();
-                            ui.close_menu();
-                        }
-                        if ui.button("⚙ Settings").clicked() {
-                            self.go(View::Settings);
-                            ui.close_menu();
-                        }
-                    });
-                    if let Some(id) = switch_to {
-                        self.switch_workspace(&id);
-                    }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        let icon = if self.reg.settings.dark { "☀" } else { "🌙" };
-                        if ghost_button(ui, RichText::new(icon).size(16.0).color(p.dim)).on_hover_text("Switch light / dark").clicked() {
-                            self.reg.settings.dark = !self.reg.settings.dark;
-                            self.reg.save();
-                        }
-                        if ghost_button(ui, RichText::new("⏰").size(15.0).color(p.dim)).on_hover_text("Reminders and upcoming").clicked() {
-                            self.go(View::Upcoming);
-                        }
-                    });
-                });
-                ui.add_space(12.0);
-                // add task
-                let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 34.0), Sense::click());
-                if resp.hovered() {
-                    ui.painter().rect_filled(rect, 6.0, p.hover);
-                }
-                ui.painter().circle_filled(rect.left_center() + egui::vec2(18.0, 0.0), 10.0, p.accent);
-                ui.painter().text(rect.left_center() + egui::vec2(18.0, -1.0), Align2::CENTER_CENTER, "+", fb(16.0), p.on_accent);
-                ui.painter().text(rect.left_center() + egui::vec2(36.0, 0.0), Align2::LEFT_CENTER, "Add task", fs(14.5), p.accent);
-                ui.painter().text(rect.right_center() - egui::vec2(10.0, 0.0), Align2::RIGHT_CENTER, "Ctrl+Q", fp(11.0), p.faint);
-                if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                    self.open_quick(QuickKind::Task);
-                }
-                ui.add_space(4.0);
-                if nav_item(ui, p, "✨", "Ask AI", None, self.page_ui.ai_open, None).on_hover_text("Claude, ChatGPT or a local model — can read and change your workspace").clicked() {
-                    self.page_ui.ai_open = !self.page_ui.ai_open;
-                }
-                if nav_item(ui, p, "🔍", "Search", None, false, None).on_hover_text("Ctrl+K").clicked() {
-                    self.palette = Some(Palette { query: String::new(), sel: 0, focus: true });
-                }
-                let v = self.view.clone();
-                if nav_item(ui, p, "🏠", "Home", None, v == View::Dashboard, None).clicked() {
-                    self.go(View::Dashboard);
-                }
-                if nav_item(ui, p, "📥", "Inbox", Some(inbox_n), v == View::Inbox, None).clicked() {
-                    self.go(View::Inbox);
-                }
-                if nav_item(ui, p, "📅", "Today", Some(today_n), v == View::Today, None).clicked() {
-                    self.go(View::Today);
-                }
-                if nav_item(ui, p, "🗓", "Upcoming", None, v == View::Upcoming, None).clicked() {
-                    self.go(View::Upcoming);
-                }
-                if nav_item(ui, p, "🏷", "Filters & Labels", None, v == View::Filters, None).clicked() {
-                    self.go(View::Filters);
-                }
-                if nav_item(ui, p, "📆", "Calendar", None, v == View::Calendar, None).clicked() {
-                    self.go(View::Calendar);
-                }
-                egui::ScrollArea::vertical().auto_shrink([false, false]).max_height(ui.available_height() - 104.0).show(ui, |ui| {
-                    // Resolve: guided intake and unfinished sessions
-                    ui.horizontal(|ui| {
-                        section_label(ui, p, "Resolve");
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("Bring in an idea, problem or messy project").clicked() {
-                                self.start_intake();
-                            }
-                        });
-                    });
-                    let intakes = resolve::open_intakes(&self.store.data);
-                    for (id, title, step) in intakes.into_iter().take(4) {
-                        let label = format!("{} · step {}/4", title, (step as usize + 1).min(4));
-                        if nav_item(ui, p, "◌", &label, None, v == View::Intake(id.clone()), Some(p.accent)).on_hover_text("Unfinished — pick up where you left off").clicked() {
-                            self.go(View::Intake(id));
-                        }
-                    }
-                    // projects
-                    ui.horizontal(|ui| {
-                        section_label(ui, p, "My Projects");
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("New project — opens the intake").clicked() {
-                                self.start_intake();
-                            }
-                        });
-                    });
-                    let mut projects: Vec<Project> = self.store.data.projects.iter().filter(|x| !x.archived).cloned().collect();
-                    projects.sort_by_key(|x| x.order);
-                    for pr in projects {
-                        let n = self.store.data.tasks.iter().filter(|t| !t.completed && t.project_id.as_deref() == Some(&pr.id) && t.parent_id.is_none()).count();
-                        let resolved = self.store.data.context_for(&pr.id).is_some();
-                        let sel = v == View::Project(pr.id.clone()) || v == View::Resolve(pr.id.clone());
-                        if nav_item(ui, p, if resolved { "✦" } else { "#" }, &pr.name, Some(n), sel, Some(rgb(pr.color))).clicked() {
-                            if resolved {
-                                self.go(View::Resolve(pr.id.clone()));
-                            } else {
-                                self.go(View::Project(pr.id.clone()));
-                            }
-                        }
-                    }
-                    // pages
-                    let favs: Vec<(Id, String, String)> = self.store.data.pages.iter().filter(|x| x.favorite && !x.template).map(|x| (x.id.clone(), x.icon.clone(), x.title.clone())).collect();
-                    if !favs.is_empty() {
-                        section_label(ui, p, "Favorites");
-                        for (id, icon, title) in favs {
-                            let t = if title.is_empty() { "Untitled".to_string() } else { title };
-                            if nav_item(ui, p, if icon.is_empty() { "📄" } else { &icon }, &t, None, v == View::Page(id.clone()), Some(p.text)).clicked() {
-                                self.go(View::Page(id));
-                            }
-                        }
-                    }
-                    ui.horizontal(|ui| {
-                        section_label(ui, p, "Pages");
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.menu_button(RichText::new("+").size(17.0).color(p.dim), |ui| {
-                                if ui.button("📄 Blank page   (Ctrl+N)").clicked() {
-                                    self.new_page(None);
-                                    ui.close_menu();
-                                }
-                                ui.separator();
-                                ui.label(RichText::new("From a template").size(11.5).color(p.dim));
-                                for (i, t) in crate::templates::PAGE_TEMPLATES.iter().enumerate() {
-                                    if ui.button(format!("{}  {}", t.icon, t.name)).clicked() {
-                                        self.page_from_builtin(i);
-                                        ui.close_menu();
-                                    }
-                                }
-                                let mine: Vec<(Id, String, String)> = self.store.data.pages.iter().filter(|x| x.template).map(|x| (x.id.clone(), x.icon.clone(), x.title.clone())).collect();
-                                if !mine.is_empty() {
-                                    ui.separator();
-                                    ui.label(RichText::new("Your templates").size(11.5).color(p.dim));
-                                    for (id, icon, title) in mine {
-                                        ui.horizontal(|ui| {
-                                            if ui.button(format!("{icon}  {title}")).clicked() {
-                                                self.page_from_template(&id);
-                                                ui.close_menu();
-                                            }
-                                            if ui.small_button("edit").clicked() {
-                                                self.go(View::Page(id.clone()));
-                                                ui.close_menu();
-                                            }
-                                        });
-                                    }
-                                }
-                            });
-                        });
-                    });
-                    self.page_tree(ui, p, None, 0);
-                    // databases
-                    ui.horizontal(|ui| {
-                        section_label(ui, p, "Databases");
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            ui.menu_button(RichText::new("+").size(17.0).color(p.dim), |ui| {
-                                if ui.button("▦ Blank database").clicked() {
-                                    self.new_database();
-                                    ui.close_menu();
-                                }
-                                ui.separator();
-                                ui.label(RichText::new("Templates").size(11.5).color(p.dim));
-                                if ui.button("🤝 CRM — companies, contacts, opportunities (linked)").clicked() {
-                                    self.create_db_from_template("crm");
-                                    ui.close_menu();
-                                }
-                                if ui.button("📊 Project tracker (linked to projects & tasks)").clicked() {
-                                    self.create_db_from_template("projects");
-                                    ui.close_menu();
-                                }
-                                if ui.button("🗓 Content calendar").clicked() {
-                                    self.create_db_from_template("content");
-                                    ui.close_menu();
-                                }
-                                let mine: Vec<(Id, String)> = self.store.data.databases.iter().filter(|x| x.template).map(|x| (x.id.clone(), x.name.clone())).collect();
-                                for (id, name) in mine {
-                                    if ui.button(format!("⧉ {name}")).clicked() {
-                                        self.create_db_from_template(&id);
-                                        ui.close_menu();
-                                    }
-                                }
-                            });
-                        });
-                    });
-                    let dbs: Vec<(Id, String, String)> = self.store.data.databases.iter().filter(|x| !x.template).map(|x| (x.id.clone(), x.icon.clone(), x.name.clone())).collect();
-                    for (id, icon, name) in dbs {
-                        if nav_item(ui, p, if icon.is_empty() { "▦" } else { &icon }, &name, None, v == View::Database(id.clone()), Some(p.text)).clicked() {
-                            self.go(View::Database(id));
-                        }
-                    }
-                });
-                ui.with_layout(Layout::bottom_up(Align::Min), |ui| {
-                    let status = if let Some(e) = &self.store.last_error {
-                        format!("⚠ {e}")
-                    } else if self.dirty {
-                        "Saving…".into()
-                    } else if !self.hub_status.is_empty() {
-                        format!("✓ Saved on this PC · {}", self.hub_status)
-                    } else if !self.sync_status.is_empty() {
-                        format!("✓ Saved on this PC · {}", self.sync_status)
-                    } else {
-                        "✓ Saved on this PC · works offline".into()
-                    };
-                    ui.label(RichText::new(status).size(11.0).color(p.faint));
-                    if nav_item(ui, p, "⚙", "Settings, sync & AI", None, v == View::Settings, None).clicked() {
-                        self.go(View::Settings);
-                    }
-                    if nav_item(ui, p, "❓", "Help & tutorial", None, v == View::Help, None).clicked() {
-                        self.go(View::Help);
-                    }
-                });
-            });
     }
 
     fn page_tree(&mut self, ui: &mut egui::Ui, p: &Pal, parent: Option<&str>, depth: usize) {
@@ -1374,7 +1195,13 @@ impl App {
             View::Settings => self.settings_view(ui, p),
             View::Help => self.help_view(ui, p),
             View::Intake(id) => self.intake_view(ui, p, &id),
-            View::Resolve(id) => self.resolve_view(ui, p, &id),
+            View::Resolve(id) => {
+                // old links to the cockpit open the project's Overview
+                self.current_project = Some(id);
+                self.view = View::Sec(nav::Section::Overview);
+            }
+            View::Projects => self.projects_view(ui, p),
+            View::Sec(s) => self.section_view(ui, p, s),
             View::TestLab => self.testlab_view(ui, p),
         }
     }
@@ -1421,6 +1248,7 @@ impl eframe::App for App {
             }
         }
         self.resolve_poll(ctx);
+        self.poll_team(ctx);
         self.check_reminders(ctx);
         self.shortcuts(ctx);
         self.hub_tick(false);
@@ -1454,7 +1282,7 @@ impl eframe::App for App {
         // the intake (and the Test Intake lab) are full screen: no sidebar, no app chrome
         let full_screen = self.testlab || matches!(self.view, View::Intake(_));
         if !full_screen {
-            self.sidebar(ctx, &p);
+            self.nav_sidebar(ctx, &p);
         }
         if let Some(tid) = self.open_task.clone().filter(|_| !full_screen) {
             if self.store.data.task(&tid).is_some() {
