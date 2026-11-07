@@ -504,6 +504,10 @@ impl App {
         }
         match opts.open.as_deref() {
             Some("ask") => app.page_ui.ai_open = true,
+            // task:<title>: the task editor open on that task (screenshots)
+            Some(o) if o.starts_with("task:") => {
+                app.open_task = app.store.data.tasks.iter().find(|t| t.title == o["task:".len()..]).map(|t| t.id.clone());
+            }
             Some("try") => {
                 app.temp.insert("show_try".into(), "1".into());
             }

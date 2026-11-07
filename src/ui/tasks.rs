@@ -947,18 +947,42 @@ impl App {
         let mut open_sub: Option<Id> = None;
         let mut toggle_sub: Option<Id> = None;
         let mut add_sub: Option<String> = None;
-        egui::SidePanel::right("task-panel").default_width(400.0).width_range(340.0..=560.0).frame(egui::Frame::none().fill(p.card).inner_margin(egui::Margin::same(16.0)).stroke(Stroke::new(1.0, p.line))).show(ctx, |ui| {
+        // the task editor (B-E9): a 440 push panel from the right; edits save as you type
+        egui::SidePanel::right("task-panel").exact_width(space::TASK_PANEL).resizable(false).frame(egui::Frame::none().fill(p.card).inner_margin(egui::Margin::same(space::S18)).stroke(Stroke::new(stroke::HAIR, p.line))).show(ctx, |ui| {
             let d = &self.store.data;
             ui.horizontal(|ui| {
-                let crumb = if t.section.is_empty() { format!("# {}", d.project_name(&t.project_id)) } else { format!("# {} / {}", d.project_name(&t.project_id), t.section) };
-                ui.label(RichText::new(crumb).size(12.5).color(p.dim));
+                if icon_button(ui, Icon::Expand, true, false).on_hover_text("Close (Esc)").clicked() {
+                    close = true;
+                }
+                ui.add_space(space::S6);
+                let project = if t.project_id.is_some() { d.project_name(&t.project_id) } else { "Captured".to_string() };
+                let crumb = if t.section.is_empty() { project } else { format!("{project} · {}", t.section) };
+                ui.label(RichText::new(crumb).size(size::LABEL).color(p.dim));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ghost_button(ui, RichText::new("✕").size(15.0)).on_hover_text("Close (Esc)").clicked() {
+                    ui.menu_button(RichText::new("⋯").font(fs(size::SECTION)).color(p.dim), |ui| {
+                        if ui.button(RichText::new("Delete task").color(p.orange)).clicked() {
+                            delete = true;
+                            ui.close_menu();
+                        }
+                    });
+                });
+            });
+            ui.add_space(space::S8);
+            // the footer first, so the fields above scroll instead of covering it
+            egui::TopBottomPanel::bottom("task-panel-foot").frame(egui::Frame::none().inner_margin(egui::Margin::symmetric(0.0, space::S12))).show_separator_line(true).show_inside(ui, |ui| {
+                ui.horizontal(|ui| {
+                    if button(ui, p, ButtonKind::Dark, "Save", false, true).on_hover_text("Changes are already saved; this closes the editor").clicked() {
                         close = true;
                     }
-                    if ghost_button(ui, RichText::new("🗑").size(14.0).color(p.dim)).on_hover_text("Delete task").clicked() {
-                        delete = true;
+                    if button(ui, p, ButtonKind::Secondary, if t.completed { "Reopen" } else { "Mark complete" }, false, true).clicked() {
+                        toggle = true;
+                        close = true;
                     }
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if button(ui, p, ButtonKind::Ghost, "Delete", false, true).clicked() {
+                            delete = true;
+                        }
+                    });
                 });
             });
             if let Some(par) = t.parent_id.as_deref().and_then(|x| d.task(x)) {
@@ -1207,9 +1231,10 @@ impl App {
         if delete {
             let title = t.title.clone();
             { let t2 = tid.to_string(); let name = self.store.data.task(&t2).map(|t| t.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted task \"{name}\""), "delete", |d| d.delete_task(&t2)); }
+            // (the Undo toast from `undoable` names it; a second toast would replace it)
+            let _ = title;
             self.open_task = None;
             self.touch();
-            self.toast(format!("Deleted \"{title}\""));
         }
         if close {
             self.open_task = None;

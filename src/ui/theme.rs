@@ -288,6 +288,8 @@ pub mod space {
     /// Home (Pack B canvas): columns 1.25 : 1 with a 20 gap, the right column at most 440, the
     /// hero padded 26 / 30, list times 52 wide, 16 px marks, 1600 is where wide sizes start.
     pub const HOME_GAP: f32 = 20.0;
+    /// The task editor: a 440 push panel from the right (B-E9).
+    pub const TASK_PANEL: f32 = 440.0;
     pub const HOME_ASIDE_MAX: f32 = 440.0;
     pub const HOME_LEFT_SHARE: f32 = 1.25 / 2.25;
     pub const HERO_PAD_Y: f32 = 26.0;
