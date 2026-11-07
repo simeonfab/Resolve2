@@ -147,13 +147,8 @@ impl App {
             let mut c = self.temp.remove("g-c").unwrap_or_default();
             cols[1].horizontal_top(|ui| {
                 text_field(ui, p, egui::Id::new("g-field-c"), &mut c, "Tell Resolve what's going on", true, w2 - space::MIC - space::S10);
-                let state = self.temp.get("g-mic").map(|s| s.as_str()).unwrap_or("");
-                let st = if state == "rec" { MicState::Recording } else { MicState::Idle };
-                if mic(ui, p, st, false).clicked() {
-                    // the drawing only: speech to text waits for Simeon's approval (E2)
-                    let next = if state == "rec" { "" } else { "rec" };
-                    self.temp.insert("g-mic".into(), next.into());
-                }
+                // the real mic: focuses this field and opens Windows voice typing (Win+H)
+                mic_for(ui, p, egui::Id::new("g-field-c"), false);
             });
             self.temp.insert("g-c".into(), c);
             cols[1].add_space(space::S12);

@@ -97,18 +97,12 @@ impl App {
             ui.add_space(6.0);
             let ask_id = egui::Id::new("ai-ask-box");
             let r = ui.add(egui::TextEdit::multiline(&mut self.page_ui.ai_prompt).id(ask_id).hint_text(format!("{} (press 🎤 to speak)", ask_copy.placeholder)).desired_rows(3).desired_width(f32::INFINITY));
-            if self.temp.remove("ai_mic").is_some() {
-                r.request_focus();
-            }
             let enter = r.has_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter) && i.modifiers.command);
             ui.horizontal(|ui| {
                 if (ui.add_enabled(!busy, egui::Button::new(RichText::new("Ask").color(p.on_accent)).fill(p.accent)).clicked() || enter) && !self.page_ui.ai_prompt.trim().is_empty() {
                     ask = Some(("Answer".into(), self.page_ui.ai_prompt.clone()));
                 }
-                if mic_button(ui, p) {
-                    ui.memory_mut(|m| m.request_focus(ask_id));
-                    self.temp.insert("ai_mic".into(), "1".into());
-                }
+                mic_for(ui, p, ask_id, p.dark);
                 ui.label(RichText::new("Ctrl+Enter").size(size::TINY).color(p.faint));
             });
             ui.add_space(8.0);

@@ -259,16 +259,35 @@ pub fn start_voice_typing() {
     let _ = std::process::Command::new("powershell").args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script]).spawn();
 }
 
-/// A 🎤 button; returns true when pressed (caller focuses its text box).
-pub fn mic_button(ui: &mut Ui, p: &Pal) -> bool {
-    // the shared mic (E2). Until a speech-to-text approach is approved it starts Windows voice typing (Win+H), as before.
-    let r = mic(ui, p, MicState::Idle, p.dark).on_hover_text("Speak instead of typing (Windows voice typing, Win+H)");
+/// The mic for one text field (E2, voice by Windows voice typing as Simeon chose on 7 Nov 2026).
+/// Click: the field gets focus and Windows voice typing (Win+H) opens, so speech is typed into it.
+/// The button shows Recording from then until the field loses focus or the mic is clicked again
+/// (which presses Win+H again, closing voice typing). Windows does not tell apps whether its
+/// voice typing panel is open, so this state follows the click and the focus, not the panel.
+pub fn mic_for(ui: &mut Ui, p: &Pal, field: egui::Id, on_dark: bool) -> Response {
+    let key = field.with("mic-on");
+    let now = ui.input(|i| i.time);
+    let mut since: Option<f64> = ui.data(|d| d.get_temp(key)).flatten();
+    // the click itself takes focus from the field for a frame, so allow a moment before reading focus
+    if let Some(t0) = since {
+        if now - t0 > 0.6 && !ui.memory(|m| m.has_focus(field)) {
+            since = None;
+        }
+    }
+    let state = if since.is_some() { MicState::Recording } else { MicState::Idle };
+    let r = mic(ui, p, state, on_dark);
     if r.clicked() {
         start_voice_typing();
-        true
-    } else {
-        false
+        since = if since.is_some() { None } else { Some(now) };
+        if since.is_some() {
+            ui.memory_mut(|m| m.request_focus(field));
+        }
     }
+    if since.is_some() {
+        ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
+    }
+    ui.data_mut(|d| d.insert_temp(key, since));
+    r
 }
 
 /// HH:MM text field. Returns true when the time changed.

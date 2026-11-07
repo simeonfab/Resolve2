@@ -905,10 +905,9 @@ impl App {
                 };
                 let mut r = None;
                 ui.horizontal(|ui| {
-                    r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).hint_text(hint).font(fp(17.0)).desired_width(ui.available_width() - 30.0).frame(false).margin(egui::vec2(4.0, 8.0))));
-                    if mic_button(ui, p) {
-                        q.focus = true;
-                    }
+                    let quick_id = egui::Id::new("quick-add-text");
+                    r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).id(quick_id).hint_text(hint).font(fp(17.0)).desired_width(ui.available_width() - 30.0).frame(false).margin(egui::vec2(4.0, 8.0))));
+                    mic_for(ui, p, quick_id, p.dark);
                 });
                 let r = r.unwrap();
                 if q.focus {
