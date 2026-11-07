@@ -253,6 +253,8 @@ pub mod space {
     /// so they don't move), labels at 40.
     pub const NAV_PAD: f32 = 12.0;
     pub const NAV_ICON: f32 = 16.0;
+    /// Gap between sidebar items.
+    pub const NAV_GAP: f32 = 2.0;
     pub const NAV_ICON_X: f32 = 20.0;
     pub const NAV_LABEL_X: f32 = 40.0;
     /// Workspace tile and the sidebar's two buttons.

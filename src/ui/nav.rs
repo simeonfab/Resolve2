@@ -272,7 +272,7 @@ impl App {
             .frame(egui::Frame::none().fill(tok::NAV_BG).inner_margin(egui::Margin { left: space::NAV_PAD, right: space::NAV_PAD, top: space::S12, bottom: space::S8 }))
             .show(ctx, |ui| {
                 ui.style_mut().visuals = visuals(p);
-                ui.spacing_mut().item_spacing.y = 2.0;
+                ui.spacing_mut().item_spacing.y = space::NAV_GAP;
                 self.sidebar_top(ui, p, labels, icons_only);
                 ui.add_space(space::S12);
                 // Add task and Ask AI: side by side, or stacked icons when collapsed
@@ -299,7 +299,7 @@ impl App {
                 }
                 // the footer gets its own strip at the bottom, so the groups above scroll instead of overlapping it
                 egui::TopBottomPanel::bottom("sidebar-bottom").frame(egui::Frame::none()).show_separator_line(false).show_inside(ui, |ui| {
-                    ui.spacing_mut().item_spacing.y = 2.0;
+                    ui.spacing_mut().item_spacing.y = space::NAV_GAP;
                     side_divider(ui);
                     // Continue setting up… (B-E2): only while an intake is unfinished
                     if let Some((id, _, step)) = crate::ui::resolve::open_intakes(&self.store.data).into_iter().next() {
@@ -342,7 +342,7 @@ impl App {
                 });
                 egui::CentralPanel::default().frame(egui::Frame::none()).show_inside(ui, |ui| {
                     egui::ScrollArea::vertical().auto_shrink([false, false]).scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).show(ui, |ui| {
-                        ui.spacing_mut().item_spacing.y = 2.0;
+                        ui.spacing_mut().item_spacing.y = space::NAV_GAP;
                         for g in NAV {
                             side_group(ui, g.label, labels);
                             if g.picker {
