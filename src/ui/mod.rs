@@ -371,8 +371,9 @@ impl App {
             app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty"));
             match opts.state.as_deref() {
                 Some("full") => {
+                    // the design canvases' sample (café flat-fee bookkeeping), so screens compare like for like
                     let mut d = WorkspaceData::default();
-                    crate::seed::seed(&mut d);
+                    crate::seed::seed_canvas(&mut d);
                     app.store.data = d;
                 }
                 Some("empty") => {

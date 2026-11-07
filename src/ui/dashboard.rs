@@ -15,7 +15,7 @@ impl App {
             }
         });
         let t0 = today();
-        let hour = Local::now().hour();
+        let hour = now_local().hour();
         let greet = match hour {
             5..=11 => "Good morning",
             12..=17 => "Good afternoon",

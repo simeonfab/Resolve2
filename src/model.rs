@@ -13,11 +13,18 @@ pub fn now_ms() -> i64 {
 }
 
 pub fn today() -> NaiveDate {
-    Local::now().date_naive()
+    now_local().date()
 }
 
 pub fn now_local() -> NaiveDateTime {
-    Local::now().naive_local()
+    Local::now().naive_local() + chrono::Duration::seconds(CLOCK_SHIFT_S.load(Ordering::Relaxed))
+}
+
+/// Screenshots only (--now): the app's clock reads `at` (the canvases are drawn on Friday
+/// 6 November 2026, in the afternoon). Edit times (`now_ms`) stay real.
+static CLOCK_SHIFT_S: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+pub fn set_clock(at: NaiveDateTime) {
+    CLOCK_SHIFT_S.store((at - Local::now().naive_local()).num_seconds(), Ordering::Relaxed);
 }
 
 static COUNTER: AtomicU64 = AtomicU64::new(0);

@@ -318,6 +318,13 @@ fn main() {
         return;
     }
 
+    // --now 2026-11-06T14:00 (screenshots only): the app's clock reads that, so the canvases'
+    // Friday 6 November sample lines up like for like
+    if args.iter().any(|a| a == "--screenshot") {
+        if let Some(at) = arg_value(&args, "--now").and_then(|s| chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M").ok()) {
+            model::set_clock(at);
+        }
+    }
     let opts = ui::StartOpts {
         screenshot: arg_value(&args, "--screenshot").map(PathBuf::from),
         workspace: workspace.clone(),
