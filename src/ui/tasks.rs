@@ -203,7 +203,7 @@ impl App {
                     }
                     ui.label(RichText::new("Colour").size(12.0).color(p.dim));
                     ui.horizontal(|ui| {
-                        for c in [[219u8, 76, 63], [255, 153, 51], [246, 191, 38], [41, 171, 135], [20, 170, 245], [63, 81, 181], [175, 56, 235], [128, 128, 128]] {
+                        for c in PICK_COLOURS {
                             let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
                             ui.painter().circle_filled(r.center(), 8.0, rgb(c));
                             if resp.clicked() {

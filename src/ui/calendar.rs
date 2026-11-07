@@ -179,7 +179,7 @@ impl App {
                                 self.touch();
                             }
                             ui.horizontal(|ui| {
-                                for cc in [[3u8, 155, 229], [63, 81, 181], [11, 128, 67], [244, 81, 30], [142, 36, 170], [246, 191, 38], [213, 0, 0], [97, 97, 97]] {
+                                for cc in PICK_COLOURS {
                                     let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
                                     ui.painter().circle_filled(r.center(), 8.0, rgb(cc));
                                     if resp.clicked() {

@@ -224,6 +224,13 @@ impl App {
         card(ui, p, |ui| {
             ui.label(RichText::new("Appearance").font(fb(16.0)));
             ui.label(RichText::new("Dark or light.").size(12.5).color(p.dim));
+            // reduced motion: every move becomes a short fade, loops hold still (applies at once)
+            let mut rm = self.reg.settings.reduced_motion;
+            if ui.checkbox(&mut rm, "Reduce motion").on_hover_text("Every movement becomes a short fade and nothing loops").changed() {
+                self.reg.settings.reduced_motion = rm;
+                crate::ui::motion::set_reduced(rm);
+                self.reg.save();
+            }
             ui.horizontal(|ui| {
                 if pill(ui, p, "🌙 Dark", self.reg.settings.dark).clicked() {
                     self.reg.settings.dark = true;
@@ -250,7 +257,7 @@ impl App {
                     }
                     self.reg.save();
                 }
-                for c in [[219u8, 76, 63], [63, 81, 181], [41, 171, 135], [255, 153, 51], [175, 56, 235], [20, 170, 245]] {
+                for c in PICK_COLOURS {
                     let (r, resp) = ui.allocate_exact_size(egui::vec2(20.0, 20.0), Sense::click());
                     ui.painter().circle_filled(r.center(), 9.0, rgb(c));
                     if resp.clicked() {
@@ -869,7 +876,7 @@ impl App {
             self.temp.insert("sub_name".into(), name.clone());
             self.temp.insert("sub_url".into(), url.clone());
             if primary_button(ui, p, "Subscribe").clicked() && url.trim().starts_with("http") {
-                let cal = Calendar { id: new_id(), name: if name.trim().is_empty() { "Subscribed".into() } else { name.trim().to_string() }, color: [97, 97, 97], visible: true, source_url: url.trim().to_string(), last_fetch: 0, updated: now_ms() };
+                let cal = Calendar { id: new_id(), name: if name.trim().is_empty() { "Subscribed".into() } else { name.trim().to_string() }, color: PICK_COLOURS[0], visible: true, source_url: url.trim().to_string(), last_fetch: 0, updated: now_ms() };
                 let id = cal.id.clone();
                 self.store.data.calendars.push(cal);
                 self.touch();

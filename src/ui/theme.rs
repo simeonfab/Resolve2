@@ -58,6 +58,20 @@ pub mod tok {
     /// Rows inside a card.
     pub const DIVIDER: Color32 = hex(0xEEE9DF);
 
+    /// Derived dark tints of pane (the brief draws dark surfaces as pane and ink only; these
+    /// lift a card, a hovered row and a track a little above pane, in the same hue).
+    pub const PANE_RAISED: Color32 = hex(0x292723);
+    pub const PANE_HOVER: Color32 = hex(0x2F2D28);
+    pub const PANE_TRACK: Color32 = hex(0x37352F);
+    /// The brief's translucent fills, worked out as the opaque colour a browser shows (egui
+    /// blends translucent fills brighter than CSS does, so flat fills use these):
+    /// rgba(200,160,64,.16) on nav-bg (the sidebar's active item).
+    pub const AMBER_16_ON_NAV: Color32 = hex(0x393320);
+    /// rgba(200,160,64,.10) on pane (callouts on dark).
+    pub const AMBER_10_ON_PANE: Color32 = hex(0x312C20);
+    /// rgba(139,74,42,.22) on pane (error panels on dark).
+    pub const TERRACOTTA_22_ON_PANE: Color32 = hex(0x38291F);
+
     /// Every token with its name and value, for the component gallery.
     pub const ALL: [(&str, Color32, &str); 24] = [
         ("nav-bg", NAV_BG, "#1E1E1A"),
@@ -249,6 +263,20 @@ pub mod space {
     pub const FOCUS_RING: f32 = 3.0;
 }
 
+/// Stroke widths.
+pub mod stroke {
+    /// Card and field edges, dividers.
+    pub const HAIR: f32 = 1.0;
+    /// Icons (the brief's stroke 1.4).
+    pub const ICON: f32 = 1.4;
+    /// Drawn lines and curves.
+    pub const LINE: f32 = 1.6;
+    /// Marks, outlines that must read at a glance.
+    pub const MARK: f32 = 2.0;
+    /// Small dots on a track.
+    pub const DOT: f32 = 4.0;
+}
+
 /// Radii.
 pub mod radius {
     pub const PILL: f32 = 999.0;
@@ -318,28 +346,28 @@ pub fn pal(dark: bool) -> Pal {
     if dark {
         Pal {
             dark,
-            bg: INK,
+            bg: PANE,
             side: NAV_BG,
-            card: PANE,
-            hover: white_a(0.05),
+            card: PANE_RAISED,
+            hover: PANE_HOVER,
             line: white_a(0.08),
             text: TEXT_ON_DARK,
             dim: TEXT_ON_DARK_SOFT,
             faint: TEXT_ON_DARK_MUTED,
             accent: AMBER,
-            accent_soft: amber_a(0.16),
+            accent_soft: AMBER_16_ON_NAV,
             accent_text: AMBER,
             on_accent: INK,
             blue: TEXT_ON_DARK_SOFT,
             green: GREEN,
             green_text: GREEN_TINT,
-            green_tint: GREEN.linear_multiply(0.35),
+            green_tint: PANE_TRACK,
             orange: TERRACOTTA_ON_DARK,
-            orange_tint: terracotta_a(0.22),
+            orange_tint: TERRACOTTA_22_ON_PANE,
             purple: AMBER,
-            callout: amber_a(0.10),
+            callout: AMBER_10_ON_PANE,
             code: INK,
-            field: PANE,
+            field: INK,
             toast_bg: INK,
             toast_text: TEXT_ON_DARK,
             ink: INK,
@@ -349,10 +377,10 @@ pub fn pal(dark: bool) -> Pal {
             eyebrow: TERRACOTTA_ON_DARK,
             banner_bg: AMBER,
             banner_text: INK,
-            surface_raised: white_a(0.04),
+            surface_raised: PANE_HOVER,
             surface_sunk: NAV_BG,
-            track: white_a(0.10),
-            divider: white_a(0.06),
+            track: PANE_TRACK,
+            divider: PANE_HOVER,
             nav_bg: NAV_BG,
         }
     } else {
@@ -414,6 +442,10 @@ pub fn prio_color(p: u8, pal: &Pal) -> Color32 {
 
 /// Calendar and database option colours, from the tokens only (the brief has no other hues).
 pub const SERIES: [Color32; 6] = [tok::TERRACOTTA, tok::GREEN, tok::AMBER, tok::INK_SOFT, tok::AMBER_TEXT, tok::GREEN_TEXT];
+
+/// The colours a person can pick for a workspace or a project (stored as RGB in their data):
+/// the same six, so nothing outside the tokens can be chosen.
+pub const PICK_COLOURS: [[u8; 3]; 6] = [[0x8B, 0x4A, 0x2A], [0x5E, 0x7D, 0x4F], [0xC8, 0xA0, 0x40], [0x4A, 0x4A, 0x44], [0x7A, 0x5B, 0x12], [0x3F, 0x5A, 0x33]];
 
 pub fn bold() -> FontFamily {
     FontFamily::Name("bold".into())
@@ -513,8 +545,14 @@ pub fn install_fonts(ctx: &egui::Context) {
     ctx.set_fonts(fonts);
 }
 
-pub fn apply(ctx: &egui::Context, p: &Pal) {
-    let mut style = (*ctx.style()).clone();
+/// The sidebar is nav-bg in both appearances (brief, The shell), so it always draws with the
+/// dark palette.
+pub fn sidebar_pal() -> Pal {
+    pal(true)
+}
+
+/// egui's visuals for a palette (also used for the always-dark sidebar).
+pub fn visuals(p: &Pal) -> egui::Visuals {
     let mut v = if p.dark { egui::Visuals::dark() } else { egui::Visuals::light() };
     v.panel_fill = p.bg;
     v.window_fill = p.card;
@@ -552,7 +590,12 @@ pub fn apply(ctx: &egui::Context, p: &Pal) {
     v.widgets.active.fg_stroke = Stroke::new(1.0, p.text);
     v.widgets.active.rounding = r;
     v.widgets.open = v.widgets.hovered;
-    style.visuals = v;
+    v
+}
+
+pub fn apply(ctx: &egui::Context, p: &Pal) {
+    let mut style = (*ctx.style()).clone();
+    style.visuals = visuals(p);
     style.spacing.item_spacing = egui::vec2(8.0, 6.0);
     style.spacing.button_padding = egui::vec2(10.0, 5.0);
     style.spacing.interact_size.y = 26.0;

@@ -1,5 +1,8 @@
 pub mod theme;
 pub mod widgets;
+pub mod motion;
+pub mod toast;
+mod gallery;
 mod calendar;
 mod cockpit;
 pub mod connect;
@@ -56,6 +59,8 @@ pub enum View {
     TestLab,
     /// "Connect your AI" (first launch, full screen).
     ConnectAi,
+    /// Every token, component, toast and motion sample (Phase 0 gallery).
+    Gallery,
 }
 
 #[derive(Clone, Copy, PartialEq)]
@@ -171,6 +176,14 @@ pub struct StartOpts {
     pub view: Option<String>,
     /// Test Intake mode: sandbox data folder, no sidebar, no MCP/phone server.
     pub testlab: bool,
+    /// --state full|empty|loading|error (screenshots).
+    pub state: Option<String>,
+    /// --theme light|dark (screenshots; not saved).
+    pub theme: Option<String>,
+    /// --reduced-motion (screenshots; not saved).
+    pub reduced_motion: bool,
+    /// --scroll PX: start scrolled down (screenshots of long views).
+    pub scroll: Option<f32>,
 }
 
 pub struct App {
@@ -220,6 +233,20 @@ pub struct App {
     pub current_project: Option<Id>,
     pub connect: connect::ConnectUi,
     pub import: import_ui::ImportUi,
+    /// One toast at a time (B-E10).
+    pub toaster: toast::Toaster,
+    /// --state full|empty|loading|error: which state views draw (screenshots of the four states).
+    pub view_state: ViewState,
+}
+
+/// The four states every view draws (Rules, item 3).
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Default)]
+pub enum ViewState {
+    #[default]
+    Full,
+    Empty,
+    Loading,
+    Error,
 }
 
 impl App {
@@ -296,8 +323,47 @@ impl App {
             current_project: None,
             connect: connect::ConnectUi::default(),
             import: import_ui::ImportUi::default(),
+            toaster: toast::Toaster::default(),
+            view_state: ViewState::default(),
         };
         app.page_ui.ai_open = open_ai;
+        // reduced motion: the saved setting, or --reduced-motion for a screenshot
+        motion::set_reduced(app.reg.settings.reduced_motion || opts.reduced_motion);
+        // --theme light|dark: in memory only (the saved choice is untouched)
+        match opts.theme.as_deref() {
+            Some("light") => app.reg.settings.dark = false,
+            Some("dark") => app.reg.settings.dark = true,
+            _ => {}
+        }
+        // --state full|empty|loading|error: which of the four states views draw. Full and empty
+        // also swap in sample or empty data, in memory only (never saved).
+        app.view_state = match opts.state.as_deref() {
+            Some("empty") => ViewState::Empty,
+            Some("loading") => ViewState::Loading,
+            Some("error") => ViewState::Error,
+            _ => ViewState::Full,
+        };
+        if app.shot.is_some() {
+            match opts.state.as_deref() {
+                Some("full") => {
+                    let mut d = WorkspaceData::default();
+                    crate::seed::seed(&mut d);
+                    app.store.data = d;
+                }
+                Some("empty") => {
+                    let mut d = WorkspaceData::default();
+                    crate::seed::seed_empty(&mut d);
+                    app.store.data = d;
+                }
+                _ => {}
+            }
+        }
+        if opts.view.as_deref() == Some("gallery") {
+            app.view = View::Gallery;
+        }
+        if let Some(s) = opts.scroll {
+            app.temp.insert("scroll".into(), s.to_string());
+        }
         // --view <section>[@p]: open a section; "@p" picks the most recently guided project
         if let Some(v) = opts.view.as_deref() {
             let (name, pick) = match v.split_once('@') {
@@ -1117,45 +1183,6 @@ impl App {
         }
     }
 
-    fn toasts_ui(&mut self, ctx: &egui::Context, p: &Pal) {
-        let now = self.now;
-        self.toasts.retain(|t| t.1 > now);
-        self.undo_toasts.retain(|t| t.1 > now);
-        if self.toasts.is_empty() && self.undo_toasts.is_empty() {
-            return;
-        }
-        let mut undo: Option<Id> = None;
-        egui::Area::new(egui::Id::new("toasts")).anchor(Align2::LEFT_BOTTOM, [290.0, -20.0]).order(egui::Order::Tooltip).show(ctx, |ui| {
-            for (msg, until, cs) in self.undo_toasts.iter().rev().take(3) {
-                egui::Frame::none().fill(p.toast_bg).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(msg).color(p.toast_text).size(13.5));
-                        if ui.add(egui::Button::new(RichText::new("Undo").color(p.accent_text).strong()).frame(false)).clicked() {
-                            undo = Some(cs.clone());
-                        }
-                    });
-                    // depletion bar: time left to undo
-                    let frac = ((until - now) / 6.0).clamp(0.0, 1.0) as f32;
-                    let r = ui.available_rect_before_wrap();
-                    let bar = egui::Rect::from_min_size(egui::pos2(r.left(), r.top() + 2.0), egui::vec2(r.width().max(120.0) * frac, 2.0));
-                    ui.painter().rect_filled(bar, 1.0, p.accent);
-                    ui.add_space(4.0);
-                });
-                ui.add_space(6.0);
-            }
-            for (msg, _) in self.toasts.iter().rev().take(4) {
-                egui::Frame::none().fill(p.toast_bg).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
-                    ui.label(RichText::new(msg).color(p.toast_text).size(13.5));
-                });
-                ui.add_space(6.0);
-            }
-        });
-        ctx.request_repaint_after(std::time::Duration::from_millis(100));
-        if let Some(cs) = undo {
-            self.undo(&cs);
-        }
-    }
-
     fn handle_screenshot(&mut self, ctx: &egui::Context) {
         let Some(shot) = self.shot.as_mut() else { return };
         ctx.request_repaint();
@@ -1225,6 +1252,7 @@ impl App {
             View::Sec(s) => self.section_view(ui, p, s),
             View::TestLab => self.testlab_view(ui, p),
             View::ConnectAi => self.connect_view(ui, p),
+            View::Gallery => self.gallery_view(ui, p),
         }
     }
 
@@ -1303,7 +1331,7 @@ impl eframe::App for App {
         }
 
         // the intake (and the Test Intake lab) are full screen: no sidebar, no app chrome
-        let full_screen = self.testlab || matches!(self.view, View::Intake(_) | View::ConnectAi);
+        let full_screen = self.testlab || matches!(self.view, View::Intake(_) | View::ConnectAi | View::Gallery);
         if !full_screen {
             self.nav_sidebar(ctx, &p);
         }
@@ -1322,6 +1350,8 @@ impl eframe::App for App {
             self.ai_panel(ctx, &p, pid);
         }
         egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg)).show(ctx, |ui| {
+            // toasts and the Ask bar centre on the work area
+            self.toaster.work = Some(ui.max_rect());
             self.central(ui, &p);
         });
         self.quick_window(ctx, &p);
