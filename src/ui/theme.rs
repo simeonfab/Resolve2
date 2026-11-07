@@ -290,6 +290,10 @@ pub mod space {
     /// Home (Pack B canvas): columns 1.25 : 1 with a 20 gap, the right column at most 440, the
     /// hero padded 26 / 30, list times 52 wide, 16 px marks, 1600 is where wide sizes start.
     pub const HOME_GAP: f32 = 20.0;
+    /// Plan my day: a sheet 760 wide, 88% high; times 92 wide.
+    pub const PLAN_SHEET_W: f32 = 760.0;
+    pub const PLAN_SHEET_HEIGHT: f32 = 0.88;
+    pub const PLAN_TIME_W: f32 = 92.0;
     /// Add task: a 640 dialog, 110 from the top.
     pub const QUICK_W: f32 = 640.0;
     pub const QUICK_TOP: f32 = 110.0;

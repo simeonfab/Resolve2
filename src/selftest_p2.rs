@@ -41,6 +41,21 @@ pub fn run(t: &mut T) {
         format!("{} | {} | {} {} {} {} | {}", c.done, c.next, c.now, c.next_n, c.later, c.open, c.updated),
     );
 
+    // B-E21: the plan's request lists today's real items; a reply is matched back to them, and
+    // anything not on today's list is dropped. (The reply below is written test input for the
+    // parser, not AI output.)
+    let prompt = crate::ui::plan::plan_prompt(&d, at, "I can't start before 10");
+    let reply = r#"Here you go: {"rows":[{"start":"10:30","end":"11:00","item":"Call with The Corner Café","why":"Fixed."},{"start":"11:00","end":"12:30","item":"Reconstruct 12 months of hours per café","why":"Highest value."},{"start":"13:00","item":"Water the garden","why":"Not on the list."}],"wont_fit":[{"item":"Chase the till export","why":"No room."}],"clashes":1}"#;
+    let plan = crate::ui::plan::parse_plan(reply, &d, at);
+    t.check(
+        "B-E21: Plan my day asks with today's real items and the person's change, and keeps only items from today's list",
+        prompt.contains("Call with The Corner Café") && prompt.contains("Send October invoices") && prompt.contains("I can't start before 10")
+            && plan.as_ref().map_or(false, |p| p.rows.len() == 2 && p.rows[1].task.is_some() && p.rows[0].tag == "Event" && p.rows[0].time == "10:30 – 11:00" && p.wont_fit.len() == 1 && p.wont_fit[0].2.is_some() && p.clashes == 1),
+        format!("{plan:?}"),
+    );
+    t.check("B-E21: a reply naming none of today's items is an error (the rest of Home still loads)", crate::ui::plan::parse_plan(r#"{"rows":[{"item":"Something else"}]}"#, &d, at).is_err(), "");
+    t.check("B-E23: Move to Monday goes to the next Monday", crate::ui::plan::next_monday(at.date()) == chrono::NaiveDate::from_ymd_opt(2026, 11, 9).unwrap(), "");
+
     // B-E11: Add task highlights what it recognised, and its chips carry no emoji
     use crate::nlp::Recognised as R;
     let text = "Pay rent every month 9am p1 #Home";

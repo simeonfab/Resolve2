@@ -1793,6 +1793,48 @@ pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Optio
     ui.painter().galley(r.min + egui::vec2(space::S22 / 2.0, space::S14 / 2.0), g, fg);
 }
 
+/// One row of Plan my day: the time (92 wide), a 4 px bar (amber task, terracotta event or
+/// overdue), the item and why it sits there, and its tag. The first row is bold on a warm white.
+pub fn plan_row(ui: &mut Ui, p: &Pal, time: &str, item: &str, why: &str, tag: &str, first: bool) {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let (bar, tag_bg, tag_fg) = match tag {
+        "Event" => (p.orange, p.orange_tint, p.orange),
+        "Overdue" => (p.orange, p.orange_tint, p.orange),
+        _ => (tok::AMBER, p.accent_soft, p.accent_text),
+    };
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(space::S16, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S16 * 2.0);
+        ui.horizontal_top(|ui| {
+            ui.add_sized([space::PLAN_TIME_W, size::ROW + space::S4], egui::Label::new(RichText::new(time).size(size::LABEL).color(p.dim)));
+            let (r, _) = ui.allocate_exact_size(egui::vec2(stroke::DOT, space::S40 - space::S4), Sense::hover());
+            ui.painter().rect_filled(r, stroke::DOT / 2.0, bar);
+            ui.add_space(space::S6);
+            let tag_g = ui.painter().layout_no_wrap(tag.to_string(), fs(size::TINY), tag_fg);
+            let text_w = ui.available_width() - tag_g.size().x - space::S30;
+            ui.vertical(|ui| {
+                ui.set_width(text_w);
+                ui.add(egui::Label::new(RichText::new(item).font(if first { fs(size::ROW) } else { fm(size::ROW) }).color(p.text)).wrap());
+                if !why.is_empty() {
+                    ui.add(egui::Label::new(RichText::new(why).size(size::SMALL).color(p.dim)).wrap());
+                }
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                let (r, _) = ui.allocate_exact_size(tag_g.size() + egui::vec2(space::S16, space::S4), Sense::hover());
+                ui.painter().rect_filled(r, radius::PILL, tag_bg);
+                ui.painter().galley(r.min + egui::vec2(space::S8, space::S4 / 2.0), tag_g, tag_fg);
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    if first {
+        ui.painter().set(bg_at, Shape::rect_filled(rect.shrink(stroke::HAIR), radius::CARD - 1.0, if p.dark { p.surface_raised } else { tok::AMBER_LIGHT }));
+    } else {
+        ui.painter().line_segment([rect.left_top(), rect.right_top()], Stroke::new(stroke::HAIR, p.divider));
+    }
+}
+
 /// A line led by a small dot ("Focus theme · …" on the hero).
 pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
     ui.horizontal(|ui| {

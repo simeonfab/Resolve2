@@ -19,7 +19,7 @@ pub mod sections;
 mod team;
 pub mod testlab;
 pub mod dashboard;
-mod plan;
+pub mod plan;
 mod help;
 mod assistant;
 mod databases;
@@ -508,6 +508,7 @@ impl App {
         }
         match opts.open.as_deref() {
             Some("ask") => app.page_ui.ai_open = true,
+            Some("plan") => app.open_plan_day(),
             // add:<text>: Add task open with that typed (screenshots)
             Some(o) if o.starts_with("add:") => {
                 app.open_quick(QuickKind::Task);
@@ -925,7 +926,9 @@ impl App {
             self.toggle_sidebar();
         }
         if esc {
-            if self.page_ui.ai_open {
+            if self.plan.open {
+                self.plan.open = false;
+            } else if self.page_ui.ai_open {
                 self.page_ui.ai_open = false;
             } else if self.palette.is_some() {
                 self.palette = None;
@@ -1241,7 +1244,7 @@ impl App {
         let Some(shot) = self.shot.as_mut() else { return };
         ctx.request_repaint();
         // a real question asked for the screenshot: wait for its answer (at most 3 minutes)
-        let waiting = self.resolve_ui.chat_job.is_some() && self.now < 180.0;
+        let waiting = (self.resolve_ui.chat_job.is_some() || self.plan.job.is_some()) && self.now < 180.0;
         let Some(shot) = self.shot.as_mut() else { return };
         if self.frame >= 120 && !shot.requested && !waiting {
             shot.requested = true;
@@ -1360,6 +1363,7 @@ impl eframe::App for App {
         }
         self.resolve_poll(ctx);
         self.poll_team(ctx);
+        self.poll_plan(ctx);
         self.poll_import(ctx);
         self.check_reminders(ctx);
         self.shortcuts(ctx);
@@ -1423,6 +1427,7 @@ impl eframe::App for App {
         }
         if !full_screen {
             self.ask_sheet(ctx, &p);
+            self.plan_sheet(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);
