@@ -83,7 +83,7 @@ impl App {
             ui.vertical(|ui| {
                 ui.label(RichText::new("Do this first").size(size::SMALL).color(p.eyebrow).strong());
                 if pr.next_move.trim().is_empty() {
-                    ui.add(egui::TextEdit::multiline(&mut pr.next_move).hint_text("Your first move — one thing you can do this week").desired_rows(2).desired_width(f32::INFINITY));
+                    ui.add(egui::TextEdit::multiline(&mut pr.next_move).hint_text("Your first move: one thing you can do this week").desired_rows(2).desired_width(f32::INFINITY));
                 } else {
                     wrap_label(ui, RichText::new(&pr.next_move).font(fserif(size::TITLE)).color(p.on_ink));
                 }
@@ -137,7 +137,7 @@ impl App {
                         basis_chip(ui, p, &t.basis);
                     });
                     if editing {
-                        ui.add(egui::TextEdit::singleline(&mut t.title).font(fs(size::SECTION)).desired_width(f32::INFINITY).hint_text("Theme — a few words"));
+                        ui.add(egui::TextEdit::singleline(&mut t.title).font(fs(size::SECTION)).desired_width(f32::INFINITY).hint_text("Theme (a few words)"));
                         ui.add(egui::TextEdit::multiline(&mut t.detail).desired_rows(2).desired_width(f32::INFINITY).hint_text("What it involves"));
                         ui.horizontal(|ui| {
                             for ph in ["Now", "Next", "Later"] {
@@ -199,7 +199,7 @@ impl App {
         ui.add_space(10.0);
         let now: Vec<&Item> = pr.tasks.iter().filter(|t| t.phase == "Now" || t.phase.is_empty()).collect();
         if now.is_empty() {
-            ui.label(RichText::new("No first tasks yet — add them in \"See and edit everything\", or after you adopt.").size(size::SMALL).color(p.dim));
+            ui.label(RichText::new("No first tasks yet. Add them in \"See and edit everything\", or after you adopt.").size(size::SMALL).color(p.dim));
         }
         for (n, t) in now.iter().enumerate() {
             egui::Frame::none().fill(if n == 0 { p.ink } else { p.card }).stroke(Stroke::new(1.0, p.line)).rounding(space::RADIUS).inner_margin(12.0).show(ui, |ui| {
@@ -262,7 +262,7 @@ impl App {
         });
         ui.add_space(14.0);
         let ok = !pr.name.trim().is_empty();
-        if ui.add_enabled(ok, cta(p, "Adopt — create this project")).clicked() {
+        if ui.add_enabled(ok, cta(p, "Adopt and create this project")).clicked() {
             self.adopt_begin(it);
         }
         ui.label(RichText::new(if it.new_workspace { "Adopt creates a new workspace with this as its first project. You can undo it." } else { "Adopt creates the project with its roadmap, tasks, validation and pages. You can undo it." }).size(size::TINY).color(p.faint));

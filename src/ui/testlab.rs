@@ -22,7 +22,7 @@ pub struct LabUi {
 
 const PROVIDERS: [(&str, &str); 7] = [
     ("", "App default (Settings → AI)"),
-    ("offline", "No AI — fixed question set"),
+    ("offline", "No AI (fixed question set)"),
     ("ollama", "Ollama (local)"),
     ("openai", "LM Studio / other OpenAI-compatible"),
     ("claude-code", "Claude Code (your Claude subscription)"),
@@ -53,7 +53,7 @@ impl App {
         let id = b.id.clone();
         self.store.data.intakes.push(b);
         self.touch();
-        self.toast(format!("Branched from question {} — try another answer", k + 1));
+        self.toast(format!("Branched from question {}. Try another answer.", k + 1));
         self.resolve_ui.focus_qa = None;
         self.go(View::Intake(id));
     }
@@ -64,7 +64,7 @@ impl App {
         let k = it.cursor;
         let Some(q) = it.qas.get_mut(k) else { return };
         let Some(a) = testlab::answer_for(&scn, &q.target) else {
-            self.toast("The scenario has no answer for this one — type your own");
+            self.toast("The scenario has no answer for this one. Type your own.");
             return;
         };
         q.answer = a;
@@ -88,13 +88,13 @@ impl App {
     pub fn testlab_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         egui::Frame::none().fill(p.banner_bg).inner_margin(egui::Margin::symmetric(20.0, 8.0)).show(ui, |ui| {
             ui.set_width(ui.available_width());
-            ui.label(RichText::new(format!("TEST MODE — sandbox data in {} · never shown to Claude/ChatGPT over MCP · nothing touches your real workspaces", crate::store::root().display())).size(size::SMALL).color(p.banner_text).strong());
+            ui.label(RichText::new(format!("TEST MODE: sandbox data in {} · never shown to Claude/ChatGPT over MCP · nothing touches your real workspaces", crate::store::root().display())).size(size::SMALL).color(p.banner_text).strong());
         });
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             centered(ui, 1100.0, |ui| {
                 ui.add_space(20.0);
                 ui.label(RichText::new("Test Intake").font(fserif(size::STEP_TITLE)));
-                ui.label(RichText::new("Run the full intake journey — questions, proposal, bridge and reveal — on sample scenarios or your own answers, with any AI provider. Inspect every question's reasoning and the raw AI calls.").size(size::SMALL).color(p.dim));
+                ui.label(RichText::new("Run the full intake journey (questions, proposal, bridge and reveal) on sample scenarios or your own answers, with any AI provider. Inspect every question's reasoning and the raw AI calls.").size(size::SMALL).color(p.dim));
                 if !self.lab.msg.is_empty() {
                     ui.add_space(6.0);
                     ui.label(RichText::new(&self.lab.msg).size(size::SMALL).color(p.accent_text));
@@ -176,7 +176,7 @@ impl App {
             ui.label(RichText::new(format!("Runs ({})", runs.len())).font(fs(size::SECTION)));
             ui.label(RichText::new("Tick two runs with proposals to compare them side by side.").size(size::TINY).color(p.faint));
             if runs.is_empty() {
-                ui.label(RichText::new("No runs yet — start one above.").color(p.faint));
+                ui.label(RichText::new("No runs yet. Start one above.").color(p.faint));
             }
             for r in &runs {
                 ui.separator();
@@ -249,7 +249,7 @@ impl App {
         if let Some(r) = save {
             let name = if self.lab.save_name.trim().is_empty() { format!("{} (saved)", r.title()) } else { self.lab.save_name.trim().to_string() };
             self.lab.msg = match testlab::save_answers(&r, &name) {
-                Ok(()) => format!("Saved the answers as \"{name}\" — start a new run from it to replay them"),
+                Ok(()) => format!("Saved the answers as \"{name}\". Start a new run from it to replay them."),
                 Err(e) => format!("Couldn't save: {e}"),
             };
         }
@@ -298,7 +298,7 @@ impl App {
                     ui.add_space(4.0);
                     ui.label(RichText::new(format!("H0: {}", pr.h0.title)).size(size::SMALL));
                     for h in &pr.hypotheses {
-                        ui.label(RichText::new(format!("• [{}] {} — NHx: {}", h.basis, h.title, h.negation)).size(size::SMALL).color(p.dim));
+                        ui.label(RichText::new(format!("• [{}] {} (NHx: {})", h.basis, h.title, h.negation)).size(size::SMALL).color(p.dim));
                     }
                     for ph in ["Now", "Next", "Later"] {
                         let items: Vec<String> = pr.roadmap.iter().filter(|x| x.phase == ph).map(|x| format!("[{}] {}", x.basis, x.title)).collect();

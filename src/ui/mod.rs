@@ -711,7 +711,7 @@ impl App {
             pg.icon = t.icon.to_string();
             pg.blocks = blocks;
             if t.name == "Meeting notes" || t.name == "Daily journal" {
-                pg.title = format!("{} — {}", t.name, today().format("%-d %b %Y"));
+                pg.title = format!("{} ({})", t.name, today().format("%-d %b %Y"));
             }
         }
     }
@@ -758,7 +758,7 @@ impl App {
             if t.reminded_for != key && now >= fire && now - fire < Duration::hours(6) {
                 t.reminded_for = key;
                 t.updated = now_ms();
-                alerts.push(format!("⏰ {} — due {}", t.title, fmt_time(tm)));
+                alerts.push(format!("⏰ {}, due {}", t.title, fmt_time(tm)));
             }
         }
         for e in &self.store.data.events {

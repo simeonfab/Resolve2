@@ -1,4 +1,4 @@
-# Resolve 2 — a quick tutorial
+# Resolve 2: a quick tutorial
 
 Resolve 2 keeps your pages, databases, tasks and calendars in one app on your PC. Everything is saved automatically as you type, works offline, and belongs to you. This guide takes about 10 minutes to read.
 
@@ -13,16 +13,16 @@ Resolve 2 keeps your pages, databases, tasks and calendars in one app on your PC
 ## Start a project with Resolve (the intake)
 
 - **New project** (Home, Projects, or the project picker in the sidebar) opens the intake full screen. A brand-new copy opens straight into it after Connect your AI. On the first screen you can attach a brief or notes (.md, .txt, .docx, .pdf).
-- Tell Resolve what's going on in your own words, then answer one question at a time. **Enter** continues, **Shift+Enter** adds a new line, **Esc** leaves with everything saved — come back any time and it resumes where you stopped.
+- Tell Resolve what's going on in your own words, then answer one question at a time. **Enter** continues, **Shift+Enter** adds a new line, **Esc** leaves with everything saved. Come back any time and it resumes where you stopped.
 - On the right, **What Resolve has heard** sorts your answers into evidence, assumptions and open questions. Click a label to change it, or edit the words.
 - Jump back to any question with the numbers at the top; if you change an earlier answer, later answers built on it are flagged for review. **Why this question?** shows the reasoning (Hypothesis Zero).
 - Stop whenever you like with **Show me the proposal**; after 8 questions Resolve moves on by itself. Check what Resolve understood (**This looks right** or **Something's wrong, let me change it**), then go through your next move, the roadmap themes one at a time, your first week and the whole picture. **See and edit everything** opens the full proposal: every part can be edited, removed or regenerated, and each item is labelled evidence, assumption or uncertain.
-- **Adopt** creates the project — roadmap (Now / Next / Later), tasks, Hypothesis Zero hypotheses and experiments, evidence and assumptions, a project brief and the intake transcript. Then **Open my project**. Adopt can be undone.
+- **Adopt** creates the project: roadmap (Now / Next / Later), tasks, Hypothesis Zero hypotheses and experiments, evidence and assumptions, a project brief and the intake transcript. Then **Open my project**. Adopt can be undone.
 - Without AI connected, the intake still works with a fixed set of questions and builds the proposal only from your own words.
 
 ## Test Intake
 
-- Home → **Test Intake**, or Settings → General → **Open Test Intake**. It opens in its own window with sandbox data in `%APPDATA%\Resolve2-TestLab` — your real workspaces are never touched, and the sandbox is never shared over MCP. A yellow **TEST MODE** banner shows the whole time.
+- Home → **Test Intake**, or Settings → General → **Open Test Intake**. It opens in its own window with sandbox data in `%APPDATA%\Resolve2-TestLab`. Your real workspaces are never touched, and the sandbox is never shared over MCP. A yellow **TEST MODE** banner shows the whole time.
 - Pick the AI for the run (app default, no AI, Ollama, LM Studio, Claude Code, Anthropic or OpenAI keys), then a sample scenario or **Use my own answers**.
 - In a run, **Inspector** shows each question's reasoning, how the answer was classified, the provider and model, and the raw AI request and response. **Answer from scenario** fills the scenario's answer; **Branch from here** copies the run up to that question so you can try another path.
 - In the runs list: tick two runs to compare their proposals side by side, **Save answers for replay**, **Export Markdown + JSON**, or **Promote to real project** (asks first, then creates it in your real workspace).
@@ -181,7 +181,7 @@ Assistants can also tidy things up afterwards: "Link each opportunity to its com
 
 Click **✨ Ask AI** in the sidebar (or the ✨ AI button on a page). A panel opens on the right, wherever you are in the app.
 
-- **No extra cost with your subscriptions.** Pick **Claude — your Claude Pro/Max subscription** or **ChatGPT — your ChatGPT Plus/Pro subscription** in Settings → AI & MCP. Resolve 2 then works through the Claude Code or Codex app on your PC, which signs in with your account, so the assistant uses your plan's normal limits and there's no API bill. One-time setup:
+- **No extra cost with your subscriptions.** Pick **Claude: your Claude Pro/Max subscription** or **ChatGPT: your ChatGPT Plus/Pro subscription** in Settings → AI & MCP. Resolve 2 then works through the Claude Code or Codex app on your PC, which signs in with your account, so the assistant uses your plan's normal limits and there's no API bill. One-time setup:
   - **Claude**: install Claude Code (claude.com/claude-code), open a terminal, type `claude` and sign in.
   - **ChatGPT**: run `npm install -g @openai/codex`, then `codex`, and choose *Sign in with ChatGPT*.
   - Then press *Check it's installed*.
@@ -224,6 +224,6 @@ Claude and ChatGPT, connected through MCP, can do nearly everything you can: sea
 - **Esc** closes dialogs and the task panel; **⏴** at the top goes back.
 - When you're ready, delete or ignore the Sample workspace and work in Personal, or make more workspaces for work, side projects and so on.
 - **Undo**: completing, deleting, adopting a project and changes made by the assistant show a toast with **Undo** for a few seconds.
-- **Nothing is deleted for good straight away**: Settings → Backups → **Recently deleted** lists everything deleted in the last 60 days — by you, the assistant, or Claude/ChatGPT over MCP — with **Restore**.
+- **Nothing is deleted for good straight away**: Settings → Backups → **Recently deleted** lists everything deleted in the last 60 days (by you, the assistant, or Claude/ChatGPT over MCP), with **Restore**.
 - **AI changes are backed up first**: before the assistant or an MCP client makes its first change in a batch, Resolve 2 takes a backup (Settings → Backups).
-- **The assistant only reports what really happened**: under its answer you'll see *Confirmed in your workspace* (✓) and *Not done* (✗). If its words claim more than its tools did, a **⚠ Mismatch** warning appears — small local models sometimes do this.
+- **The assistant only reports what really happened**: under its answer you'll see *Confirmed in your workspace* (✓) and *Not done* (✗). If its words claim more than its tools did, a **⚠ Mismatch** warning appears. Small local models sometimes do this.

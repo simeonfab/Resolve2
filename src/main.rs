@@ -33,6 +33,7 @@ mod selftest_safety;
 mod selftest_journey;
 mod selftest_alpha;
 mod selftest_p0;
+mod selftest_p1;
 mod server;
 mod store;
 mod templates;
@@ -330,7 +331,7 @@ fn main() {
     };
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
-            .with_title(if testlab { "Resolve 2 — Test Intake (sandbox)" } else { "Resolve 2" })
+            .with_title(if testlab { "Resolve 2: Test Intake (sandbox)" } else { "Resolve 2" })
             // --size WxH (screenshots at a given window width)
             .with_inner_size(arg_value(&args, "--size").and_then(|s| s.split_once('x').and_then(|(w, h)| Some([w.parse::<f32>().ok()?, h.parse::<f32>().ok()?]))).unwrap_or([1600.0, 900.0]))
             .with_min_inner_size([960.0, 600.0]),

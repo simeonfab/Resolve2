@@ -78,7 +78,7 @@ impl App {
                         Section::Handoffs => "Self-contained briefs for Claude, Codex or a person, written from the project's real context.",
                         _ => "Pick a project in the sidebar to focus on it.",
                     };
-                    let all = if matches!(s, Section::Roadmap | Section::Frameworks | Section::Knowledge) { " — all projects" } else { "" };
+                    let all = if matches!(s, Section::Roadmap | Section::Frameworks | Section::Knowledge) { " (all projects)" } else { "" };
                     view_title(ui, p, &format!("{name}{all}"), Some(sub));
                 }
                 ui.add_space(8.0);
@@ -144,7 +144,7 @@ impl App {
         let mut ps: Vec<&Project> = d.projects.iter().filter(|x| !x.archived).collect();
         ps.sort_by_key(|x| x.order);
         if ps.is_empty() {
-            ui.label(RichText::new("No projects yet — press New project to start one with the intake.").color(p.dim));
+            ui.label(RichText::new("No projects yet. Press New project to start one with the intake.").color(p.dim));
         }
         for pr in ps {
             let tasks: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pr.id.as_str()) && t.parent_id.is_none()).collect();

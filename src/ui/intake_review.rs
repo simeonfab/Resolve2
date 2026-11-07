@@ -19,7 +19,7 @@ fn basis_chip(ui: &mut egui::Ui, p: &Pal, it: &mut Item) {
         _ => p.orange,
     };
     let label = if it.basis.is_empty() { "uncertain" } else { it.basis.as_str() };
-    if chip(ui, label, col).on_hover_text("Basis — click to change: evidence → assumption → uncertain").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+    if chip(ui, label, col).on_hover_text("Basis. Click to change: evidence → assumption → uncertain").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
         it.basis = match it.basis.as_str() {
             "evidence" => "assumption".into(),
             "assumption" => "uncertain".into(),
@@ -63,9 +63,9 @@ fn item_list(ui: &mut egui::Ui, p: &Pal, salt: &str, items: &mut Vec<Item>, phas
             ui.horizontal(|ui| {
                 ui.add_space(24.0);
                 ui.label(RichText::new("part of").size(size::TINY).color(p.faint));
-                let sel = it.parent.and_then(|x| roadmap.get(x)).cloned().unwrap_or_else(|| "—".into());
+                let sel = it.parent.and_then(|x| roadmap.get(x)).cloned().unwrap_or_else(|| "None".into());
                 egui::ComboBox::from_id_salt((salt, "parent", n)).width(220.0).selected_text(sel).show_ui(ui, |ui| {
-                    ui.selectable_value(&mut it.parent, None, "—");
+                    ui.selectable_value(&mut it.parent, None, "None");
                     for (k, r) in roadmap.iter().enumerate() {
                         ui.selectable_value(&mut it.parent, Some(k), r);
                     }
@@ -92,7 +92,7 @@ impl App {
         ui.label(RichText::new("Everything in your proposal.").font(fserif(size::STEP_TITLE)));
         ui.label(RichText::new("Edit, remove or regenerate anything. Nothing is created until you press Adopt. Labels show what each item rests on.").size(size::SMALL).color(p.dim));
         if pr.offline {
-            ui.label(RichText::new("Made without AI, from your own words only — add roadmap items and tasks yourself, or connect a model and regenerate.").size(size::SMALL).color(p.orange));
+            ui.label(RichText::new("Made without AI, from your own words only. Add roadmap items and tasks yourself, or connect a model and regenerate.").size(size::SMALL).color(p.orange));
         }
         ui.add_space(12.0);
         let mut regen: Option<&'static str> = None;
@@ -112,7 +112,7 @@ impl App {
                     });
                 });
                 if removed {
-                    ui.label(RichText::new("Removed — won't be created.").size(size::SMALL).color(p.faint));
+                    ui.label(RichText::new("Removed. It won't be created.").size(size::SMALL).color(p.faint));
                 } else {
                     body(ui);
                 }
@@ -134,7 +134,7 @@ impl App {
                     }
                 });
             });
-            ui.add(egui::TextEdit::singleline(&mut pr.name).font(fserif(size::TITLE)).desired_width(f32::INFINITY).hint_text("Short — name the real thing"));
+            ui.add(egui::TextEdit::singleline(&mut pr.name).font(fserif(size::TITLE)).desired_width(f32::INFINITY).hint_text("Short: name the real thing"));
             if pr.name.split_whitespace().count() > 6 {
                 ui.label(RichText::new("Keep it short: a few words naming the real thing.").size(size::TINY).color(p.orange));
             }
@@ -150,7 +150,7 @@ impl App {
             ui.add(egui::TextEdit::multiline(&mut pr.outcome).desired_rows(1).desired_width(f32::INFINITY));
         });
         section(ui, "h0", "H0 and the first hypotheses", r_h0, &mut regen, &mut toggle, &mut |ui| {
-            ui.label(RichText::new("H0 — the starting objective, as a hypothesis to challenge").size(size::SMALL).color(p.dim));
+            ui.label(RichText::new("H0: the starting objective, as a hypothesis to challenge").size(size::SMALL).color(p.dim));
             ui.horizontal(|ui| {
                 basis_chip(ui, p, &mut pr.h0);
                 ui.add(egui::TextEdit::singleline(&mut pr.h0.title).desired_width(ui.available_width()));
@@ -161,7 +161,7 @@ impl App {
                 ui.add(egui::TextEdit::singleline(&mut pr.h0.negation).desired_width(ui.available_width()).font(fp(size::SMALL)));
             });
             ui.add_space(6.0);
-            ui.label(RichText::new("Hx — first-level hypotheses, each with its negation").size(size::SMALL).color(p.dim));
+            ui.label(RichText::new("Hx: first-level hypotheses, each with its negation").size(size::SMALL).color(p.dim));
             item_list(ui, p, "hyp", &mut pr.hypotheses, false, true, false, &[]);
         });
         section(ui, "uncertainties", "Open uncertainties", r_unc, &mut regen, &mut toggle, &mut |ui| {
@@ -196,7 +196,7 @@ impl App {
                 pr.experiments.push(Item { title: format!("E{}: ", pr.experiments.len()), basis: "uncertain".into(), ..Default::default() });
             }
         });
-        section(ui, "roadmap", "First roadmap — Now, Next, Later", r_rm, &mut regen, &mut toggle, &mut |ui| {
+        section(ui, "roadmap", "First roadmap: Now, Next, Later", r_rm, &mut regen, &mut toggle, &mut |ui| {
             item_list(ui, p, "rm", &mut pr.roadmap, true, false, true, &[]);
         });
         section(ui, "tasks", "Tasks", r_tasks, &mut regen, &mut toggle, &mut |ui| {
@@ -225,7 +225,7 @@ impl App {
             if ai {
                 all = ui.button("↻ Regenerate everything").clicked();
             }
-            adopt = ui.add_enabled(ok, cta(p, "Adopt — create this project")).clicked();
+            adopt = ui.add_enabled(ok, cta(p, "Adopt and create this project")).clicked();
         });
         ui.label(RichText::new("Adopt confirms the name and writes the project, roadmap, tasks, validation and pages. You can undo it.").size(size::TINY).color(p.faint));
         if back {
@@ -396,10 +396,10 @@ impl App {
         let mut branch = false;
         let mut fill = false;
         card(ui, p, |ui| {
-            ui.label(RichText::new(format!("Inspector — question {}", it.cursor + 1)).font(fs(size::SECTION)));
+            ui.label(RichText::new(format!("Inspector: question {}", it.cursor + 1)).font(fs(size::SECTION)));
             ui.label(RichText::new(format!("Target: {} · source: {}", journey::target_label(&qa.target), qa.source)).size(size::TINY).color(p.faint));
             ui.label(RichText::new("H0 reasoning (why asked)").size(size::SMALL).color(p.eyebrow).strong());
-            ui.label(RichText::new(if qa.why.is_empty() { "—" } else { &qa.why }).size(size::SMALL));
+            ui.label(RichText::new(if qa.why.is_empty() { "No reason recorded" } else { &qa.why }).size(size::SMALL));
             ui.label(RichText::new(format!("Builds on: {}", qa.depends_on.join(", "))).size(size::TINY).color(p.faint));
             ui.label(RichText::new("Classification of this answer").size(size::SMALL).color(p.eyebrow).strong());
             for h in it.heard.iter().filter(|h| h.from == qa.id) {

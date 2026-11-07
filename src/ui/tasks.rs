@@ -61,7 +61,7 @@ impl App {
             let mut cancel = false;
             egui::Frame::none().stroke(Stroke::new(1.0, p.line)).rounding(8.0).inner_margin(egui::Margin::same(10.0)).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.add_text).hint_text("Task name — try: Pay rent every month 9am p1 @bills").frame(false).font(fs(14.5)).desired_width(f32::INFINITY));
+                let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.add_text).hint_text("Task name, for example: Pay rent every month 9am p1 @bills").frame(false).font(fs(14.5)).desired_width(f32::INFINITY));
                 if !r.has_focus() && self.temp.remove("focus_add").is_some() {
                     r.request_focus();
                 }
@@ -182,7 +182,7 @@ impl App {
                         Some(pg) => app.go(View::Page(pg)),
                         None => {
                             let name = app.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
-                            let mut pg = Page::new(format!("{name} — Project brief"));
+                            let mut pg = Page::new(format!("{name}: Project brief"));
                             pg.icon = "📁".into();
                             pg.blocks = vec![Block::new(BlockKind::H2, "Goal"), Block::new(BlockKind::Paragraph, ""), Block::new(BlockKind::H2, "Notes"), Block::new(BlockKind::Paragraph, "")];
                             let pgid = pg.id.clone();

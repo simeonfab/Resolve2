@@ -88,7 +88,7 @@ impl App {
             },
             3 => match pid {
                 Some(pid) => {
-                    wrap_label(ui, RichText::new("Hypothesis results, experiments, decisions, supporting evidence and the project's history. Evidence stays linked to the decisions and hypotheses it supports — open a record to see its links.").size(size::SMALL).color(p.dim));
+                    wrap_label(ui, RichText::new("Hypothesis results, experiments, decisions, supporting evidence and the project's history. Evidence stays linked to the decisions and hypotheses it supports. Open a record to see its links.").size(size::SMALL).color(p.dim));
                     ui.add_space(6.0);
                     self.cockpit_records(ui, p, &pid);
                 }
@@ -167,7 +167,7 @@ impl App {
 
     fn create_brief(&mut self, pid: &str) {
         let name = self.store.data.project(pid).map(|x| x.name.clone()).unwrap_or_default();
-        let mut pg = Page::new(format!("{name} — Project brief"));
+        let mut pg = Page::new(format!("{name}: Project brief"));
         pg.icon = "🧭".into();
         pg.blocks = vec![Block::new(BlockKind::H2, "Goal"), Block::new(BlockKind::Paragraph, ""), Block::new(BlockKind::H2, "Notes"), Block::new(BlockKind::Paragraph, "")];
         let id = pg.id.clone();
@@ -335,7 +335,7 @@ impl App {
                         }
                         ui.separator();
                         ui.label(RichText::new("Templates").size(size::TINY).color(p.dim));
-                        if ui.button("🤝 CRM — companies, contacts, opportunities (linked)").clicked() {
+                        if ui.button("🤝 CRM: companies, contacts, opportunities (linked)").clicked() {
                             self.create_db_from_template("crm");
                             ui.close_menu();
                         }

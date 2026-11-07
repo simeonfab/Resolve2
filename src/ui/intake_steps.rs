@@ -273,7 +273,7 @@ impl App {
             ui.label(RichText::new(&qa.question).font(fserif(size::QUESTION)));
             if qa.needs_review {
                 ui.add_space(4.0);
-                chip(ui, "An earlier answer changed — does this still hold?", p.orange);
+                chip(ui, "An earlier answer changed. Does this still hold?", p.orange);
             }
             ui.add_space(10.0);
             let aid = egui::Id::new(("answer", &qa.id));
@@ -370,7 +370,7 @@ impl App {
             ui.label(RichText::new("What Resolve has heard").font(fs(size::SECTION)));
             ui.label(RichText::new("Click a label to change it; edit the words in place.").size(size::TINY).color(p.faint));
             if it.heard.is_empty() {
-                ui.label(RichText::new("Nothing yet — it fills in as you answer.").size(size::SMALL).color(p.faint));
+                ui.label(RichText::new("Nothing yet. It fills in as you answer.").size(size::SMALL).color(p.faint));
             }
             let mut remove: Option<usize> = None;
             for (kind, title) in [("evidence", "Evidence"), ("assumption", "Assumptions"), ("question", "Open questions")] {
@@ -433,7 +433,7 @@ impl App {
             return;
         }
         ui.label(RichText::new("Here's what Resolve understood.").font(fserif(size::STEP_TITLE)));
-        ui.label(RichText::new(if it.editing { "Change anything that's wrong — the outcome in your own words." } else { "Check it — it shapes everything that follows." }).size(size::SMALL).color(p.dim));
+        ui.label(RichText::new(if it.editing { "Change anything that's wrong. Keep the outcome in your own words." } else { "Check it. It shapes everything that follows." }).size(size::SMALL).color(p.dim));
         ui.add_space(12.0);
         let editing = it.editing;
         let mut u = it.understanding.clone().unwrap_or_default();
@@ -447,7 +447,7 @@ impl App {
                         let rows = (v.len() / 48 + 1).clamp(2, 8);
                         ui.add(egui::TextEdit::multiline(v).desired_rows(rows).desired_width(f32::INFINITY).font(fp(size::BODY)));
                     } else if v.trim().is_empty() {
-                        wrap_label(ui, RichText::new("Not said yet — press \"Something's wrong\" to add it").size(size::BODY).color(p.faint));
+                        wrap_label(ui, RichText::new("Not said yet. Press \"Something's wrong\" to add it.").size(size::BODY).color(p.faint));
                     } else {
                         wrap_label(ui, RichText::new(v.as_str()).size(size::BODY));
                     }
@@ -465,7 +465,7 @@ impl App {
         });
         ui.add_space(6.0);
         let before_outcome = u.outcome.clone();
-        field(ui, "The outcome — who is better off, and how you'd know", &mut u.outcome);
+        field(ui, "The outcome: who is better off, and how you'd know", &mut u.outcome);
         if u.outcome != before_outcome {
             // editing the outcome is writing it in your own words: that confirms it
             it.outcome_confirmed = true;
@@ -506,7 +506,7 @@ impl App {
                 ui.spinner();
                 ui.label(RichText::new(label).font(fs(size::SECTION)));
             });
-            ui.label(RichText::new(format!("{secs:.0} s — this started while you were answering, so it's nearly ready")).size(size::TINY).color(p.faint));
+            ui.label(RichText::new(format!("{secs:.0} s. This started while you were answering, so it's nearly ready.")).size(size::TINY).color(p.faint));
         });
         ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
     }

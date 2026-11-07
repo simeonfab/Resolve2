@@ -27,7 +27,7 @@ pub fn model_note(provider: &str, model: &str) -> Option<&'static str> {
     }
     let m = model.to_lowercase();
     if m.starts_with("llama3.2") {
-        Some("Fine for trying the flow, weak for real projects — qwen3 is recommended for the intake.")
+        Some("Fine for trying the flow, weak for real projects. qwen3 is recommended for the intake.")
     } else if m.is_empty() {
         Some("Recommended for the intake: qwen3.")
     } else {
@@ -134,7 +134,7 @@ pub(crate) fn add_to_claude_code(name: &str, exe: &str, ws: &str) -> Result<Stri
 pub(crate) fn make_shortcuts(exe: &str) -> String {
     let dir = std::path::Path::new(exe).parent().map(|d| d.display().to_string()).unwrap_or_default();
     let script = format!(
-        "$s=New-Object -ComObject WScript.Shell; foreach($f in @([Environment]::GetFolderPath('Desktop'), (Join-Path ([Environment]::GetFolderPath('Programs')) '')) ){{ $l=$s.CreateShortcut((Join-Path $f 'Resolve 2.lnk')); $l.TargetPath='{}'; $l.WorkingDirectory='{}'; $l.Description='Resolve 2 — pages, tasks and calendar'; $l.Save() }}",
+        "$s=New-Object -ComObject WScript.Shell; foreach($f in @([Environment]::GetFolderPath('Desktop'), (Join-Path ([Environment]::GetFolderPath('Programs')) '')) ){{ $l=$s.CreateShortcut((Join-Path $f 'Resolve 2.lnk')); $l.TargetPath='{}'; $l.WorkingDirectory='{}'; $l.Description='Resolve 2: pages, tasks and calendar'; $l.Save() }}",
         exe.replace('\'', "''"),
         dir.replace('\'', "''")
     );
@@ -160,7 +160,7 @@ fn add_to_codex(name: &str, exe: &str, ws: &str) -> Result<String, String> {
     }
     let block = format!("\n{header}\ncommand = '{exe}'\nargs = [\"--mcp\", \"--workspace\", \"{ws}\"]\n");
     std::fs::write(&path, format!("{existing}{block}")).map_err(|e| e.to_string())?;
-    Ok(format!("Added to {} — restart Codex", path.display()))
+    Ok(format!("Added to {}. Restart Codex.", path.display()))
 }
 
 impl App {
@@ -451,7 +451,7 @@ impl App {
         });
         ui.add_space(10.0);
         card(ui, p, |ui| {
-            ui.label(RichText::new("Export — your data, in open formats").font(fb(16.0)));
+            ui.label(RichText::new("Export: your data, in open formats").font(fb(16.0)));
             ui.label(RichText::new("Writes every page as Markdown, every database as CSV, all events as .ics, tasks as a Markdown checklist, plus the full workspace as JSON.").size(12.5).color(p.dim));
             if ui.button("Export everything to a folder…").clicked() {
                 if let Some(dir) = rfd::FileDialog::new().pick_folder() {
@@ -530,7 +530,7 @@ impl App {
         let mut restore: Option<String> = None;
         card(ui, p, |ui| {
             ui.label(RichText::new("🗑 Recently deleted").font(fb(16.0)));
-            ui.label(RichText::new("Deletes are soft: anything deleted in the last 60 days — by you, the assistant or Claude/ChatGPT over MCP — can be put back.").size(12.0).color(p.faint));
+            ui.label(RichText::new("Deletes are soft: anything deleted in the last 60 days (by you, the assistant or Claude/ChatGPT over MCP) can be put back.").size(12.0).color(p.faint));
             if list.is_empty() {
                 ui.label(RichText::new("Nothing deleted recently.").color(p.dim));
             }
@@ -591,18 +591,18 @@ impl App {
         ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.horizontal(|ui| {
-                ui.label(RichText::new("🌍 Phone anywhere — always-on hub").font(fb(16.0)));
-                badge(ui, p, false, "needs Tailscale (free) — set up when you're ready");
+                ui.label(RichText::new("🌍 Phone anywhere: always-on hub").font(fb(16.0)));
+                badge(ui, p, false, "needs Tailscale (free), set up when you're ready");
             });
             ui.label(RichText::new("One always-on machine is the hub: it serves the phone page, MCP for ChatGPT, and /sync for your other devices. Every device keeps a full offline copy and merges with the hub, so the hub can move without rebuilding anything or losing data.").size(12.5).color(p.dim));
             ui.add_space(6.0);
-            ui.label(RichText::new("Today — this PC is the hub").font(fs(13.5)));
+            ui.label(RichText::new("Today: this PC is the hub").font(fs(13.5)));
             ui.label(RichText::new("1. Turn on \"Serve the phone page\" above.  2. Install Tailscale on this PC and your Android phone and sign in to both with the same account.  3. On the phone open the link above, but with this PC's Tailscale name (e.g. http://my-pc:PORT/?token=…), and Add to Home screen. Tailscale encrypts the connection and nobody outside your account can reach it.").size(12.5));
             ui.add_space(6.0);
-            ui.label(RichText::new("Later — move the hub to a cloud server").font(fs(13.5)));
+            ui.label(RichText::new("Later: move the hub to a cloud server").font(fs(13.5)));
             ui.label(RichText::new("1. On the server run the same program headless:").size(12.5));
             code_box(ui, p, &format!("resolve2 --serve {} --data-dir /srv/resolve2 --workspace \"{}\" --token {}", self.store.settings.server_port, self.store.meta.name, self.store.settings.token));
-            ui.label(RichText::new("2. Put its address below and press Sync now — this PC uploads everything and the two stay merged from then on. 3. Point the phone (and ChatGPT) at the server's address. Your PC keeps working offline and catches up whenever it reconnects. Nothing is lost: each device holds a full copy, and backups continue here.").size(12.5));
+            ui.label(RichText::new("2. Put its address below and press Sync now. This PC uploads everything and the two stay merged from then on. 3. Point the phone (and ChatGPT) at the server's address. Your PC keeps working offline and catches up whenever it reconnects. Nothing is lost: each device holds a full copy, and backups continue here.").size(12.5));
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 ui.label("Hub address");
@@ -633,7 +633,7 @@ impl App {
         ui.add_space(10.0);
         card(ui, p, |ui| {
             ui.label(RichText::new("🔄 Sync folder").font(fb(16.0)));
-            ui.label(RichText::new("Keeps this workspace in step with other PCs (or a backup drive) through any shared folder: Syncthing (free, open-source, peer-to-peer), OneDrive, Google Drive or Dropbox. Edits merge item by item — the newest change wins and deletions are respected. Every minute while open.").size(12.5).color(p.dim));
+            ui.label(RichText::new("Keeps this workspace in step with other PCs (or a backup drive) through any shared folder: Syncthing (free, open-source, peer-to-peer), OneDrive, Google Drive or Dropbox. Edits merge item by item: the newest change wins and deletions are respected. Every minute while open.").size(12.5).color(p.dim));
             ui.horizontal(|ui| {
                 let mut dir = self.store.settings.sync_dir.clone();
                 if ui.add(egui::TextEdit::singleline(&mut dir).hint_text("C:\\Users\\you\\OneDrive\\Resolve 2").desired_width(420.0)).changed() {
@@ -676,7 +676,7 @@ impl App {
         let sname = format!("resolve2_{}", crate::store::sanitize(&self.store.meta.name).to_lowercase().replace([' ', '-', '.'], "_"));
         card(ui, p, |ui| {
             ui.label(RichText::new("🔐 AI apps and this workspace (MCP)").font(fb(16.0)));
-            ui.label(RichText::new("Assistants connect through MCP (Model Context Protocol) and only ever see the workspace you name in their settings. No subscription to Notion AI needed — use the assistant you already have.").size(12.5).color(p.dim));
+            ui.label(RichText::new("Assistants connect through MCP (Model Context Protocol) and only ever see the workspace you name in their settings. No subscription to Notion AI needed. Use the assistant you already have.").size(12.5).color(p.dim));
             if ui.checkbox(&mut self.store.settings.ai_access, "Allow AI assistants to open this workspace").changed() {
                 self.store.save_settings();
             }
@@ -739,9 +739,9 @@ impl App {
             ui.radio_value(&mut self.reg.settings.ai_provider, "anthropic".to_string(), "Claude API key");
             ui.radio_value(&mut self.reg.settings.ai_provider, "openai-cloud".to_string(), "OpenAI API key");
             ui.label(RichText::new("Local models (free, private):").size(12.5).color(p.dim));
-            ui.radio_value(&mut self.reg.settings.ai_provider, "ollama".to_string(), "Ollama — runs on this PC");
+            ui.radio_value(&mut self.reg.settings.ai_provider, "ollama".to_string(), "Ollama (runs on this PC)");
             ui.radio_value(&mut self.reg.settings.ai_provider, "openai".to_string(), "Other OpenAI-compatible server (LM Studio, llama.cpp, Jan, a hosted endpoint)");
-            ui.label(RichText::new("Personal / development only — not for a commercial deployment:").size(12.5).color(p.orange));
+            ui.label(RichText::new("Personal / development only, not for a commercial deployment:").size(12.5).color(p.orange));
             ui.radio_value(&mut self.reg.settings.ai_provider, "claude-code".to_string(), "Claude Code CLI (your own Claude subscription)");
             ui.radio_value(&mut self.reg.settings.ai_provider, "codex-cli".to_string(), "Codex CLI (your own ChatGPT subscription)");
             if self.reg.settings.ai_provider != before {
@@ -760,9 +760,9 @@ impl App {
                 "claude-code" | "codex-cli" => {
                     let claude = self.reg.settings.ai_provider == "claude-code";
                     ui.label(RichText::new(if claude {
-                        "Needs Claude Code on this PC, signed in with your Claude account: install it from claude.com/claude-code, open a terminal, type `claude` and sign in once. Usage counts against your subscription's normal limits — no API bill."
+                        "Needs Claude Code on this PC, signed in with your Claude account: install it from claude.com/claude-code, open a terminal, type `claude` and sign in once. Usage counts against your subscription's normal limits, with no API bill."
                     } else {
-                        "Needs Codex on this PC, signed in with ChatGPT: in a terminal run `npm install -g @openai/codex`, then `codex` and choose Sign in with ChatGPT. Usage counts against your plan's limits — no API bill."
+                        "Needs Codex on this PC, signed in with ChatGPT: in a terminal run `npm install -g @openai/codex`, then `codex` and choose Sign in with ChatGPT. Usage counts against your plan's limits, with no API bill."
                     }).size(11.5).color(p.faint));
                     if ui.button("Check it's installed").clicked() {
                         self.settings_ui.message = crate::ai::cli_status(&self.reg.settings.ai_provider).unwrap_or_else(|e| format!("⚠ {e}"));
@@ -783,7 +783,7 @@ impl App {
                     ui.label(RichText::new("Get a key at platform.openai.com → API keys, and type the model name your account offers. A ChatGPT Plus subscription doesn't include API use; to use your subscription instead, connect ChatGPT through MCP (above).").size(11.5).color(p.faint));
                 }
                 _ => {
-                    ui.label(RichText::new("Free and private. Install Ollama from ollama.com. For the Resolve intake use **qwen3** (`ollama pull qwen3`) — it follows the intake's rules far better than llama3.2. Press Detect models below.").size(11.5).color(p.faint));
+                    ui.label(RichText::new("Free and private. Install Ollama from ollama.com. For the Resolve intake use **qwen3** (`ollama pull qwen3`). It follows the intake's rules far better than llama3.2. Press Detect models below.").size(11.5).color(p.faint));
                     ui.horizontal(|ui| {
                         ui.label("Address");
                         changed |= ui.text_edit_singleline(&mut self.reg.settings.ai_url).changed();
@@ -866,7 +866,7 @@ impl App {
     fn settings_calendars(&mut self, ui: &mut egui::Ui, p: &Pal) {
         card(ui, p, |ui| {
             ui.label(RichText::new("Subscribe to an external calendar").font(fb(16.0)));
-            ui.label(RichText::new("Paste an iCal link — in Google Calendar: Settings → (your calendar) → Integrate calendar → Secret address in iCal format. Outlook and Apple calendars have the same kind of link. Resolve 2 refreshes it every 30 minutes while open; subscribed events are read-only here (edit them at the source).").size(12.5).color(p.dim));
+            ui.label(RichText::new("Paste an iCal link. In Google Calendar: Settings → (your calendar) → Integrate calendar → Secret address in iCal format. Outlook and Apple calendars have the same kind of link. Resolve 2 refreshes it every 30 minutes while open; subscribed events are read-only here (edit them at the source).").size(12.5).color(p.dim));
             let mut name = self.temp.get("sub_name").cloned().unwrap_or_default();
             let mut url = self.temp.get("sub_url").cloned().unwrap_or_default();
             ui.horizontal(|ui| {

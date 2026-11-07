@@ -790,7 +790,7 @@ impl App {
                 });
             });
         if new_doc {
-            let mut pg = Page::new(if dr.title.is_empty() { "Meeting notes".to_string() } else { format!("{} — notes", dr.title) });
+            let mut pg = Page::new(if dr.title.is_empty() { "Meeting notes".to_string() } else { format!("Notes: {}", dr.title) });
             pg.icon = "🗒".into();
             pg.blocks = vec![
                 Block::new(BlockKind::Paragraph, format!("📅 {}", dr.date.format("%A %-d %B %Y"))),

@@ -23,8 +23,8 @@ impl App {
 
     pub fn provider_label(&self) -> String {
         match self.reg.settings.ai_provider.as_str() {
-            "claude-code" => "Claude — your subscription (via Claude Code, no extra cost)".to_string(),
-            "codex-cli" => "ChatGPT — your subscription (via Codex, no extra cost)".to_string(),
+            "claude-code" => "Claude: your subscription (via Claude Code, no extra cost)".to_string(),
+            "codex-cli" => "ChatGPT: your subscription (via Codex, no extra cost)".to_string(),
             "anthropic" => format!("Claude API · {}", self.reg.settings.ai_model),
             "openai-cloud" => format!("ChatGPT (OpenAI) · {}", self.reg.settings.ai_model),
             "openai" => format!("Local (OpenAI-compatible) · {}", self.reg.settings.ai_model),
@@ -96,7 +96,7 @@ impl App {
             });
             ui.add_space(6.0);
             let ask_id = egui::Id::new("ai-ask-box");
-            let r = ui.add(egui::TextEdit::multiline(&mut self.page_ui.ai_prompt).id(ask_id).hint_text(format!("{} — press 🎤 to speak", ask_copy.placeholder)).desired_rows(3).desired_width(f32::INFINITY));
+            let r = ui.add(egui::TextEdit::multiline(&mut self.page_ui.ai_prompt).id(ask_id).hint_text(format!("{} (press 🎤 to speak)", ask_copy.placeholder)).desired_rows(3).desired_width(f32::INFINITY));
             if self.temp.remove("ai_mic").is_some() {
                 r.request_focus();
             }
@@ -137,7 +137,7 @@ impl App {
             if self.team_send(GENERAL, &request, &extra, &label) {
                 self.page_ui.ai_prompt.clear();
             } else {
-                self.toast("Another answer is still running — try again when it's done");
+                self.toast("Another answer is still running. Try again when it's done.");
             }
         }
         let out = last_reply.unwrap_or_default();

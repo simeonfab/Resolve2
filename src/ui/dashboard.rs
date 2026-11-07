@@ -74,7 +74,7 @@ impl App {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new("⊕").size(20.0).color(p.accent_text));
                         let text = self.temp.entry("dash_capture".into()).or_default();
-                        let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture — e.g. Call the garage tomorrow 9am").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
+                        let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture, for example: Call the garage tomorrow 9am").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
                         if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
                             submit = true;
                         }
@@ -126,13 +126,13 @@ impl App {
                             if primary_button(ui, p, "New project").on_hover_text("Opens the intake").clicked() {
                                 new_intake = true;
                             }
-                            if ui.button("Test Intake").on_hover_text("Try the intake in a sandbox — nothing touches your workspaces").clicked() {
+                            if ui.button("Test Intake").on_hover_text("Try the intake in a sandbox. Nothing touches your workspaces.").clicked() {
                                 test_intake = true;
                             }
                         });
                     });
                     if rows.is_empty() {
-                        ui.label(RichText::new("Arrive with an idea, a problem or a messy project — Resolve turns it into a connected project with a clear first move.").size(13.0));
+                        ui.label(RichText::new("Arrive with an idea, a problem or a messy project. Resolve turns it into a connected project with a clear first move.").size(13.0));
                     }
                     for (pid, name, next, done, total) in &rows {
                         ui.add_space(4.0);

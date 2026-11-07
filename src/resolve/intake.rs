@@ -339,8 +339,8 @@ pub enum OutcomeStep {
 pub fn reask_copy(has_beneficiary: bool, has_change: bool) -> String {
     match (has_beneficiary, has_change) {
         (false, false) => "One more pass on this one: name who is better off if this works, and a change you could actually see or measure.".into(),
-        (false, true) => "Almost — one thing missing: who specifically is better off if this works? Name the person or group.".into(),
-        _ => "Almost — one thing missing: how would you know it's working? Add a change you could actually see or measure.".into(),
+        (false, true) => "Almost. One thing is missing: who specifically is better off if this works? Name the person or group.".into(),
+        _ => "Almost. One thing is missing: how would you know it's working? Add a change you could actually see or measure.".into(),
     }
 }
 
@@ -728,13 +728,13 @@ pub fn report_markdown(u: &Understanding, r: &Recommendation, plan: Option<&Proj
     }
     m.push_str("\n## 4. What not to do yet\n\n");
     for n in &r.do_not_yet {
-        m.push_str(&format!("- **{}** — {}\n", n.item, n.reason));
+        m.push_str(&format!("- **{}**: {}\n", n.item, n.reason));
     }
     m.push('\n');
     if let Some(p) = plan {
         m.push_str("## 5. Speculative long-term roadmap\n\n> Reasoned extrapolation, not a commitment.\n\n");
         for x in &p.long_term_roadmap {
-            m.push_str(&format!("- **{}** — {} ({})\n", x.phase, x.direction, x.note));
+            m.push_str(&format!("- **{}**: {} ({})\n", x.phase, x.direction, x.note));
         }
         m.push_str("\n## 6. Readiness\n\n| Area | Status | Note |\n| --- | --- | --- |\n");
         for x in &p.readiness {
@@ -743,7 +743,7 @@ pub fn report_markdown(u: &Understanding, r: &Recommendation, plan: Option<&Proj
         if !p.risks.is_empty() {
             m.push_str("\n## 7. Risks\n\n");
             for x in &p.risks {
-                m.push_str(&format!("- **{}** — {} _(signal: {})_\n", x.risk, x.why_it_matters, x.source_signal));
+                m.push_str(&format!("- **{}**: {} _(signal: {})_\n", x.risk, x.why_it_matters, x.source_signal));
             }
         }
         m.push_str(&format!("\n## 8. Sharing paragraph\n\n{}\n\n## 9. How to use this\n\n{}\n", p.sharing_paragraph, p.how_to_use_this));
@@ -798,7 +798,7 @@ pub fn handoff(d: &mut WorkspaceData, intake_id: &str) -> Result<Id, String> {
     // project document (the report) — the existing Page/blocks model
     let md = report_markdown(&u, &r, i.plan.as_ref(), &outcome, outcome_confirmed);
     let (_, blocks) = markdown_to_blocks(&md);
-    let mut page = Page::new(format!("{name} — project plan"));
+    let mut page = Page::new(format!("{name}: project plan"));
     page.icon = "🧭".into();
     page.blocks = blocks;
     page.tags = vec!["resolve".into()];
@@ -827,7 +827,7 @@ pub fn handoff(d: &mut WorkspaceData, intake_id: &str) -> Result<Id, String> {
         tk.section = section.into();
         tk.priority = prio;
         tk.due = days.and_then(|n| today.checked_add_days(chrono::Days::new(n)));
-        tk.notes = format!("Roadmap phase \"{}\" — output: {}", ph.phase, ph.output);
+        tk.notes = format!("Roadmap phase \"{}\". Output: {}", ph.phase, ph.output);
         tk.order = t + idx as i64 + 1;
         d.tasks.push(tk);
     }
@@ -860,7 +860,7 @@ pub fn handoff(d: &mut WorkspaceData, intake_id: &str) -> Result<Id, String> {
         }
     }
     // H0 root: the outcome claim itself is the first hypothesis to test
-    add(Kind::Hypothesis, &format!("H0 — if this works: {}", outcome.trim_end_matches('.')), "Root hypothesis (H0) taken from the intake outcome. Challenge it — it may be wrong.", &[("type", "outcome")]);
+    add(Kind::Hypothesis, &format!("H0: if this works, {}", outcome.trim_end_matches('.')), "Root hypothesis (H0) taken from the intake outcome. Challenge it: it may be wrong.", &[("type", "outcome")]);
 
     let ctx = crate::resolve::ProjectContext::from_intake(&pid, &i, first_id, page_id);
     d.contexts.push(ctx);

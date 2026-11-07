@@ -79,7 +79,7 @@ pub fn assess(d: &WorkspaceData, ctx: &ProjectContext) -> Assessment {
     }
     // 2. outcome
     if ctx.outcome.trim().is_empty() {
-        a.next.push(("Say what changes, and for whom, if this works — the project has no outcome yet".into(), None));
+        a.next.push(("Say what changes, and for whom, if this works (the project has no outcome yet)".into(), None));
     } else if !ctx.outcome_confirmed {
         a.next.push(("Confirm the outcome: who is better off, and how would you know?".into(), None));
     }
@@ -89,7 +89,7 @@ pub fn assess(d: &WorkspaceData, ctx: &ProjectContext) -> Assessment {
             a.next.push((format!("Do this next: {}", t.title), Some(w.clone())));
         }
     } else if a.total == 0 {
-        a.next.push(("Plan the first piece of work — there are no tasks yet".into(), None));
+        a.next.push(("Plan the first piece of work (there are no tasks yet)".into(), None));
     }
     // 4. decisions
     for x in &a.open_decisions {

@@ -20,12 +20,12 @@ pub const H0: &str = include_str!("../../resolveos/h0.md");
 pub const TARGETS: [(&str, &str, &str, &str); 9] = [
     ("goal", "What they want to achieve", "What do you want to achieve?", "assumption"),
     ("problem", "The problem or opportunity", "What problem or opportunity is behind this?", "assumption"),
-    ("who", "Who is affected", "Who is affected — who has this problem, or who would benefit?", "assumption"),
+    ("who", "Who is affected", "Who is affected? Who has this problem, or who would benefit?", "assumption"),
     ("why", "Why it matters", "Why does this matter, and why now?", "assumption"),
     ("outcome", "The outcome and how they'd know", "If this works, who is better off, and how would you know?", "assumption"),
-    ("evidence", "Evidence they have", "What evidence do you already have — things you've seen, measured or been told?", "evidence"),
+    ("evidence", "Evidence they have", "What evidence do you already have (things you've seen, measured or been told)?", "evidence"),
     ("assumptions", "Their assumptions", "What are you assuming that you haven't checked yet?", "assumption"),
-    ("constraints", "Constraints", "What are you working within — time, money, people, rules?", "evidence"),
+    ("constraints", "Constraints", "What are you working within: time, money, people, rules?", "evidence"),
     ("uncertainties", "Uncertainties", "What are you least sure about?", "question"),
 ];
 
@@ -1148,7 +1148,7 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
         }
         3 => {
             if on("h0") {
-                let mut h0 = Record::new(Kind::Hypothesis, Some(st.project_id.clone()), format!("H0 — {}", p.h0.title));
+                let mut h0 = Record::new(Kind::Hypothesis, Some(st.project_id.clone()), format!("H0: {}", p.h0.title));
                 h0.fields.insert("type".into(), "H0".into());
                 if !p.h0.negation.is_empty() {
                     h0.fields.insert("negation".into(), p.h0.negation.clone());
@@ -1157,7 +1157,7 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
                 st.h0_id = Some(h0.id.clone());
                 d.records.push(h0);
                 for (n, hx) in p.hypotheses.iter().enumerate() {
-                    let mut r = Record::new(Kind::Hypothesis, Some(st.project_id.clone()), format!("H{} — {}", n + 1, hx.title));
+                    let mut r = Record::new(Kind::Hypothesis, Some(st.project_id.clone()), format!("H{}: {}", n + 1, hx.title));
                     r.parent_id = st.h0_id.clone();
                     if !hx.negation.is_empty() {
                         r.fields.insert("negation".into(), hx.negation.clone());
@@ -1235,16 +1235,16 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
         }
         5 => {
             // transcript + decision trail, kept with the project
-            let mut md = format!("# Intake transcript — {}\n\nWhy each question was asked is the decision trail.\n\n## In their words\n\n{}\n\n", p.name, i.input.trim());
+            let mut md = format!("# Intake transcript: {}\n\nWhy each question was asked is the decision trail.\n\n## In their words\n\n{}\n\n", p.name, i.input.trim());
             for q in &i.qas {
-                md.push_str(&format!("### {}\n\n- **Why asked:** {}\n- **Answer:** {}\n- **Source:** {}\n\n", q.question, if q.why.is_empty() { "—" } else { &q.why }, if q.answer.trim().is_empty() { "(skipped)" } else { q.answer.trim() }, q.source));
+                md.push_str(&format!("### {}\n\n- **Why asked:** {}\n- **Answer:** {}\n- **Source:** {}\n\n", q.question, if q.why.is_empty() { "(not recorded)" } else { &q.why }, if q.answer.trim().is_empty() { "(skipped)" } else { q.answer.trim() }, q.source));
             }
             md.push_str("## What Resolve heard\n\n");
             for h in &i.heard {
                 md.push_str(&format!("- ({}) {}\n", h.kind, h.text));
             }
             let (_, blocks) = markdown_to_blocks(&md);
-            let mut page = Page::new(format!("Intake transcript — {}", p.name));
+            let mut page = Page::new(format!("Intake transcript: {}", p.name));
             page.icon = "🗒".into();
             page.blocks = blocks;
             page.parent = st.brief_id.clone();
@@ -1281,20 +1281,20 @@ pub fn adopt_all(d: &mut WorkspaceData, intake_id: &str) -> Result<Id, String> {
 
 /// Markdown + JSON export of a run (Test Intake).
 pub fn export_markdown(i: &Intake) -> String {
-    let mut s = format!("# Intake run — {}\n\nProvider: {}\nScenario: {}\nStage: {}\n\n## Opening\n\n{}\n\n## Questions\n\n", i.title(), if i.provider.is_empty() { "app default" } else { &i.provider }, if i.scenario.is_empty() { "own answers" } else { &i.scenario }, i.stage, i.input.trim());
+    let mut s = format!("# Intake run: {}\n\nProvider: {}\nScenario: {}\nStage: {}\n\n## Opening\n\n{}\n\n## Questions\n\n", i.title(), if i.provider.is_empty() { "app default" } else { &i.provider }, if i.scenario.is_empty() { "own answers" } else { &i.scenario }, i.stage, i.input.trim());
     for (n, q) in i.qas.iter().enumerate() {
         s.push_str(&format!("{}. **{}** _({})_\n   - Why: {}\n   - Answer: {}\n   - Source: {}{}\n", n + 1, q.question, target_label(&q.target), q.why, if q.answer.is_empty() { "(skipped)" } else { &q.answer }, q.source, if q.needs_review { "\n   - ⚠ needs review" } else { "" }));
     }
     s.push_str("\n## What Resolve heard\n\n");
     for h in &i.heard {
-        s.push_str(&format!("- ({}) {}{}\n", h.kind, h.text, if h.corrected { " — corrected by user" } else { "" }));
+        s.push_str(&format!("- ({}) {}{}\n", h.kind, h.text, if h.corrected { " (corrected by user)" } else { "" }));
     }
     if let Some(p) = &i.proposal {
         s.push_str(&format!("\n## Proposal: {}\n\n{}\n\n**Objective:** {}\n\n**Outcome:** {}\n\n**H0:** {} / NH0: {}\n\n", p.name, p.summary, p.objective, p.outcome, p.h0.title, p.h0.negation));
         for (label, items) in [("Hypotheses", &p.hypotheses), ("Uncertainties", &p.uncertainties), ("Experiments", &p.experiments), ("Roadmap", &p.roadmap), ("Tasks", &p.tasks), ("Pages", &p.pages)] {
             s.push_str(&format!("### {label}\n\n"));
             for it in items {
-                s.push_str(&format!("- [{}]{} {}{}\n", it.basis, if it.phase.is_empty() { String::new() } else { format!(" ({})", it.phase) }, it.title, if it.negation.is_empty() { String::new() } else { format!(" — NHx: {}", it.negation) }));
+                s.push_str(&format!("- [{}]{} {}{}\n", it.basis, if it.phase.is_empty() { String::new() } else { format!(" ({})", it.phase) }, it.title, if it.negation.is_empty() { String::new() } else { format!(" (NHx: {})", it.negation) }));
             }
             s.push('\n');
         }

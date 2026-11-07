@@ -39,7 +39,7 @@ static LAST_ERROR: std::sync::Mutex<String> = std::sync::Mutex::new(String::new(
 /// Remember the most recent error a tester saw (for Help → Report a problem).
 pub fn set_last_error(e: &str) {
     if let Ok(mut x) = LAST_ERROR.lock() {
-        *x = format!("{} — {}", chrono::Local::now().format("%d %b %H:%M"), e.chars().take(400).collect::<String>());
+        *x = format!("{}: {}", chrono::Local::now().format("%d %b %H:%M"), e.chars().take(400).collect::<String>());
     }
 }
 
@@ -330,7 +330,7 @@ pub fn pull_model_async(url: &str, model: &str, progress: std::sync::Arc<std::sy
                 }
                 let status = v["status"].as_str().unwrap_or("").to_string();
                 let text = match (v["completed"].as_f64(), v["total"].as_f64()) {
-                    (Some(c), Some(t)) if t > 0.0 => format!("{status} — {:.0}% of {:.1} GB", c / t * 100.0, t / 1e9),
+                    (Some(c), Some(t)) if t > 0.0 => format!("{status}, {:.0}% of {:.1} GB", c / t * 100.0, t / 1e9),
                     _ => status,
                 };
                 if let Ok(mut p) = progress.lock() {

@@ -88,7 +88,7 @@ pub const NAV: &[NavGroup] = &[
         picker: true,
         items: &[
             NavItem { label: "Overview", icon: "◎", target: Target::Sec(Section::Overview), hint: "Do this next, what matters now, project context", ask: ASK_OVERVIEW },
-            NavItem { label: "Roadmap", icon: "⇶", target: Target::Sec(Section::Roadmap), hint: "Now, Next, Later — milestones, dependencies, validation gates", ask: ASK_ROADMAP },
+            NavItem { label: "Roadmap", icon: "⇶", target: Target::Sec(Section::Roadmap), hint: "Now, Next, Later: milestones, dependencies, validation gates", ask: ASK_ROADMAP },
             NavItem { label: "Tasks", icon: "☑", target: Target::Tasks, hint: "The project's tasks and board, or all tasks with Captured, Today, Upcoming and filters", ask: ASK_TASKS },
             NavItem { label: "Frameworks", icon: "⌬", target: Target::Sec(Section::Frameworks), hint: "Hypothesis Zero", ask: ASK_FRAMEWORKS },
             NavItem { label: "Knowledge", icon: "📚", target: Target::Sec(Section::Knowledge), hint: "Project brief, documents, research, cut list, Evidence & Records", ask: ASK_KNOWLEDGE },
@@ -230,7 +230,7 @@ impl App {
                     let mut switch_to: Option<Id> = None;
                     ui.menu_button(RichText::new(format!("{} ⏷", meta.name)).font(fs(14.0)), |ui| {
                         ui.set_min_width(240.0);
-                        ui.label(RichText::new("Workspaces — each is private").size(size::SMALL).color(p.dim));
+                        ui.label(RichText::new("Workspaces (each is private)").size(size::SMALL).color(p.dim));
                         for w in self.reg.workspaces.clone() {
                             if ui.selectable_label(w.id == meta.id, format!("●  {}", w.name)).clicked() {
                                 switch_to = Some(w.id.clone());
@@ -277,7 +277,7 @@ impl App {
                     let (rect, resp) = cols[1].allocate_exact_size(egui::vec2(cols[1].available_width(), 34.0), Sense::click());
                     cols[1].painter().rect(rect, space::RADIUS_SMALL, if on || resp.hovered() { p.accent_soft } else { p.card }, egui::Stroke::new(1.0, p.accent));
                     cols[1].painter().text(rect.center(), Align2::CENTER_CENTER, "✨  Ask AI", fs(13.5), p.text);
-                    if resp.on_hover_text("The General assistant — ask or tell it to do something about what you're looking at").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                    if resp.on_hover_text("The General assistant. Ask or tell it to do something about what you're looking at").on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                         self.page_ui.ai_open = !self.page_ui.ai_open;
                     }
                 });

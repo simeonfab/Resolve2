@@ -444,7 +444,7 @@ pub fn call(store: &mut Store, name: &str, a: &Value) -> Result<String, String> 
     if let Some(b) = before {
         let what = a.get("title").or(a.get("name")).or(a.get("text")).or(a.get("id")).and_then(|v| v.as_str()).unwrap_or("").chars().take(60).collect::<String>();
         let kind = if name == "delete_item" { "delete" } else { "ai" };
-        store.data.keep_change(&format!("AI: {}{}", name.replace('_', " "), if what.is_empty() { String::new() } else { format!(" — {what}") }), kind, &b);
+        store.data.keep_change(&format!("AI: {}{}", name.replace('_', " "), if what.is_empty() { String::new() } else { format!(": {what}") }), kind, &b);
     }
     // a completed task ticks its page to-do (and the other way round)
     let synced = store.data.sync_todo_links();

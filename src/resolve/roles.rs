@@ -63,7 +63,7 @@ pub struct Action {
 }
 
 pub const ACTIONS: [Action; 5] = [
-    Action { id: "what-matters", label: "What matters now?", hint: "Decided, uncertain, blocked and next — from the project's real state", deterministic: true },
+    Action { id: "what-matters", label: "What matters now?", hint: "Decided, uncertain, blocked and next, from the project's real state", deterministic: true },
     Action { id: "challenge", label: "Challenge assumptions", hint: "Product Director tests the assumptions and proposes hypotheses to check", deterministic: false },
     Action { id: "validation-plan", label: "Create validation plan", hint: "Hypotheses with explicit negations and E-experiments (Hypothesis Zero)", deterministic: false },
     Action { id: "prepare-build", label: "Prepare for implementation", hint: "Tech Lead proposes the first concrete, checkable tasks", deterministic: false },
@@ -354,7 +354,7 @@ pub fn handoff_brief(d: &WorkspaceData, ctx: &ProjectContext) -> String {
     if !ctx.recommendation.do_not_yet.is_empty() {
         s.push_str("## Do NOT do yet\n");
         for n in &ctx.recommendation.do_not_yet {
-            s.push_str(&format!("- {} — {}\n", n.item, n.reason));
+            s.push_str(&format!("- {}: {}\n", n.item, n.reason));
         }
         s.push('\n');
     }

@@ -24,9 +24,9 @@ pub fn cell_ui(ui: &mut egui::Ui, p: &Pal, d: &WorkspaceData, col: &Column, valu
             }
         }
         ColKind::Select => {
-            let shown = if value.is_empty() { RichText::new("—").color(p.faint) } else { RichText::new(value.as_str()).color(select_color(value)) };
+            let shown = if value.is_empty() { RichText::new("Empty").color(p.faint) } else { RichText::new(value.as_str()).color(select_color(value)) };
             egui::ComboBox::from_id_salt(("sel", salt)).selected_text(shown).width(width - 8.0).show_ui(ui, |ui| {
-                if ui.selectable_label(value.is_empty(), "—").clicked() {
+                if ui.selectable_label(value.is_empty(), "None").clicked() {
                     value.clear();
                     changed = true;
                 }
@@ -61,9 +61,9 @@ pub fn cell_ui(ui: &mut egui::Ui, p: &Pal, d: &WorkspaceData, col: &Column, valu
             }
         }
         ColKind::Page => {
-            let cur = d.page(value).map(|x| format!("{} {}", x.icon, x.title)).unwrap_or_else(|| "—".into());
+            let cur = d.page(value).map(|x| format!("{} {}", x.icon, x.title)).unwrap_or_else(|| "Empty".into());
             egui::ComboBox::from_id_salt(("pg", salt)).selected_text(cur).width(width - 8.0).show_ui(ui, |ui| {
-                if ui.selectable_label(value.is_empty(), "—").clicked() {
+                if ui.selectable_label(value.is_empty(), "None").clicked() {
                     value.clear();
                     changed = true;
                 }
@@ -78,7 +78,7 @@ pub fn cell_ui(ui: &mut egui::Ui, p: &Pal, d: &WorkspaceData, col: &Column, valu
         ColKind::Relation => {
             let ids = split_ids(value);
             let names: Vec<String> = ids.iter().filter_map(|id| d.relation_name(&col.target, id)).collect();
-            let label = if names.is_empty() { "—".to_string() } else { names.join(", ") };
+            let label = if names.is_empty() { "Empty".to_string() } else { names.join(", ") };
             let resp = ui.menu_button(RichText::new(format!("↗ {label}")).size(13.0).color(if names.is_empty() { p.faint } else { p.blue }), |ui| {
                 ui.set_min_width(240.0);
                 ui.label(RichText::new(format!("Link to {}", d.relation_target_label(&col.target))).size(12.0).color(p.dim));
@@ -220,7 +220,7 @@ impl App {
                 db.updated = now_ms();
                 self.store.data.databases.push(db);
                 self.touch();
-                self.toast("Saved as a template — find it under New database");
+                self.toast("Saved as a template. Find it under New database.");
             }
         }
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
@@ -491,7 +491,7 @@ impl App {
                     hline(ui, p);
                 }
                 if rows.len() > max_rows {
-                    ui.label(RichText::new(format!("{} more rows — open the full database to see them", rows.len() - max_rows)).color(p.dim));
+                    ui.label(RichText::new(format!("{} more rows. Open the full database to see them.", rows.len() - max_rows)).color(p.dim));
                 }
                 if ui.add(egui::Button::new(RichText::new("+ New row").color(p.dim)).frame(false)).clicked() {
                     db.rows.push(Row { id: new_id(), cells: Default::default(), page_id: None });

@@ -437,7 +437,7 @@ impl App {
         match intake::handoff(&mut self.store.data, id) {
             Ok(pid) => {
                 self.save_now();
-                self.toast("Your project is set up — first move pinned");
+                self.toast("Your project is set up. First move pinned.");
                 self.resolve_ui.tab = 0;
                 self.go(View::Resolve(pid));
             }
