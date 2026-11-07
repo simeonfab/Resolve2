@@ -4,7 +4,7 @@ pub mod motion;
 pub mod toast;
 mod gallery;
 pub mod shell;
-mod calendar;
+pub mod calendar;
 mod cockpit;
 pub mod connect;
 mod import_ui;
@@ -118,6 +118,8 @@ pub enum CalMode {
     Day,
     Week,
     Month,
+    /// The next three weeks as a list, by day (B-E12).
+    Agenda,
 }
 
 pub struct CalState {
@@ -402,6 +404,16 @@ impl App {
         // --collapsed: in memory only
         if opts.collapsed {
             app.store.settings.sidebar_collapsed = true;
+        }
+        // calendar-agenda | calendar-week | calendar-month: the calendar in that mode
+        if let Some(m) = opts.view.as_deref().and_then(|v| v.strip_prefix("calendar-")) {
+            app.view = View::Calendar;
+            app.cal.mode = match m {
+                "agenda" => CalMode::Agenda,
+                "week" => CalMode::Week,
+                "day" => CalMode::Day,
+                _ => CalMode::Month,
+            };
         }
         if opts.view.as_deref() == Some("gallery") {
             app.view = View::Gallery;

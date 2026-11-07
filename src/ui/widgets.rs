@@ -1835,6 +1835,34 @@ pub fn plan_row(ui: &mut Ui, p: &Pal, time: &str, item: &str, why: &str, tag: &s
     }
 }
 
+/// One Agenda line: time (110 wide), a mark (event: small square in its calendar's colour; task:
+/// amber dot), the title, and on the right the calendar or project.
+pub fn agenda_line(ui: &mut Ui, p: &Pal, time: &str, col: Color32, event: bool, title: &str, right: &str, first: bool) -> Response {
+    let w = ui.available_width();
+    let h = size::ROW + space::S12 * 2.0 + space::S4;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let painter = ui.painter();
+    if resp.hovered() {
+        painter.rect_filled(rect.shrink(stroke::HAIR), radius::CARD - 1.0, p.surface_raised);
+    }
+    if !first {
+        painter.line_segment([rect.left_top(), rect.right_top()], Stroke::new(stroke::HAIR, p.divider));
+    }
+    let y = rect.center().y;
+    painter.text(egui::pos2(rect.left() + space::S14, y), Align2::LEFT_CENTER, time, fp(size::LABEL), p.dim);
+    let mx = rect.left() + space::S14 + space::AGENDA_TIME_W * 2.0;
+    if event {
+        painter.rect_filled(Rect::from_center_size(egui::pos2(mx, y), egui::vec2(space::S10, space::S10)), 2.0, col);
+    } else {
+        painter.circle_filled(egui::pos2(mx, y), space::S10 / 2.0, col);
+    }
+    let rg = painter.layout_no_wrap(right.to_string(), fp(size::LABEL), p.dim);
+    let room = rect.right() - space::S14 - rg.size().x - space::S16 - (mx + space::S18);
+    painter.text(egui::pos2(mx + space::S18, y), Align2::LEFT_CENTER, fit_text(painter, title, fp(size::ROW), room), fp(size::ROW), p.text);
+    painter.galley(egui::pos2(rect.right() - space::S14 - rg.size().x, y - rg.size().y / 2.0), rg, p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// A line led by a small dot ("Focus theme · …" on the hero).
 pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
     ui.horizontal(|ui| {

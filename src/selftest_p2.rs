@@ -56,6 +56,16 @@ pub fn run(t: &mut T) {
     t.check("B-E21: a reply naming none of today's items is an error (the rest of Home still loads)", crate::ui::plan::parse_plan(r#"{"rows":[{"item":"Something else"}]}"#, &d, at).is_err(), "");
     t.check("B-E23: Move to Monday goes to the next Monday", crate::ui::plan::next_monday(at.date()) == chrono::NaiveDate::from_ymd_opt(2026, 11, 9).unwrap(), "");
 
+    // B-E12: the Agenda lists each day with something on it: events with their calendar, dated
+    // tasks with their project
+    let ag = crate::ui::calendar::agenda_days(&d, at.date(), 21, true, at.date());
+    let first = ag.first().map(|(day, l)| (*day, l.first().map(|x| (x.time.clone(), x.title.clone(), x.right.clone()))));
+    t.check(
+        "B-E12: Agenda by day; today first with the 10:30–11:00 call (Work); Bean & Co. on the 19th",
+        first == Some((at.date(), Some(("10:30–11:00".to_string(), "Call with The Corner Café".to_string(), "Work".to_string())))) && ag.iter().any(|(day, l)| day.format("%-d").to_string() == "19" && l.iter().any(|x| x.title.contains("Bean"))) && ag.iter().any(|(_, l)| l.iter().any(|x| x.time == "Due today" && x.right == "Café flat-fee bookkeeping")),
+        format!("{} days; first {first:?}", ag.len()),
+    );
+
     // B-E11: Add task highlights what it recognised, and its chips carry no emoji
     use crate::nlp::Recognised as R;
     let text = "Pay rent every month 9am p1 #Home";

@@ -1002,7 +1002,10 @@ impl App {
                 });
                 ui.horizontal_top(|ui| {
                     ui.add_space(30.0);
-                    ui.add(egui::TextEdit::multiline(&mut t.notes).hint_text("☰ Description").frame(false).desired_rows(2).desired_width(f32::INFINITY));
+                    // notes, with the mic (B-E16)
+                    let notes_id = egui::Id::new(("task-notes", &t.id));
+                    ui.add(egui::TextEdit::multiline(&mut t.notes).id(notes_id).hint_text("Notes").frame(false).desired_rows(2).desired_width(ui.available_width() - space::MIC - space::S8));
+                    mic_for(ui, p, notes_id, p.dark);
                 });
                 ui.add_space(8.0);
                 // subtasks

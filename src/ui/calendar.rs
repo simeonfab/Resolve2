@@ -80,10 +80,101 @@ fn text_on(c: Color32) -> Color32 {
     }
 }
 
+/// One line of the Agenda.
+#[derive(Clone, Debug)]
+pub struct AgendaLine {
+    /// "10:30–11:00", "Due today", "Due", "16:00"
+    pub time: String,
+    pub title: String,
+    /// The calendar, or the task's project (or "Captured").
+    pub right: String,
+    pub color: [u8; 3],
+    pub event: Option<Id>,
+    pub task: Option<Id>,
+}
+
+/// The Agenda's days from `from` for `days` days: events on visible calendars and, if shown,
+/// open tasks with a date (amber). Days with nothing are left out.
+pub fn agenda_days(d: &WorkspaceData, from: NaiveDate, days: i64, show_tasks: bool, today: NaiveDate) -> Vec<(NaiveDate, Vec<AgendaLine>)> {
+    let mut out = vec![];
+    for i in 0..days {
+        let day = from + Duration::days(i);
+        let mut lines: Vec<(NaiveTime, AgendaLine)> = vec![];
+        for e in d.events.iter().filter(|e| d.calendar(&e.calendar_id).map_or(true, |c| c.visible)) {
+            if let Some(s) = e.occurrence_on(day) {
+                let cal = d.calendar(&e.calendar_id);
+                let time = if e.all_day { "All day".to_string() } else { format!("{}–{}", fmt_time(s.time()), fmt_time((s + (e.end - e.start)).time())) };
+                lines.push((if e.all_day { NaiveTime::MIN } else { s.time() }, AgendaLine { time, title: e.title.clone(), right: cal.map(|c| c.name.clone()).unwrap_or_default(), color: cal.map(|c| c.color).unwrap_or(crate::ui::theme::PICK_COLOURS[0]), event: Some(e.id.clone()), task: None }));
+            }
+        }
+        if show_tasks {
+            for t in d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && t.due == Some(day)) {
+                let time = match t.due_time {
+                    Some(tm) => fmt_time(tm),
+                    None if day == today => "Due today".to_string(),
+                    None => "Due".to_string(),
+                };
+                let right = t.project_id.as_deref().and_then(|p| d.project(p)).map(|p| p.name.clone()).unwrap_or_else(|| "Captured".into());
+                lines.push((t.due_time.unwrap_or(NaiveTime::from_hms_opt(12, 0, 0).unwrap()), AgendaLine { time, title: t.title.clone(), right, color: crate::ui::theme::PICK_COLOURS[2], event: None, task: Some(t.id.clone()) }));
+            }
+        }
+        if !lines.is_empty() {
+            lines.sort_by_key(|l| l.0);
+            out.push((day, lines.into_iter().map(|l| l.1).collect()));
+        }
+    }
+    out
+}
+
 impl App {
+    /// The Agenda view (B-E12): each day with something on it, events and tasks with a date, in
+    /// a white box per day; today's heading in terracotta.
+    fn agenda_list(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        let days = agenda_days(&self.store.data, self.cal.anchor, 21, self.cal.show_tasks, today());
+        let mut open_event: Option<Id> = None;
+        let mut open_task: Option<Id> = None;
+        egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            capped(ui, space::CAP_DEFAULT, |ui| {
+                if days.is_empty() {
+                    ui.add_space(space::S40);
+                    ui.vertical_centered(|ui| {
+                        ui.add(egui::Label::new(RichText::new("Nothing on your calendar yet. Add an event, or give a task a date and it appears here.").size(size::ROW).color(p.dim)).wrap());
+                    });
+                }
+                for (day, lines) in &days {
+                    let head = if *day == today() { format!("Today · {}", day.format("%A %-d %B")) } else { day.format("%A %-d %B").to_string() };
+                    ui.add_space(space::S10);
+                    ui.label(RichText::new(head).font(fs(size::ROW_SMALL)).color(if *day == today() { p.orange } else { p.text }));
+                    ui.add_space(space::S6);
+                    list_box(ui, p, |ui| {
+                        for (i, l) in lines.iter().enumerate() {
+                            if agenda_line(ui, p, &l.time, rgb(l.color), l.event.is_some(), &l.title, &l.right, i == 0).clicked() {
+                                if let Some(e) = &l.event {
+                                    open_event = Some(e.clone());
+                                } else if let Some(t) = &l.task {
+                                    open_task = Some(t.clone());
+                                }
+                            }
+                        }
+                    });
+                }
+                ui.add_space(space::S24);
+            });
+        });
+        if let Some(id) = open_event {
+            if let Some(e) = self.store.data.events.iter().find(|e| e.id == id).cloned() {
+                self.event_edit = Some(draft_from(&e));
+            }
+        }
+        if open_task.is_some() {
+            self.open_task = open_task;
+        }
+    }
+
     fn visible_days(&self) -> Vec<NaiveDate> {
         match self.cal.mode {
             CalMode::Day => vec![self.cal.anchor],
+            CalMode::Agenda => (0..21).map(|i| self.cal.anchor + Duration::days(i)).collect(),
             CalMode::Week | CalMode::Month => {
                 let mon = self.cal.anchor - Duration::days(self.cal.anchor.weekday().num_days_from_monday() as i64);
                 (0..7).map(|i| mon + Duration::days(i)).collect()
@@ -135,7 +226,7 @@ impl App {
                 r.request_focus();
                 if r.lost_focus() {
                     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && !name.trim().is_empty() {
-                        let colors: [[u8; 3]; 6] = [[3, 155, 229], [11, 128, 67], [244, 81, 30], [142, 36, 170], [246, 191, 38], [213, 0, 0]];
+                        let colors = PICK_COLOURS;
                         let c = colors[self.store.data.calendars.len() % 6];
                         self.store.data.calendars.push(Calendar { id: new_id(), name: name.trim().to_string(), color: c, visible: true, updated: now_ms(), ..Default::default() });
                         self.touch();
@@ -228,7 +319,7 @@ impl App {
                 let step = |mode: CalMode, d: NaiveDate, dir: i64| -> NaiveDate {
                     match mode {
                         CalMode::Day => d + Duration::days(dir),
-                        CalMode::Week => d + Duration::days(7 * dir),
+                        CalMode::Week | CalMode::Agenda => d + Duration::days(7 * dir),
                         CalMode::Month => {
                             if dir > 0 {
                                 d.checked_add_months(Months::new(1)).unwrap_or(d)
@@ -248,11 +339,12 @@ impl App {
                 }
                 let title = match self.cal.mode {
                     CalMode::Day => self.cal.anchor.format("%-d %B %Y").to_string(),
+                    CalMode::Agenda => "Agenda".to_string(),
                     _ => self.cal.anchor.format("%B %Y").to_string(),
                 };
                 ui.label(RichText::new(title).font(fp(22.0)));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    for (m, l) in [(CalMode::Month, "Month"), (CalMode::Week, "Week"), (CalMode::Day, "Day")] {
+                    for (m, l) in [(CalMode::Day, "Day"), (CalMode::Agenda, "Agenda"), (CalMode::Week, "Week"), (CalMode::Month, "Month")] {
                         if pill(ui, p, l, self.cal.mode == m).clicked() {
                             self.cal.mode = m;
                         }
@@ -262,6 +354,7 @@ impl App {
             ui.add_space(6.0);
             match self.cal.mode {
                 CalMode::Month => self.month_grid(ui, p),
+                CalMode::Agenda => self.agenda_list(ui, p),
                 _ => self.time_grid(ui, p),
             }
         });
