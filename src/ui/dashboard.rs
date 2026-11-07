@@ -1,411 +1,475 @@
+//! Home (Pack B, tickets B-E4 and B-E6): the greeting, the hero "Your highest-value move" from
+//! a project's first move, Today (events and tasks due today), Since Monday, Waiting on,
+//! Projects and Captured, in the four states. The data is worked out by `home_model`, a pure
+//! function the self-test checks; the drawing only places it.
+
+use super::motion::{self, frame_at};
 use super::theme::*;
 use super::widgets::*;
 use super::*;
 use chrono::{Datelike, Local, Timelike};
-use eframe::egui::{self, Color32, RichText, Sense};
+use eframe::egui::{self, RichText};
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AgendaKind {
+    Event,
+    /// A task in a project.
+    Task,
+    /// A task not in a project yet.
+    Captured,
+}
+
+#[derive(Clone, Debug)]
+pub struct AgendaItem {
+    /// "10:30", or "Today" for a task with no time.
+    pub time: String,
+    pub sort: NaiveTime,
+    pub title: String,
+    pub meta: String,
+    pub kind: AgendaKind,
+    pub task: Option<Id>,
+    pub event: Option<Id>,
+}
+
+#[derive(Clone, Debug)]
+pub struct HeroMove {
+    pub project_id: Id,
+    pub project: String,
+    pub title: String,
+    pub why: String,
+    pub theme: String,
+    pub task: Option<Id>,
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct HomeModel {
+    pub greeting: String,
+    pub subline: String,
+    pub hero: Option<HeroMove>,
+    pub agenda: Vec<AgendaItem>,
+    pub wins: Vec<String>,
+    /// (what, how long it has waited)
+    pub waiting: Vec<(String, String)>,
+    /// (project id, name, done, total)
+    pub projects: Vec<(Id, String, usize, usize)>,
+    pub captured: usize,
+    /// An unfinished intake: (id, the rail step's name).
+    pub setup: Option<(Id, &'static str)>,
+}
+
+fn plural(n: usize, one: &str, many: &str) -> String {
+    format!("{n} {}", if n == 1 { one } else { many })
+}
+
+/// The rail's step names (1 to 4).
+pub const RAIL_STEPS: [&str; 4] = ["Get started", "Bring it in", "Confirm understanding", "Your next move"];
+
+/// Everything Home shows, from the workspace alone (no AI). `now` is the app's clock;
+/// `real_ms` the real time, for ages and "since Monday" (edit times are real).
+pub fn home_model(d: &WorkspaceData, now: NaiveDateTime, real_ms: i64, pick: Option<&str>) -> HomeModel {
+    let t0 = now.date();
+    let mut m = HomeModel::default();
+    let name = d.intakes.iter().filter(|i| !i.name.trim().is_empty()).max_by_key(|i| i.updated).map(|i| i.name.trim().to_string());
+    let part = match now.hour() {
+        5..=11 => "Good morning",
+        12..=17 => "Good afternoon",
+        _ => "Good evening",
+    };
+    m.greeting = match &name {
+        Some(n) => format!("{part}, {n}"),
+        None => part.to_string(),
+    };
+
+    // today: events on visible calendars, and open tasks due today
+    let visible = |e: &Event| d.calendar(&e.calendar_id).map_or(true, |c| c.visible);
+    for e in d.events.iter().filter(|e| visible(e)) {
+        if let Some(start) = e.occurrence_on(t0) {
+            let mins = (e.end - e.start).num_minutes();
+            let cal = d.calendar(&e.calendar_id).map(|c| format!(" · {} calendar", c.name)).unwrap_or_default();
+            let (time, sort) = if e.all_day { ("All day".to_string(), NaiveTime::MIN) } else { (fmt_time(start.time()), start.time()) };
+            let meta = if e.all_day { format!("Event{cal}") } else { format!("Event · {mins} min{cal}") };
+            m.agenda.push(AgendaItem { time, sort, title: e.title.clone(), meta, kind: AgendaKind::Event, task: None, event: Some(e.id.clone()) });
+        }
+    }
+    let n_events = m.agenda.len();
+    let due: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && t.due == Some(t0)).collect();
+    for t in &due {
+        let project = t.project_id.as_deref().and_then(|p| d.project(p));
+        let (time, sort) = match t.due_time {
+            Some(tm) => (fmt_time(tm), tm),
+            // a task for today with no time sits at "now": it's for doing now
+            None => ("Today".to_string(), now.time()),
+        };
+        m.agenda.push(AgendaItem {
+            time,
+            sort,
+            title: t.title.clone(),
+            meta: format!("Task · {}", project.map(|p| p.name.clone()).unwrap_or_else(|| "Captured".into())),
+            kind: if project.is_some() { AgendaKind::Task } else { AgendaKind::Captured },
+            task: Some(t.id.clone()),
+            event: None,
+        });
+    }
+    m.agenda.sort_by_key(|a| a.sort);
+    m.subline = if due.is_empty() && n_events == 0 {
+        format!("{} · nothing scheduled yet", t0.format("%A %-d %B"))
+    } else {
+        format!("{} · {} due today · {}", t0.format("%A %-d %B"), due.len(), plural(n_events, "event", "events"))
+    };
+
+    // the hero: the guided project whose first move is due soonest
+    let mut best: Option<(i64, i64, HeroMove)> = None;
+    for c in &d.contexts {
+        let Some(pr) = d.project(&c.project_id).filter(|p| !p.archived) else { continue };
+        if pick.map_or(false, |x| x != pr.id) {
+            continue;
+        }
+        let a = crate::resolve::assess::assess(d, c);
+        let win = a.win.as_ref().and_then(|w| d.task(w)).filter(|t| !t.completed);
+        let intake = d.intakes.iter().find(|i| i.project_id.as_deref() == Some(pr.id.as_str()));
+        let first_move = intake.and_then(|i| i.proposal.as_ref()).map(|p| p.next_move.trim().to_string()).filter(|s| !s.is_empty());
+        let title = first_move.or_else(|| win.map(|t| t.title.clone())).or_else(|| a.next.first().map(|x| x.0.clone()));
+        let Some(title) = title else { continue };
+        let why = Some(c.recommendation.why.trim().to_string()).filter(|s| !s.is_empty()).or_else(|| intake.and_then(|i| i.proposal.as_ref()).map(|p| p.why.trim().to_string())).unwrap_or_default();
+        let theme = win
+            .and_then(|t| d.records.iter().find(|r| r.kind == crate::resolve::records::Kind::Roadmap && r.project_id.as_deref() == Some(pr.id.as_str()) && r.links.contains(&t.id)))
+            .map(|r| r.title.clone())
+            .unwrap_or_default();
+        let due_key = win.and_then(|t| t.due).map(|x| (x - t0).num_days()).unwrap_or(i64::MAX);
+        let hero = HeroMove { project_id: pr.id.clone(), project: pr.name.clone(), title, why, theme, task: win.map(|t| t.id.clone()) };
+        if best.as_ref().map_or(true, |(k, o, _)| (due_key, pr.order) < (*k, *o)) {
+            best = Some((due_key, pr.order, hero));
+        }
+    }
+    m.hero = best.map(|b| b.2);
+
+    // since Monday: what was finished this week, oldest first
+    let monday = t0 - chrono::Duration::days(t0.weekday().num_days_from_monday() as i64);
+    let monday_ms = real_ms - (now - monday.and_time(NaiveTime::MIN)).num_milliseconds();
+    let mut wins: Vec<&Task> = d.tasks.iter().filter(|t| t.completed && t.completed_at.map_or(false, |c| c >= monday_ms)).collect();
+    wins.sort_by_key(|t| t.completed_at);
+    m.wins = wins.iter().map(|t| t.title.clone()).collect();
+
+    // waiting on: dependencies still waiting, with how long
+    for r in d.records.iter().filter(|r| r.kind == crate::resolve::records::Kind::Dependency && r.status == "Waiting") {
+        if r.project_id.as_deref().and_then(|p| d.project(p)).map_or(false, |p| p.archived) {
+            continue;
+        }
+        let days = ((real_ms - r.created) / (24 * 3600 * 1000)).max(0) as usize;
+        let age = if days == 0 { "today".to_string() } else { plural(days, "day", "days") };
+        m.waiting.push((r.title.clone(), age));
+    }
+
+    let mut ps: Vec<&Project> = d.projects.iter().filter(|p| !p.archived).collect();
+    ps.sort_by_key(|p| p.order);
+    for pr in ps {
+        let all: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pr.id.as_str()) && t.parent_id.is_none()).collect();
+        if all.is_empty() && !d.contexts.iter().any(|c| c.project_id == pr.id) {
+            continue;
+        }
+        m.projects.push((pr.id.clone(), pr.name.clone(), all.iter().filter(|t| t.completed).count(), all.len()));
+    }
+    m.captured = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).count();
+    m.setup = crate::ui::resolve::open_intakes(d).into_iter().next().map(|(id, _, step)| (id, RAIL_STEPS[(step.clamp(1, 4) - 1) as usize]));
+    m
+}
+
+/// What a click on Home asked for.
+enum HomeAct {
+    NewProject,
+    Resume(Id),
+    StartThis(Id, Option<Id>),
+    PlanDay,
+    OpenCalendar,
+    OpenTask(Id),
+    Toggle(Id),
+    OpenEvent(Id),
+    AllProjects,
+    OpenProject(Id),
+    Captured,
+    RetryPlan,
+    OpenToday,
+    SamplePersonal,
+}
 
 impl App {
     pub fn dashboard(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        self.top_bar(ui, p, |app, ui| {
-            if ui.button("📆 Calendar").clicked() {
-                app.go(View::Calendar);
-            }
-            if ui.button("📄 New page").clicked() {
-                app.new_page(None);
-            }
-        });
-        let t0 = today();
-        let hour = now_local().hour();
-        let greet = match hour {
-            5..=11 => "Good morning",
-            12..=17 => "Good afternoon",
-            _ => "Good evening",
+        let m = home_model(&self.store.data, now_local(), now_ms(), self.current_project.as_deref());
+        let state = match self.view_state {
+            ViewState::Full if m.hero.is_none() && m.projects.is_empty() => ViewState::Empty,
+            ViewState::Full if self.plan.error.is_some() => ViewState::Error,
+            s => s,
         };
-        let d = &self.store.data;
-        let open: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed).collect();
-        let overdue = open.iter().filter(|t| t.is_overdue()).count();
-        let due_today = open.iter().filter(|t| t.due == Some(t0)).count();
-        let week_start = t0 - chrono::Duration::days(t0.weekday().num_days_from_monday() as i64);
-        let ws_ms = week_start.and_hms_opt(0, 0, 0).unwrap().and_local_timezone(Local).single().map(|x| x.timestamp_millis()).unwrap_or(0);
-        let done_week = d.tasks.iter().filter(|t| t.completed && t.completed_at.map_or(false, |c| c >= ws_ms)).count();
-        let mut todays_events: Vec<(NaiveDateTime, Event)> = d.events.iter().filter(|e| d.calendar(&e.calendar_id).map_or(true, |c| c.visible)).filter_map(|e| e.occurrence_on(t0).map(|s| (s, e.clone()))).collect();
-        todays_events.sort_by_key(|x| (!x.1.all_day, x.0));
-        let n_events = todays_events.len();
-
+        let wide = ui.ctx().screen_rect().width() > space::WIDE_FROM;
+        let mut acts: Vec<HomeAct> = vec![];
+        let el = ((self.now - self.view_since) * 1000.0) as f32;
+        let reduced = motion::reduced();
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
-            centered(ui, 1080.0, |ui| {
-                ui.add_space(14.0);
-                ui.label(RichText::new(greet).font(fb(30.0)));
-                ui.label(RichText::new(format!(
-                    "{} · {} due today · {} overdue · {} events",
-                    t0.format("%A %-d %B"),
-                    due_today,
-                    overdue,
-                    n_events
-                ))
-                .size(14.0)
-                .color(p.dim));
-                ui.add_space(14.0);
-                if self.store.meta.name == crate::store::SAMPLE_NAME {
-                    let mut go_personal = false;
-                    egui::Frame::none().fill(p.callout).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
-                        ui.set_width(ui.available_width());
+            egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE, right: space::WORK_SIDE, top: space::WORK_TOP, bottom: space::S24 }).show(ui, |ui| {
+                let cap = if wide { space::CAP_DEFAULT } else { ui.available_width() };
+                capped(ui, cap, |ui| {
+                    // header: 340 e-out, y −8 → 0
+                    motion::fade_in(ui, frame_at(el, moves::HEADER, reduced), egui::vec2(0.0, -space::S8), |ui| {
                         ui.horizontal(|ui| {
-                            ui.label(RichText::new("🧪 You're looking at sample data, kept apart from your own. Your real workspace is \"Personal\".").size(13.5));
+                            ui.vertical(|ui| {
+                                ui.label(RichText::new(&m.greeting).font(fserif(size::GREETING)).color(p.text));
+                                ui.label(RichText::new(&m.subline).size(size::ROW).color(p.dim));
+                            });
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ui.button("Open Personal").clicked() {
-                                    go_personal = true;
+                                if button(ui, p, ButtonKind::Secondary, "+ New project", false, true).clicked() {
+                                    acts.push(HomeAct::NewProject);
                                 }
                             });
                         });
                     });
-                    if go_personal {
-                        if let Some(w) = self.reg.find("Personal").map(|w| w.id.clone()) {
-                            self.switch_workspace(&w);
-                            return;
+                    if self.store.meta.name == crate::store::SAMPLE_NAME {
+                        ui.add_space(space::S12);
+                        if amber_card(ui, p, None, "You're looking at sample data, kept apart from your own.", Some("Your real workspace is \"Personal\"."), "Open Personal").clicked() {
+                            acts.push(HomeAct::SamplePersonal);
                         }
                     }
-                    ui.add_space(12.0);
-                }
-
-                // quick capture bar
-                let mut submit = false;
-                egui::Frame::none().fill(p.card).stroke(egui::Stroke::new(1.0, p.line)).rounding(10.0).inner_margin(egui::Margin::symmetric(14.0, 8.0)).show(ui, |ui| {
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("⊕").size(20.0).color(p.accent_text));
-                        let text = self.temp.entry("dash_capture".into()).or_default();
-                        let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture, for example: Call the garage tomorrow 9am").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
-                        if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                            submit = true;
-                        }
-                        if primary_button(ui, p, "Add task").clicked() {
-                            submit = true;
-                        }
-                    });
-                    let text = self.temp.get("dash_capture").cloned().unwrap_or_default();
-                    if !text.trim().is_empty() {
-                        let c = crate::nlp::parse(&text, today());
-                        ui.horizontal_wrapped(|ui| {
-                            for s in c.chips() {
-                                chip(ui, &s, p.blue);
+                    ui.add_space(space::S22);
+                    let w = ui.available_width();
+                    let aside_w = ((w - space::HOME_GAP) * (1.0 - space::HOME_LEFT_SHARE)).min(space::HOME_ASIDE_MAX);
+                    let left_w = w - space::HOME_GAP - aside_w;
+                    ui.horizontal_top(|ui| {
+                        ui.spacing_mut().item_spacing.x = space::HOME_GAP;
+                        let card = |i: usize| frame_at(el, moves::CARDS.stagger(i, moves::CARDS_STAGGER), reduced);
+                        let rise = egui::vec2(0.0, space::S18);
+                        ui.allocate_ui_with_layout(egui::vec2(left_w, 0.0), Layout::top_down(Align::Min), |ui| {
+                            ui.set_width(left_w);
+                            ui.spacing_mut().item_spacing.y = space::S16;
+                            match state {
+                                ViewState::Loading => {
+                                    skeleton(ui, p, left_w, space::HOME_SKELETON_HERO);
+                                    skeleton_card(ui, p, 3, "");
+                                }
+                                ViewState::Empty => {
+                                    motion::fade_in(ui, card(0), rise, |ui| {
+                                        white_card(ui, p, false, |ui| {
+                                            ui.label(RichText::new("Start here").font(fs(size::CARD_HEAD)).color(p.orange));
+                                            ui.label(RichText::new("Bring in your first project.").font(fserif(size::STEP_TITLE)).color(p.text));
+                                            wrap_label(ui, RichText::new("Tell Resolve what's going on, however messy. You'll get one clear first move and a roadmap you can change any time.").size(size::HERO_BODY).color(p.dim));
+                                            ui.add_space(space::S10);
+                                            if button(ui, p, ButtonKind::Primary, "New project →", false, true).clicked() {
+                                                acts.push(HomeAct::NewProject);
+                                            }
+                                        });
+                                    });
+                                }
+                                ViewState::Error => {
+                                    motion::fade_in(ui, card(0), rise, |ui| {
+                                        white_card(ui, p, false, |ui| {
+                                            ui.label(RichText::new("Resolve couldn't plan your day just now.").font(fserif(size::CARD_SERIF)).color(p.text));
+                                            let why = self.plan.error.clone().unwrap_or_else(|| "The AI didn't answer.".into());
+                                            wrap_label(ui, RichText::new(format!("{} Your tasks and calendar are below, and your first move is still on the project.", why.trim_end_matches('.').to_string() + ".")).size(size::ROW).color(p.dim));
+                                            ui.add_space(space::S10);
+                                            ui.horizontal(|ui| {
+                                                if button(ui, p, ButtonKind::Dark, "Try again", false, true).clicked() {
+                                                    acts.push(HomeAct::RetryPlan);
+                                                }
+                                                if button(ui, p, ButtonKind::Secondary, "Open today's tasks", false, true).clicked() {
+                                                    acts.push(HomeAct::OpenToday);
+                                                }
+                                            });
+                                        });
+                                    });
+                                }
+                                ViewState::Full => {
+                                    if let Some(h) = &m.hero {
+                                        motion::fade_in(ui, card(0), rise, |ui| {
+                                            hero_card(ui, p, |ui| {
+                                                ui.spacing_mut().item_spacing.y = space::S10;
+                                                hero_eyebrow(ui, "Your highest-value move", &h.project);
+                                                ui.add(egui::Label::new(RichText::new(&h.title).font(fserif(if wide { size::HERO_TITLE_WIDE } else { size::HERO_TITLE })).color(tok::TEXT_ON_DARK)).wrap());
+                                                if !h.why.is_empty() {
+                                                    ui.add(egui::Label::new(RichText::new(&h.why).size(size::HERO_BODY).color(tok::HERO_BODY)).wrap());
+                                                }
+                                                if !h.theme.is_empty() {
+                                                    dot_line(ui, &format!("Focus theme · {}", h.theme), tok::AMBER, tok::HERO_BODY);
+                                                }
+                                                ui.add_space(space::S6);
+                                                ui.horizontal(|ui| {
+                                                    if button(ui, p, ButtonKind::Primary, "Start this →", false, true).clicked() {
+                                                        acts.push(HomeAct::StartThis(h.project_id.clone(), h.task.clone()));
+                                                    }
+                                                    if button(ui, p, ButtonKind::OnDark, "✦ Plan my day", false, true).clicked() {
+                                                        acts.push(HomeAct::PlanDay);
+                                                    }
+                                                });
+                                            });
+                                        });
+                                    }
+                                }
                             }
-                        });
-                    }
-                });
-                if submit {
-                    let text = self.temp.get("dash_capture").cloned().unwrap_or_default();
-                    if self.add_task_text(&text, None, "", None, None, None).is_some() {
-                        self.toast("Task added");
-                        self.temp.insert("dash_capture".into(), String::new());
-                    }
-                }
-                ui.add_space(14.0);
-
-                // Resolve: each guided project's pinned next move
-                let rows: Vec<(Id, String, String, usize, usize)> = self
-                    .store
-                    .data
-                    .contexts
-                    .iter()
-                    .filter(|c| self.store.data.project(&c.project_id).map_or(false, |p| !p.archived))
-                    .map(|c| {
-                        let a = crate::resolve::assess::assess(&self.store.data, c);
-                        let next = a.win.as_ref().and_then(|w| self.store.data.task(w)).map(|t| t.title.clone()).or_else(|| a.next.first().map(|x| x.0.clone())).unwrap_or_else(|| "Plan the next piece of work".into());
-                        (c.project_id.clone(), self.store.data.project(&c.project_id).map(|p| p.name.clone()).unwrap_or_default(), next, a.done, a.total)
-                    })
-                    .collect();
-                let mut open_resolve: Option<Id> = None;
-                let mut new_intake = false;
-                let mut test_intake = false;
-                egui::Frame::none().fill(p.callout).rounding(10.0).inner_margin(egui::Margin::symmetric(16.0, 12.0)).show(ui, |ui| {
-                    ui.set_width(ui.available_width());
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new("✦ Resolve").font(fs(15.0)).color(p.accent_text));
-                        ui.label(RichText::new("your guided projects and their next move").size(12.5).color(p.dim));
-                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                            if primary_button(ui, p, "New project").on_hover_text("Opens the intake").clicked() {
-                                new_intake = true;
-                            }
-                            if ui.button("Test Intake").on_hover_text("Try the intake in a sandbox. Nothing touches your workspaces.").clicked() {
-                                test_intake = true;
-                            }
-                        });
-                    });
-                    if rows.is_empty() {
-                        ui.label(RichText::new("Arrive with an idea, a problem or a messy project. Resolve turns it into a connected project with a clear first move.").size(13.0));
-                    }
-                    for (pid, name, next, done, total) in &rows {
-                        ui.add_space(4.0);
-                        if wrap_link(ui, RichText::new(format!("{name}  ·  {done}/{total}")).font(fs(14.0))).clicked() {
-                            open_resolve = Some(pid.clone());
-                        }
-                        wrap_label(ui, RichText::new(format!("→ {next}")).size(13.0).color(p.dim));
-                    }
-                });
-                if new_intake {
-                    self.start_intake();
-                    return;
-                }
-                if test_intake {
-                    self.launch_testlab();
-                }
-                if let Some(pid) = open_resolve {
-                    self.select_project(Some(pid));
-                    self.go(View::Sec(nav::Section::Overview));
-                    return;
-                }
-                ui.add_space(14.0);
-
-                // stat cards
-                let d = &self.store.data;
-                let stats = [
-                    ("Due today", due_today.to_string(), p.green, View::Today),
-                    ("Overdue", overdue.to_string(), p.accent, View::Today),
-                    ("Done this week", done_week.to_string(), p.purple, View::Filters),
-                    ("Events today", n_events.to_string(), p.blue, View::Calendar),
-                ];
-                let mut go_to: Option<View> = None;
-                ui.columns(4, |cols| {
-                    for (i, (label, value, col, v)) in stats.iter().enumerate() {
-                        let ui = &mut cols[i];
-                        let resp = egui::Frame::none().fill(p.card).stroke(egui::Stroke::new(1.0, p.line)).rounding(10.0).inner_margin(egui::Margin::symmetric(16.0, 12.0)).show(ui, |ui| {
-                            ui.set_width(ui.available_width());
-                            ui.horizontal(|ui| {
-                                let (r, _) = ui.allocate_exact_size(egui::vec2(4.0, 40.0), Sense::hover());
-                                ui.painter().rect_filled(r, 2.0, *col);
-                                ui.vertical(|ui| {
-                                    ui.label(RichText::new(value).font(fb(24.0)).color(*col));
-                                    ui.label(RichText::new(*label).size(12.5).color(p.dim));
-                                });
-                            });
-                        });
-                        if ui.interact(resp.response.rect, ui.id().with(("stat", i)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                            go_to = Some(v.clone());
-                        }
-                    }
-                });
-                ui.add_space(14.0);
-
-                let mut toggles: Vec<Id> = vec![];
-                let mut open_task: Option<Id> = None;
-                let mut open_page: Option<Id> = None;
-                let mut open_event: Option<Event> = None;
-                let mut reschedule = false;
-                ui.columns(2, |cols| {
-                    // ---------- left: tasks
-                    {
-                        let ui = &mut cols[0];
-                        card(ui, p, |ui| {
-                            ui.horizontal(|ui| {
-                                ui.label(RichText::new("Today").font(fb(17.0)));
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    if overdue > 0 && ghost_button(ui, RichText::new("Reschedule overdue → today").size(12.0).color(p.accent_text)).clicked() {
-                                        reschedule = true;
+                            if let Some((id, step)) = &m.setup {
+                                motion::fade_in(ui, card(1), rise, |ui| {
+                                    if amber_card(ui, p, None, "Continue setting up", Some(&format!("You stopped at {step}. Everything you wrote is saved.")), "Pick up →").clicked() {
+                                        acts.push(HomeAct::Resume(id.clone()));
                                     }
                                 });
-                            });
-                            let mut list: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && t.due.map_or(false, |x| x <= t0)).collect();
-                            list.sort_by_key(|t| (t.due, t.due_time, t.priority));
-                            if list.is_empty() {
-                                ui.add_space(10.0);
-                                ui.label(RichText::new("🎉 Nothing due today. Enjoy it!").color(p.dim));
-                                ui.add_space(10.0);
                             }
-                            for t in list.iter().take(9) {
-                                let r = task_row(ui, p, d, t, true, 0.0);
-                                if r.toggled {
-                                    toggles.push(t.id.clone());
-                                }
-                                if r.opened {
-                                    open_task = Some(t.id.clone());
-                                }
-                            }
-                            if list.len() > 9 {
-                                if ghost_button(ui, RichText::new(format!("+ {} more in Today", list.len() - 9)).color(p.accent_text)).clicked() {
-                                    go_to = Some(View::Today);
-                                }
-                            }
-                        });
-                        ui.add_space(12.0);
-                        // Captured: tasks not in a project yet (what used to be the Inbox)
-                        card(ui, p, |ui| {
-                            let mut cap: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).collect();
-                            cap.sort_by_key(|t| -t.created);
-                            ui.horizontal(|ui| {
-                                ui.label(RichText::new("Captured").font(fb(17.0)));
-                                ui.label(RichText::new(format!("{} not in a project yet", cap.len())).size(12.0).color(p.dim));
-                            });
-                            if cap.is_empty() {
-                                wrap_label(ui, RichText::new("Nothing waiting. Use the capture bar above or Add task.").color(p.dim));
-                            }
-                            for t in cap.iter().take(6) {
-                                let r = task_row(ui, p, d, t, false, 0.0);
-                                if r.toggled {
-                                    toggles.push(t.id.clone());
-                                }
-                                if r.opened {
-                                    open_task = Some(t.id.clone());
-                                }
-                            }
-                            if cap.len() > 6 && ghost_button(ui, RichText::new(format!("+ {} more in Tasks → Captured", cap.len() - 6)).color(p.accent_text)).clicked() {
-                                go_to = Some(View::Inbox);
-                            }
-                        });
-                        ui.add_space(12.0);
-                        card(ui, p, |ui| {
-                            ui.label(RichText::new("Next 7 days").font(fb(17.0)));
-                            ui.add_space(4.0);
-                            for i in 1..=7 {
-                                let day = t0 + chrono::Duration::days(i);
-                                let tasks: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && t.due == Some(day)).collect();
-                                let evs: Vec<&Event> = d.events.iter().filter(|e| d.calendar(&e.calendar_id).map_or(true, |c| c.visible) && e.occurrence_on(day).is_some() && e.recurrence != Recurrence::Weekdays && e.recurrence != Recurrence::Daily).collect();
-                                if tasks.is_empty() && evs.is_empty() {
-                                    continue;
-                                }
-                                ui.add_space(4.0);
-                                ui.label(RichText::new(format!("{} · {}", day.format("%a %-d %b"), fmt_date_short(day))).font(fs(13.0)).color(p.dim));
-                                for e in evs.iter().take(3) {
-                                    let col = d.calendar(&e.calendar_id).map(|c| rgb(c.color)).unwrap_or(p.blue);
-                                    ui.horizontal(|ui| {
-                                        let (r, _) = ui.allocate_exact_size(egui::vec2(3.0, 16.0), Sense::hover());
-                                        ui.painter().rect_filled(r, 1.0, col);
-                                        let time = if e.all_day { "All day".to_string() } else { fmt_time(e.start.time()) };
-                                        if wrap_link(ui, RichText::new(format!("{time}  {}", e.title)).size(13.0)).clicked() {
-                                            open_event = Some((*e).clone());
+                            if matches!(state, ViewState::Full | ViewState::Error) {
+                                motion::fade_in(ui, card(2), rise, |ui| {
+                                    white_card(ui, p, false, |ui| {
+                                        ui.horizontal(|ui| {
+                                            ui.label(RichText::new("Today").font(fb(size::LABEL)).color(p.text));
+                                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                                if ui.add(egui::Label::new(RichText::new("Open calendar →").font(fs(size::SMALL)).color(p.orange)).sense(egui::Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                                                    acts.push(HomeAct::OpenCalendar);
+                                                }
+                                            });
+                                        });
+                                        if m.agenda.is_empty() {
+                                            ui.add_space(space::S8);
+                                            ui.label(RichText::new("Nothing scheduled. Events and dated tasks show here.").size(size::ROW_SMALL).color(p.dim));
+                                        }
+                                        for (i, a) in m.agenda.iter().enumerate() {
+                                            let mark = match a.kind {
+                                                AgendaKind::Event => Mark::Event(p.orange),
+                                                AgendaKind::Task => Mark::Task(tok::AMBER),
+                                                AgendaKind::Captured => Mark::Task(p.faint),
+                                            };
+                                            let (row, mk) = agenda_row(ui, p, &a.time, mark, &a.title, &a.meta, i == 0);
+                                            if let Some(t) = &a.task {
+                                                if mk.clicked() {
+                                                    acts.push(HomeAct::Toggle(t.clone()));
+                                                } else if row.clicked() {
+                                                    acts.push(HomeAct::OpenTask(t.clone()));
+                                                }
+                                            } else if let Some(e) = &a.event {
+                                                if row.clicked() || mk.clicked() {
+                                                    acts.push(HomeAct::OpenEvent(e.clone()));
+                                                }
+                                            }
                                         }
                                     });
-                                }
-                                for t in tasks.iter().take(4) {
-                                    ui.horizontal(|ui| {
-                                        let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                                        paint_circle(ui, r.center(), p, t.priority, false, resp.hovered());
-                                        if resp.clicked() {
-                                            toggles.push(t.id.clone());
-                                        }
-                                        if wrap_link(ui, RichText::new(&t.title).size(13.0)).clicked() {
-                                            open_task = Some(t.id.clone());
-                                        }
-                                    });
-                                }
-                            }
-                        });
-                    }
-                    // ---------- right: schedule, pages, projects
-                    {
-                        let ui = &mut cols[1];
-                        card(ui, p, |ui| {
-                            ui.horizontal(|ui| {
-                                ui.label(RichText::new("Schedule").font(fb(17.0)));
-                                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    ui.label(RichText::new(t0.format("%a %-d %b").to_string()).size(12.0).color(p.dim));
                                 });
-                            });
-                            ui.add_space(4.0);
-                            let now = now_local();
-                            let mut items: Vec<(NaiveDateTime, String, Color32, bool, Option<Event>, Option<Id>)> = todays_events.iter().map(|(s, e)| (*s, e.title.clone(), d.calendar(&e.calendar_id).map(|c| rgb(c.color)).unwrap_or(p.blue), e.all_day, Some(e.clone()), None)).collect();
-                            for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(t0) && t.due_time.is_some()) {
-                                items.push((t0.and_time(t.due_time.unwrap()), format!("○ {}", t.title), prio_color(t.priority, p), false, None, Some(t.id.clone())));
                             }
-                            items.sort_by_key(|x| (!x.3, x.0));
-                            if items.is_empty() {
-                                ui.label(RichText::new("No events today").color(p.dim));
-                            }
-                            let mut now_drawn = false;
-                            for (start, title, col, all_day, ev, tid) in items {
-                                if !now_drawn && !all_day && start > now {
-                                    now_drawn = true;
-                                    ui.horizontal(|ui| {
-                                        ui.label(RichText::new(fmt_time(now.time())).size(11.0).color(p.accent_text));
-                                        let (r, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 8.0), Sense::hover());
-                                        ui.painter().circle_filled(r.left_center(), 4.0, p.accent);
-                                        ui.painter().line_segment([r.left_center(), r.right_center()], egui::Stroke::new(1.5, p.accent));
+                        });
+                        // the right column
+                        ui.allocate_ui_with_layout(egui::vec2(aside_w, 0.0), Layout::top_down(Align::Min), |ui| {
+                            ui.set_width(aside_w);
+                            ui.spacing_mut().item_spacing.y = space::S12;
+                            match state {
+                                ViewState::Loading => {
+                                    for _ in 0..3 {
+                                        skeleton_card(ui, p, 2, "");
+                                    }
+                                    ui.label(RichText::new("Loading your day…").size(size::SMALL).color(p.dim));
+                                }
+                                ViewState::Empty => {
+                                    motion::fade_in(ui, card(1), rise, |ui| {
+                                        white_card(ui, p, false, |ui| {
+                                            card_head(ui, p, "TODAY", None, false);
+                                            wrap_label(ui, RichText::new("Nothing scheduled. Events and dated tasks show here.").size(size::ROW_SMALL).color(p.dim));
+                                        });
+                                    });
+                                    motion::fade_in(ui, card(2), rise, |ui| {
+                                        white_card(ui, p, true, |ui| {
+                                            card_head(ui, p, "CAPTURED", None, false);
+                                            wrap_label(ui, RichText::new("Nothing yet. Use Add task or the bar below to note anything on your mind.").size(size::ROW_SMALL).color(p.dim));
+                                        });
                                     });
                                 }
-                                let past = !all_day && start + chrono::Duration::minutes(30) < now;
-                                let resp = ui.horizontal(|ui| {
-                                    let time = if all_day { "All day".to_string() } else { fmt_time(start.time()) };
-                                    ui.add_sized([52.0, 20.0], egui::Label::new(RichText::new(time).size(12.5).color(p.dim)));
-                                    let (r, _) = ui.allocate_exact_size(egui::vec2(4.0, 22.0), Sense::hover());
-                                    ui.painter().rect_filled(r, 2.0, if past { col.linear_multiply(0.4) } else { col });
-                                    ui.add(egui::Label::new(RichText::new(&title).size(14.0).color(if past { p.dim } else { p.text })).wrap().sense(Sense::click()))
-                                });
-                                if resp.inner.clicked() {
-                                    if let Some(e) = ev {
-                                        open_event = Some(e);
-                                    } else if let Some(t) = tid {
-                                        open_task = Some(t);
+                                ViewState::Error => {
+                                    white_card(ui, p, false, |ui| {
+                                        wrap_label(ui, RichText::new("Only the plan failed. Everything else on Home loads from your own data, which is saved on this PC.").size(size::ROW_SMALL).color(p.dim));
+                                    });
+                                }
+                                ViewState::Full => {
+                                    let mut n = 1;
+                                    if !m.wins.is_empty() {
+                                        motion::fade_in(ui, card(n), rise, |ui| {
+                                            white_card(ui, p, false, |ui| {
+                                                card_head(ui, p, "SINCE MONDAY", Some((&format!("{} done", m.wins.len()), p.green_text)), false);
+                                                for w in m.wins.iter().take(5) {
+                                                    win_row(ui, p, w);
+                                                }
+                                            });
+                                        });
+                                        n += 1;
+                                    }
+                                    if !m.waiting.is_empty() {
+                                        motion::fade_in(ui, card(n), rise, |ui| {
+                                            white_card(ui, p, false, |ui| {
+                                                card_head(ui, p, "WAITING ON", Some((&format!("{} stalled", m.waiting.len()), p.orange)), false);
+                                                for (what, age) in m.waiting.iter().take(4) {
+                                                    stalled_row(ui, p, what, age);
+                                                }
+                                            });
+                                        });
+                                        n += 1;
+                                    }
+                                    if !m.projects.is_empty() {
+                                        motion::fade_in(ui, card(n), rise, |ui| {
+                                            white_card(ui, p, false, |ui| {
+                                                if card_head(ui, p, "PROJECTS", Some(("All →", p.orange)), true) {
+                                                    acts.push(HomeAct::AllProjects);
+                                                }
+                                                for (id, name, done, total) in m.projects.iter().take(5) {
+                                                    let frac = if *total == 0 { 0.0 } else { *done as f32 / *total as f32 };
+                                                    if progress_row(ui, p, name, &format!("{done} of {total}"), frac).clicked() {
+                                                        acts.push(HomeAct::OpenProject(id.clone()));
+                                                    }
+                                                }
+                                            });
+                                        });
+                                        n += 1;
+                                    }
+                                    if m.captured > 0 {
+                                        motion::fade_in(ui, card(n), rise, |ui| {
+                                            if amber_card(ui, p, Some(&m.captured.to_string()), "captured, not in a project yet", None, "Sort →").clicked() {
+                                                acts.push(HomeAct::Captured);
+                                            }
+                                        });
                                     }
                                 }
                             }
                         });
-                        ui.add_space(12.0);
-                        card(ui, p, |ui| {
-                            ui.label(RichText::new("Recent pages").font(fb(17.0)));
-                            ui.add_space(4.0);
-                            let mut pages: Vec<&Page> = d.pages.iter().collect();
-                            pages.sort_by_key(|x| -x.updated);
-                            for pg in pages.iter().take(5) {
-                                let title = if pg.title.is_empty() { "Untitled" } else { &pg.title };
-                                let when = chrono::DateTime::from_timestamp_millis(pg.updated).map(|x| x.with_timezone(&Local).format("%-d %b").to_string()).unwrap_or_default();
-                                if wrap_link(ui, RichText::new(format!("{}  {}   ", if pg.icon.is_empty() { "📄" } else { &pg.icon }, title)).size(14.0)).clicked() {
-                                    open_page = Some(pg.id.clone());
-                                }
-                                ui.label(RichText::new(when).size(11.0).color(p.faint));
-                                ui.add_space(2.0);
-                            }
-                        });
-                        ui.add_space(12.0);
-                        card(ui, p, |ui| {
-                            ui.label(RichText::new("Projects").font(fb(17.0)));
-                            ui.add_space(4.0);
-                            for pr in d.projects.iter().filter(|x| !x.archived) {
-                                let all: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(&pr.id)).collect();
-                                let done = all.iter().filter(|t| t.completed).count();
-                                let frac = if all.is_empty() { 0.0 } else { done as f32 / all.len() as f32 };
-                                let resp = ui.vertical(|ui| {
-                                    wrap_label(ui, RichText::new(format!("# {}", pr.name)).size(14.0));
-                                    ui.horizontal(|ui| {
-                                        let (r, _) = ui.allocate_exact_size(egui::vec2((ui.available_width() - 50.0).max(40.0), 8.0), Sense::hover());
-                                        ui.painter().rect_filled(r, 4.0, p.hover);
-                                        let mut f = r;
-                                        f.set_width(r.width() * frac);
-                                        ui.painter().rect_filled(f, 4.0, rgb(pr.color));
-                                        ui.label(RichText::new(format!("{done}/{}", all.len())).size(12.0).color(p.dim));
-                                    });
-                                });
-                                if ui.interact(resp.response.rect, ui.id().with(("proj", &pr.id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
-                                    go_to = Some(View::Resolve(pr.id.clone()));
-                                }
-                            }
-                        });
-                    }
+                    });
                 });
-                ui.add_space(30.0);
-                for id in toggles {
-                    self.toggle_task(&id);
-                }
-                if reschedule {
-                    let t = today();
-                    for task in self.store.data.tasks.iter_mut().filter(|x| x.is_overdue()) {
-                        task.due = Some(t);
-                        task.updated = now_ms();
-                    }
-                    self.touch();
-                    self.toast("Overdue tasks moved to today");
-                }
-                if let Some(id) = open_task {
-                    self.open_task = Some(id);
-                }
-                if let Some(id) = open_page {
-                    self.go(View::Page(id));
-                }
-                if let Some(e) = open_event {
-                    self.event_edit = Some(calendar::draft_from(&e));
-                }
-                if let Some(v) = go_to {
-                    self.go(v);
-                }
             });
         });
+        if el < moves::CARDS.stagger(5, moves::CARDS_STAGGER).end() {
+            ui.ctx().request_repaint();
+        }
+        for a in acts {
+            match a {
+                HomeAct::NewProject => self.start_intake(),
+                HomeAct::Resume(id) => self.go(View::Intake(id)),
+                HomeAct::StartThis(pid, task) => {
+                    self.current_project = Some(pid.clone());
+                    self.go(View::Project(pid));
+                    self.open_task = task;
+                }
+                HomeAct::PlanDay => self.open_plan_day(),
+                HomeAct::RetryPlan => {
+                    self.plan.error = None;
+                    self.open_plan_day();
+                }
+                HomeAct::OpenCalendar => self.go(View::Calendar),
+                HomeAct::OpenTask(id) => self.open_task = Some(id),
+                HomeAct::Toggle(id) => self.toggle_task(&id),
+                HomeAct::OpenEvent(id) => {
+                    if let Some(e) = self.store.data.events.iter().find(|e| e.id == id).cloned() {
+                        self.event_edit = Some(calendar::draft_from(&e));
+                    }
+                }
+                HomeAct::AllProjects => self.go(View::Projects),
+                HomeAct::OpenProject(id) => {
+                    self.select_project(Some(id));
+                    self.go(View::Sec(nav::Section::Overview));
+                }
+                HomeAct::Captured => self.go(View::Inbox),
+                HomeAct::OpenToday => self.go(View::Today),
+                HomeAct::SamplePersonal => {
+                    if let Some(w) = self.reg.find("Personal").map(|w| w.id.clone()) {
+                        self.switch_workspace(&w);
+                    }
+                }
+            }
+        }
+        let _ = Local::now();
     }
 }

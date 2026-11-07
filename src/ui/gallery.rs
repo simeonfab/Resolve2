@@ -326,6 +326,7 @@ fn gallery_buttons(ui: &mut egui::Ui, p: &Pal) {
                     ButtonKind::Secondary => "Not quite",
                     ButtonKind::Ghost => "See and edit everything",
                     ButtonKind::Danger => "Delete project",
+                    ButtonKind::OnDark => "Plan my day",
                 };
                 button(ui, p, kind, text, small, true).on_hover_text(name);
                 ui.add_space(space::S8);

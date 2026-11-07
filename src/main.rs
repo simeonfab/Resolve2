@@ -35,6 +35,7 @@ mod selftest_journey;
 mod selftest_alpha;
 mod selftest_p0;
 mod selftest_p1;
+mod selftest_p2;
 mod server;
 mod store;
 mod templates;

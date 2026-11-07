@@ -67,6 +67,11 @@ pub mod tok {
     /// blends translucent fills brighter than CSS does, so flat fills use these):
     /// rgba(200,160,64,.16) on nav-bg (the sidebar's active item).
     pub const AMBER_16_ON_NAV: Color32 = hex(0x393320);
+    /// From the Pack B canvas (not in the brief's 24): body text on the ink hero, the amber-light
+    /// card's edge, and the dashed edge of an empty card.
+    pub const HERO_BODY: Color32 = hex(0xD8D3C7);
+    pub const AMBER_EDGE: Color32 = hex(0xE9D9A8);
+    pub const DASHED_EDGE: Color32 = hex(0xCFC8BA);
     /// rgba(200,160,64,.10) on pane (callouts on dark).
     pub const AMBER_10_ON_PANE: Color32 = hex(0x312C20);
     /// rgba(139,74,42,.22) on pane (error panels on dark).
@@ -202,6 +207,15 @@ pub mod size {
     pub const GROUP_SPACING: f32 = GROUP * 0.04;
     /// Sidebar items (Inter 500 13.5).
     pub const NAV: f32 = 13.5;
+    /// Home (Pack B canvas): the greeting (DM Serif 32), the hero title (28; 34 above 1600
+    /// wide), the hero's body (14.5), list rows (13.5 to 14), card heads (12, 700).
+    pub const GREETING: f32 = 32.0;
+    pub const HERO_TITLE: f32 = 28.0;
+    pub const HERO_TITLE_WIDE: f32 = 34.0;
+    pub const HERO_BODY: f32 = 14.5;
+    pub const ROW: f32 = 14.0;
+    pub const ROW_SMALL: f32 = 13.5;
+    pub const CARD_HEAD: f32 = 12.0;
     /// Line heights (multipliers), as the brief writes them.
     pub const LH_HERO: f32 = 1.05;
     pub const LH_DISPLAY: f32 = 1.1;
@@ -271,6 +285,18 @@ pub mod space {
     pub const DIALOG_TOP: f32 = 80.0;
     pub const SEARCH_W: f32 = 680.0;
     pub const SEARCH_LIST_H: f32 = 440.0;
+    /// Home (Pack B canvas): columns 1.25 : 1 with a 20 gap, the right column at most 440, the
+    /// hero padded 26 / 30, list times 52 wide, 16 px marks, 1600 is where wide sizes start.
+    pub const HOME_GAP: f32 = 20.0;
+    pub const HOME_ASIDE_MAX: f32 = 440.0;
+    pub const HOME_LEFT_SHARE: f32 = 1.25 / 2.25;
+    pub const HERO_PAD_Y: f32 = 26.0;
+    pub const HERO_PAD_X: f32 = 30.0;
+    pub const AGENDA_TIME_W: f32 = 52.0;
+    pub const MARK: f32 = 16.0;
+    pub const WIDE_FROM: f32 = 1600.0;
+    pub const BAR_H: f32 = 5.0;
+    pub const HOME_SKELETON_HERO: f32 = 300.0;
     /// Ask Resolve bar.
     pub const ASK_W: f32 = 560.0;
     pub const ASK_H: f32 = 48.0;

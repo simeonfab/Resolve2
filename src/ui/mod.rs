@@ -18,7 +18,8 @@ pub mod resolve;
 mod sections;
 mod team;
 pub mod testlab;
-mod dashboard;
+pub mod dashboard;
+mod plan;
 mod help;
 mod assistant;
 mod databases;
@@ -256,6 +257,11 @@ pub struct App {
     pub ask: shell::AskUi,
     /// The search palette while it closes.
     pub search_fx: Option<shell::SearchFx>,
+    /// Plan my day (B-E21).
+    pub plan: plan::PlanUi,
+    /// The screen shown last frame, and when it was entered (for screen entrances).
+    pub view_seen: Option<View>,
+    pub view_since: f64,
 }
 
 /// The four states every view draws (Rules, item 3).
@@ -348,6 +354,9 @@ impl App {
             sidebar_anim: None,
             ask: shell::AskUi::default(),
             search_fx: None,
+            plan: plan::PlanUi::default(),
+            view_seen: None,
+            view_since: 0.0,
         };
         app.page_ui.ai_open = open_ai;
         // reduced motion: the saved setting, or --reduced-motion for a screenshot
@@ -368,9 +377,9 @@ impl App {
         };
         if app.shot.is_some() {
             // sample or empty data for a screenshot must never reach the disk
-            app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty"));
+            app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty") | Some("loading") | Some("error"));
             match opts.state.as_deref() {
-                Some("full") => {
+                Some("full") | Some("loading") | Some("error") => {
                     // the design canvases' sample (café flat-fee bookkeeping), so screens compare like for like
                     let mut d = WorkspaceData::default();
                     crate::seed::seed_canvas(&mut d);
@@ -1241,6 +1250,10 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.frame += 1;
         self.now = ctx.input(|i| i.time);
+        if self.view_seen.as_ref() != Some(&self.view) {
+            self.view_seen = Some(self.view.clone());
+            self.view_since = self.now;
+        }
         let p = self.pal();
         if self.theme_applied != Some(p.dark) {
             apply(ctx, &p);

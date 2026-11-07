@@ -443,7 +443,6 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
         tasks: vec![
             item("Reconstruct 12 months of hours per café", "For each of your three cafés, list the hours actually worked in each of the last 12 months.", "evidence", "Now", Some(0)),
             item("Mark the busiest and quietest months", "For each café, find the highest-hour month and the lowest, and note what drove the peak.", "assumption", "Now", Some(0)),
-            item("Hours export from The Corner Café's till system", "", "evidence", "Now", Some(0)),
             item("Book a call with each willing client", "", "assumption", "Now", Some(1)),
             item("Ask what they pay now per year", "", "assumption", "Now", Some(1)),
             item("Model the flat fee against real hours", "Set an hourly rate you would accept, multiply by average monthly hours, then add a buffer for the spike months.", "assumption", "Next", Some(2)),
@@ -474,12 +473,20 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
     set_task(d, "Reconstruct 12 months of hours per café", |x| x.due = Some(today));
     set_task(d, "Mark the busiest and quietest months", |x| x.due = Some(today + Duration::days(7)));
     for (title, n) in [("Confirm your roadmap", 0), ("List the three cafés and their contacts", 1), ("Set a target fee of £150", 2)] {
-        let at = (monday + Duration::days(n)).and_time(at(11, 0)).and_local_timezone(chrono::Local).single().map(|x| x.timestamp_millis());
+        // finished on that day at 11:00, counted back from the app's clock (which a screenshot may pin)
+        let when = (monday + Duration::days(n)).and_time(at(11, 0));
+        let at = Some(t - (now_local() - when).num_milliseconds());
         set_task(d, title, |x| {
             x.completed = true;
             x.completed_at = at;
         });
     }
+    // waiting on someone else: a Dependency record, waiting for three days
+    let mut wait = crate::resolve::records::Record::new(crate::resolve::records::Kind::Dependency, cafe_id.clone(), "Hours export from The Corner Café's till system");
+    wait.status = "Waiting".into();
+    wait.created = t - 3 * 24 * 3600 * 1000;
+    wait.updated = wait.created;
+    d.records.push(wait);
     if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {
         c.recommendation.why = "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into();
     }
