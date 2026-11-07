@@ -932,7 +932,7 @@ impl App {
             });
         });
         if let Some(sec) = add_to {
-            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: pid.clone(), section: sec, due: None, parent: None, page: None, focus: true });
+            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: pid.clone(), section: sec, due: None, parent: None, page: None, focus: true, opened: f64::NAN, error: false });
         }
     }
 

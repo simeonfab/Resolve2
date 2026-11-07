@@ -1772,6 +1772,27 @@ pub fn progress_line(ui: &mut Ui, p: &Pal, frac: f32, width: f32) {
     ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(width * frac.clamp(0.0, 1.0), space::BAR_H)), space::BAR_H / 2.0, tok::AMBER);
 }
 
+/// A "Resolve understood" chip in Add task (no emoji): the task itself (white, "Task <b>title</b>"),
+/// or a recognised part tinted by what it is.
+pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Option<crate::nlp::Recognised>) {
+    use crate::nlp::Recognised;
+    let (bg, fg, edge) = match kind {
+        None => (p.card, p.text, p.line),
+        Some(Recognised::Priority) => (p.orange_tint, p.orange, p.orange_tint),
+        Some(Recognised::Project) => (p.green_tint, p.green_text, p.green_tint),
+        Some(_) => (p.accent_soft, p.text, if p.dark { p.line } else { tok::AMBER_EDGE }),
+    };
+    let mut job = egui::text::LayoutJob::default();
+    if !lead.is_empty() {
+        job.append(&format!("{lead} "), 0.0, egui::TextFormat { font_id: fp(size::LABEL), color: p.dim, ..Default::default() });
+    }
+    job.append(text, 0.0, egui::TextFormat { font_id: fs(size::LABEL), color: fg, ..Default::default() });
+    let g = ui.painter().layout_job(job);
+    let (r, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S22, space::S14), Sense::hover());
+    ui.painter().rect(r, radius::SMALL_BUTTON, bg, Stroke::new(stroke::HAIR, edge));
+    ui.painter().galley(r.min + egui::vec2(space::S22 / 2.0, space::S14 / 2.0), g, fg);
+}
+
 /// A line led by a small dot ("Focus theme · …" on the hero).
 pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
     ui.horizontal(|ui| {

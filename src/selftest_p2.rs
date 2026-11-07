@@ -41,6 +41,17 @@ pub fn run(t: &mut T) {
         format!("{} | {} | {} {} {} {} | {}", c.done, c.next, c.now, c.next_n, c.later, c.open, c.updated),
     );
 
+    // B-E11: Add task highlights what it recognised, and its chips carry no emoji
+    use crate::nlp::Recognised as R;
+    let text = "Pay rent every month 9am p1 #Home";
+    let spans: Vec<(&str, R)> = crate::nlp::recognised(text, at.date()).into_iter().map(|(r, k)| (&text[r], k)).collect();
+    let chips: Vec<String> = crate::nlp::parse(text, at.date()).plain_chips().into_iter().map(|c| c.0).collect();
+    t.check(
+        "B-E11: recognised words are found (repeat and time amber, p1 terracotta, #Home green) and the chips have no emoji",
+        spans == [("every", R::When), ("month", R::When), ("9am", R::When), ("p1", R::Priority), ("#Home", R::Project)] && chips.iter().all(|c| c.chars().all(|ch| (ch as u32) < 0x2190 || ch == '↻')) && chips.contains(&"Priority 1".to_string()) && chips.contains(&"Project: Home".to_string()),
+        format!("{spans:?} {chips:?}"),
+    );
+
     // B-E8: one project's tasks in Now, Waiting on and Upcoming from roadmap, with their themes
     let tm = crate::ui::tasks::project_tasks_model(&d, &cafe, crate::model::now_ms(), at);
     let first_now = tm.now.first().and_then(|(id, th)| d.task(id).map(|t| (t.title.clone(), th.clone())));

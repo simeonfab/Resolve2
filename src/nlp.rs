@@ -18,6 +18,36 @@ pub struct Capture {
 }
 
 impl Capture {
+    /// The "Resolve understood" chips for Add task, without emoji (B-E11): (text, kind).
+    pub fn plain_chips(&self) -> Vec<(String, Recognised)> {
+        let mut v = vec![];
+        if self.recurrence.is_some() {
+            v.push((format!("↻ {}", self.recurrence.label()), Recognised::When));
+        }
+        match (self.due, self.time) {
+            (Some(d), Some(t)) => v.push((format!("{} {}", crate::model::fmt_date_short(d), crate::model::fmt_time(t)), Recognised::When)),
+            (Some(d), None) => v.push((crate::model::fmt_date_short(d), Recognised::When)),
+            (None, Some(t)) => v.push((crate::model::fmt_time(t), Recognised::When)),
+            _ => {}
+        }
+        if let Some(p) = self.priority {
+            v.push((format!("Priority {p}"), Recognised::Priority));
+        }
+        if let Some(p) = &self.project {
+            v.push((format!("Project: {p}"), Recognised::Project));
+        }
+        for l in &self.labels {
+            v.push((format!("@{l}"), Recognised::Label));
+        }
+        if let Some(r) = self.reminder_min {
+            v.push((format!("Reminder {r} min before"), Recognised::When));
+        }
+        if let Some(d) = self.duration_min {
+            v.push((format!("{d} min"), Recognised::When));
+        }
+        v
+    }
+
     pub fn chips(&self) -> Vec<String> {
         let mut v = vec![];
         if let Some(d) = self.due {
@@ -190,6 +220,49 @@ fn duration_minutes(s: &str) -> Option<i64> {
 }
 
 pub fn parse(input: &str, today: NaiveDate) -> Capture {
+    parse_used(input, today).0
+}
+
+/// What a recognised word means, for highlighting it as you type (B-E11).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Recognised {
+    /// A date, time, repeat, reminder or duration (amber).
+    When,
+    /// p1 to p4 (terracotta).
+    Priority,
+    /// #Project (green).
+    Project,
+    /// @label (amber).
+    Label,
+}
+
+/// The byte ranges of the words the parser recognised, and what each is.
+pub fn recognised(input: &str, today: NaiveDate) -> Vec<(std::ops::Range<usize>, Recognised)> {
+    let (_, used) = parse_used(input, today);
+    let mut out = vec![];
+    let mut at = 0;
+    for (i, tok) in input.split_whitespace().enumerate() {
+        let start = at + input[at..].find(tok).unwrap_or(0);
+        at = start + tok.len();
+        if !used.get(i).copied().unwrap_or(false) {
+            continue;
+        }
+        let low = tok.to_lowercase();
+        let kind = if tok.starts_with('#') {
+            Recognised::Project
+        } else if tok.starts_with('@') {
+            Recognised::Label
+        } else if low.len() == 2 && (low.starts_with('p') || low.starts_with('!')) && low[1..].parse::<u8>().is_ok() {
+            Recognised::Priority
+        } else {
+            Recognised::When
+        };
+        out.push((start..at, kind));
+    }
+    out
+}
+
+fn parse_used(input: &str, today: NaiveDate) -> (Capture, Vec<bool>) {
     let mut c = Capture::default();
     let toks: Vec<String> = input.split_whitespace().map(|s| s.to_string()).collect();
     let low: Vec<String> = toks.iter().map(|s| s.to_lowercase().trim_end_matches([',', ';']).to_string()).collect();
@@ -396,7 +469,7 @@ pub fn parse(input: &str, today: NaiveDate) -> Capture {
     if c.due.is_none() && c.time.is_some() {
         c.due = Some(today);
     }
-    c
+    (c, used)
 }
 
 #[cfg(test)]

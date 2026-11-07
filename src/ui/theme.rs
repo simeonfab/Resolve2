@@ -216,6 +216,8 @@ pub mod size {
     pub const ROW: f32 = 14.0;
     pub const ROW_SMALL: f32 = 13.5;
     pub const CARD_HEAD: f32 = 12.0;
+    /// The Add task field's text.
+    pub const QUICK: f32 = 17.0;
     /// Line heights (multipliers), as the brief writes them.
     pub const LH_HERO: f32 = 1.05;
     pub const LH_DISPLAY: f32 = 1.1;
@@ -288,6 +290,9 @@ pub mod space {
     /// Home (Pack B canvas): columns 1.25 : 1 with a 20 gap, the right column at most 440, the
     /// hero padded 26 / 30, list times 52 wide, 16 px marks, 1600 is where wide sizes start.
     pub const HOME_GAP: f32 = 20.0;
+    /// Add task: a 640 dialog, 110 from the top.
+    pub const QUICK_W: f32 = 640.0;
+    pub const QUICK_TOP: f32 = 110.0;
     /// The task editor: a 440 push panel from the right (B-E9).
     pub const TASK_PANEL: f32 = 440.0;
     pub const HOME_ASIDE_MAX: f32 = 440.0;
