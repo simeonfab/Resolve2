@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Pack C section map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#4A4A44}</style>
+</helmet>
+<div style="width: 2600px; height: 1200px; box-sizing: border-box; padding: 48px 56px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 28px;">
+<div style="display: flex; align-items: flex-end; gap: 40px;">
+<div style="flex: 1;">
+<div style="font-size: 14px; font-weight: 600; color: #8B4A2A;">Pack C · project sections, Settings, Help · all inside the Pack B shell</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 46px;">An index of every screen in Pack C, one card per section</h1>
+</div>
+<div style="width: 640px; font-size: 14px; line-height: 1.55; color: #4A4A44;"><b style="color: #1A1A18;">How to read it.</b> Each card is one section of the app. The tag shows where it sits in the sidebar. <b>Boards</b> names its frames on page 2. <b>Leads to</b> says where a click on it takes you. The grey line lists the engine functions it calls. Every project section shows the project picked in the sidebar.</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 22px; flex: 1;">
+<sc-for list="{{cards}}" as="c" hint-placeholder-count="12">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 9px; box-shadow: 0 1px 2px rgba(26,26,24,.04);">
+<div style="display: flex; align-items: center; gap: 10px;"><span style="font-size: 12px; font-weight: 700; color: #F5F1E8; background: {{c.chip}}; border-radius: 6px; padding: 3px 8px;">{{c.grp}}</span><span style="font-family: 'DM Serif Display', serif; font-size: 24px;">{{c.t}}</span></div>
+<div style="font-size: 13.5px; line-height: 1.5; color: #1A1A18;">{{c.d}}</div>
+<div style="font-size: 12.5px; line-height: 1.5; color: #4A4A44;"><b style="color: #8B4A2A;">Boards · </b>{{c.b}}</div>
+<div style="margin-top: auto; font-size: 12.5px; line-height: 1.5; background: #F7F3EC; border-radius: 9px; padding: 8px 11px;"><b>Leads to → </b>{{c.l}}</div>
+<div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: #4A4A44; line-height: 1.5;">{{c.e}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2600,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() {
+const P = '#8B4A2A', I = '#1A1A18', G = '#5E7D4F';
+const cards = [
+{ grp: 'Project', chip: P, t: 'Overview', d: 'Do this next, progress, what matters now, project context, the plan page and a small tasks board.', b: 'Overview', l: 'Roadmap step, Tasks, the project brief, Ask Resolve', e: 'resolve_project · list_records · weekly_review' },
+{ grp: 'Project', chip: P, t: 'Roadmap', d: 'Now, Next, Later by phase or by theme. Gates, milestones, dependencies and coming up. Steps expand in place.', b: 'Roadmap, by theme, expanded, whole picture', l: 'Task editor (Pack B), Frameworks node behind a gate, whole picture overlay', e: 'list_records · update_record · add_record' },
+{ grp: 'Project', chip: P, t: 'Frameworks', d: 'A registry of methods, Hypothesis Zero first. The H0 tree shows each hypothesis, its negation and the experiments that test it.', b: 'Frameworks, editing a node', l: 'Roadmap gate it unlocks, Evidence and Records', e: 'list_records · update_record · add_record' },
+{ grp: 'Intake', chip: I, t: 'See and edit everything', d: 'The full proposal before you adopt it: H0, hypotheses, experiments, uncertainties, roadmap and pages, all editable.', b: 'Proposal editor', l: '← Back to the summary (Pack A 09), Adopt → Overview', e: 'update_project · add_record · create_page' },
+{ grp: 'Project', chip: P, t: 'Knowledge base', d: 'Five tabs: Brief and documents, Research, Cut list, Evidence and Records, Advanced. A library of cards with filter chips.', b: 'Knowledge, Evidence filtered, add sheet, preview', l: 'Page editor, preview, databases', e: 'list_pages · read_page · import_pages · list_records' },
+{ grp: 'Project', chip: P, t: 'Page editor', d: 'One page, Markdown underneath. Start blank or from a template. To-dos on a page also show in Tasks.', b: 'Page editor, templates', l: 'Knowledge base, Tasks', e: 'create_page · update_page · list_page_todos' },
+{ grp: 'Project', chip: P, t: 'Databases', d: 'Tables kept inside Knowledge base, Advanced. Add columns and rows, or bring in a CSV.', b: 'Databases, CSV import', l: 'Knowledge base', e: 'list_databases · create_database · query_database · add_database_column · add_database_row · update_database_row · import_csv' },
+{ grp: 'Team', chip: G, t: 'AI Team', d: 'Five specialists reading the real project. The General assistant is the same chat as Ask AI.', b: 'AI Team', l: 'Handoffs, any record a specialist changes (↶ undoes it)', e: 'resolve_project · update_record · add_record' },
+{ grp: 'Team', chip: G, t: 'Handoffs', d: 'Write a brief for Claude Code, Codex or a person. Copy it, mark it Sent or Done, reopen it later.', b: 'Handoffs', l: 'AI Team, Knowledge base', e: 'resolve_project · list_records · add_record · update_record' },
+{ grp: 'App', chip: I, t: 'Settings', d: 'Four tabs: AI and MCP, Sync and phone, Workspaces, About. The spending limit lives here.', b: 'AI and MCP, Sync and phone, Workspaces, About', l: 'Help, Report a problem', e: 'AppSettings · WorkspaceSettings (store.rs)' },
+{ grp: 'App', chip: I, t: 'Help', d: 'The guide in sections, the alpha welcome first, and Report a problem.', b: 'Help, Report a problem', l: 'Settings, any section it explains', e: 'help.rs GUIDE' },
+{ grp: 'All', chip: '#4A4A44', t: 'Shared', d: 'Every screen uses the Pack B sidebar, the Ask Resolve bar and the Pack B toasts. Nothing here adds a new hue.', b: 'Sidebar, Ask bar', l: 'Pack B shell', e: 'nav.rs' }
+];
+return { cards };
+}
+}
+</script>
+</body>
+</html>

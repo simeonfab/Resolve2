@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Frameworks states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3920px; height: 2000px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 40px;">
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Empty · no H0 yet</span><dc-import name="Frameworks" state="empty" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Loading</span><dc-import name="Frameworks" state="loading" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Error · a node edit didn't save</span><dc-import name="Frameworks" state="error" hint-size="1280px,800px"></dc-import></div>
+</div>
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Editing a node · sidebar collapsed</span><dc-import name="Frameworks" collapsed="{{yes}}" edit="{{yes}}" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Full · 1920 × 1080 (content caps at 1240)</span><dc-import name="Frameworks" w="{{bw}}" h="{{bh}}" hint-size="1920px,1080px"></dc-import></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3920,"height":2000}}'>
+class Component extends DCLogic {
+renderVals() { return { yes: true, bw: 1920, bh: 1080 }; }
+}
+</script>
+</body>
+</html>

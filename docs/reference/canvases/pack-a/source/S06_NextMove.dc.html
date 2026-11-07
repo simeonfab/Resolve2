@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>06 Your next move</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;border-right:1px solid rgba(255,255,255,.06);box-sizing:border-box}
+.st{display:flex;gap:12px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st.on .n,.st.ok .n{border-color:#C8A040;color:#C8A040}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.st .d{font-size:12px;color:#8A8578;line-height:1.45;margin-top:3px}
+.st.on .t{color:#F5F1E8}.st.on .d{color:#B4AFA3}
+.ac{margin-top:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:12px;color:#B4AFA3;line-height:1.5}
+.ac b{display:block;font-size:11px;color:#C8A040;margin-bottom:6px}
+.tc{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;box-sizing:border-box}
+.te{font-size:11.5px;font-weight:600;color:#4A4A44}
+.tt{font-size:14.5px;font-weight:600;line-height:1.35}
+.b1{display:inline-flex;align-items:center;gap:8px;background:#1A1A18;color:#F5F1E8;border:0;border-radius:10px;padding:13px 22px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+.b2{display:inline-flex;align-items:center;background:#fff;color:#1A1A18;border:1px solid #DDD8CE;border-radius:10px;padding:13px 20px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A; border-bottom: 1px solid rgba(255,255,255,.06);">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 72%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a><a href="#" aria-label="More options: Start this intake again">⋯</a></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Get started</div><div class="d">Tell Resolve your name and what you need help with</div></div></div>
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Bring it in</div><div class="d">Share your project context: rough notes, imports, anything you have</div></div></div>
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Confirm understanding</div><div class="d">Check what Resolve understood and fill any gaps</div></div></div>
+<div class="st on"><span class="n">4</span><div><div class="t">Your next move</div><div class="d">One clear recommended action and a roadmap built from your project</div></div></div>
+<div class="ac"><b>Saved as you go</b>Leave any time. Resolve opens on this same step when you come back.</div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 40px 56px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 800px; width: 100%; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Your next move</div>
+<h1 style="margin: 6px 0 18px; font-size: 26px; font-weight: 700; line-height: 1.2;">Here's what to do next.</h1>
+<div style="position: relative; overflow: hidden; background: #1A1A18; border-radius: 14px; padding: 24px 28px 26px; color: #F5F1E8;">
+<div style="position: absolute; right: -80px; top: -120px; width: 320px; height: 320px; border-radius: 50%; background: radial-gradient(circle, rgba(200,160,64,.24) 0%, rgba(200,160,64,.06) 45%, transparent 70%);" aria-hidden="true"></div>
+<div style="position: relative; font-size: 12px; font-weight: 600; color: #C8A040;">Do this first</div>
+<h2 style="position: relative; margin: 8px 0 12px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px; line-height: 1.25;">Pull the actual hours you logged on each of your three cafés for every one of the last 12 months, including the year-end period.</h2>
+<p style="position: relative; margin: 0; font-size: 14.5px; line-height: 1.6; color: #D8D3C7;">You circled how the work varies twice without answering it, and whether a flat £150 survives the year-end shoebox spike is the one thing that makes or breaks this package. You already have 12 months of real hours in your own records. Read them before you price anything.</p>
+</div>
+<div style="font-size: 13px; font-weight: 600; color: #4A4A44; margin: 22px 0 10px;">What happens after this</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+<div class="tc" style="border-color: #C8A040;"><span class="te" style="color: #8B4A2A;">Now</span><span class="tt">Measure true monthly hours</span></div>
+<div class="tc"><span class="te">Next</span><span class="tt">Convert the two willing clients</span></div>
+<div class="tc"><span class="te">Later</span><span class="tt">Package the repeatable offer</span></div>
+</div>
+<p style="margin: 12px 0 0; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #4A4A44;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.5 2.5l3 3L6 13H3v-3z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/></svg>Nothing here is final. You can change any of it once your project is open.</p>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 0 24px; border-top: 1px solid #DDD8CE;">
+<a href="S04_Confirm.dc.html" class="b2">Back</a>
+<a href="S07_Themes.dc.html" class="b1">Continue <span aria-hidden="true">→</span></a>
+<a href="S09_WholePicture.dc.html" style="margin-left: auto; font-size: 13px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Skip to the whole picture →</a>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

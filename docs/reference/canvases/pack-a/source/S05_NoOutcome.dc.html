@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>05 No clear outcome yet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;border-right:1px solid rgba(255,255,255,.06);box-sizing:border-box}
+.st{display:flex;gap:12px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st.on .n,.st.ok .n{border-color:#C8A040;color:#C8A040}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.st .d{font-size:12px;color:#8A8578;line-height:1.45;margin-top:3px}
+.st.on .t{color:#F5F1E8}.st.on .d{color:#B4AFA3}
+.ac{margin-top:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:12px;color:#B4AFA3;line-height:1.5}
+.ac b{display:block;font-size:11px;color:#C8A040;margin-bottom:6px}
+mark{background:#FBF5E6;color:#1A1A18;box-shadow:inset 0 -2px 0 #E9D9A8;padding:0 2px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A; border-bottom: 1px solid rgba(255,255,255,.06);">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 66%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a><a href="#" aria-label="More options: Start this intake again">⋯</a></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Get started</div><div class="d">Tell Resolve your name and what you need help with</div></div></div>
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Bring it in</div><div class="d">Share your project context: rough notes, imports, anything you have</div></div></div>
+<div class="st on"><span class="n">3</span><div><div class="t">Confirm understanding</div><div class="d">Check what Resolve understood and fill any gaps</div></div></div>
+<div class="st"><span class="n">4</span><div><div class="t">Your next move</div><div class="d">One clear recommended action and a roadmap built from your project</div></div></div>
+<div class="ac"><b>Saved as you go</b>Leave any time. Resolve opens on this same step when you come back.</div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 64px 56px 0; box-sizing: border-box; display: flex; gap: 48px; align-items: flex-start;">
+<section style="flex: 1; min-width: 0; max-width: 400px; display: flex; flex-direction: column;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Before we build this</div>
+<h1 style="margin: 8px 0 18px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px; line-height: 1.1;">We're not going to guess.</h1>
+<p style="margin: 0 0 14px; font-size: 15.5px; line-height: 1.6; color: #1A1A18;">You've given us real detail. <mark>What's missing is the finish line, so right now the work could lead almost anywhere.</mark></p>
+<p style="margin: 0; font-size: 15.5px; line-height: 1.6; color: #4A4A44;">We could draw a roadmap that looks convincing. We'd rather ask one thing than hand you a plan built on a blank.</p>
+</section>
+<section style="width: 420px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 20px 22px; box-shadow: 0 1px 2px rgba(26,26,24,.04), 0 8px 24px rgba(26,26,24,.06);">
+<div style="font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: #8B4A2A;">ONE QUESTION</div>
+<p style="margin: 8px 0 0; font-family: 'DM Serif Display', serif; font-size: 23px; line-height: 1.3;">If Resolve does its job, what is different in three months that isn't true today?</p>
+</div>
+<label for="fa" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);">Your answer</label>
+<div style="position: relative;"><textarea id="fa" placeholder="Answer in a sentence or two." style="width: 100%; height: 104px; resize: none; box-sizing: border-box; border-radius: 12px; border: 1px solid #DDD8CE; background: #fff; padding: 14px 52px 14px 16px; font: 400 15px/1.55 'Inter', sans-serif; outline: none;"></textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 12px; bottom: 12px; width: 32px; height: 32px; border-radius: 50%; border: 1px solid #DDD8CE; background: #F2EDE4; display: flex; align-items: center; justify-content: center; color: #4A4A44;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button></div>
+<button disabled style="height: 48px; border: 0; border-radius: 10px; background: #E4DED2; color: #4A4A44; font: 600 15px 'Inter', sans-serif;">Continue</button>
+<p style="margin: 0; font-size: 12.5px; color: #4A4A44; line-height: 1.5;">Answering re-runs the check. It might be enough to build on, or there might be one more thing we need. No promises yet.</p>
+</section>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

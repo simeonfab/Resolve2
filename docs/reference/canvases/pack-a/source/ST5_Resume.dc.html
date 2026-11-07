@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State: resume</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
+.st{display:flex;gap:12px;align-items:center}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.ghost{background:#fff;border:1px solid #DDD8CE;border-radius:12px;height:96px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden; position: relative;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 62%;"></span></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="t">Get started</span></div>
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="t">Bring it in</span></div>
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">3</span><span class="t" style="color: #F5F1E8;">Confirm understanding</span></div>
+<div class="st"><span class="n">4</span><span class="t">Your next move</span></div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 48px 56px 0; box-sizing: border-box; position: relative;">
+<div style="opacity: .35; display: flex; flex-direction: column; gap: 10px; max-width: 800px;" aria-hidden="true">
+<div style="height: 30px; width: 60%; background: #E4DED2; border-radius: 6px;"></div>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px;"><div class="ghost"></div><div class="ghost"></div><div class="ghost"></div><div class="ghost"></div></div>
+</div>
+<div role="dialog" aria-labelledby="wb" style="position: absolute; left: 56px; top: 120px; width: 520px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 28px 30px; box-shadow: 0 1px 2px rgba(26,26,24,.04), 0 18px 48px rgba(26,26,24,.12);">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Picking up where you left off</div>
+<h1 id="wb" style="margin: 6px 0 10px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">Welcome back, Simeon.</h1>
+<p style="margin: 0 0 6px; font-size: 15px; line-height: 1.55;">You were checking what Resolve understood about <b>your café flat-fee idea</b>.</p>
+<p style="margin: 0 0 20px; font-size: 14px; line-height: 1.55; color: #4A4A44;">Everything you wrote is saved: 7 answers and the understanding cards.</p>
+<div style="display: flex; gap: 10px; align-items: center;">
+<a href="#" style="display: inline-flex; align-items: center; gap: 8px; background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 13px 22px; font: 600 15px 'Inter', sans-serif; text-decoration: none;">Pick up where you left off <span aria-hidden="true">→</span></a>
+<a href="#" style="font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none; margin-left: 6px;">Start this intake again (keeps your name)</a>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

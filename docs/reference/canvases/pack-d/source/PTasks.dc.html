@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone tasks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; position: relative; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column;">
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div role="status" style="margin-top: 44px; background: #1A1A18; color: #F5F1E8; padding: 10px 16px; font-size: 13px; line-height: 1.4; display: flex; gap: 10px; align-items: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C97A4A; flex-shrink: 0;"></span><span style="flex: 1;">Not connected to your PC. Showing what you saw at 14:02.</span><a href="#" style="color: #C8A040; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center;">Retry</a></div></sc-if>
+<header style="padding: {{topPad}}px 18px 0; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: flex-end;"><div style="flex: 1;"><div style="font-size: 13px; color: #4A4A44;">Friday 6 November</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">{{title}}</h1></div><button aria-label="Workspace: Personal" style="width: 44px; height: 44px; border-radius: 12px; border: 0; background: #C8A040; font: 18px 'DM Serif Display', serif;">P</button></div>
+<div role="tablist" aria-label="Task views" style="display: flex; background: #E4DED2; border-radius: 12px; padding: 3px;"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><button role="tab" aria-selected="{{t.sel}}" style="flex: 1; height: 40px; border: 0; border-radius: 10px; background: {{t.bg}}; box-shadow: {{t.sh}}; font: 600 14px 'Inter', sans-serif; color: #1A1A18;">{{t.t}} <span style="font-weight: 500; color: #4A4A44;">{{t.n}}</span></button></sc-for></div>
+</header>
+<main style="flex: 1; min-height: 0; overflow: hidden; padding: 14px 18px 160px; display: flex; flex-direction: column; gap: 12px;">
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{isToday}}" hint-placeholder-val="{{ true }}">
+<div style="background: #1A1A18; color: #F5F1E8; border-radius: 16px; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+<div style="font-size: 11.5px; font-weight: 700; letter-spacing: .04em; color: #C8A040;">YOUR NEXT MOVE</div>
+<div style="font-family: 'DM Serif Display', serif; font-size: 20px; line-height: 1.25;">Reconstruct 12 months of hours for each café</div>
+<div style="display: flex; gap: 8px;"><a href="#" style="flex: 1; height: 44px; display: flex; align-items: center; justify-content: center; background: #C8A040; color: #1A1A18; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none;">Start this</a><a href="#" style="height: 44px; padding: 0 14px; display: flex; align-items: center; border: 1px solid rgba(255,255,255,.2); color: #F5F1E8; border-radius: 10px; font-size: 14px; font-weight: 600; text-decoration: none;">Plan my day</a></div>
+</div>
+</sc-if>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+<sc-if value="{{g.hasHead}}" hint-placeholder-val="{{ false }}"><div style="font-size: 13px; font-weight: 700; color: #4A4A44; margin-top: 4px;">{{g.h}}</div></sc-if>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; overflow: hidden;">
+<sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+<div style="display: flex; gap: 6px; align-items: flex-start; padding: 6px 12px 8px 4px; border-top: 1px solid #EEE9DF; opacity: {{r.op}};">
+<button aria-label="Complete {{r.t}}" style="width: 44px; height: 44px; border: 0; background: none; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><span style="width: 24px; height: 24px; border-radius: 50%; border: 1.8px solid {{r.ring}}; background: {{r.fill}}; box-sizing: border-box; color: #fff; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{r.ck}}</span></button>
+<a href="#" style="flex: 1; min-width: 0; padding-top: 10px; text-decoration: none; color: #1A1A18;"><span style="display: block; font-size: 15.5px; line-height: 1.35; text-decoration: {{r.strike}};">{{r.t}}</span><span style="display: flex; gap: 8px; align-items: center; margin-top: 4px; font-size: 12.5px; color: #4A4A44;"><span style="width: 7px; height: 7px; border-radius: 50%; background: {{r.dot}};"></span>{{r.p}}<span style="color: {{r.dc}}; font-weight: 600;">{{r.due}}</span></span></a>
+</div>
+</sc-for>
+</div>
+</sc-for>
+<sc-if value="{{isInbox}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; font-size: 13px; color: #4A4A44; line-height: 1.5;">Captured here, sorted on your PC. Tap one to give it a project or a date.</p></sc-if>
+<sc-if value="{{isToday}}" hint-placeholder-val="{{ true }}"><a href="#" style="display: flex; gap: 10px; align-items: center; min-height: 52px; padding: 0 14px; border: 1px solid #E9D9A8; background: #FBF5E6; border-radius: 12px; text-decoration: none; color: #1A1A18;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040;"></span><span style="flex: 1; font-size: 14px; font-weight: 600;">Continue setting up a project</span><span aria-hidden="true">›</span></a></sc-if>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 70px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 0 12px;">
+<span style="width: 56px; height: 56px; border-radius: 16px; background: #E8EFE3; color: #3F5A33; display: flex; align-items: center; justify-content: center; font-size: 24px;">✓</span>
+<h2 style="margin: 4px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">{{emptyH}}</h2>
+<p style="margin: 0; font-size: 15px; line-height: 1.55; color: #4A4A44;">{{emptyP}}</p>
+<a href="#" style="margin-top: 6px; height: 48px; padding: 0 22px; display: flex; align-items: center; background: #C8A040; color: #1A1A18; border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none;">Add a task</a>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading tasks" style="display: flex; flex-direction: column; gap: 12px;"><div style="height: 130px; border-radius: 16px; background: #E4DED2;"></div><div style="height: 64px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 64px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 64px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin-top: 40px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 20px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 22px;">Your PC answered, but the tasks didn't load.</div>
+<p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; color: #4A4A44;">Nothing is lost. Try again. If it keeps happening, restart Resolve on your PC.</p>
+<a href="#" style="margin-top: 16px; height: 48px; display: flex; align-items: center; justify-content: center; background: #1A1A18; color: #F5F1E8; border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none;">Try again</a>
+</div>
+</sc-if>
+</main>
+<div style="position: absolute; left: 0; right: 0; bottom: 0;"><dc-import name="TabBar" active="tasks" w="{{w}}" hint-size="390px,150px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"view":{"editor":"enum","options":["today","upcoming","inbox"],"default":"today"},"state":{"editor":"enum","options":["full","empty","loading","error","offline"],"default":"full"},"w":{"editor":"int","default":390},"h":{"editor":"int","default":844},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const view = this.props.view ?? 'today';
+const state = this.props.state ?? 'full';
+const offline = state === 'offline';
+const tab = (k, t, n) => { const on = k === view; return { t, n, sel: on ? 'true' : 'false', bg: on ? '#fff' : 'transparent', sh: on ? '0 1px 3px rgba(26,26,24,.12)' : 'none' }; };
+const C = '#C8A040', T = '#8B4A2A', N = '#B5AE9F';
+const row = (t, p, dot, due, o) => { o = o || {}; return { t, p, dot, due, dc: o.urgent ? '#8B4A2A' : '#4A4A44', op: o.done ? .55 : 1, strike: o.done ? 'line-through' : 'none', ring: o.done ? '#5E7D4F' : (o.p1 ? '#8B4A2A' : '#B5AE9F'), fill: o.done ? '#5E7D4F' : 'transparent', ck: o.done ? '✓' : '' }; };
+const G = {
+today: [{ h: '', hasHead: false, rows: [row('Reconstruct 12 months of hours per café', 'Café flat-fee', C, 'Due today', { urgent: true, p1: true }), row('Write the three package descriptions', 'Website refresh', T, 'Today'), row('Send October invoices', 'No project', N, '16:00 · every month'), row('Confirm your roadmap', 'Café flat-fee', C, 'Done', { done: true })] }],
+upcoming: [
+{ h: 'Tomorrow · Sat 7 Nov', hasHead: true, rows: [row('Chase the till export', 'Café flat-fee', C, '10:00')] },
+{ h: 'Mon 9 Nov', hasHead: true, rows: [row('Book the price call with Bean and Co.', 'Café flat-fee', C, ''), row('Weekly review', 'No project', N, 'every Monday')] },
+{ h: 'Fri 13 Nov', hasHead: true, rows: [row('Mark the busiest and quietest months', 'Café flat-fee', C, '')] }
+],
+inbox: [{ h: '', hasHead: false, rows: [row('Call the accountant about VAT', 'Captured yesterday', N, ''), row('Find a till that exports staff hours', 'Captured Tue', N, ''), row('Idea: a short newsletter for café clients', 'Captured Mon', N, '')] }]
+};
+return {
+w: this.props.w ?? 390, h: this.props.h ?? 844, offline, topPad: offline ? 14 : 52,
+title: view === 'today' ? 'Today' : view === 'upcoming' ? 'Upcoming' : 'Inbox',
+tabs: [tab('today', 'Today', '3'), tab('upcoming', 'Upcoming', '5'), tab('inbox', 'Inbox', '3')],
+groups: G[view], isToday: view === 'today', isInbox: view === 'inbox',
+isFull: state === 'full' || offline, isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+emptyH: view === 'inbox' ? 'Inbox is clear.' : view === 'upcoming' ? 'Nothing planned this week.' : 'Nothing due today.',
+emptyP: view === 'inbox' ? 'Anything you capture without a project waits here.' : 'Add something, or ask Resolve what to do next.'
+};
+}
+}
+</script>
+</body>
+</html>

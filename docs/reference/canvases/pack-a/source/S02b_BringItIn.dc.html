@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02b Bring it in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;border-right:1px solid rgba(255,255,255,.06);box-sizing:border-box}
+.st{display:flex;gap:12px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st.on .n,.st.ok .n{border-color:#C8A040;color:#C8A040}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.st .d{font-size:12px;color:#8A8578;line-height:1.45;margin-top:3px}
+.st.on .t{color:#F5F1E8}.st.on .d{color:#B4AFA3}
+.ac{margin-top:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:12px;color:#B4AFA3;line-height:1.5}
+.ac b{display:block;font-size:11px;color:#C8A040;margin-bottom:6px}
+.hb{display:inline-flex;align-items:center;gap:7px;background:#fff;border:1px solid #DDD8CE;border-radius:8px;padding:9px 14px;font:600 13px 'Inter',sans-serif;color:#1A1A18;text-decoration:none}
+.b1{display:inline-flex;align-items:center;gap:8px;background:#1A1A18;color:#F5F1E8;border:0;border-radius:10px;padding:13px 22px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+.b2{display:inline-flex;align-items:center;background:#fff;color:#1A1A18;border:1px solid #DDD8CE;border-radius:10px;padding:13px 22px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+.tl{font-weight:600;color:#1A1A18}
+.tv{color:#1A1A18}
+.te{color:#9A9A92}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A; border-bottom: 1px solid rgba(255,255,255,.06);">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 22%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a><a href="#" aria-label="More options: Start this intake again">⋯</a></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Get started</div><div class="d">Tell Resolve your name and what you need help with</div></div></div>
+<div class="st on"><span class="n">2</span><div><div class="t">Bring it in</div><div class="d">Share your project context: rough notes, imports, anything you have</div></div></div>
+<div class="st"><span class="n">3</span><div><div class="t">Confirm understanding</div><div class="d">Check what Resolve understood and fill any gaps</div></div></div>
+<div class="st"><span class="n">4</span><div><div class="t">Your next move</div><div class="d">One clear recommended action and a roadmap built from your project</div></div></div>
+<div class="ac"><b>Saved as you go</b>Leave any time. Resolve opens on this same step when you come back.</div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 36px 56px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 760px; width: 100%; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">In your own words</div>
+<h1 style="margin: 6px 0 4px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 34px; line-height: 1.12;">Tell Resolve what's going on.</h1>
+<p style="margin: 0 0 14px; font-size: 14.5px; color: #4A4A44; line-height: 1.5;">The idea or project, however it comes out. What exists, what's confusing, what you're trying to decide. Don't tidy it up.</p>
+<div style="position: relative;">
+<label for="ta" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);">Describe your project</label>
+<div id="ta" role="textbox" aria-multiline="true" style="height: 290px; overflow: hidden; box-sizing: border-box; border-radius: 12px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16); background: #fff; padding: 14px 60px 14px 18px; font: 400 14px/1.55 'Inter', sans-serif; white-space: pre-line;"><span class="tl">What I'm working on:</span> <span class="tv">Turning my hourly café bookkeeping into a fixed-price monthly package.</span>
+<span class="tl">What I want it to achieve:</span> <span class="tv">Steadier income, and clients who know their cost up front.</span>
+<span class="tl">Who it's for:</span> <span class="te">|</span>
+<span class="tl">Where it's at now (what's done, what exists, what's decided):</span>
+<span class="tl">What's getting in the way:</span>
+<span class="tl">What I'm working within (time, money, people):</span>
+<span class="tl">What I'm least sure about:</span>
+<span class="tl">How I'll know it worked:</span></div>
+<button aria-label="Speak instead of typing" style="position: absolute; right: 14px; bottom: 14px; width: 36px; height: 36px; border-radius: 50%; border: 1px solid #DDD8CE; background: #F2EDE4; display: flex; align-items: center; justify-content: center; color: #4A4A44;"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+</div>
+<p style="margin: 8px 0 0; font-size: 12.5px; color: #4A4A44;">Leave any heading blank. Resolve asks about the gaps next.</p>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 14px; flex-wrap: wrap;">
+<a href="#" class="hb" style="border-color: #C8A040; background: #FBF5E6;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="3" y="2" width="10" height="12" rx="1.5" stroke="currentColor" stroke-width="1.4"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>Use a template</a>
+<a href="#" class="hb"><span style="color: #8B4A2A;" aria-hidden="true">✦</span>Try an example</a>
+<a href="S02c_PullIn.dc.html" style="margin-left: auto; font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Coming from another AI chat? Get a prompt to pull it in →</a>
+</div>
+<div style="margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 0 24px; border-top: 1px solid #DDD8CE;">
+<a href="S02a_Welcome.dc.html" class="b2">Back</a>
+<a href="S03_Questions.dc.html" class="b1">Continue <span aria-hidden="true">→</span></a>
+<span style="font-size: 12.5px; color: #4A4A44;">Enter to continue · Shift+Enter for a new line</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

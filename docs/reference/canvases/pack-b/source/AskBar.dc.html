@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ask Resolve bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 560px; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 10px;">
+<sc-if value="{{open}}" hint-placeholder-val="{{ false }}">
+<div role="listbox" aria-label="Suggestions" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 12px 8px 8px; box-shadow: 0 18px 48px rgba(26,26,24,.16);">
+<div style="font-size: 12px; font-weight: 600; color: #8B4A2A; padding: 0 10px 6px;">Try</div>
+<sc-for list="{{sugs}}" as="s" hint-placeholder-count="3">
+<div role="option" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 14px; background: {{s.bg}};"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="color: #4A4A44; flex-shrink: 0;"><path d="{{s.d}}" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>{{s.t}}</div>
+</sc-for>
+</div>
+</sc-if>
+<div style="height: 48px; border-radius: 999px; background: #1A1A18; display: flex; align-items: center; gap: 12px; padding: 0 8px 0 20px; box-shadow: 0 10px 30px rgba(26,26,24,.22);">
+<span aria-hidden="true" style="color: #C8A040; font-size: 14px;">✦</span>
+<span style="flex: 1; font-size: 14px; color: {{phColor}};">{{text}}</span>
+<button aria-label="Speak instead of typing" style="width: 34px; height: 34px; border-radius: 50%; border: 0; background: rgba(255,255,255,.08); color: #B4AFA3; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"screen":{"editor":"enum","options":["home","tasks","calendar","projects","search"],"default":"home"},"open":{"editor":"boolean","default":true},"$preview":{"width":760,"height":440}}'>
+class Component extends DCLogic {
+renderVals() {
+const screen = this.props.screen ?? 'home';
+const open = this.props.open ?? true;
+const COPY = {
+home: ['Ask Resolve, or capture a thought', ['What should I focus on right now?', 'Why is my most important item blocked?', 'Capture a quick note']],
+tasks: ["Add a task, or ask what's next", ['Add a task to Now', "What's waiting on someone else?", 'Clear my captured inbox']],
+calendar: ['Ask about your schedule', ['Plan my day', "What's overdue?", 'Find time for my next task']],
+projects: ['Ask Resolve, or capture a thought', ['What should I focus on right now?', 'Capture a quick note']],
+search: ['Ask Resolve, or capture a thought', ['What should I focus on right now?', 'Capture a quick note']]
+};
+const c = COPY[screen] || COPY.home;
+const ask = 'M3 3.5h10v7H7l-3 2.5v-2.5H3z';
+const add = 'M8 3v10M3 8h10';
+const sugs = c[1].map((t, i) => ({ t, d: /^(Add|Capture)/.test(t) ? add : ask, bg: i === 0 ? '#F7F3EC' : 'transparent' }));
+return { open, sugs, text: c[0], phColor: '#B4AFA3' };
+}
+}
+</script>
+</body>
+</html>

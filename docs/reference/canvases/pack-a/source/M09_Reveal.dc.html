@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M09 Reveal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.3);background:#F2EDE4}
+.xl{position:absolute;inset:0;background:#F2EDE4;animation:xlight 6500ms infinite}
+.xd{position:absolute;inset:0;background:#1A1A18;animation:xdark 6500ms infinite}
+.xb{position:absolute;left:50%;top:50%;width:120px;height:120px;border-radius:50%;background:radial-gradient(circle,rgba(200,160,64,.55) 0%,rgba(200,160,64,.18) 45%,transparent 70%);animation:xbloom 6500ms infinite;pointer-events:none}
+.mark{position:absolute;left:18px;top:14px;display:flex;align-items:center;gap:7px}
+.mark i{width:20px;height:20px;border-radius:5px;background:#C8A040;display:flex;align-items:center;justify-content:center;font:12px 'DM Serif Display',serif;font-style:normal;color:#1A1A18}
+.mark b{font-size:13px}
+.ck{width:56px;height:56px;border-radius:50%;background:rgba(200,160,64,.16);display:flex;align-items:center;justify-content:center;animation:vin 6500ms infinite}
+.u1{animation:u1 6500ms infinite}.u2{animation:u2 6500ms infinite}
+.lc{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:470px}
+.k{animation-duration:6500ms;animation-iteration-count:infinite}
+.k1{animation-name:k1}.k2{animation-name:k2}.k3{animation-name:k3}.k4{animation-name:k4}.k5{animation-name:k5}
+.ch{flex:1;background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:9px 12px;font-size:11px;color:#4A4A44}
+.ch b{display:block;font-size:17px;color:#1A1A18}
+@keyframes xdark{0%,34%{opacity:1}44%,100%{opacity:0}}
+@keyframes xbloom{0%,30%{opacity:0;transform:translate(-50%,-50%) scale(.4)}44%{opacity:1;transform:translate(-50%,-50%) scale(6)}58%,100%{opacity:0;transform:translate(-50%,-50%) scale(11)}}
+@keyframes xlight{0%,36%{opacity:0}48%,100%{opacity:1}}
+@keyframes vin{0%,1.54%{opacity:0;transform:scale(.8);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}10.77%,100%{opacity:1;transform:none}}
+@keyframes u1{0%,7.7%{opacity:0;transform:translateY(12px)}15.4%,100%{opacity:1;transform:none}}
+@keyframes u2{0%,10.8%{opacity:0;transform:translateY(12px)}18.5%,100%{opacity:1;transform:none}}
+@keyframes k1{0%,50%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}56.9%,100%{opacity:1;transform:none}}
+@keyframes k2{0%,51.1%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}58%,100%{opacity:1;transform:none}}
+@keyframes k3{0%,52.2%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}59.1%,100%{opacity:1;transform:none}}
+@keyframes k4{0%,53.2%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}60.1%,100%{opacity:1;transform:none}}
+@keyframes k5{0%,54.3%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}61.2%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M09 · Screen 11 · Flow Spec Surface D, live on its real 6500ms clock</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Reveal: dark to light, carried by an amber bloom</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the dark welcome blooming into the light project-ready screen">
+<div class="xl">
+<div class="mark"><i>R</i><b style="color: #1A1A18;">Resolve</b></div>
+<div class="lc">
+<div class="k k1" style="font-size: 11.5px; font-weight: 600; color: #8B4A2A;">Your project is ready</div>
+<div class="k k2" style="font: 32px 'DM Serif Display', serif; margin: 6px 0 14px;">Café flat-fee bookkeeping</div>
+<div class="k k3" style="display: flex; gap: 8px;"><div class="ch"><b>6</b>Themes</div><div class="ch"><b>5</b>First-week tasks</div><div class="ch"><b>1</b>First move, pinned</div></div>
+<div class="k k4" style="margin-top: 10px; background: #1A1A18; color: #F5F1E8; border-radius: 12px; padding: 14px 16px;"><div style="font-size: 11px; font-weight: 600; color: #C8A040;">Do this first</div><div style="font: 15px 'DM Serif Display', serif; margin-top: 4px;">Pull the actual hours you logged on each café for the last 12 months.</div></div>
+<div class="k k5" style="display: inline-flex; margin-top: 16px; background: #C8A040; border-radius: 9px; padding: 12px 20px; font-size: 13.5px; font-weight: 600; box-shadow: 0 0 0 5px rgba(200,160,64,.14);">Open my project →</div>
+</div>
+</div>
+<div class="xd">
+<div class="mark"><i>R</i><b style="color: #F5F1E8;">Resolve</b></div>
+<div style="position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: #F5F1E8;">
+<div class="ck"><svg width="24" height="24" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="#C8A040" stroke-width="1.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+<div class="u1" style="font: 30px 'DM Serif Display', serif;">Welcome in, Simeon.</div>
+<div class="u2" style="font-size: 13px; color: #8A8578;">Setting up your workspace…</div>
+</div>
+</div>
+<div class="xb"></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">D1 · 0–2.2s</span><span class="d">Still dark. Amber check <code>600ms e-spring at 100ms, scale(.8)</code>. "Welcome in, Simeon." and the line below rise <code>500ms ease at 500 and 700ms</code>. Replaces "You're in." because Resolve 2 has no sign-in.</span></div>
+<div class="row"><span class="t">D2 · 2.0–3.8s</span><span class="d">Bloom ripples from centre <code>30% scale(.4) → 44% scale(6) → 58% scale(11)</code>. Dark fades <code>34% → 44%</code>. Light rises underneath <code>36% → 48%</code>.</span></div>
+<div class="row"><span class="t">D3 · 3.25s</span><span class="d">The project lands: eyebrow, name, counts, first move, CTA. <code>450ms e-spring, scale(.94) translateY(10px), stagger 70ms</code>. cardIn reused verbatim.</span></div>
+<div class="row"><span class="t">D4 · always</span><span class="d">Brandmark sits at x 24, y 19 in both layers. Only its word colour flips. Amber runs check → bloom → CTA, so it reads as arrival, not a flash.</span></div>
+<div class="row"><span class="t">Open my project</span><span class="d">Press <code>240ms e-std</code>, then the app shell's first-run assembly (Pack D).</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

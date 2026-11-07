@@ -1,0 +1,520 @@
+{
+"v": 3,
+"createdOnFiles": {
+"v": 1,
+"at": "2026-11-06T13:05:00Z"
+},
+"title": "Resolve 2 Intake Journey",
+"launch": {
+"view": "canvas",
+"page": "flow"
+},
+"pages": [
+{
+"id": "flow",
+"name": "1 Screens and flow"
+},
+{
+"id": "states",
+"name": "2 States"
+},
+{
+"id": "motion",
+"name": "3 Motion"
+},
+{
+"id": "system",
+"name": "4 Tokens, decisions, tickets"
+}
+],
+"boards": {
+"Main.dc.html": {
+"x": 0,
+"y": 0,
+"w": 2560,
+"h": 1060,
+"title": "Journey map",
+"page": "flow"
+},
+"S01_Name.dc.html": {
+"x": 0,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "01 Name",
+"page": "flow"
+},
+"S02a_Welcome.dc.html": {
+"x": 1360,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "02a Welcome and situation",
+"page": "flow"
+},
+"S02b_BringItIn.dc.html": {
+"x": 2720,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "02b Bring it in",
+"page": "flow"
+},
+"S02c_PullIn.dc.html": {
+"x": 9520,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "02c Pull it in from another AI chat",
+"page": "flow"
+},
+"S03_Questions.dc.html": {
+"x": 4080,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "03 Questions",
+"page": "flow"
+},
+"S04_Confirm.dc.html": {
+"x": 5440,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "04 Confirm understanding",
+"page": "flow"
+},
+"S04b_ConfirmEdit.dc.html": {
+"x": 6800,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "04b Confirm, edit mode",
+"page": "flow"
+},
+"S05_NoOutcome.dc.html": {
+"x": 8160,
+"y": 1600,
+"w": 1280,
+"h": 800,
+"title": "05 No clear outcome yet",
+"page": "flow"
+},
+"S06_NextMove.dc.html": {
+"x": 0,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "06 Your next move",
+"page": "flow"
+},
+"S07_Themes.dc.html": {
+"x": 1360,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "07 Roadmap themes",
+"page": "flow"
+},
+"S08_FirstWeek.dc.html": {
+"x": 2720,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "08 Here's where to begin",
+"page": "flow"
+},
+"S09_WholePicture.dc.html": {
+"x": 4080,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "09 The whole picture",
+"page": "flow"
+},
+"S10_Bridge.dc.html": {
+"x": 5440,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "10 Building your project",
+"page": "flow"
+},
+"S11_Reveal.dc.html": {
+"x": 6800,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "11 Reveal",
+"page": "flow"
+},
+"S12_AILimit.dc.html": {
+"x": 8160,
+"y": 3200,
+"w": 1280,
+"h": 800,
+"title": "12 AI limit reached",
+"page": "flow"
+},
+"ST1_Waiting.dc.html": {
+"x": 0,
+"y": 0,
+"w": 1280,
+"h": 800,
+"title": "State: waiting for AI (4 s)",
+"page": "states"
+},
+"ST2_Handoff.dc.html": {
+"x": 1360,
+"y": 0,
+"w": 1280,
+"h": 800,
+"title": "State: 15 s hand-off",
+"page": "states"
+},
+"ST3_LongWait.dc.html": {
+"x": 2720,
+"y": 0,
+"w": 1280,
+"h": 800,
+"title": "State: long wait (proposal)",
+"page": "states"
+},
+"ST4_Error.dc.html": {
+"x": 4080,
+"y": 0,
+"w": 1280,
+"h": 800,
+"title": "State: error",
+"page": "states"
+},
+"ST5_Resume.dc.html": {
+"x": 5440,
+"y": 0,
+"w": 1280,
+"h": 800,
+"title": "State: resume",
+"page": "states"
+},
+"ST6_Long1920.dc.html": {
+"x": 6800,
+"y": 0,
+"w": 1920,
+"h": 1080,
+"title": "State: long content at 1920 x 1080",
+"page": "states"
+},
+"M00_Register.dc.html": {
+"x": 0,
+"y": 0,
+"w": 1920,
+"h": 2300,
+"title": "Motion register",
+"page": "motion"
+},
+"M01_FrontDoor.dc.html": {
+"x": 0,
+"y": 2500,
+"w": 1920,
+"h": 980,
+"title": "M01 Front door to welcome",
+"page": "motion"
+},
+"M02_StepChange.dc.html": {
+"x": 2000,
+"y": 2500,
+"w": 1920,
+"h": 980,
+"title": "M02 Step change",
+"page": "motion"
+},
+"M03_BringItIn.dc.html": {
+"x": 0,
+"y": 3680,
+"w": 1920,
+"h": 980,
+"title": "M03 Bring it in",
+"page": "motion"
+},
+"M04_Questions.dc.html": {
+"x": 2000,
+"y": 3680,
+"w": 1920,
+"h": 980,
+"title": "M04 Questions and hand-off",
+"page": "motion"
+},
+"M05_Confirm.dc.html": {
+"x": 0,
+"y": 4860,
+"w": 1920,
+"h": 980,
+"title": "M05 Confirm cards",
+"page": "motion"
+},
+"M06_Themes.dc.html": {
+"x": 2000,
+"y": 4860,
+"w": 1920,
+"h": 980,
+"title": "M06 Theme cards",
+"page": "motion"
+},
+"M07_WeekPicture.dc.html": {
+"x": 0,
+"y": 6040,
+"w": 1920,
+"h": 980,
+"title": "M07 First week, whole picture, Adopt",
+"page": "motion"
+},
+"M08_Bridge.dc.html": {
+"x": 2000,
+"y": 6040,
+"w": 1920,
+"h": 980,
+"title": "M08 Bridge (live)",
+"page": "motion"
+},
+"M09_Reveal.dc.html": {
+"x": 0,
+"y": 7220,
+"w": 1920,
+"h": 980,
+"title": "M09 Reveal dark to light (live)",
+"page": "motion"
+},
+"M10_Micro.dc.html": {
+"x": 2000,
+"y": 7220,
+"w": 1920,
+"h": 980,
+"title": "M10 Waiting, error, limit",
+"page": "motion"
+},
+"T1_Tokens.dc.html": {
+"x": 0,
+"y": 0,
+"w": 1920,
+"h": 1500,
+"title": "Tokens sheet",
+"page": "system"
+},
+"T2_Decisions.dc.html": {
+"x": 2000,
+"y": 0,
+"w": 1920,
+"h": 1900,
+"title": "Decisions and engineering tickets",
+"page": "system"
+}
+},
+"order": [
+"Main.dc.html",
+"S01_Name.dc.html",
+"S02a_Welcome.dc.html",
+"S02b_BringItIn.dc.html",
+"S03_Questions.dc.html",
+"S02c_PullIn.dc.html",
+"S04_Confirm.dc.html",
+"S04b_ConfirmEdit.dc.html",
+"S05_NoOutcome.dc.html",
+"S06_NextMove.dc.html",
+"S07_Themes.dc.html",
+"S08_FirstWeek.dc.html",
+"S09_WholePicture.dc.html",
+"S10_Bridge.dc.html",
+"S11_Reveal.dc.html",
+"S12_AILimit.dc.html",
+"ST1_Waiting.dc.html",
+"ST2_Handoff.dc.html",
+"ST3_LongWait.dc.html",
+"ST4_Error.dc.html",
+"ST5_Resume.dc.html",
+"ST6_Long1920.dc.html",
+"M00_Register.dc.html",
+"M01_FrontDoor.dc.html",
+"M02_StepChange.dc.html",
+"M03_BringItIn.dc.html",
+"M04_Questions.dc.html",
+"M05_Confirm.dc.html",
+"M06_Themes.dc.html",
+"M07_WeekPicture.dc.html",
+"M08_Bridge.dc.html",
+"M09_Reveal.dc.html",
+"M10_Micro.dc.html",
+"T1_Tokens.dc.html",
+"T2_Decisions.dc.html"
+],
+"notes": {
+"t_map": {
+"x": 0,
+"y": -300,
+"text": "Resolve 2 intake: how the screens lead on",
+"kind": "title1",
+"maxW": 2560,
+"page": "flow"
+},
+"n02c": {
+"x": 9520,
+"y": 2440,
+"w": 1280,
+"text": "02c is 02b with the pull-in panel open. Copy the prompt, paste the other AI's answer in the box, Continue.",
+"page": "flow",
+"fill": "orange"
+},
+"t_rowA": {
+"x": 0,
+"y": 1300,
+"text": "Screens 01 to 05: from your name to what Resolve understood",
+"kind": "title1",
+"maxW": 10800,
+"page": "flow"
+},
+"t_rowB": {
+"x": 0,
+"y": 2900,
+"text": "Screens 06 to 12: from your first move to Open my project",
+"kind": "title1",
+"maxW": 9440,
+"page": "flow"
+},
+"n01": {
+"x": 0,
+"y": 2440,
+"w": 1280,
+"text": "Leads to 02a. Enter or Continue. Continue stays off until you type a name. The field has focus on arrival.",
+"page": "flow",
+"fill": "orange"
+},
+"n02a": {
+"x": 1360,
+"y": 2440,
+"w": 1280,
+"text": "Leads to 02b. Pick one of the three. 'Hi Simeon.' plays once (M01), then the three paths rise in.",
+"page": "flow",
+"fill": "orange"
+},
+"n02b": {
+"x": 2720,
+"y": 2440,
+"w": 1280,
+"text": "Leads to 03. Continue (or Enter). 'Use a template' adds 8 headings; 'Try an example' fills them. The pull-in link opens 02c (far right of this row). Parked: an AI setup screen sits before this one when no AI is connected.",
+"page": "flow",
+"fill": "orange"
+},
+"n03": {
+"x": 4080,
+"y": 2440,
+"w": 1280,
+"text": "Next or 'Skip this question': the next question (M04). 'Skip the rest and see my proposal', or Resolve says it has enough: leads to 04. A wait over 15 s hands off to a fixed question (ST2). Every heard line is editable.",
+"page": "flow",
+"fill": "orange"
+},
+"n04": {
+"x": 5440,
+"y": 2440,
+"w": 1280,
+"text": "'This looks right' leads to 06, or to 05 when no outcome is found. 'Something's wrong' leads to 04b.",
+"page": "flow",
+"fill": "orange"
+},
+"n04b": {
+"x": 6800,
+"y": 2440,
+"w": 1280,
+"text": "'Save and continue' leads to 06 (or 05). Editing the outcome counts as confirming it. Cards grow as you type.",
+"page": "flow",
+"fill": "orange"
+},
+"n05": {
+"x": 8160,
+"y": 2440,
+"w": 1280,
+"text": "Branch. Fires only when Resolve finds no outcome. Your answer re-runs the check. Pass leads to 06. Not enough: the same screen asks once more.",
+"page": "flow",
+"fill": "red"
+},
+"n06": {
+"x": 0,
+"y": 4040,
+"w": 1280,
+"text": "Leads to 07. Continue. 'Skip to the whole picture' jumps to 09; Back still works.",
+"page": "flow",
+"fill": "orange"
+},
+"n07": {
+"x": 1360,
+"y": 4040,
+"w": 1280,
+"text": "One theme at a time. Yes adds it to the list on the right. Not quite opens a field: rewrite it, or 'Leave it off the roadmap' (goes to the cut list). After the last theme leads to 08.",
+"page": "flow",
+"fill": "orange"
+},
+"n08": {
+"x": 2720,
+"y": 4040,
+"w": 1280,
+"text": "Leads to 09. 'See it as a roadmap'.",
+"page": "flow",
+"fill": "orange"
+},
+"n09": {
+"x": 4080,
+"y": 4040,
+"w": 1280,
+"text": "Adopt leads to 10. Adopt writes the project and you can undo it. 'Edit the full proposal' opens the existing editor (Pack C); its 'Back to the summary' returns here.",
+"page": "flow",
+"fill": "orange"
+},
+"n10": {
+"x": 5440,
+"y": 4040,
+"w": 1280,
+"text": "Plays while the project is written. Ends only when the build is done, never on a timer alone. Leads to 11. Build fails: error on dark with Try again (ST4 rules).",
+"page": "flow",
+"fill": "orange"
+},
+"n11": {
+"x": 6800,
+"y": 4040,
+"w": 1280,
+"text": "Dark to light (M09). 'Open my project' leads to the app shell (Pack D).",
+"page": "flow",
+"fill": "orange"
+},
+"n12": {
+"x": 8160,
+"y": 4040,
+"w": 1280,
+"text": "Branch. Can appear at 03, 04, 06 or 10 when the AI budget or the provider's limit is hit. 'Continue without AI' stays on the same step with the manual path.",
+"page": "flow",
+"fill": "red"
+},
+"t_states": {
+"x": 0,
+"y": -300,
+"text": "States every screen needs: waiting, hand-off, error, resume, long content",
+"kind": "title1",
+"maxW": 8720,
+"page": "states"
+},
+"t_motion": {
+"x": 0,
+"y": -300,
+"text": "Motion: every animation named, placed and valued",
+"kind": "title1",
+"maxW": 3920,
+"page": "motion"
+},
+"t_system": {
+"x": 0,
+"y": -300,
+"text": "Tokens, decisions to confirm, engineering tickets",
+"kind": "title1",
+"maxW": 3920,
+"page": "system"
+}
+},
+"designSystems": []
+}

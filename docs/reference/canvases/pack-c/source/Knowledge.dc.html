@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knowledge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="knowledge" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 36px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 1240px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; align-items: flex-end; gap: 12px;">
+<div style="flex: 1;"><div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Café flat-fee bookkeeping</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Knowledge base</h1></div>
+<label style="display: flex; align-items: center; gap: 8px; width: 240px; height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; background: #fff; padding: 0 11px; box-sizing: border-box; font-size: 13px; color: #4A4A44;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M7 2.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9zM10.5 10.5l3 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg><input placeholder="Find in this project" style="border: 0; outline: 0; flex: 1; font: 400 13px 'Inter', sans-serif; background: transparent;"></label>
+<button style="border: 0; background: #C8A040; border-radius: 9px; padding: 10px 16px; font: 600 13px 'Inter', sans-serif; color: #1A1A18;">+ Add</button>
+</div>
+<div role="tablist" aria-label="Knowledge" style="display: flex; gap: 4px; border-bottom: 1px solid #DDD8CE;">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5"><button role="tab" aria-selected="{{t.sel}}" style="border: 0; background: none; padding: 9px 12px 10px; font: {{t.fw}} 13.5px 'Inter', sans-serif; color: {{t.c}}; border-bottom: 2px solid {{t.line}}; margin-bottom: -1px;">{{t.t}}</button></sc-for>
+</div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<sc-if value="{{showChips}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{chips}}" as="c" hint-placeholder-count="7"><button aria-pressed="{{c.sel}}" style="border: 1px solid {{c.bd}}; background: {{c.bg}}; color: {{c.fg}}; border-radius: 999px; padding: 6px 12px; font: 600 12.5px 'Inter', sans-serif;">{{c.t}} <span style="opacity: .7; font-weight: 500;">{{c.n}}</span></button></sc-for></div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat({{cols}}, minmax(0, 1fr)); gap: 12px;">
+<sc-for list="{{cards}}" as="k" hint-placeholder-count="6">
+<a href="#" style="display: flex; flex-direction: column; gap: 6px; min-height: 120px; background: #fff; border: 1px solid {{k.bd}}; border-radius: 12px; padding: 13px 15px; text-decoration: none; color: #1A1A18; box-shadow: {{k.sh}}; box-sizing: border-box;">
+<div style="display: flex; gap: 6px; align-items: center; font-size: 11.5px; font-weight: 700;"><span style="background: {{k.kBg}}; color: {{k.kFg}}; border-radius: 6px; padding: 2px 7px;">{{k.kind}}</span><span style="flex: 1;"></span><span style="font-weight: 500; color: #4A4A44;">{{k.meta}}</span></div>
+<span style="font-size: 14px; font-weight: 600; line-height: 1.35;">{{k.t}}</span>
+<span style="font-size: 12.5px; line-height: 1.45; color: #4A4A44;">{{k.d}}</span>
+</a>
+</sc-for>
+<a href="#" style="display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 120px; border: 1.5px dashed #CFC8BA; border-radius: 12px; text-decoration: none; color: #4A4A44; font-size: 13.5px; font-weight: 600;">+ New page, or drop files here</a>
+</div>
+<div style="display: flex; align-items: center; gap: 10px; background: #F7F3EC; border: 1px solid #DDD8CE; border-radius: 10px; padding: 9px 14px; font-size: 12.5px; color: #4A4A44;"><span aria-hidden="true" style="color: #C8A040;">✦</span><span style="flex: 1;">Resolve reads everything here when it answers about this project. 9 pages and files, 26 records.</span><a href="#" style="color: #8B4A2A; font-weight: 600; text-decoration: none;">Import files</a></div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 40px auto 0; width: 520px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">Nothing filed yet.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">Drop in notes, PDFs or Word files. Resolve reads each one and files it in the right tab. Or write the first page.</p>
+<div style="display: flex; gap: 10px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Add files</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">New page</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading knowledge" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;"><sc-for list="{{skel}}" as="s" hint-placeholder-count="6"><div style="height: 120px; border-radius: 12px; background: #fff; border: 1px solid #DDD8CE;"></div></sc-for></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 30px auto 0; width: 560px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 24px;">Resolve couldn't read Pricing notes.pdf.</div>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">The file looks like a scan with no text in it. The other 2 files are filed. Add a text version, or keep the PDF as an attachment only.</p>
+<div style="display: flex; gap: 10px; margin-top: 18px;"><a href="#" style="background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Keep as attachment</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Choose another file</a></div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{sheet}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(26,26,24,.32); z-index: 5;"></div>
+<div role="dialog" aria-label="Add to Knowledge base" style="position: absolute; left: 50%; bottom: 0; width: 620px; margin-left: -310px; background: #fff; border-radius: 20px 20px 0 0; box-shadow: 0 -18px 60px rgba(26,26,24,.25); padding: 12px 22px 24px; box-sizing: border-box; z-index: 6; display: flex; flex-direction: column; gap: 12px;">
+<span style="width: 40px; height: 4px; border-radius: 2px; background: #DDD8CE; align-self: center;"></span>
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 24px;">Add to Knowledge base</h2><button aria-label="Close" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff;">✕</button></div>
+<sc-for list="{{adds}}" as="a" hint-placeholder-count="5"><button style="display: flex; gap: 12px; align-items: center; text-align: left; border: 1px solid #DDD8CE; background: #fff; border-radius: 11px; padding: 11px 14px; font-family: 'Inter', sans-serif; color: #1A1A18;"><span style="width: 34px; height: 34px; border-radius: 9px; background: #FBF5E6; color: #8B4A2A; display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0;">{{a.i}}</span><span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">{{a.t}}</span><span style="font-size: 12.5px; color: #4A4A44;">{{a.d}}</span></span></button></sc-for>
+<div style="border: 1.5px dashed #CFC8BA; border-radius: 11px; padding: 14px; text-align: center; font-size: 13px; color: #4A4A44;">Or drop .md, .txt, .docx or .pdf files anywhere on this window</div>
+</div>
+</sc-if>
+
+<sc-if value="{{preview}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(26,26,24,.18); z-index: 5;"></div>
+<aside aria-label="Pricing notes preview" style="position: absolute; right: 0; top: 0; bottom: 0; width: 520px; background: #fff; border-left: 1px solid #DDD8CE; box-shadow: -18px 0 50px rgba(26,26,24,.14); z-index: 6; padding: 20px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 11.5px; font-weight: 700; background: #E8EFE3; color: #3F5A33; border-radius: 6px; padding: 2px 7px;">Research</span><span style="flex: 1; font-size: 12.5px; color: #4A4A44;">PDF · added today</span><button aria-label="Close preview" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff;">→</button></div>
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">Pricing notes</h2>
+<div style="background: #F7F3EC; border-radius: 10px; padding: 12px 14px; font-size: 13px; line-height: 1.55;"><b>What Resolve took from it</b><br>Two other bookkeepers in town charge a flat monthly fee. Both add a year-end surcharge. Neither serves cafés by name.</div>
+<div style="flex: 1; border: 1px solid #DDD8CE; border-radius: 10px; padding: 18px 20px; font-family: Georgia, serif; font-size: 13.5px; line-height: 1.7; color: #4A4A44; overflow: hidden;">Notes from calls, October. Competitor A: flat monthly fee, year-end surcharge on top. Competitor B: tiered by transactions per month…</div>
+<div style="font-size: 12.5px; color: #4A4A44;">Linked to <b style="color: #1A1A18;">H2</b> and <b style="color: #1A1A18;">Price to absorb spikes</b></div>
+<div style="display: flex; gap: 8px;"><button style="flex: 1; border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 0; font: 600 13px 'Inter', sans-serif;">Open</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 10px 14px; font: 600 13px 'Inter', sans-serif;">Move to…</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 10px 14px; font: 600 13px 'Inter', sans-serif;">Cut</button></div>
+</aside>
+</sc-if>
+
+<sc-if value="{{showAsk}}" hint-placeholder-val="{{ true }}"><div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="knowledge" open="{{no}}" hint-size="560px,48px"></dc-import></div></sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"tab":{"editor":"enum","options":["brief","research","cut","evidence","advanced"],"default":"brief"},"filter":{"editor":"enum","options":["all","hypotheses"],"default":"all"},"sheet":{"editor":"boolean","default":false},"preview":{"editor":"boolean","default":false},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const tab = this.props.tab ?? 'brief';
+const filter = this.props.filter ?? 'all';
+const w = this.props.w ?? 1280;
+const sheet = !!this.props.sheet, preview = !!this.props.preview;
+const T = [['brief', 'Brief and documents'], ['research', 'Research'], ['cut', 'Cut list'], ['evidence', 'Evidence and Records'], ['advanced', 'Advanced: databases']];
+const tabs = T.map(([k, t]) => { const on = k === tab; return { t, sel: on ? 'true' : 'false', fw: on ? 700 : 500, c: on ? '#1A1A18' : '#4A4A44', line: on ? '#C8A040' : 'transparent' }; });
+const K = { page: ['Page', '#F2EDE4', '#1A1A18'], file: ['File', '#F2EDE4', '#1A1A18'], res: ['Research', '#E8EFE3', '#3F5A33'], hyp: ['Hypothesis', '#FBF5E6', '#7A5B12'], ev: ['Evidence', '#E8EFE3', '#3F5A33'], q: ['Open question', '#F5E8E1', '#8B4A2A'], exp: ['Experiment', '#F2EDE4', '#1A1A18'] };
+const c = (k, t, d, meta, hi) => ({ kind: K[k][0], kBg: K[k][1], kFg: K[k][2], t, d, meta, bd: hi ? '#C8A040' : '#DDD8CE', sh: hi ? '0 8px 24px rgba(26,26,24,.10)' : 'none' });
+const brief = [
+c('page', 'Project brief', 'What this is, who it is for, what done looks like.', 'Pinned', false),
+c('page', 'Intake transcript', 'Your answers from setting up the project.', 'Mon'),
+c('page', 'Plan', 'Prove the flat fee on two cafés before January.', 'Today'),
+c('file', 'Corner Café till notes.docx', 'How their till records staff hours.', 'Tue'),
+c('res', 'Pricing notes', 'Two local bookkeepers charge flat fees.', 'Today', preview)
+];
+const evidenceAll = [
+c('hyp', 'H1 · Workload is predictable', 'Unresolved · tested by E0', 'Frameworks'),
+c('exp', 'E0 · Reconstruct 12 months of hours', 'Planned · holds under 2× swing', 'Frameworks'),
+c('ev', 'Two clients said yes in principle', 'From the intake, Monday', 'Evidence'),
+c('q', 'What does a café pay you now per year?', 'Open · affects H2', 'Question'),
+c('hyp', 'H2 · Cafés want a flat fee', 'Unresolved · tested by E1', 'Frameworks')
+];
+const evidenceHyp = [
+c('hyp', 'H0 · A fixed-price package works', 'Unresolved · 4 under it', 'Frameworks'),
+c('hyp', 'H1 · Workload is predictable', 'Unresolved · tested by E0', 'Frameworks'),
+c('hyp', 'H2 · Cafés want a flat fee', 'Unresolved · tested by E1', 'Frameworks'),
+c('hyp', 'H3 · Reachable beyond word of mouth', 'Unresolved · no test yet', 'Frameworks'),
+c('hyp', 'H4 · Ends the shoebox rush', 'Unresolved · tested by E2', 'Frameworks')
+];
+const research = [c('res', 'Pricing notes', 'Two local bookkeepers charge flat fees.', 'Today'), c('res', 'Café owner forum threads', 'Owners complain about surprise year-end bills.', 'Tue')];
+const cut = [c('page', 'Payroll add-on', 'Cut for now: doubles the scope before H2 is tested.', 'Mon'), c('page', 'Online booking page', 'Moved to Website refresh.', 'Mon')];
+const cards = tab === 'evidence' ? (filter === 'hypotheses' ? evidenceHyp : evidenceAll) : tab === 'research' ? research : tab === 'cut' ? cut : brief;
+const ch = (t, n, on) => ({ t, n, sel: on ? 'true' : 'false', bg: on ? '#1A1A18' : '#fff', fg: on ? '#F5F1E8' : '#1A1A18', bd: on ? '#1A1A18' : '#DDD8CE' });
+const chips = [ch('All', '26', filter === 'all'), ch('Roadmap', '6'), ch('Hypotheses', '5', filter === 'hypotheses'), ch('Experiments', '3'), ch('Evidence', '2'), ch('Assumptions', '7'), ch('Open questions', '3')];
+return {
+w, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false, tabs, chips, cards,
+cols: w > 1600 ? 4 : 3, skel: [1, 2, 3, 4, 5, 6],
+showChips: tab === 'evidence', sheet, preview, showAsk: !sheet && !preview,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+adds: [
+{ i: '¶', t: 'New page', d: 'Write it here. Markdown underneath.' },
+{ i: '⧉', t: 'From a template', d: 'Meeting notes, Project brief, Weekly review and more' },
+{ i: '↑', t: 'Add files', d: 'Resolve reads each one and files it in the right tab' },
+{ i: '◆', t: 'Record evidence', d: 'Something you saw or heard that bears on a hypothesis' },
+{ i: '?', t: 'Open question', d: 'Something you still need to find out' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

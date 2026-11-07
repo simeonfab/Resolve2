@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Frameworks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="frameworks" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 36px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+<div style="max-width: 1240px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; align-items: flex-end; gap: 12px;">
+<div style="flex: 1;"><div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Café flat-fee bookkeeping</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Frameworks</h1></div>
+<button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 9px 14px; font: 600 13px 'Inter', sans-serif; color: #1A1A18;">+ Hypothesis</button>
+<button style="border: 0; background: #C8A040; border-radius: 9px; padding: 9px 14px; font: 600 13px 'Inter', sans-serif; color: #1A1A18;">+ Experiment</button>
+</div>
+<div style="display: flex; gap: 10px;">
+<a href="#" style="display: flex; flex-direction: column; gap: 3px; width: 300px; background: #fff; border: 1.5px solid #C8A040; border-radius: 12px; padding: 11px 14px; text-decoration: none; color: #1A1A18;"><span style="font-size: 14px; font-weight: 700;">Hypothesis Zero</span><span style="font-size: 12px; color: #4A4A44;">4 hypotheses · 3 experiments · 0 resolved</span></a>
+<div style="display: flex; flex-direction: column; justify-content: center; gap: 3px; width: 240px; border: 1.5px dashed #CFC8BA; border-radius: 12px; padding: 11px 14px; color: #4A4A44;"><span style="font-size: 13px; font-weight: 600;">More methods later</span><span style="font-size: 12px;">The registry holds one method today</span></div>
+<p style="flex: 1; margin: 0; align-self: center; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">Every hypothesis has its negation. Experiments set a prediction and a threshold before they run. Results update the hypothesis and open gates on the roadmap.</p>
+</div>
+</div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 14px; flex: 1; min-height: 0; max-width: 1240px; width: 100%; margin: 0 auto;">
+<div style="flex: 1; min-width: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 14px 16px; overflow: hidden; display: flex; flex-direction: column; gap: 6px;">
+<div style="display: flex; gap: 12px; align-items: center; padding: 10px 12px; background: #1A1A18; color: #F5F1E8; border-radius: 10px;"><span style="font-size: 12px; font-weight: 700; color: #C8A040; width: 28px;">H0</span><span style="flex: 1; font-size: 14px; font-weight: 600;">A fixed-price bookkeeping package works for café clients</span><span style="font-size: 11.5px; font-weight: 700; background: rgba(255,255,255,.1); border-radius: 999px; padding: 3px 9px;">Unresolved</span></div>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="7">
+<div style="display: flex; gap: 12px; align-items: center; margin-left: {{n.indent}}px; padding: 8px 12px; border-radius: 10px; border: 1px solid {{n.bd}}; background: {{n.bg}};">
+<span style="font-size: 12px; font-weight: 700; color: {{n.idc}}; width: 28px;">{{n.id}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 13.5px; font-weight: {{n.fw}}; line-height: 1.35;">{{n.t}}</span><span style="font-size: 12px; color: #4A4A44; line-height: 1.4;">{{n.sub}}</span></span>
+<span style="font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 3px 9px; background: {{n.sBg}}; color: {{n.sFg}}; white-space: nowrap;">{{n.s}}</span>
+</div>
+</sc-for>
+</div>
+<sc-if value="{{edit}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Edit H2" style="width: 400px; flex-shrink: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 11px; box-shadow: -14px 0 40px rgba(26,26,24,.10); overflow: hidden;">
+<div style="display: flex; align-items: center; gap: 8px;"><span style="font-size: 12px; font-weight: 700; color: #8B4A2A;">H2</span><span style="flex: 1; font-size: 13px; color: #4A4A44;">Hypothesis</span><button aria-label="Close" style="width: 30px; height: 30px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff;">✕</button></div>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">We believe<textarea style="height: 52px; border: 1px solid #C8A040; border-radius: 9px; padding: 8px 10px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18; resize: none;">Café clients want a flat monthly fee over hourly billing</textarea></label>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">It's wrong if (NH2)<textarea style="height: 44px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 8px 10px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18; resize: none;">Clients prefer hourly once they see a real price</textarea></label>
+<div style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">Status<div role="radiogroup" style="display: flex; background: #E4DED2; border-radius: 9px; padding: 3px;"><span role="radio" aria-checked="true" style="flex: 1; text-align: center; padding: 6px 0; border-radius: 7px; background: #fff; color: #1A1A18; font-size: 12px;">Unresolved</span><span role="radio" aria-checked="false" style="flex: 1; text-align: center; padding: 6px 0; color: #1A1A18; font-size: 12px;">Supported</span><span role="radio" aria-checked="false" style="flex: 1; text-align: center; padding: 6px 0; color: #1A1A18; font-size: 12px;">Weakened</span><span role="radio" aria-checked="false" style="flex: 1; text-align: center; padding: 6px 0; color: #1A1A18; font-size: 12px;">Refuted</span></div></div>
+<div style="border: 1px solid #DDD8CE; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 5px;">
+<div style="font-size: 12px; font-weight: 700;">E1 · Offer the fixed fee to the two willing clients</div>
+<div style="font-size: 12.5px; line-height: 1.45; color: #4A4A44;"><b style="color: #1A1A18;">Prediction:</b> both accept a written price within two weeks.<br><b style="color: #1A1A18;">Threshold:</b> at least one signs. None signs, NH2 holds.</div>
+</div>
+<div style="font-size: 12.5px; background: #F7F3EC; border-radius: 9px; padding: 8px 10px;"><b>Opens the gate on</b> Convert the two willing clients (Next)</div>
+<div style="display: flex; gap: 8px; margin-top: auto;"><button style="flex: 1; border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 0; font: 600 13px 'Inter', sans-serif;">Save</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 10px 14px; font: 600 13px 'Inter', sans-serif;">+ Sub-hypothesis</button></div>
+</aside>
+</sc-if>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 30px auto 0; width: 520px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+<h2 style="margin: 4px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">No hypotheses yet.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">Start with H0: the one belief this whole project rests on. Resolve suggests the ones under it.</p>
+<div style="display: flex; gap: 10px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Write H0</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">Suggest from my brief</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading hypotheses" style="max-width: 1240px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 8px;"><div style="height: 44px; border-radius: 10px; background: #E4DED2;"></div><div style="height: 50px; margin-left: 24px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 50px; margin-left: 48px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 50px; margin-left: 24px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 30px auto 0; width: 540px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 24px;">H2 didn't save.</div>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">Your edit is still in the panel. The roadmap gate kept its old state. Try saving again.</p>
+<div style="display: flex; gap: 10px; margin-top: 18px;"><a href="#" style="background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Save again</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Discard my edit</a></div>
+</div>
+</sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="frameworks" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"edit":{"editor":"boolean","default":false},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const edit = !!this.props.edit;
+const U = ['Unresolved', '#F2EDE4', '#4A4A44'], P = ['Planned', '#FBF5E6', '#7A5B12'];
+const hyp = (id, t, sub, sel) => ({ id, t, sub, indent: 24, fw: 600, idc: '#8B4A2A', s: U[0], sBg: U[1], sFg: U[2], bd: sel ? '#C8A040' : '#DDD8CE', bg: sel ? '#FBF5E6' : '#fff' });
+const exp = (id, t, sub) => ({ id, t, sub, indent: 56, fw: 500, idc: '#4A4A44', s: P[0], sBg: P[1], sFg: P[2], bd: '#EEE9DF', bg: '#F7F3EC' });
+const nodes = [
+hyp('H1', 'Monthly workload is predictable', 'NH1: hours swing too much month to month to price flat', false),
+exp('E0', 'Reconstruct 12 months of actual hours per café', 'Holds if the busiest month is under 2× the quietest'),
+hyp('H2', 'Café clients want a flat fee', 'NH2: clients prefer hourly once they see a real price', edit),
+exp('E1', 'Offer the fixed fee to the two willing clients', 'Holds if at least one signs within two weeks'),
+hyp('H3', 'The segment is reachable beyond word of mouth', 'NH3: new café clients only come through referrals', false),
+hyp('H4', 'The package ends the shoebox rush', 'NH4: receipts still arrive in January', false),
+exp('E2', 'Run a 3-month flat-fee trial and watch when records arrive', 'Holds if 80% of receipts land within the month')
+];
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false, edit,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error', nodes
+};
+}
+}
+</script>
+</body>
+</html>

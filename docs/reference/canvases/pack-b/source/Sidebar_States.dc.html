@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sidebar states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 1040px; height: 800px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 40px; position: relative;">
+<div style="position: relative;">
+<dc-import name="Sidebar" active="tasks" project="Café flat-fee bookkeeping" hint-size="248px,800px"></dc-import>
+</div>
+<div style="position: relative; width: 240px;">
+<dc-import name="Sidebar" active="home" collapsed="{{yes}}" hint-size="64px,800px"></dc-import>
+<div role="tooltip" style="position: absolute; left: 70px; top: 156px; background: #1A1A18; color: #F5F1E8; font-size: 12.5px; font-weight: 600; border-radius: 7px; padding: 6px 10px; box-shadow: 0 6px 18px rgba(0,0,0,.25); white-space: nowrap;">Projects</div>
+<div style="position: absolute; left: 80px; top: 240px; width: 150px; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">Collapsed: 64 px. Every icon has a tooltip after 400 ms. The amber dot on the picker means a project is chosen.</div>
+</div>
+<div style="position: relative;">
+<dc-import name="Sidebar" active="overview" project="Café flat-fee bookkeeping" hint-size="248px,800px"></dc-import>
+<div role="listbox" aria-label="Choose project" style="position: absolute; left: 12px; top: 210px; width: 300px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; box-shadow: 0 18px 48px rgba(26,26,24,.22); padding: 6px; display: flex; flex-direction: column; gap: 2px;">
+<div role="option" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #9A9A92;"></span>All projects</div>
+<div role="option" aria-selected="true" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; background: #FBF5E6; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040;"></span><span style="flex: 1;">Café flat-fee bookkeeping</span>✓</div>
+<div role="option" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #8B4A2A;"></span>Website refresh</div>
+<div style="height: 1px; background: #EEE9DF; margin: 4px 6px;"></div>
+<div role="option" style="display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 8px; font-size: 13.5px; color: #8B4A2A; font-weight: 600;">+ New project (opens the intake)</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1040,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return { yes: true }; }
+}
+</script>
+</body>
+</html>

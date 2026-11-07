@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion register, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border:1px solid #DDD8CE}th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:8px 12px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}td{padding:8px 12px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}</style>
+</helmet>
+<div style="width: 1920px; height: 1200px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 20px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Same easings as desktop. Shorter distances, because the screen is smaller.</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px;">Motion register: phone</h1></div>
+<table>
+<thead><tr><th>ID</th><th>Moment</th><th>Values</th><th>Source</th><th>Live board</th></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="14"><tr><td>{{r.id}}</td><td>{{r.m}}</td><td><code>{{r.v}}</code></td><td>{{r.s}}</td><td>{{r.b}}</td></tr></sc-for>
+</tbody>
+</table>
+<div style="display: flex; gap: 16px; font-size: 13.5px; line-height: 1.55; color: #4A4A44;">
+<div style="flex: 1; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 14px 16px;"><b style="color: #1A1A18;">Reduced motion.</b> The phone's own setting wins. Every row becomes a 120ms fade, swipes snap.</div>
+<div style="flex: 1; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 14px 16px;"><b style="color: #1A1A18;">The phone page is a web page.</b> These run as CSS transitions in the browser, so they are cheaper to build than the desktop ones (ticket D-E9).</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1200}}'>
+class Component extends DCLogic {
+renderVals() {
+const r = (id, m, v, s, b) => ({ id, m, v, s, b: b || '' });
+return { rows: [
+r('P1', 'Switch between Today, Upcoming, Inbox', 'segment thumb 300 e-std · list cross-fades 200 e-std, translateX ±12', 'Flow Spec E8, shorter distance', 'MD1'),
+r('P2', 'Bottom bar: change destination', 'icon colour 160 e-std · page fades 200 e-std, no slide', 'new', 'MD1'),
+r('P3', 'Quick add sheet opens', 'dim 180 e-std · sheet 420 e-spring from below · input focuses at 120, keyboard follows the system', 'Pack B Q1 timing, sheet shape', 'MD1'),
+r('P4', 'Parser recognises a word', 'highlight 160 e-std · chip 220 e-out, translateY -4', 'Pack B Q2', 'MD1'),
+r('P5', 'Saved', 'sheet 240 e-in down · row lands 300 e-spring · I3 toast', 'Pack B Q3, Flow Spec I3', ''),
+r('P6', 'Tap the circle to finish', 'circle fill 200 e-std · tick draws 180 e-out · row fades to .55 and slides out 300 e-in after 600 · Undo toast', 'Flow Spec G2, I1', 'MD2'),
+r('P7', 'Swipe left: move to Tomorrow', 'row follows the finger · past 35% the amber strip locks · release 260 e-out out · rows close 240 e-std', 'new', 'MD2'),
+r('P8', 'Undo', 'row returns 300 e-spring, translateX -10 → 0 · toast 260 e-in', 'Flow Spec I2', 'MD2'),
+r('P9', 'Ask Resolve sheet', 'dim 220 e-std · sheet 460 e-spring to 82% height · answer streams in, no motion per word', 'Flow Spec E4', 'MD3'),
+r('P10', 'Lost the PC', 'banner 300 e-out down from the top · content shifts with it · no shake', 'new', 'MD3'),
+r('P11', 'Back in touch', 'banner turns green 200 e-std, says "Back in touch. 1 capture sent." · leaves 300 e-in after 2s', 'new', 'MD3'),
+r('P12', 'Pull to refresh', 'amber ring fills with the pull · release 300 e-spring back', 'new', ''),
+r('P13', 'Intake steps', 'Pack A values unchanged; slides use 60% of the desktop distance', 'Pack A, Flow Spec A to D', ''),
+r('P14', 'Task sheet from a row', 'sheet 420 e-spring from below to 70% · close 260 e-in', 'Flow Spec G3, as a sheet', '')
+] };
+}
+}
+</script>
+</body>
+</html>

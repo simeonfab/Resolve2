@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tokens sheet</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sec{font-size:13px;font-weight:700;color:#8B4A2A;margin-bottom:10px}
+.sw{display:flex;flex-direction:column;background:#fff;border:1px solid #DDD8CE;border-radius:12px;overflow:hidden}
+.sw .c{height:64px}
+.sw .m{padding:10px 12px;display:flex;flex-direction:column;gap:2px}
+.sw b{font-size:13px}.sw code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.sw span{font-size:11.5px;color:#4A4A44;line-height:1.4}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border:1px solid #DDD8CE;border-radius:12px;overflow:hidden}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:8px 12px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:8px 12px;border-bottom:1px solid #EEE9DF;vertical-align:middle}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.ok{color:#3F5A33;font-weight:700}.no{color:#8B4A2A;font-weight:700}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1500px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 28px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">For src/ui/theme.rs and widgets.rs</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px;">Tokens sheet: intake</h1>
+</div>
+<div>
+<div class="sec">Colour: brief palette, plus the values the Flow Spec and mockups add</div>
+<div style="display: grid; grid-template-columns: repeat(8, minmax(0, 1fr)); gap: 12px;">
+<div class="sw"><div class="c" style="background: #1E1E1A;"></div><div class="m"><b>nav-bg</b><code>#1E1E1A</code><span>Top bar, rail, front door</span></div></div>
+<div class="sw"><div class="c" style="background: #1A1A18;"></div><div class="m"><b>ink</b><code>#1A1A18</code><span>Text on light, bridge stage, primary button</span></div></div>
+<div class="sw"><div class="c" style="background: #201F1C;"></div><div class="m"><b>pane</b><code>#201F1C</code><span>Card and field on dark (Flow Spec)</span></div></div>
+<div class="sw"><div class="c" style="background: #F2EDE4;"></div><div class="m"><b>surface</b><code>#F2EDE4</code><span>Work pane, light app</span></div></div>
+<div class="sw"><div class="c" style="background: #FFFFFF;"></div><div class="m"><b>card</b><code>#FFFFFF</code><span>Cards, fields on light</span></div></div>
+<div class="sw"><div class="c" style="background: #DDD8CE;"></div><div class="m"><b>border</b><code>#DDD8CE</code><span>Card and field edges</span></div></div>
+<div class="sw"><div class="c" style="background: #C8A040;"></div><div class="m"><b>amber</b><code>#C8A040</code><span>Accent, through-line, CTA fill, focus ring</span></div></div>
+<div class="sw"><div class="c" style="background: #FBF5E6;"></div><div class="m"><b>amber-light</b><code>#FBF5E6</code><span>Assumption tag, highlight, notes</span></div></div>
+<div class="sw"><div class="c" style="background: #4A4A44;"></div><div class="m"><b>ink-soft</b><code>#4A4A44</code><span>Secondary text, hints</span></div></div>
+<div class="sw"><div class="c" style="background: #9A9A92;"></div><div class="m"><b>ink-ghost</b><code>#9A9A92</code><span>Disabled and decorative only</span></div></div>
+<div class="sw"><div class="c" style="background: #8B4A2A;"></div><div class="m"><b>terracotta</b><code>#8B4A2A</code><span>Eyebrows, links, errors on light</span></div></div>
+<div class="sw"><div class="c" style="background: #C97A4A;"></div><div class="m"><b>terracotta-on-dark</b><code>#C97A4A</code><span>Errors on dark (Flow Spec)</span></div></div>
+<div class="sw"><div class="c" style="background: #5E7D4F;"></div><div class="m"><b>green</b><code>#5E7D4F</code><span>Evidence. Text uses #3F5A33 on #E8EFE3</span></div></div>
+<div class="sw"><div class="c" style="background: #F5F1E8;"></div><div class="m"><b>text-on-dark</b><code>#F5F1E8</code><span>Headlines and labels on dark</span></div></div>
+<div class="sw"><div class="c" style="background: #B4AFA3;"></div><div class="m"><b>text-on-dark-soft</b><code>#B4AFA3</code><span>Secondary text on dark</span></div></div>
+<div class="sw"><div class="c" style="background: #8A8578;"></div><div class="m"><b>text-on-dark-muted</b><code>#8A8578</code><span>Floor for small text on dark</span></div></div>
+</div>
+</div>
+<div style="display: flex; gap: 28px;">
+<div style="flex: 1.1; min-width: 0;">
+<div class="sec">Type: DM Serif Display for headlines, Inter 400 / 500 / 600 for the rest</div>
+<table>
+<thead><tr><th>Token</th><th>Font</th><th>Size / line</th><th>Use</th><th>Sample</th></tr></thead>
+<tbody>
+<tr><td>hero</td><td>DM Serif 400</td><td>52 / 1.05</td><td>"Hi Simeon." only</td><td style="font: 30px 'DM Serif Display', serif;">Hi Simeon.</td></tr>
+<tr><td>display</td><td>DM Serif 400</td><td>44 / 1.1</td><td>Front door, reveal, 05</td><td style="font: 26px 'DM Serif Display', serif;">We're not going to guess.</td></tr>
+<tr><td>title</td><td>DM Serif 400</td><td>32–36 / 1.15</td><td>Step headlines</td><td style="font: 22px 'DM Serif Display', serif;">Here's where to begin.</td></tr>
+<tr><td>question</td><td>DM Serif 400</td><td>30 / 1.22</td><td>One question at a time</td><td style="font: 20px 'DM Serif Display', serif;">What are you least sure about?</td></tr>
+<tr><td>card-serif</td><td>DM Serif 400</td><td>26–28 / 1.25</td><td>Do this first, theme card</td><td style="font: 18px 'DM Serif Display', serif;">Measure true monthly hours</td></tr>
+<tr><td>h-inter</td><td>Inter 700</td><td>24–26 / 1.25</td><td>Next move title, 02a question</td><td style="font-weight: 700; font-size: 17px;">Here's what to do next.</td></tr>
+<tr><td>answer</td><td>Inter 400</td><td>15 / 1.55–1.6</td><td>Text boxes, body</td><td>I'm a freelance bookkeeper…</td></tr>
+<tr><td>body</td><td>Inter 400</td><td>14–14.5 / 1.5</td><td>Card text</td><td>Three café clients billed hourly.</td></tr>
+<tr><td>button</td><td>Inter 600</td><td>15</td><td>All buttons</td><td style="font-weight: 600;">Continue →</td></tr>
+<tr><td>label</td><td>Inter 600</td><td>13–13.5</td><td>Eyebrows, rail titles, links</td><td style="font-weight: 600; color: #8B4A2A;">Your first week</td></tr>
+<tr><td>small</td><td>Inter 400–500</td><td>12–12.5</td><td>Hints, card labels, rail descriptions</td><td style="font-size: 12.5px; color: #4A4A44;">Enter to continue</td></tr>
+<tr><td>tag</td><td>Inter 600</td><td>11–11.5</td><td>Evidence, assumption, Now</td><td><span style="font-size: 11.5px; font-weight: 600; background: #E8EFE3; color: #3F5A33; border-radius: 999px; padding: 3px 9px;">Evidence</span></td></tr>
+</tbody>
+</table>
+<p style="font-size: 12.5px; color: #4A4A44; margin: 10px 0 0; line-height: 1.5;">One serif element per region, as the mockups ask. Numbers use tabular figures (counters, question dots). Today's theme.rs: HERO 30, QUESTION 28, TITLE 22, SECTION 15, BODY 14, ANSWER 17, SMALL 12.5, TINY 11.5. Change HERO, QUESTION and ANSWER to the values above.</p>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 22px;">
+<div>
+<div class="sec">Contrast checks (WCAG, measured)</div>
+<table>
+<thead><tr><th>Pair</th><th>Ratio</th><th>Small text</th></tr></thead>
+<tbody>
+<tr><td>ink on surface</td><td>14.95</td><td class="ok">Pass</td></tr>
+<tr><td>ink-soft on surface</td><td>7.65</td><td class="ok">Pass</td></tr>
+<tr><td>terracotta on surface</td><td>5.79</td><td class="ok">Pass</td></tr>
+<tr><td>amber on surface (text)</td><td>2.10</td><td class="no">Fail: never amber text on light</td></tr>
+<tr><td>ink-ghost on surface</td><td>2.43</td><td class="no">Fail: disabled and decor only</td></tr>
+<tr><td>green on surface (text)</td><td>3.98</td><td class="no">Fail: use #3F5A33 on #E8EFE3 (6.57)</td></tr>
+<tr><td>amber on nav-bg</td><td>6.81</td><td class="ok">Pass</td></tr>
+<tr><td>#8A8578 on nav-bg</td><td>4.54</td><td class="ok">Pass, the floor on dark</td></tr>
+<tr><td>terracotta on nav-bg</td><td>2.48</td><td class="no">Fail: use #C97A4A on dark (5.07)</td></tr>
+<tr><td>ink on amber (CTA)</td><td>7.10</td><td class="ok">Pass</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 28px;">
+<div>
+<div class="sec">Spacing (4 px base)</div>
+<table><tbody>
+<tr><td>4 · 6 · 8</td><td>Inside tags, icon gaps, button rows</td></tr>
+<tr><td>10 · 12</td><td>Card grid gap, list gaps</td></tr>
+<tr><td>16 · 18</td><td>Card padding, action bar padding</td></tr>
+<tr><td>22 · 24</td><td>Rail step gap, rail padding, top bar side</td></tr>
+<tr><td>40 · 48 · 56</td><td>Work pane padding (top · wide steps · side)</td></tr>
+<tr><td>Layout</td><td>Top bar 64 · rail 308 or 72 · work column max 760 (800 on confirm, 960 at ≥1600) · heard panel 380 (440 at ≥1600)</td></tr>
+</tbody></table>
+</div>
+<div>
+<div class="sec">Radii</div>
+<table><tbody>
+<tr><td>999</td><td>Tags, counters, note chips</td></tr>
+<tr><td>5 · 7</td><td>Brand tile (20 · 26 px)</td></tr>
+<tr><td>8</td><td>Chips, inner fields, small buttons</td></tr>
+<tr><td>10</td><td>Buttons, text fields (theme RADIUS)</td></tr>
+<tr><td>12</td><td>Cards, panels</td></tr>
+<tr><td>14 · 16</td><td>Do this first, theme card, fog card</td></tr>
+<tr><td>50%</td><td>Step dots, rings, mic</td></tr>
+</tbody></table>
+</div>
+<div>
+<div class="sec">Shadows and rings</div>
+<table><tbody>
+<tr><td>focus</td><td><code>0 0 0 3px rgba(200,160,64,.22)</code> + border #C8A040</td></tr>
+<tr><td>focus-soft</td><td><code>0 0 0 3px rgba(200,160,64,.16)</code> on large fields</td></tr>
+<tr><td>card-lift</td><td><code>0 1px 2px rgba(26,26,24,.04), 0 10px 30px rgba(26,26,24,.07)</code></td></tr>
+<tr><td>dialog</td><td><code>0 1px 2px rgba(26,26,24,.04), 0 18px 48px rgba(26,26,24,.12)</code></td></tr>
+<tr><td>fog card</td><td><code>0 30px 80px rgba(0,0,0,.45)</code>, border rgba(200,160,64,.28)</td></tr>
+<tr><td>glow</td><td><code>radial-gradient(circle, rgba(200,160,64,.20) 0%, rgba(200,160,64,.07) 38%, transparent 70%)</code></td></tr>
+<tr><td>CTA halo</td><td><code>0 0 0 6px rgba(200,160,64,.14)</code> (reveal only)</td></tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

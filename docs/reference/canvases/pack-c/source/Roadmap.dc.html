@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadmap</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="roadmap" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 32px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+<div style="display: flex; align-items: center; gap: 12px;">
+<div style="flex: 1; min-width: 0;"><div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Café flat-fee bookkeeping</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Roadmap</h1></div>
+<div role="tablist" aria-label="Group the roadmap" style="display: flex; background: #E4DED2; border-radius: 10px; padding: 3px;">
+<button role="tab" aria-selected="{{phaseSel}}" style="border: 0; border-radius: 8px; padding: 8px 14px; font: 600 13px 'Inter', sans-serif; background: {{phaseBg}}; color: #1A1A18; box-shadow: {{phaseSh}};">By phase</button>
+<button role="tab" aria-selected="{{themeSel}}" style="border: 0; border-radius: 8px; padding: 8px 14px; font: 600 13px 'Inter', sans-serif; background: {{themeBg}}; color: #1A1A18; box-shadow: {{themeSh}};">By theme</button>
+</div>
+<button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 9px 14px; font: 600 13px 'Inter', sans-serif; color: #1A1A18;">Whole picture</button>
+<button style="border: 0; background: #C8A040; border-radius: 9px; padding: 9px 14px; font: 600 13px 'Inter', sans-serif; color: #1A1A18;">+ Add a theme</button>
+</div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 16px; flex: 1; min-height: 0;">
+<div style="flex: 1; min-width: 0; overflow: hidden;">
+<sc-if value="{{byPhase}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; height: 100%;">
+<sc-for list="{{phases}}" as="p" hint-placeholder-count="3">
+<section style="background: #EAE4D9; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center; gap: 8px; padding: 2px 4px;"><span style="font-size: 13px; font-weight: 700;">{{p.t}}</span><span style="font-size: 12px; color: #4A4A44;">{{p.sub}}</span></div>
+<sc-for list="{{p.items}}" as="s" hint-placeholder-count="2">
+<article style="background: #fff; border: 1px solid {{s.bd}}; border-radius: 10px; padding: 11px 12px; display: flex; flex-direction: column; gap: 7px; box-shadow: {{s.sh}};">
+<div style="display: flex; gap: 8px; align-items: flex-start;"><span style="flex: 1; font-size: 13.5px; font-weight: 600; line-height: 1.35;">{{s.t}}</span><button aria-label="{{s.toggle}}" style="width: 24px; height: 24px; border: 0; border-radius: 6px; background: #F2EDE4; color: #4A4A44; font-size: 11px;">{{s.chev}}</button></div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 11.5px; font-weight: 600;"><span style="background: {{s.tagBg}}; color: {{s.tagFg}}; border-radius: 6px; padding: 2px 7px;">{{s.tag}}</span><sc-if value="{{s.hasGate}}" hint-placeholder-val="{{ false }}"><span style="background: #F2EDE4; color: #4A4A44; border-radius: 6px; padding: 2px 7px;">◇ {{s.gate}}</span></sc-if></div>
+<div style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4A4A44;"><div style="flex: 1; height: 4px; border-radius: 2px; background: #EEE9DF; overflow: hidden;"><div style="width: {{s.pct}}; height: 4px; background: #C8A040;"></div></div>{{s.done}}</div>
+<sc-if value="{{s.open}}" hint-placeholder-val="{{ false }}">
+<div style="border-top: 1px solid #EEE9DF; padding-top: 9px; display: flex; flex-direction: column; gap: 8px;">
+<p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">Count the hours you actually worked for each café, month by month. If the busiest month is under twice the quietest, H1 holds.</p>
+<div style="display: flex; flex-direction: column; gap: 5px; font-size: 12.5px;">
+<label style="display: flex; gap: 8px; align-items: center;"><input type="checkbox" checked style="accent-color: #5E7D4F;"><span style="text-decoration: line-through; color: #4A4A44;">List the three cafés and their billing</span></label>
+<label style="display: flex; gap: 8px; align-items: center;"><input type="checkbox"><span>Reconstruct 12 months of hours per café</span></label>
+<label style="display: flex; gap: 8px; align-items: center;"><input type="checkbox"><span>Mark the busiest and quietest months</span></label>
+</div>
+<div style="background: #F5E8E1; color: #8B4A2A; border-radius: 8px; padding: 7px 9px; font-size: 12px; font-weight: 600;">Waiting on: till export from The Corner Café · 3 days</div>
+<div style="display: flex; gap: 6px; flex-wrap: wrap;"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 6px 10px; font: 600 12px 'Inter', sans-serif;">+ Task</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 6px 10px; font: 600 12px 'Inter', sans-serif;">Move to Next</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 6px 10px; font: 600 12px 'Inter', sans-serif;">Open E0</button></div>
+</div>
+</sc-if>
+</article>
+</sc-for>
+</section>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{byTheme}}" hint-placeholder-val="{{ false }}">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;">
+<sc-for list="{{themes}}" as="s" hint-placeholder-count="6">
+<div style="display: flex; gap: 14px; align-items: flex-start; padding: 12px 16px; border-top: 1px solid #EEE9DF;">
+<span style="width: 56px; flex-shrink: 0; text-align: center; font-size: 11.5px; font-weight: 700; border-radius: 999px; padding: 3px 0; background: {{s.phBg}}; color: {{s.phFg}};">{{s.phase}}</span>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+<div style="display: flex; gap: 8px; align-items: center;"><span style="font-size: 14px; font-weight: 600;">{{s.t}}</span><span style="background: {{s.tagBg}}; color: {{s.tagFg}}; border-radius: 6px; padding: 2px 7px; font-size: 11.5px; font-weight: 600;">{{s.tag}}</span><sc-if value="{{s.hasGate}}" hint-placeholder-val="{{ false }}"><span style="background: #F2EDE4; color: #4A4A44; border-radius: 6px; padding: 2px 7px; font-size: 11.5px; font-weight: 600;">◇ {{s.gate}}</span></sc-if></div>
+<div style="font-size: 12.5px; color: #4A4A44; line-height: 1.5;">{{s.tasks}}</div>
+</div>
+<span style="font-size: 12px; color: #4A4A44; white-space: nowrap;">{{s.done}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<aside style="width: 270px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 13px 15px;">
+<h2 style="margin: 0 0 8px; font-size: 13.5px; font-weight: 700;">Milestones</h2>
+<sc-for list="{{miles}}" as="m" hint-placeholder-count="3"><div style="display: flex; gap: 9px; padding: 5px 0; font-size: 12.5px; line-height: 1.4;"><span style="width: 9px; height: 9px; transform: rotate(45deg); border: 1.5px solid #C8A040; background: {{m.fill}}; margin-top: 3px; flex-shrink: 0; box-sizing: border-box;"></span><span style="flex: 1;">{{m.t}}</span><span style="color: #4A4A44; white-space: nowrap;">{{m.d}}</span></div></sc-for>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 13px 15px;">
+<h2 style="margin: 0 0 8px; font-size: 13.5px; font-weight: 700;">Dependencies and blockers</h2>
+<div style="font-size: 12.5px; line-height: 1.45; padding: 6px 8px; border-radius: 8px; background: #F5E8E1; color: #8B4A2A; font-weight: 600;">Till export → Measure true monthly hours</div>
+<div style="font-size: 12.5px; line-height: 1.45; padding: 6px 0 0; color: #4A4A44;">Price to absorb spikes waits on the E0 result.</div>
+<div style="font-size: 12.5px; line-height: 1.45; padding: 4px 0 0; color: #4A4A44;">Convert the two clients waits on E1.</div>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 13px 15px;">
+<h2 style="margin: 0 0 8px; font-size: 13.5px; font-weight: 700;">Coming up</h2>
+<div style="font-size: 12.5px; line-height: 1.45; display: flex; flex-direction: column; gap: 6px;"><span>Mark the busiest and quietest months · <b>Fri 13 Nov</b></span><span>Model the flat fee against real hours · <b>after the gate</b></span></div>
+</section>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 60px auto 0; width: 520px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+<span style="width: 56px; height: 56px; border-radius: 16px; background: #FBF5E6; border: 1px solid #E9D9A8; display: flex; align-items: center; justify-content: center; color: #8B4A2A;"><svg width="24" height="24" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2.5 4h7M2.5 8h11M2.5 12h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg></span>
+<h2 style="margin: 4px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">No roadmap yet.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">A roadmap is a few themes in Now, Next and Later. Ask Resolve to draft one from your brief, or add the first theme yourself.</p>
+<div style="display: flex; gap: 10px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Draft it from my brief</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">Add a theme</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading the roadmap" style="display: flex; gap: 16px;"><div style="flex: 1; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;"><div style="height: 420px; border-radius: 12px; background: #EAE4D9;"></div><div style="height: 420px; border-radius: 12px; background: #EAE4D9;"></div><div style="height: 420px; border-radius: 12px; background: #EAE4D9;"></div></div><div style="width: 270px; height: 420px; border-radius: 12px; background: #fff; border: 1px solid #DDD8CE;"></div></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 50px auto 0; width: 540px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 24px;">That move didn't save.</div>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">Price to absorb spikes is still in Next. Nothing else changed. Try the move again.</p>
+<div style="display: flex; gap: 10px; margin-top: 18px;"><a href="#" style="background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Try again</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Back to the roadmap</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{whole}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(26,26,24,.38); display: flex; align-items: flex-start; justify-content: center; padding-top: 40px; z-index: 5;">
+<div role="dialog" aria-label="The whole picture" style="width: 900px; max-width: 94%; background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,26,24,.35); padding: 20px 22px;">
+<div style="display: flex; align-items: center; gap: 10px; margin-bottom: 14px;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">The whole picture</h2><span style="font-size: 12.5px; color: #4A4A44;">Each theme, the hypothesis it rests on, and when it runs</span><button aria-label="Close" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff; font-size: 14px;">✕</button></div>
+<div style="display: grid; grid-template-columns: 200px repeat(3, minmax(0, 1fr)); gap: 6px; font-size: 12.5px;">
+<span></span><span style="font-weight: 700; padding: 6px 8px; background: #1A1A18; color: #F5F1E8; border-radius: 7px;">Now</span><span style="font-weight: 700; padding: 6px 8px; background: #F2EDE4; border-radius: 7px;">Next</span><span style="font-weight: 700; padding: 6px 8px; background: #F2EDE4; border-radius: 7px;">Later</span>
+<sc-for list="{{grid}}" as="g" hint-placeholder-count="4">
+<span style="font-weight: 700; padding: 10px 8px; line-height: 1.35;">{{g.h}}<br><span style="font-weight: 400; color: #4A4A44;">{{g.hs}}</span></span>
+<span style="padding: 9px; border-radius: 8px; background: {{g.b0}}; line-height: 1.4;">{{g.c0}}</span>
+<span style="padding: 9px; border-radius: 8px; background: {{g.b1}}; line-height: 1.4;">{{g.c1}}</span>
+<span style="padding: 9px; border-radius: 8px; background: {{g.b2}}; line-height: 1.4;">{{g.c2}}</span>
+</sc-for>
+</div>
+<div style="display: flex; gap: 16px; margin-top: 14px; font-size: 12px; color: #4A4A44;"><span>◇ gate: the theme waits for that result</span><span>Click a cell to open the theme</span></div>
+</div>
+</div>
+</sc-if>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="roadmap" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"view":{"editor":"enum","options":["phase","theme"],"default":"phase"},"expanded":{"editor":"boolean","default":false},"whole":{"editor":"boolean","default":false},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const view = this.props.view ?? 'phase';
+const expanded = !!this.props.expanded;
+const EV = ['Evidence', '#E8EFE3', '#3F5A33'], AS = ['Assumption', '#FBF5E6', '#7A5B12'];
+const mk = (t, tag, gate, done, pct, open) => ({ t, tag: tag[0], tagBg: tag[1], tagFg: tag[2], gate, hasGate: !!gate, done, pct, open: !!open,
+bd: open ? '#C8A040' : '#DDD8CE', sh: open ? '0 8px 24px rgba(26,26,24,.10)' : 'none', chev: open ? '▴' : '▾', toggle: open ? 'Collapse' : 'Expand' });
+const A = mk('Measure true monthly hours', EV, '', '1 of 3', '33%', expanded);
+const B = mk('Ask the two willing clients what a flat fee is worth', AS, '', '0 of 2', '0%');
+const C = mk('Price to absorb spikes', AS, 'H1 result', '0 of 2', '0%');
+const D = mk('Convert the two willing clients', EV, 'H2 result', '0 of 1', '0%');
+const E = mk('Design the no-shoebox rhythm', AS, '', '0 of 1', '0%');
+const F = mk('Reach cafés beyond word of mouth', AS, 'H3 result', '0 of 0', '0%');
+const phases = [{ t: 'Now', sub: 'this month', items: [A, B] }, { t: 'Next', sub: 'after the gates', items: [C, D] }, { t: 'Later', sub: 'parked', items: [E, F] }];
+const ph = (p) => p === 'Now' ? { phase: p, phBg: '#1A1A18', phFg: '#F5F1E8' } : { phase: p, phBg: '#F2EDE4', phFg: '#1A1A18' };
+const themes = [
+{ ...A, ...ph('Now'), tasks: 'Reconstruct 12 months of hours per café · Mark the busiest and quietest months · List the three cafés ✓' },
+{ ...B, ...ph('Now'), tasks: 'Book a call with each willing client · Ask what they pay now per year' },
+{ ...C, ...ph('Next'), tasks: 'Model the flat fee against real hours · Set the spike buffer' },
+{ ...D, ...ph('Next'), tasks: 'Draft the fixed-fee offer for two clients' },
+{ ...E, ...ph('Later'), tasks: 'Define the monthly receipt handover' },
+{ ...F, ...ph('Later'), tasks: 'No tasks yet' }
+];
+const Y = '#FBF5E6', N = '#F7F3EC', X = 'transparent';
+const grid = [
+{ h: 'H1', hs: 'Workload is predictable', c0: 'Measure true monthly hours', b0: Y, c1: '◇ Price to absorb spikes', b1: N, c2: '', b2: X },
+{ h: 'H2', hs: 'Cafés want a flat fee', c0: 'Ask the two willing clients', b0: Y, c1: '◇ Convert the two willing clients', b1: N, c2: '', b2: X },
+{ h: 'H3', hs: 'Reachable beyond word of mouth', c0: '', b0: X, c1: '', b1: X, c2: '◇ Reach cafés beyond word of mouth', b2: N },
+{ h: 'H4', hs: 'Ends the shoebox rush', c0: '', b0: X, c1: '', b1: X, c2: 'Design the no-shoebox rhythm', b2: N }
+];
+const on = 'background:#fff;', sh = '0 1px 3px rgba(26,26,24,.12)';
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+byPhase: view === 'phase', byTheme: view === 'theme',
+phaseSel: view === 'phase' ? 'true' : 'false', themeSel: view === 'theme' ? 'true' : 'false',
+phaseBg: view === 'phase' ? '#fff' : 'transparent', themeBg: view === 'theme' ? '#fff' : 'transparent',
+phaseSh: view === 'phase' ? sh : 'none', themeSh: view === 'theme' ? sh : 'none',
+phases, themes, grid, whole: !!this.props.whole && state === 'full',
+miles: [{ t: '12 months of hours in hand', d: 'Fri 20 Nov', fill: '#FBF5E6' }, { t: 'First flat-fee client signed', d: 'Wed 16 Dec', fill: 'transparent' }, { t: 'Trial review', d: 'Fri 26 Mar', fill: 'transparent' }]
+};
+}
+}
+</script>
+</body>
+</html>

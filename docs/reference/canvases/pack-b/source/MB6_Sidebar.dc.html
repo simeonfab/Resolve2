@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sidebar collapse motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{background:#1E1E1A;flex-shrink:0;padding:16px 10px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px;overflow:hidden;animation:w 5000ms infinite}
+.it{display:flex;align-items:center;gap:10px;height:30px;padding:0 8px;border-radius:7px;color:#B4AFA3;font-size:13px;white-space:nowrap}
+.ic{width:14px;height:14px;border-radius:4px;border:1.5px solid currentColor;flex-shrink:0;box-sizing:border-box}
+.lb{animation:lb 5000ms infinite}
+.on{background:rgba(200,160,64,.16);color:#F5F1E8}
+.on .ic{color:#C8A040}
+.wa{flex:1;padding:26px 30px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.tip{position:absolute;left:66px;top:88px;background:#1A1A18;color:#F5F1E8;font-size:12px;font-weight:600;border-radius:6px;padding:5px 9px;animation:tip 5000ms infinite}
+@keyframes w{0%,30%{width:186px;animation-timing-function:cubic-bezier(.22,.61,.36,1)}36.4%,75%{width:52px;animation-timing-function:cubic-bezier(.22,.61,.36,1)}81.4%,100%{width:186px}}
+@keyframes lb{0%,30%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}32.4%,81.4%{opacity:0;animation-timing-function:cubic-bezier(.22,.61,.36,1)}83.8%,100%{opacity:1}}
+@keyframes tip{0%,55%{opacity:0;transform:translateX(-4px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}57.4%,70%{opacity:1;transform:none}71%,100%{opacity:0}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">S3, S4 · Sidebar · new desktop values · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Collapse gives the work room; icons stay where your hand expects them</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the sidebar collapsing to icons, showing a tooltip, and expanding">
+<div class="sb">
+<div class="it"><span class="ic" style="background: #C8A040; border-color: #C8A040;"></span><span class="lb" style="color: #F5F1E8; font-weight: 600;">Personal</span></div>
+<div class="it on"><span class="ic"></span><span class="lb">Home</span></div>
+<div class="it"><span class="ic"></span><span class="lb">Projects</span></div>
+<div class="it"><span class="ic"></span><span class="lb">Calendar</span></div>
+<div class="it" style="margin-top: 10px;"><span class="ic"></span><span class="lb">Overview</span></div>
+<div class="it"><span class="ic"></span><span class="lb">Roadmap</span></div>
+<div class="it"><span class="ic"></span><span class="lb">Tasks</span></div>
+<div class="it"><span class="ic"></span><span class="lb">Knowledge base</span></div>
+</div>
+<div class="tip">Projects</div>
+<div class="wa"><div style="font: 24px 'DM Serif Display', serif;">Good afternoon, Simeon</div><div style="display: flex; gap: 14px; flex: 1;"><div style="flex: 1.25; border-radius: 14px; background: #1A1A18;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 10px;"><div style="flex: 1; border-radius: 12px; background: #fff;"></div><div style="flex: 1; border-radius: 12px; background: #fff;"></div></div></div></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Collapse</span><span class="d">Labels fade first <code>120ms e-std</code>, then the sidebar narrows <code>320ms e-out, 248 → 64px</code>. The work area reflows on the same clock, so cards widen with it (S3). No spring: a bouncing edge pulls the eye from the work.</span></div>
+<div class="row"><span class="t">Hover</span><span class="d">After 400ms a tooltip names the icon <code>120ms e-out, translateX(-4px)</code> (S4).</span></div>
+<div class="row"><span class="t">Expand</span><span class="d">Width first <code>320ms e-out</code>, then labels <code>120ms e-out</code>. The choice is remembered per workspace.</span></div>
+<div class="row"><span class="t">Section switch</span><span class="d">The active row's tint moves <code>300ms e-std at 130ms</code> while the page slides (S1, S2, Flow Spec E8).</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

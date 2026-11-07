@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M01 Front door to welcome</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.tp{position:absolute;left:0;top:0;right:0;height:48px;background:#1E1E1A;display:flex;align-items:center;gap:8px;padding:0 18px;z-index:5}
+.tp i{width:20px;height:20px;border-radius:5px;background:#C8A040;display:flex;align-items:center;justify-content:center;font:12px 'DM Serif Display',serif;font-style:normal;color:#1A1A18}
+.tp b{font-size:13px;color:#F5F1E8}
+.rail{position:absolute;left:0;top:48px;bottom:0;width:231px;background:#1E1E1A;z-index:3;animation:rail 7500ms infinite;padding:22px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:16px}
+.rail span{display:block;height:10px;border-radius:3px;background:rgba(255,255,255,.12)}
+.fdbg{position:absolute;left:0;right:0;top:48px;bottom:0;background:#1E1E1A;z-index:2;animation:fdbg 7500ms infinite}
+.fdc{position:absolute;left:300px;top:200px;width:360px;z-index:4;animation:fdc 7500ms infinite}
+.fld{height:40px;border-radius:8px;border:1px solid rgba(255,255,255,.14);background:#201F1C;color:#F5F1E8;font-size:13px;display:flex;align-items:center;padding:0 12px;animation:ring 7500ms infinite}
+.pn{position:absolute;left:285px;top:100px;width:600px;z-index:1}
+.hi{font:40px 'DM Serif Display',serif;animation:hi 7500ms infinite}
+.wl{position:absolute;top:62px;font-size:16px;color:#4A4A44;animation:wl 7500ms infinite}
+.pr{position:absolute;top:70px;animation:pr 7500ms infinite}
+.op{background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:12px 14px;font-size:13px;font-weight:600;margin-top:8px}
+.o1{animation:o1 7500ms infinite}.o2{animation:o2 7500ms infinite}.o3{animation:o3 7500ms infinite}
+@keyframes rail{0%,14.7%{transform:translateX(-231px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}20.3%,100%{transform:none}}
+@keyframes fdbg{0%,16.3%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}24.3%,100%{opacity:0}}
+@keyframes fdc{0%,13.3%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}16.5%,100%{opacity:0;transform:translateY(-8px)}}
+@keyframes ring{0%,4%{box-shadow:0 0 0 0 rgba(200,160,64,0);border-color:rgba(255,255,255,.14);animation-timing-function:cubic-bezier(.4,0,.2,1)}6.1%,100%{box-shadow:0 0 0 3px rgba(200,160,64,.22);border-color:#C8A040}}
+@keyframes hi{0%,24.3%{opacity:0;transform:translateY(14px)}32.7%,100%{opacity:1;transform:none}}
+@keyframes wl{0%,29.9%{opacity:0;transform:translateY(10px)}36.4%{opacity:1;transform:none}46.7%{opacity:1}53.2%,100%{opacity:0}}
+@keyframes pr{0%,50.4%{opacity:0;transform:translateY(10px)}59.7%,100%{opacity:1;transform:none}}
+@keyframes o1{0%,61.6%{opacity:0;transform:translateY(12px)}69.1%,100%{opacity:1;transform:none}}
+@keyframes o2{0%,67.2%{opacity:0;transform:translateY(12px)}74.7%,100%{opacity:1;transform:none}}
+@keyframes o3{0%,72.8%{opacity:0;transform:translateY(12px)}80.3%,100%{opacity:1;transform:none}}
+.ln{display:flex;gap:14px;padding:12px 0;border-top:1px solid #DDD8CE}
+.t{width:96px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A;font-variant-numeric:tabular-nums}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+@media (prefers-reduced-motion: reduce){.rail,.fdbg,.fdc,.fld,.hi,.wl,.pr,.o1,.o2,.o3{animation-duration:0s}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M01 · Screens 01 → 02a · live, loops for preview, runs once in the app</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Front door to welcome: dark door, light room</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" aria-label="Animated preview of the name screen turning into the welcome screen" role="img">
+<div class="tp"><i>R</i><b>Resolve</b></div>
+<div class="fdbg"></div>
+<div class="rail"><span style="width: 70%; background: #C8A040;"></span><span></span><span></span><span style="width: 80%;"></span></div>
+<div class="fdc">
+<div style="font-size: 11px; font-weight: 600; color: #C8A040;">Let's get started</div>
+<div style="font: 32px 'DM Serif Display', serif; color: #F5F1E8; margin: 6px 0 16px;">What's your name?</div>
+<div class="fld">Simeon</div>
+<div style="display: inline-flex; margin-top: 12px; background: #C8A040; color: #1A1A18; border-radius: 8px; padding: 10px 16px; font-size: 12.5px; font-weight: 600;">Continue →</div>
+</div>
+<div class="pn">
+<div class="hi">Hi Simeon.</div>
+<div class="wl">Welcome to <span style="color: #8B4A2A; font-weight: 600;">Resolve</span>.</div>
+<div class="pr">
+<div style="font-size: 17px; font-weight: 700;">What do you need help with?</div>
+<div class="op o1">I have a messy project</div>
+<div class="op o2">I have a new idea</div>
+<div class="op o3">I'm stuck, not sure where to start</div>
+</div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="ln"><span class="t">0 – 300ms</span><span class="d">Name screen holds. Field already focused: amber ring <code>160ms e-std</code> (M01.2).</span></div>
+<div class="ln"><span class="t">1000ms</span><span class="d">Continue. Door content exits <code>240ms e-in, translateY(-8px)</code> (M01.4a).</span></div>
+<div class="ln"><span class="t">+100ms</span><span class="d">Rail slides in from the left <code>420ms e-spring, translateX(-308px) → 0</code> (M01.4b). In the app it slides over the dark, so it reads as the room forming.</span></div>
+<div class="ln"><span class="t">+220ms</span><span class="d">Work pane washes from ink to parchment <code>600ms e-std</code> (M01.4c). Amber stays the thread: the field ring is the last dark-side colour you see.</span></div>
+<div class="ln"><span class="t">0 – 630ms</span><span class="d">On the welcome clock: "Hi Simeon." rises <code>14px</code>, the single serif on screen (M01.5).</span></div>
+<div class="ln"><span class="t">420 – 2170ms</span><span class="d">"Welcome to Resolve." fades in, holds, gives way.</span></div>
+<div class="ln"><span class="t">1960 – 4200ms</span><span class="d">The question, then three paths, each <code>12px</code>, 420ms apart. Holds. No loop in the app.</span></div>
+<div class="ln"><span class="t">Reduced motion</span><span class="d">No slide or rise. Door and welcome crossfade in 120ms. Paths appear at once.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
