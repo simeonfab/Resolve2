@@ -221,6 +221,9 @@ pub struct WorkspaceSettings {
     pub hub_token: String,
     #[serde(default)]
     pub last_hub_sync: i64,
+    /// The sidebar is collapsed to icons (B-E1), remembered per workspace.
+    #[serde(default)]
+    pub sidebar_collapsed: bool,
 }
 
 /// Send this device's copy to a hub's /sync and get the merged workspace back.
@@ -287,6 +290,7 @@ impl Default for WorkspaceSettings {
             hub_url: String::new(),
             hub_token: String::new(),
             last_hub_sync: 0,
+            sidebar_collapsed: false,
         }
     }
 }

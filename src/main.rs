@@ -14,6 +14,7 @@
 //!   resolve2 --test-connection claude-code|ollama|anthropic   one real test reply (Connect your AI)
 //!   resolve2 --view gallery [--state full|empty|loading|error] [--theme light|dark] [--reduced-motion]
 //!            [--size 1920x1080] --screenshot shot.png      the component gallery (and any view's states)
+//!   resolve2 --view <screen> [--collapsed] [--open ask|search[:words]] ...   the shell: sidebar collapsed, Ask sheet or search open
 
 // the release build (what testers get) opens as a normal windowed app, with no console window
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -328,6 +329,10 @@ fn main() {
         theme: arg_value(&args, "--theme"),
         reduced_motion: args.iter().any(|a| a == "--reduced-motion"),
         scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
+        collapsed: args.iter().any(|a| a == "--collapsed"),
+        open: arg_value(&args, "--open"),
+        provider: arg_value(&args, "--provider"),
+        model: arg_value(&args, "--model"),
     };
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()

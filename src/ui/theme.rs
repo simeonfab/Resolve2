@@ -197,8 +197,11 @@ pub mod size {
     pub const TINY: f32 = 11.5;
     /// Tags, pills, counts.
     pub const TAG: f32 = 11.0;
-    /// Sidebar group labels.
+    /// Sidebar group labels (Inter 600 11, letter spacing .04em).
     pub const GROUP: f32 = 11.0;
+    pub const GROUP_SPACING: f32 = GROUP * 0.04;
+    /// Sidebar items (Inter 500 13.5).
+    pub const NAV: f32 = 13.5;
     /// Line heights (multipliers), as the brief writes them.
     pub const LH_HERO: f32 = 1.05;
     pub const LH_DISPLAY: f32 = 1.1;
@@ -246,6 +249,26 @@ pub mod space {
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;
     pub const NAV_ITEM_H: f32 = 32.0;
+    /// Sidebar inner padding; icons sit 20 from an item's left edge (centred when collapsed,
+    /// so they don't move), labels at 40.
+    pub const NAV_PAD: f32 = 12.0;
+    pub const NAV_ICON: f32 = 16.0;
+    pub const NAV_ICON_X: f32 = 20.0;
+    pub const NAV_LABEL_X: f32 = 40.0;
+    /// Workspace tile and the sidebar's two buttons.
+    pub const NAV_TILE: f32 = 26.0;
+    pub const NAV_BUTTON_H: f32 = 34.0;
+    /// Tooltip beside a collapsed item.
+    pub const NAV_TIP_GAP: f32 = 10.0;
+    /// Ask sheet: 720 wide, 82% of the window high, flush with the bottom.
+    pub const ASK_SHEET_W: f32 = 720.0;
+    pub const ASK_SHEET_HEIGHT: f32 = 0.82;
+    /// The strip the Ask bar floats in (kept clear of screen content).
+    pub const ASK_STRIP: f32 = ASK_BOTTOM + ASK_H + S12;
+    /// Dialogs sit 70 to 90 px from the top; the search palette is 680 wide.
+    pub const DIALOG_TOP: f32 = 80.0;
+    pub const SEARCH_W: f32 = 680.0;
+    pub const SEARCH_LIST_H: f32 = 440.0;
     /// Ask Resolve bar.
     pub const ASK_W: f32 = 560.0;
     pub const ASK_H: f32 = 48.0;
@@ -291,6 +314,8 @@ pub mod radius {
     pub const SHEET: f32 = 20.0;
     pub const NAV_ITEM: f32 = 8.0;
     pub const GATE: f32 = 6.0;
+    /// The workspace tile in the sidebar.
+    pub const TILE: f32 = 7.0;
 }
 
 /// Shadows and rings, as the brief writes them (CSS box-shadow: x, y, blur, spread, colour).
