@@ -486,6 +486,9 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
     wait.status = "Waiting".into();
     wait.created = t - 3 * 24 * 3600 * 1000;
     wait.updated = wait.created;
+    if let Some(theme) = d.records.iter_mut().find(|r| r.kind == crate::resolve::records::Kind::Roadmap && r.title == "Measure true monthly hours") {
+        theme.links.push(wait.id.clone());
+    }
     d.records.push(wait);
     if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {
         c.recommendation.why = "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into();

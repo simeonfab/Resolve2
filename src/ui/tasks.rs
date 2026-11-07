@@ -8,6 +8,83 @@ enum TAct {
     Toggle(Id),
     Open(Id),
     Move(Id, String),
+    /// A Dependency record waited on has arrived (Met).
+    WaitDone(Id),
+    ShowDone,
+    Organise,
+}
+
+/// What the one-project task list shows, worked out from the workspace (B-E8). Self-checked.
+pub struct ProjectTasks {
+    /// (task, its theme) in Now: the project's Now section (or no section)
+    pub now: Vec<(Id, String)>,
+    /// (dependency record, title, how long it has waited, theme)
+    pub waiting: Vec<(Id, String, String, String)>,
+    /// (task, theme, "Next" or "Later")
+    pub upcoming: Vec<(Id, String, String)>,
+    /// Other sections the person made: (section, tasks)
+    pub other: Vec<(String, Vec<(Id, String)>)>,
+    pub done_week: usize,
+    pub open: usize,
+}
+
+pub fn project_tasks_model(d: &WorkspaceData, pid: &str, real_ms: i64, now: NaiveDateTime) -> ProjectTasks {
+    use crate::resolve::records::Kind;
+    let theme_of = |tid: &str| d.records.iter().find(|r| r.kind == Kind::Roadmap && r.project_id.as_deref() == Some(pid) && r.links.iter().any(|l| l == tid)).map(|r| r.title.clone()).unwrap_or_default();
+    let mut tasks: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pid) && t.parent_id.is_none()).collect();
+    tasks.sort_by_key(|t| t.order);
+    let open: Vec<&&Task> = tasks.iter().filter(|t| !t.completed).collect();
+    let monday = now.date() - chrono::Duration::days(now.date().weekday().num_days_from_monday() as i64);
+    let monday_ms = real_ms - (now - monday.and_time(NaiveTime::MIN)).num_milliseconds();
+    let mut m = ProjectTasks { now: vec![], waiting: vec![], upcoming: vec![], other: vec![], done_week: tasks.iter().filter(|t| t.completed && t.completed_at.map_or(false, |c| c >= monday_ms)).count(), open: open.len() };
+    for t in &open {
+        match t.section.as_str() {
+            "" | "Now" => m.now.push((t.id.clone(), theme_of(&t.id))),
+            "Next" | "Later" => m.upcoming.push((t.id.clone(), theme_of(&t.id), t.section.clone())),
+            s => match m.other.iter_mut().find(|o| o.0 == s) {
+                Some(o) => o.1.push((t.id.clone(), theme_of(&t.id))),
+                None => m.other.push((s.to_string(), vec![(t.id.clone(), theme_of(&t.id))])),
+            },
+        }
+    }
+    m.upcoming.sort_by_key(|u| if u.2 == "Next" { 0 } else { 1 });
+    for r in d.records.iter().filter(|r| r.kind == Kind::Dependency && r.project_id.as_deref() == Some(pid) && r.status == "Waiting") {
+        let days = ((real_ms - r.created).max(0) / (24 * 3600 * 1000)) as usize;
+        let age = if days == 0 { "Waiting · since today".to_string() } else if days == 1 { "Waiting · 1 day".to_string() } else { format!("Waiting · {days} days") };
+        let theme = d.records.iter().find(|x| x.kind == Kind::Roadmap && x.project_id.as_deref() == Some(pid) && x.links.contains(&r.id)).map(|x| x.title.clone()).unwrap_or_default();
+        m.waiting.push((r.id.clone(), r.title.clone(), age, theme));
+    }
+    m
+}
+
+/// A task row's text, owned (the drawing borrows it as a `TaskLine`).
+struct TaskLineOwned {
+    title: String,
+    notes: String,
+    when: String,
+    urgent: bool,
+    theme: String,
+    basis: String,
+    done: bool,
+}
+
+impl TaskLineOwned {
+    fn from(l: (String, bool, String, String, String), t: &Task) -> Self {
+        TaskLineOwned { title: l.0, urgent: l.1, when: l.2, theme: l.3, basis: l.4, notes: t.notes.lines().next().unwrap_or("").to_string(), done: t.completed }
+    }
+    fn view(&self) -> TaskLine<'_> {
+        TaskLine { title: &self.title, notes: &self.notes, when: &self.when, urgent: self.urgent, theme: &self.theme, basis: &self.basis, done: self.done }
+    }
+}
+
+/// "Due today", "Overdue · 3 Nov", "Fri 13 Nov", or the phase for undated upcoming work.
+fn when_label(t: &Task, t0: NaiveDate) -> (String, bool) {
+    match t.due {
+        Some(d) if d < t0 => (format!("Overdue · {}", d.format("%-d %b")), true),
+        Some(d) if d == t0 => ("Due today".to_string(), true),
+        Some(d) => (d.format("%a %-d %b").to_string(), false),
+        None => (String::new(), false),
+    }
 }
 
 #[derive(Clone, Default)]
@@ -144,6 +221,224 @@ impl App {
         v.into_iter().map(|t| t.id.clone()).collect()
     }
 
+    /// One project's tasks (B-E8, Pack B "Tasks: one project, list"): the project as eyebrow,
+    /// List / Board, Organise, Add task, this week's progress and View completed, then Now,
+    /// Waiting on and Upcoming from roadmap; empty, loading and error as drawn.
+    fn project_tasks(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, acts: &mut Vec<TAct>) {
+        let Some(pr) = self.store.data.project(pid).cloned() else { return };
+        let t0 = today();
+        let m = project_tasks_model(&self.store.data, pid, now_ms(), now_local());
+        let state = match self.view_state {
+            ViewState::Full if m.open == 0 && m.done_week == 0 && m.waiting.is_empty() => ViewState::Empty,
+            s => s,
+        };
+        let show_done = self.tasks_ui.show_completed;
+        let mut board = false;
+        let mut add = false;
+        let mut project_act: Option<&str> = None;
+        let mut colour: Option<[u8; 3]> = None;
+        let mut open_roadmap = false;
+        let el = ((self.now - self.view_since) * 1000.0) as f32;
+        let reduced = super::motion::reduced();
+        egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE, right: space::WORK_SIDE, top: space::WORK_TOP, bottom: space::S24 }).show(ui, |ui| {
+                capped(ui, space::CAP_TASKS, |ui| {
+                    ui.label(RichText::new(&pr.name).font(fs(size::ROW_SMALL)).color(p.orange));
+                    screen_head(ui, p, "Tasks", "", |ui| {
+                        // the project's own actions: its document, colour, archive, delete
+                        ui.menu_button(RichText::new("⋯").font(fs(size::SECTION)).color(p.dim), |ui| {
+                            let doc = pr.page_id.clone().filter(|x| self.store.data.page(x).is_some());
+                            if ui.button(if doc.is_some() { "Open the project document" } else { "Create a project document" }).clicked() {
+                                project_act = Some("doc");
+                                ui.close_menu();
+                            }
+                            ui.label(RichText::new("Colour").size(size::SMALL).color(p.dim));
+                            ui.horizontal(|ui| {
+                                for c in PICK_COLOURS {
+                                    let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S18, space::S18), Sense::click());
+                                    ui.painter().circle_filled(r.center(), space::S8, rgb(c));
+                                    if resp.clicked() {
+                                        colour = Some(c);
+                                    }
+                                }
+                            });
+                            ui.separator();
+                            if ui.button("Archive project").clicked() {
+                                project_act = Some("archive");
+                                ui.close_menu();
+                            }
+                            if ui.button(RichText::new("Delete project and its tasks").color(p.orange)).clicked() {
+                                project_act = Some("delete");
+                                ui.close_menu();
+                            }
+                        });
+                        if button(ui, p, ButtonKind::Dark, "+ Add task", false, true).clicked() {
+                            add = true;
+                        }
+                        if button(ui, p, ButtonKind::Secondary, "✦ Organise", false, true).on_hover_text("Moves the to-dos in your pages into tasks, with dates").clicked() {
+                            acts.push(TAct::Organise);
+                        }
+                        if segmented(ui, p, egui::Id::new(("tasks-layout", pid)), &["List", "Board"], 0) == Some(1) {
+                            board = true;
+                        }
+                    });
+                    ui.add_space(space::S10);
+                    ui.horizontal(|ui| {
+                        let total = m.open + m.done_week;
+                        progress_line(ui, p, if total == 0 { 0.0 } else { m.done_week as f32 / total as f32 }, space::S40 * 9.0);
+                        ui.add_space(space::S6);
+                        ui.label(RichText::new(format!("{} of {total} done this week", m.done_week)).size(size::LABEL).color(p.dim));
+                        if ui.add(egui::Label::new(RichText::new(if show_done { "Hide completed ›" } else { "View completed ›" }).font(fs(size::LABEL)).color(p.orange)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                            acts.push(TAct::ShowDone);
+                        }
+                    });
+                    ui.add_space(space::S18);
+                    match state {
+                        ViewState::Loading => {
+                            for _ in 0..3 {
+                                skeleton_card(ui, p, 2, "");
+                                ui.add_space(space::S12);
+                            }
+                            ui.label(RichText::new("Loading tasks…").size(size::SMALL).color(p.dim));
+                        }
+                        ViewState::Error => {
+                            ui.add_space(space::S40);
+                            let a = error_center(ui, p, "Resolve couldn't load these tasks.", "Nothing is lost. Your tasks are saved on this PC.", "Open the roadmap");
+                            if a.retry {
+                                self.store.reload_if_changed();
+                            }
+                            if a.manual {
+                                open_roadmap = true;
+                            }
+                        }
+                        ViewState::Empty => {
+                            ui.add_space(space::S40);
+                            if empty_center(ui, p, Icon::Tasks, "No tasks in this project yet.", "Add the first one, or open the roadmap and turn a theme into tasks.", "Add task") {
+                                add = true;
+                            }
+                            ui.vertical_centered(|ui| {
+                                if button(ui, p, ButtonKind::Ghost, "Open the roadmap", false, true).clicked() {
+                                    open_roadmap = true;
+                                }
+                            });
+                        }
+                        ViewState::Full => {
+                            let d = &self.store.data;
+                            let line = |t: &Task, theme: &str, phase: &str| -> (String, bool, String, String, String) {
+                                let (mut when, urgent) = when_label(t, t0);
+                                if when.is_empty() {
+                                    when = phase.to_string();
+                                }
+                                let basis = t.labels.iter().find(|l| matches!(l.as_str(), "evidence" | "assumption" | "uncertain")).cloned().unwrap_or_default();
+                                (t.title.clone(), urgent, when, theme.to_string(), basis)
+                            };
+                            let mut n = 0;
+                            let mut group = |ui: &mut egui::Ui, dot: Color32, title: &str, note: &str, rows: Vec<(Id, TaskLineOwned)>, acts: &mut Vec<TAct>, waiting: bool| {
+                                if rows.is_empty() {
+                                    return;
+                                }
+                                let f = super::motion::frame_at(el, moves::CARDS.stagger(n, moves::CARDS_STAGGER), reduced);
+                                n += 1;
+                                super::motion::fade_in(ui, f, egui::vec2(0.0, space::S18), |ui| {
+                                    group_head(ui, p, dot, title, note);
+                                    ui.add_space(space::S8);
+                                    list_box(ui, p, |ui| {
+                                        for (i, (id, l)) in rows.iter().enumerate() {
+                                            let (tog, open) = task_line(ui, p, &l.view(), i == 0);
+                                            if tog {
+                                                acts.push(if waiting { TAct::WaitDone(id.clone()) } else { TAct::Toggle(id.clone()) });
+                                            }
+                                            if open && !waiting {
+                                                acts.push(TAct::Open(id.clone()));
+                                            }
+                                        }
+                                    });
+                                    ui.add_space(space::S22);
+                                });
+                            };
+                            let now_rows: Vec<(Id, TaskLineOwned)> = m.now.iter().filter_map(|(id, th)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ""), t)))).collect();
+                            group(ui, tok::AMBER, "Now", &format!("{} active", now_rows.len()), now_rows, acts, false);
+                            let wait_rows: Vec<(Id, TaskLineOwned)> = m.waiting.iter().map(|(id, title, age, th)| (id.clone(), TaskLineOwned { title: title.clone(), notes: String::new(), when: age.clone(), urgent: false, theme: th.clone(), basis: String::new(), done: false })).collect();
+                            let nw = wait_rows.len();
+                            group(ui, p.orange, "Waiting on", &format!("{nw} stalled"), wait_rows, acts, true);
+                            let up_rows: Vec<(Id, TaskLineOwned)> = m.upcoming.iter().filter_map(|(id, th, ph)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ph), t)))).collect();
+                            let nu = up_rows.len();
+                            group(ui, p.faint, "Upcoming from roadmap", &format!("{nu} queued"), up_rows, acts, false);
+                            for (sec, rows) in &m.other {
+                                let rows: Vec<(Id, TaskLineOwned)> = rows.iter().filter_map(|(id, th)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ""), t)))).collect();
+                                let k = rows.len();
+                                group(ui, p.dim, sec, &format!("{k} open"), rows, acts, false);
+                            }
+                            if show_done {
+                                let mut done: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pid) && t.parent_id.is_none() && t.completed).collect();
+                                done.sort_by_key(|t| std::cmp::Reverse(t.completed_at));
+                                let rows: Vec<(Id, TaskLineOwned)> = done.iter().map(|t| (t.id.clone(), TaskLineOwned::from(line(t, "", ""), t))).collect();
+                                let k = rows.len();
+                                group(ui, p.green, "Completed", &format!("{k} done"), rows, acts, false);
+                            }
+                        }
+                    }
+                });
+            });
+        });
+        if el < moves::CARDS.stagger(4, moves::CARDS_STAGGER).end() {
+            ui.ctx().request_repaint();
+        }
+        if board {
+            self.tasks_ui.board.insert(pid.to_string());
+        }
+        if let Some(c) = colour {
+            let id = pid.to_string();
+            self.undoable("Changed a project's colour", "edit", move |d| {
+                if let Some(x) = d.projects.iter_mut().find(|x| x.id == id) {
+                    x.color = c;
+                    x.updated = now_ms();
+                }
+            });
+        }
+        match project_act {
+            Some("doc") => match pr.page_id.clone().filter(|x| self.store.data.page(x).is_some()) {
+                Some(pg) => self.go(View::Page(pg)),
+                None => {
+                    let mut pg = Page::new(format!("{}: Project brief", pr.name));
+                    pg.blocks = vec![Block::new(BlockKind::H2, "Goal"), Block::new(BlockKind::Paragraph, ""), Block::new(BlockKind::H2, "Notes"), Block::new(BlockKind::Paragraph, "")];
+                    let pgid = pg.id.clone();
+                    self.store.data.pages.push(pg);
+                    if let Some(x) = self.store.data.projects.iter_mut().find(|x| x.id == pid) {
+                        x.page_id = Some(pgid.clone());
+                        x.updated = now_ms();
+                    }
+                    self.touch();
+                    self.go(View::Page(pgid));
+                }
+            },
+            Some("archive") => {
+                let id = pid.to_string();
+                self.undoable(&format!("Archived \"{}\"", pr.name), "edit", move |d| {
+                    if let Some(x) = d.projects.iter_mut().find(|x| x.id == id) {
+                        x.archived = true;
+                        x.updated = now_ms();
+                    }
+                });
+                self.current_project = None;
+                self.go(View::Projects);
+            }
+            Some("delete") => {
+                let id = pid.to_string();
+                self.undoable(&format!("Deleted project \"{}\"", pr.name), "delete", move |d| d.delete_project(&id));
+                self.current_project = None;
+                self.go(View::Projects);
+            }
+            _ => {}
+        }
+        if add {
+            self.open_quick(QuickKind::Task);
+        }
+        if open_roadmap {
+            self.go(View::Sec(super::nav::Section::Roadmap));
+        }
+    }
+
     pub fn tasks_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         let view = self.view.clone();
         let board_key = match &view {
@@ -152,6 +447,12 @@ impl App {
             _ => String::new(),
         };
         let is_board = !board_key.is_empty() && self.tasks_ui.board.contains(&board_key);
+        if let (View::Project(pid), false) = (&view, is_board) {
+            let mut acts: Vec<TAct> = vec![];
+            self.project_tasks(ui, p, &pid.clone(), &mut acts);
+            self.apply_task_acts(acts);
+            return;
+        }
         self.top_bar(ui, p, |app, ui| {
             ui.menu_button(RichText::new("☰ Display").size(13.0), |ui| {
                 ui.checkbox(&mut app.tasks_ui.show_completed, "Show completed tasks");
@@ -481,8 +782,27 @@ impl App {
             });
             ui.add_space(40.0);
         });
+        self.apply_task_acts(acts);
+    }
+
+    fn apply_task_acts(&mut self, acts: Vec<TAct>) {
         for a in acts {
             match a {
+                TAct::WaitDone(rid) => {
+                    // a dependency that has arrived: Met, undoable from its toast
+                    let title = self.store.data.records.iter().find(|r| r.id == rid).map(|r| r.title.clone()).unwrap_or_default();
+                    self.undoable(&format!("Arrived: \"{title}\""), "complete", move |d| {
+                        if let Some(r) = d.records.iter_mut().find(|r| r.id == rid) {
+                            r.status = "Met".into();
+                            r.updated = now_ms();
+                        }
+                    });
+                }
+                TAct::ShowDone => self.tasks_ui.show_completed = !self.tasks_ui.show_completed,
+                TAct::Organise => {
+                    self.page_ui.ai_open = true;
+                    self.ask_send(crate::ai::ORGANISE_PROMPT);
+                }
                 TAct::Toggle(id) => self.toggle_task(&id),
                 TAct::Open(id) => self.open_task = Some(id),
                 TAct::Move(id, sec) => {

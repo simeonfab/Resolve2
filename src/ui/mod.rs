@@ -25,7 +25,7 @@ mod assistant;
 mod databases;
 mod pages;
 pub(crate) mod settings;
-mod tasks;
+pub mod tasks;
 
 use crate::model::*;
 use crate::store::{Registry, Store};
@@ -193,6 +193,8 @@ pub struct StartOpts {
     /// --open ask[:question]|search[:query]|setup: open the Ask sheet (optionally asking a real
     /// question first), the search palette, or show an unfinished sample intake (screenshots).
     pub open: Option<String>,
+    /// --project <name>: pick that project in the sidebar (screenshots).
+    pub project: Option<String>,
     /// --provider / --model: the AI for a screenshot run (in memory, never saved).
     pub provider: Option<String>,
     pub model: Option<String>,
@@ -428,6 +430,10 @@ impl App {
             };
             if pick {
                 app.current_project = app.store.data.contexts.iter().filter(|c| app.store.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
+            }
+            // --project <name>: that project (screenshots of a particular one)
+            if let Some(pid) = opts.project.as_deref().and_then(|n| app.store.data.projects.iter().find(|p| p.name.eq_ignore_ascii_case(n))).map(|p| p.id.clone()) {
+                app.current_project = Some(pid);
             }
             if let Some(s) = sec {
                 app.view = View::Sec(s);

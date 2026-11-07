@@ -40,4 +40,19 @@ pub fn run(t: &mut T) {
         c.outcome.starts_with("Café owners know their monthly cost") && c.next.starts_with("Pull the actual hours") && c.now == "2 Now" && c.next_n == "2 Next" && c.later == "2 Later" && c.open.ends_with("open questions") && c.updated == "Updated today" && c.done.ends_with("tasks"),
         format!("{} | {} | {} {} {} {} | {}", c.done, c.next, c.now, c.next_n, c.later, c.open, c.updated),
     );
+
+    // B-E8: one project's tasks in Now, Waiting on and Upcoming from roadmap, with their themes
+    let tm = crate::ui::tasks::project_tasks_model(&d, &cafe, crate::model::now_ms(), at);
+    let first_now = tm.now.first().and_then(|(id, th)| d.task(id).map(|t| (t.title.clone(), th.clone())));
+    t.check(
+        "B-E8: Now, Waiting on and Upcoming from roadmap, each task with its roadmap theme; done this week counted",
+        first_now == Some(("Reconstruct 12 months of hours per café".to_string(), "Measure true monthly hours".to_string()))
+            && tm.waiting.len() == 1
+            && tm.waiting[0].2 == "Waiting · 3 days"
+            && tm.waiting[0].3 == "Measure true monthly hours"
+            && tm.upcoming.first().map(|u| u.2.as_str()) == Some("Next")
+            && tm.upcoming.last().map(|u| u.2.as_str()) == Some("Later")
+            && tm.done_week == 3,
+        format!("now {} waiting {:?} upcoming {} done {}", tm.now.len(), tm.waiting, tm.upcoming.len(), tm.done_week),
+    );
 }

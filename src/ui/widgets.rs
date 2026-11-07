@@ -1661,6 +1661,117 @@ pub fn screen_head(ui: &mut Ui, p: &Pal, title: &str, sub: &str, add_right: impl
     });
 }
 
+/// One row of the redesigned task list (B-E8).
+pub struct TaskLine<'a> {
+    pub title: &'a str,
+    /// The first line of the notes (may be empty).
+    pub notes: &'a str,
+    /// "Due today", "Fri 13 Nov", "Waiting · 3 days", "Next".
+    pub when: &'a str,
+    /// The due date has passed or is today (drawn in terracotta).
+    pub urgent: bool,
+    /// The roadmap theme (terracotta, 600).
+    pub theme: &'a str,
+    /// "evidence", "assumption" or "uncertain" (a tag), or empty.
+    pub basis: &'a str,
+    pub done: bool,
+}
+
+/// A group heading in the task list: a dot, the name (14.5, 600) and a note ("2 active").
+pub fn group_head(ui: &mut Ui, p: &Pal, dot: Color32, title: &str, note: &str) {
+    ui.horizontal(|ui| {
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S8, space::S8), Sense::hover());
+        ui.painter().circle_filled(r.center(), space::S8 / 2.0, dot);
+        ui.label(RichText::new(title).font(fs(size::HERO_BODY)).color(p.text));
+        ui.label(RichText::new(note).size(size::LABEL).color(p.dim));
+    });
+}
+
+/// The white box a group's rows sit in (rows are separated by dividers).
+pub fn list_box<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = 0.0;
+        add(ui)
+    })
+    .inner
+}
+
+/// A tag for the basis of an item: evidence (green), assumption (amber), uncertain (terracotta).
+pub fn basis_tag(ui: &mut Ui, p: &Pal, basis: &str) {
+    let (fg, bg) = match basis {
+        "evidence" => (p.green_text, p.green_tint),
+        "uncertain" => (p.orange, p.orange_tint),
+        _ => (p.accent_text, p.accent_soft),
+    };
+    let g = ui.painter().layout_no_wrap(basis.to_string(), fs(size::TINY), fg);
+    let (r, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S16, space::S4), Sense::hover());
+    ui.painter().rect_filled(r, radius::PILL, bg);
+    ui.painter().galley(r.min + egui::vec2(space::S8, space::S4 / 2.0), g, fg);
+}
+
+/// One task row: the round check (20), the title (14.5), the notes' first line (12.5) and a meta
+/// line (when, theme, basis). Returns (toggled, opened).
+pub fn task_line(ui: &mut Ui, p: &Pal, t: &TaskLine, first: bool) -> (bool, bool) {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let mut toggled = false;
+    let inner = egui::Frame::none().inner_margin(egui::Margin { left: space::S14, right: space::S16, top: space::S12, bottom: space::S12 }).show(ui, |ui| {
+        ui.set_width(w - space::S14 - space::S16);
+        ui.horizontal_top(|ui| {
+            let d = space::MARK + space::S4;
+            let (cr, cresp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+            let col = if t.done { p.green } else { p.faint };
+            ui.painter().circle_stroke(cr.center(), d / 2.0 - 1.0, Stroke::new(stroke::ICON, col));
+            if t.done || cresp.hovered() {
+                ui.painter().add(Shape::line(vec![cr.center() + egui::vec2(-4.0, 0.3), cr.center() + egui::vec2(-1.2, 3.0), cr.center() + egui::vec2(4.2, -2.6)], Stroke::new(stroke::ICON, if t.done { p.green } else { p.faint })));
+            }
+            toggled = cresp.on_hover_text(if t.done { "Reopen" } else { "Complete" }).on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
+            ui.add_space(space::S10);
+            ui.vertical(|ui| {
+                ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+                let mut title = RichText::new(t.title).size(size::HERO_BODY).color(if t.done { p.dim } else { p.text });
+                if t.done {
+                    title = title.strikethrough();
+                }
+                ui.add(egui::Label::new(title).wrap());
+                if !t.notes.is_empty() {
+                    ui.add(egui::Label::new(RichText::new(t.notes).size(size::SMALL).color(p.dim)).truncate());
+                }
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S8;
+                    if !t.when.is_empty() {
+                        ui.label(RichText::new(t.when).font(fs(size::SMALL - 0.5)).color(if t.urgent { p.orange } else { p.dim }));
+                    }
+                    if !t.theme.is_empty() {
+                        ui.label(RichText::new(t.theme).font(fs(size::SMALL - 0.5)).color(p.orange));
+                    }
+                    if !t.basis.is_empty() {
+                        basis_tag(ui, p, t.basis);
+                    }
+                });
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let resp = ui.interact(rect, inner.response.id.with("task-line"), Sense::click());
+    if resp.hovered() {
+        ui.painter().set(bg_at, Shape::rect_filled(rect.shrink(stroke::HAIR), radius::CARD - 1.0, p.surface_raised));
+    }
+    if !first {
+        ui.painter().line_segment([rect.left_top(), rect.right_top()], Stroke::new(stroke::HAIR, p.divider));
+    }
+    (toggled, resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !toggled)
+}
+
+/// A thin progress bar with its label to the right.
+pub fn progress_line(ui: &mut Ui, p: &Pal, frac: f32, width: f32) {
+    let (r, _) = ui.allocate_exact_size(egui::vec2(width, space::BAR_H), Sense::hover());
+    ui.painter().rect_filled(r, space::BAR_H / 2.0, p.track);
+    ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(width * frac.clamp(0.0, 1.0), space::BAR_H)), space::BAR_H / 2.0, tok::AMBER);
+}
+
 /// A line led by a small dot ("Focus theme · …" on the hero).
 pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
     ui.horizontal(|ui| {

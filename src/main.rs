@@ -339,6 +339,7 @@ fn main() {
         scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
         collapsed: args.iter().any(|a| a == "--collapsed"),
         open: arg_value(&args, "--open"),
+        project: arg_value(&args, "--project"),
         provider: arg_value(&args, "--provider"),
         model: arg_value(&args, "--model"),
     };
