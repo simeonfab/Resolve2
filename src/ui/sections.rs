@@ -24,6 +24,70 @@ pub(super) fn lane_of(r: &Record) -> &str {
     }
 }
 
+/// What a project card on the Projects screen shows (B-E7).
+#[derive(Clone, Debug, Default)]
+pub struct ProjectCardModel {
+    pub id: Id,
+    pub name: String,
+    pub color: [u8; 3],
+    pub outcome: String,
+    pub next: String,
+    pub frac: f32,
+    /// "1 of 5 tasks"
+    pub done: String,
+    /// "2 Now", "2 Next", "2 Later", "8 open questions" (empty when zero)
+    pub now: String,
+    pub next_n: String,
+    pub later: String,
+    pub open: String,
+    /// "Updated today", "Updated yesterday", "Updated Tuesday", "Updated 12 Oct"
+    pub updated: String,
+}
+
+/// A project's next move: the intake's first move, else its pinned task, else what the
+/// assessment says comes next.
+pub fn project_next_move(d: &WorkspaceData, pid: &str) -> String {
+    let first = d.intakes.iter().find(|i| i.project_id.as_deref() == Some(pid)).and_then(|i| i.proposal.as_ref()).map(|p| p.next_move.trim().to_string()).filter(|s| !s.is_empty());
+    first
+        .or_else(|| {
+            let c = d.context_for(pid)?;
+            let a = crate::resolve::assess::assess(d, c);
+            a.win.as_ref().and_then(|w| d.task(w)).filter(|t| !t.completed).map(|t| t.title.clone()).or_else(|| a.next.first().map(|x| x.0.clone()))
+        })
+        .unwrap_or_default()
+}
+
+pub fn project_card_model(d: &WorkspaceData, pid: &str, real_ms: i64, now: NaiveDateTime) -> ProjectCardModel {
+    let Some(pr) = d.project(pid) else { return ProjectCardModel::default() };
+    let tasks: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pid) && t.parent_id.is_none()).collect();
+    let done = tasks.iter().filter(|t| t.completed).count();
+    let lane = |l: &str| d.records.iter().filter(|r| r.kind == Kind::Roadmap && r.project_id.as_deref() == Some(pid) && r.status != "Dropped" && lane_of(r) == l).count();
+    let open = d.records.iter().filter(|r| r.project_id.as_deref() == Some(pid) && matches!(r.kind, Kind::Question | Kind::Hypothesis) && r.is_open()).count();
+    let pill = |n: usize, word: &str| if n == 0 { String::new() } else { format!("{n} {word}") };
+    let latest = tasks.iter().map(|t| t.updated).chain(d.records.iter().filter(|r| r.project_id.as_deref() == Some(pid)).map(|r| r.updated)).chain(d.context_for(pid).map(|c| c.updated)).chain([pr.updated]).max().unwrap_or(pr.updated);
+    let days = ((real_ms - latest).max(0) / (24 * 3600 * 1000)) as i64;
+    let updated = match days {
+        0 => "Updated today".to_string(),
+        1 => "Updated yesterday".to_string(),
+        2..=6 => format!("Updated {}", (now.date() - chrono::Duration::days(days)).format("%A")),
+        _ => format!("Updated {}", (now.date() - chrono::Duration::days(days)).format("%-d %b")),
+    };
+    ProjectCardModel {
+        id: pid.to_string(),
+        name: pr.name.clone(),
+        color: pr.color,
+        outcome: d.context_for(pid).map(|c| if c.outcome.is_empty() { c.understanding.goal.clone() } else { c.outcome.clone() }).unwrap_or_default(),
+        next: project_next_move(d, pid),
+        frac: if tasks.is_empty() { 0.0 } else { done as f32 / tasks.len() as f32 },
+        done: format!("{done} of {} tasks", tasks.len()),
+        now: pill(lane("Now"), "Now"),
+        next_n: pill(lane("Next"), "Next"),
+        later: pill(lane("Later"), "Later"),
+        open: if open == 0 { String::new() } else if open == 1 { "1 open question".into() } else { format!("{open} open questions") },
+        updated,
+    }
+}
+
 /// Roadmap edits collected while drawing, applied afterwards.
 enum RmAct {
     Move(Id, &'static str),
@@ -104,16 +168,106 @@ impl App {
 
     // ------------------------------------------------------------ Projects
 
+    /// Projects (B-E7, Pack B): cards in two columns, three at 1920 or with the sidebar collapsed
+    /// (B-E19), a dashed New project card last; empty, loading and error as drawn.
     pub(super) fn projects_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        self.top_bar(ui, p, |app, ui| {
-            if primary_button(ui, p, "+ New project").on_hover_text("Opens the intake").clicked() {
-                app.start_intake();
-            }
-        });
+        let mut ids: Vec<(Id, i64)> = self.store.data.projects.iter().filter(|x| !x.archived).map(|x| (x.id.clone(), x.order)).collect();
+        ids.sort_by_key(|x| x.1);
+        let cards: Vec<ProjectCardModel> = ids.iter().map(|(id, _)| project_card_model(&self.store.data, id, now_ms(), now_local())).collect();
+        let state = match self.view_state {
+            ViewState::Full if cards.is_empty() => ViewState::Empty,
+            s => s,
+        };
+        let wide = ui.ctx().screen_rect().width() > space::WIDE_FROM;
+        let cols = if wide || self.store.settings.sidebar_collapsed { 3 } else { 2 };
+        let mut act: Option<(usize, Id)> = None;
+        let mut new_project = false;
+        let el = ((self.now - self.view_since) * 1000.0) as f32;
+        let reduced = super::motion::reduced();
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
-            centered(ui, 1000.0, |ui| {
-                view_title(ui, p, "Projects", Some("Each project has its own overview, roadmap, tasks, frameworks, knowledge and team."));
-                self.project_cards(ui, p);
+            egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE, right: space::WORK_SIDE, top: space::WORK_TOP, bottom: space::S24 }).show(ui, |ui| {
+                capped(ui, space::CAP_DEFAULT, |ui| {
+                    screen_head(ui, p, "Projects", "Each project has its own overview, roadmap, tasks, frameworks and knowledge.", |ui| {
+                        if button(ui, p, ButtonKind::Primary, "+ New project", false, true).clicked() {
+                            new_project = true;
+                        }
+                    });
+                    ui.add_space(space::S24);
+                    match state {
+                        ViewState::Empty => {
+                            ui.add_space(space::S40 * 1.5);
+                            if empty_center(ui, p, Icon::Projects, "No projects yet.", "Start one and Resolve turns it into a first move and a roadmap. Tasks you capture without a project stay in Tasks, Captured.", "New project →") {
+                                new_project = true;
+                            }
+                        }
+                        ViewState::Error => {
+                            ui.add_space(space::S40 * 1.5);
+                            let a = error_center(ui, p, "Resolve couldn't read your projects.", "Your data is still on this PC. This is usually a file another app has open. Try again in a moment.", "Open Help");
+                            if a.retry {
+                                self.store.reload_if_changed();
+                            }
+                            if a.manual {
+                                self.go(View::Help);
+                            }
+                        }
+                        ViewState::Loading => {
+                            ui.columns(cols, |c| {
+                                for col in c.iter_mut() {
+                                    skeleton_card(col, p, 4, "");
+                                }
+                            });
+                        }
+                        ViewState::Full => {
+                            let gap = space::S16;
+                            let w = (ui.available_width() - gap * (cols as f32 - 1.0)) / cols as f32;
+                            let n = cards.len() + 1;
+                            for row in 0..(n + cols - 1) / cols {
+                                ui.horizontal_top(|ui| {
+                                    ui.spacing_mut().item_spacing.x = gap;
+                                    for c in 0..cols {
+                                        let i = row * cols + c;
+                                        if i >= n {
+                                            break;
+                                        }
+                                        let f = super::motion::frame_at(el, moves::CARDS.stagger(i, moves::CARDS_STAGGER), reduced);
+                                        ui.allocate_ui_with_layout(egui::vec2(w, 0.0), Layout::top_down(Align::Min), |ui| {
+                                            ui.set_width(w);
+                                            ui.set_max_width(w);
+                                            super::motion::fade_in(ui, f, egui::vec2(0.0, space::S18), |ui| {
+                                                if i == cards.len() {
+                                                    if dashed_add_card(ui, p, "New project", "Opens the intake. About ten minutes.", space::S40 * 5.5).clicked() {
+                                                        new_project = true;
+                                                    }
+                                                    return;
+                                                }
+                                                let m = &cards[i];
+                                                let pills = [m.now.as_str(), m.next_n.as_str(), m.later.as_str(), m.open.as_str()];
+                                                let view = ProjectCardView { name: &m.name, dot: rgb(m.color), outcome: &m.outcome, next: &m.next, frac: m.frac, done: &m.done, pills, updated: &m.updated };
+                                                let popup = egui::Id::new(("project-menu", &m.id));
+                                                let open = ui.memory(|mem| mem.is_popup_open(popup));
+                                                let (card, menu) = project_card(ui, p, &view, open);
+                                                if menu.clicked() {
+                                                    ui.memory_mut(|mem| mem.toggle_popup(popup));
+                                                } else if card.clicked() {
+                                                    act = Some((0, m.id.clone()));
+                                                }
+                                                egui::popup_below_widget(ui, popup, &menu, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                                                    ui.set_min_width(space::S40 * 5.0);
+                                                    for (k, label) in ["Open overview", "Rename", "Edit outcome"].iter().enumerate() {
+                                                        if ui.selectable_label(false, RichText::new(*label).size(size::ROW_SMALL)).clicked() {
+                                                            act = Some((k, m.id.clone()));
+                                                        }
+                                                    }
+                                                });
+                                            });
+                                        });
+                                    }
+                                });
+                                ui.add_space(gap);
+                            }
+                        }
+                    }
+                    self.project_edit_window(ui.ctx(), p);
                 // archived projects stay reachable
                 let archived: Vec<(Id, String)> = self.store.data.projects.iter().filter(|x| x.archived).map(|x| (x.id.clone(), x.name.clone())).collect();
                 if !archived.is_empty() {
@@ -133,9 +287,74 @@ impl App {
                         }
                     });
                 }
-                ui.add_space(40.0);
+                ui.add_space(space::S40);
+                });
             });
         });
+        if el < moves::CARDS.stagger(cards.len() + 1, moves::CARDS_STAGGER).end() {
+            ui.ctx().request_repaint();
+        }
+        if new_project {
+            self.start_intake();
+        }
+        match act {
+            Some((0, id)) => {
+                self.select_project(Some(id));
+                self.go(View::Sec(Section::Overview));
+            }
+            Some((1, id)) => {
+                let name = self.store.data.project(&id).map(|x| x.name.clone()).unwrap_or_default();
+                self.temp.insert("project_edit".into(), format!("name\u{1f}{id}\u{1f}{name}"));
+            }
+            Some((_, id)) => {
+                let outcome = self.store.data.context_for(&id).map(|c| c.outcome.clone()).unwrap_or_default();
+                self.temp.insert("project_edit".into(), format!("outcome\u{1f}{id}\u{1f}{outcome}"));
+            }
+            None => {}
+        }
+    }
+
+    /// Rename a project, or edit its outcome (from a card's ⋯ menu). Saving can be undone.
+    fn project_edit_window(&mut self, ctx: &egui::Context, p: &Pal) {
+        let Some(raw) = self.temp.get("project_edit").cloned() else { return };
+        let mut parts = raw.splitn(3, '\u{1f}');
+        let (field, id, mut text) = (parts.next().unwrap_or("").to_string(), parts.next().unwrap_or("").to_string(), parts.next().unwrap_or("").to_string());
+        let mut close = false;
+        let mut save = false;
+        let title = if field == "name" { "Rename project" } else { "Edit outcome" };
+        egui::Window::new(title).collapsible(false).resizable(false).anchor(egui::Align2::CENTER_TOP, [0.0, space::DIALOG_TOP]).frame(dialog_frame(p).inner_margin(egui::Margin::same(space::S18))).show(ctx, |ui| {
+            ui.set_width(space::SEARCH_W - space::S40 * 4.0);
+            let id_field = egui::Id::new("project-edit-field");
+            let r = text_field(ui, p, id_field, &mut text, if field == "name" { "Project name" } else { "Who is better off, and how you'd know" }, field != "name", ui.available_width());
+            r.request_focus();
+            ui.add_space(space::S10);
+            ui.horizontal(|ui| {
+                save = button(ui, p, ButtonKind::Primary, "Save", false, !text.trim().is_empty()).clicked() || (field == "name" && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !text.trim().is_empty());
+                close = button(ui, p, ButtonKind::Secondary, "Cancel", false, true).clicked() || ui.input(|i| i.key_pressed(egui::Key::Escape));
+            });
+        });
+        if save {
+            let v = text.trim().to_string();
+            let (pid, f) = (id.clone(), field.clone());
+            let label = if f == "name" { format!("Renamed a project to \"{v}\"") } else { "Edited a project's outcome".to_string() };
+            self.undoable(&label, "edit", move |d| {
+                if f == "name" {
+                    if let Some(x) = d.projects.iter_mut().find(|x| x.id == pid) {
+                        x.name = v;
+                        x.updated = now_ms();
+                    }
+                } else if let Some(c) = d.context_for_mut(&pid) {
+                    c.outcome = v;
+                    c.updated = now_ms();
+                }
+            });
+            close = true;
+        }
+        if close {
+            self.temp.remove("project_edit");
+        } else {
+            self.temp.insert("project_edit".into(), format!("{field}\u{1f}{id}\u{1f}{text}"));
+        }
     }
 
     fn project_cards(&mut self, ui: &mut egui::Ui, p: &Pal) {

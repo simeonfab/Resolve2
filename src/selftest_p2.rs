@@ -31,4 +31,13 @@ pub fn run(t: &mut T) {
     crate::seed::seed_empty(&mut empty);
     let e = crate::ui::dashboard::home_model(&empty, at, crate::model::now_ms(), None);
     t.check("Home, empty: no hero, no projects, and \"nothing scheduled yet\"", e.hero.is_none() && e.projects.is_empty() && e.subline.ends_with("nothing scheduled yet"), &e.subline);
+
+    // B-E7: a project card's outcome, next move, phase counts and open questions
+    let cafe = d.projects.iter().find(|p| p.name == "Café flat-fee bookkeeping").map(|p| p.id.clone()).unwrap_or_default();
+    let c = crate::ui::sections::project_card_model(&d, &cafe, crate::model::now_ms(), at);
+    t.check(
+        "B-E7: project card with outcome, next move, progress, Now / Next / Later counts and open questions",
+        c.outcome.starts_with("Café owners know their monthly cost") && c.next.starts_with("Pull the actual hours") && c.now == "2 Now" && c.next_n == "2 Next" && c.later == "2 Later" && c.open.ends_with("open questions") && c.updated == "Updated today" && c.done.ends_with("tasks"),
+        format!("{} | {} | {} {} {} {} | {}", c.done, c.next, c.now, c.next_n, c.later, c.open, c.updated),
+    );
 }

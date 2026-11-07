@@ -15,7 +15,7 @@ mod intake_steps;
 mod knowledge;
 pub mod nav;
 pub mod resolve;
-mod sections;
+pub mod sections;
 mod team;
 pub mod testlab;
 pub mod dashboard;

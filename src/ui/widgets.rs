@@ -1501,6 +1501,166 @@ pub fn hero_eyebrow(ui: &mut Ui, label: &str, pill: &str) {
     });
 }
 
+/// One project on the Projects screen (B-E7).
+pub struct ProjectCardView<'a> {
+    pub name: &'a str,
+    pub dot: Color32,
+    pub outcome: &'a str,
+    pub next: &'a str,
+    pub frac: f32,
+    pub done: &'a str,
+    /// (Now, Next, Later, open questions) as their labels: "2 Now", "8 open questions".
+    pub pills: [&'a str; 4],
+    pub updated: &'a str,
+}
+
+/// A small pill: ink for Now, sunk for Next and Later, terracotta tint for open questions.
+pub fn count_pill(ui: &mut Ui, p: &Pal, text: &str, kind: usize) {
+    let (fill, fg) = match kind {
+        0 => (tok::INK, tok::TEXT_ON_DARK),
+        3 => (p.orange_tint, p.orange),
+        _ => (p.bg, p.text),
+    };
+    let g = ui.painter().layout_no_wrap(text.to_string(), fs(size::TINY), fg);
+    let (r, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S18, space::S6), Sense::hover());
+    ui.painter().rect_filled(r, radius::PILL, fill);
+    ui.painter().galley(r.min + egui::vec2(space::S18 / 2.0, space::S6 / 2.0), g, fg);
+}
+
+/// A project card: dot, name (16, 600), ⋯, outcome, "Next move · …", progress, the phase pills and
+/// when it was last updated. Returns (card clicked, ⋯ clicked).
+pub fn project_card(ui: &mut Ui, p: &Pal, c: &ProjectCardView, menu_open: bool) -> (Response, Response) {
+    let mut menu = None;
+    let shadow_at = ui.painter().add(Shape::Noop);
+    let inner = egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S18 + 2.0, space::S18)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S10;
+        ui.horizontal(|ui| {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S10, space::S10), Sense::hover());
+            ui.painter().circle_filled(r.center(), space::S10 / 2.0, c.dot);
+            ui.label(RichText::new(c.name).font(fs(size::SECTION + 1.0)).color(p.text));
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S26 + 2.0, space::S26 + 2.0), Sense::click());
+                if menu_open || resp.hovered() {
+                    ui.painter().rect_stroke(r, radius::CHIP, Stroke::new(stroke::HAIR, p.line));
+                }
+                ui.painter().text(r.center(), Align2::CENTER_CENTER, "⋯", fs(size::BODY), p.dim);
+                menu = Some(resp.on_hover_text("More actions").on_hover_cursor(egui::CursorIcon::PointingHand));
+            });
+        });
+        if !c.outcome.is_empty() {
+            ui.add(egui::Label::new(RichText::new(c.outcome).size(size::ROW_SMALL).color(p.dim)).wrap());
+        }
+        if !c.next.is_empty() {
+            egui::Frame::none().fill(p.surface_raised).rounding(Rounding::same(radius::SMALL_BUTTON + 1.0)).inner_margin(egui::Margin::symmetric(space::S12, space::S8)).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                let mut job = egui::text::LayoutJob::default();
+                job.wrap.max_width = ui.available_width();
+                job.append("Next move · ", 0.0, egui::TextFormat { font_id: fs(size::LABEL), color: p.orange, ..Default::default() });
+                job.append(c.next, 0.0, egui::TextFormat { font_id: fp(size::LABEL), color: p.text, ..Default::default() });
+                ui.label(job);
+            });
+        }
+        ui.horizontal(|ui| {
+            let g = ui.painter().layout_no_wrap(c.done.to_string(), fp(size::SMALL), p.dim);
+            let w = ui.available_width() - g.size().x - space::S10;
+            let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::BAR_H), Sense::hover());
+            ui.painter().rect_filled(r, space::BAR_H / 2.0, p.divider);
+            ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(w * c.frac.clamp(0.0, 1.0), space::BAR_H)), space::BAR_H / 2.0, tok::AMBER);
+            ui.label(RichText::new(c.done).size(size::SMALL).color(p.dim));
+        });
+        ui.horizontal_wrapped(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S6;
+            for (i, t) in c.pills.iter().enumerate() {
+                if !t.is_empty() {
+                    count_pill(ui, p, t, i);
+                }
+            }
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                ui.label(RichText::new(c.updated).size(size::SMALL).color(p.dim));
+            });
+        });
+    });
+    let rect = inner.response.rect;
+    let card = ui.interact(rect, inner.response.id.with("project-card"), Sense::click());
+    if card.hovered() && !p.dark {
+        let shapes: Vec<Shape> = shadow::CARD_LIFT.iter().map(|s| Shape::Rect(s.as_shape(rect, Rounding::same(radius::CARD)))).collect();
+        ui.painter().set(shadow_at, Shape::Vec(shapes));
+    }
+    (card.on_hover_cursor(egui::CursorIcon::PointingHand), menu.unwrap())
+}
+
+/// The dashed "+ New project" card at the end of a grid.
+pub fn dashed_add_card(ui: &mut Ui, p: &Pal, title: &str, line: &str, min_h: f32) -> Response {
+    let w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, min_h), Sense::click());
+    let r = rect.shrink(0.75);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for seg in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[seg[0], seg[1]], Stroke::new(stroke::HAIR + 0.5, col), space::S6, space::S4));
+    }
+    if resp.hovered() {
+        ui.painter().rect_filled(r, radius::CARD, p.surface_raised);
+    }
+    let c = rect.center();
+    ui.painter().circle_filled(c - egui::vec2(0.0, space::S30), space::S40 / 2.0, if p.dark { p.callout } else { tok::AMBER_LIGHT });
+    ui.painter().text(c - egui::vec2(0.0, space::S30), Align2::CENTER_CENTER, "+", fp(size::TITLE - 2.0), p.orange);
+    ui.painter().text(c + egui::vec2(0.0, space::S6), Align2::CENTER_CENTER, title, fs(size::HERO_BODY), p.text);
+    ui.painter().text(c + egui::vec2(0.0, space::S30), Align2::CENTER_CENTER, line, fp(size::LABEL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A centred empty state: an icon tile, a serif title, a line and one action. Returns the click.
+pub fn empty_center(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &str, action: &str) -> bool {
+    let mut clicked = false;
+    ui.vertical_centered(|ui| {
+        ui.set_max_width(space::SEARCH_W - space::S40 * 5.5);
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S40 + space::S16, space::S40 + space::S16), Sense::hover());
+        ui.painter().rect(r, radius::HERO, if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, if p.dark { p.line } else { tok::AMBER_EDGE }));
+        paint_icon(ui.painter(), r.center(), icon, p.orange);
+        ui.add_space(space::S8);
+        ui.label(RichText::new(title).font(fserif(size::HERO_TITLE)).color(p.text));
+        ui.add(egui::Label::new(RichText::new(body).size(size::HERO_BODY).color(p.dim)).wrap());
+        ui.add_space(space::S8);
+        clicked = button(ui, p, ButtonKind::Primary, action, false, true).clicked();
+    });
+    clicked
+}
+
+/// A centred error card: what failed (serif 24), that nothing else was lost, Try again and a
+/// manual path.
+pub fn error_center(ui: &mut Ui, p: &Pal, title: &str, body: &str, manual: &str) -> ErrorAction {
+    let mut out = ErrorAction { retry: false, manual: false };
+    ui.vertical_centered(|ui| {
+        ui.set_max_width(space::SEARCH_W - space::S40 * 4.0);
+        white_card(ui, p, false, |ui| {
+            ui.spacing_mut().item_spacing.y = space::S8;
+            ui.label(RichText::new(title).font(fserif(size::CARD_SERIF)).color(p.text));
+            ui.add(egui::Label::new(RichText::new(body).size(size::ROW).color(p.dim)).wrap());
+            ui.add_space(space::S8);
+            ui.horizontal(|ui| {
+                out.retry = button(ui, p, ButtonKind::Dark, "Try again", false, true).clicked();
+                out.manual = button(ui, p, ButtonKind::Secondary, manual, false, true).clicked();
+            });
+        });
+    });
+    out
+}
+
+/// A screen's title (DM Serif 32) with its subline, and room on the right for its main button.
+pub fn screen_head(ui: &mut Ui, p: &Pal, title: &str, sub: &str, add_right: impl FnOnce(&mut Ui)) {
+    ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+            ui.label(RichText::new(title).font(fserif(size::GREETING)).color(p.text));
+            if !sub.is_empty() {
+                ui.label(RichText::new(sub).size(size::ROW).color(p.dim));
+            }
+        });
+        ui.with_layout(Layout::right_to_left(Align::Max), add_right);
+    });
+}
+
 /// A line led by a small dot ("Focus theme · …" on the hero).
 pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
     ui.horizontal(|ui| {
