@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone tasks states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 2160px; height: 900px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 60px; align-items: flex-start;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 17px; font-weight: 700;">Empty · nothing due today</span><dc-import name="PTasks" state="empty" hint-size="390px,844px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 17px; font-weight: 700;">Loading</span><dc-import name="PTasks" state="loading" hint-size="390px,844px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 17px; font-weight: 700;">Error · PC answered, request failed</span><dc-import name="PTasks" state="error" hint-size="390px,844px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 17px; font-weight: 700;">Not connected · last copy shown</span><dc-import name="PTasks" state="offline" hint-size="390px,844px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 17px; font-weight: 700;">Full · 360 × 780</span><dc-import name="PTasks" w="{{sw}}" h="{{sh}}" hint-size="360px,780px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2160,"height":900}}'>
+class Component extends DCLogic { renderVals() { return { sw: 360, sh: 780 }; } }
+</script>
+</body>
+</html>

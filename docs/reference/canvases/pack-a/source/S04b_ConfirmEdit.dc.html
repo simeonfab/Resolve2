@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>04b Confirm, edit mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;border-right:1px solid rgba(255,255,255,.06);box-sizing:border-box}
+.st{display:flex;gap:12px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st.on .n,.st.ok .n{border-color:#C8A040;color:#C8A040}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.st .d{font-size:12px;color:#8A8578;line-height:1.45;margin-top:3px}
+.st.on .t{color:#F5F1E8}.st.on .d{color:#B4AFA3}
+.ac{margin-top:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:12px;color:#B4AFA3;line-height:1.5}
+.ac b{display:block;font-size:11px;color:#C8A040;margin-bottom:6px}
+.cd{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:12px 14px;box-sizing:border-box;display:flex;flex-direction:column;gap:6px}
+.cl{font-size:12px;font-weight:600;color:#8B4A2A}
+.ed{width:100%;box-sizing:border-box;resize:none;border:1px solid #DDD8CE;border-radius:8px;background:#FBF8F2;padding:8px 10px;font:400 14px/1.5 'Inter',sans-serif;color:#1A1A18;outline:none}
+.b1{display:inline-flex;align-items:center;gap:8px;background:#1A1A18;color:#F5F1E8;border:0;border-radius:10px;padding:13px 22px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+.b2{display:inline-flex;align-items:center;background:#fff;color:#1A1A18;border:1px solid #DDD8CE;border-radius:10px;padding:13px 20px;font:600 15px 'Inter',sans-serif;text-decoration:none}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A; border-bottom: 1px solid rgba(255,255,255,.06);">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 62%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a><a href="#" aria-label="More options: Start this intake again">⋯</a></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Get started</div><div class="d">Tell Resolve your name and what you need help with</div></div></div>
+<div class="st ok"><span class="n"><svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span><div><div class="t">Bring it in</div><div class="d">Share your project context: rough notes, imports, anything you have</div></div></div>
+<div class="st on"><span class="n">3</span><div><div class="t">Confirm understanding</div><div class="d">Check what Resolve understood and fill any gaps</div></div></div>
+<div class="st"><span class="n">4</span><div><div class="t">Your next move</div><div class="d">One clear recommended action and a roadmap built from your project</div></div></div>
+<div class="ac"><b>Saved as you go</b>Leave any time. Resolve opens on this same step when you come back.</div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 30px 56px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 800px; width: 100%; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+<a href="S03_Questions.dc.html" style="font-size: 13px; font-weight: 500; color: #4A4A44; text-decoration: none;">← Back to the questions</a>
+<h1 style="margin: 8px 0 4px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px; line-height: 1.15;">Here's what Resolve understood.</h1>
+<p style="margin: 0 0 14px; font-size: 14.5px; color: #4A4A44;">Change anything that's wrong. The outcome is best in your own words.</p>
+<div style="flex: 1; min-height: 0; overflow: hidden; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; align-content: start;">
+<div class="cd"><label class="cl" for="e1">Project</label><textarea id="e1" class="ed" rows="4">You are a freelance bookkeeper turning your hourly café bookkeeping work into a fixed-price monthly package (around £150 a month) aimed at small independent cafés.</textarea></div>
+<div class="cd"><label class="cl" for="e2">What you want</label><textarea id="e2" class="ed" rows="4">To move your café clients from hourly billing to a flat monthly fee so your income is steadier and clients have cost certainty.</textarea></div>
+<div class="cd"><label class="cl" for="e3">Where it is</label><textarea id="e3" class="ed" rows="4">You have three café clients billed hourly, two of whom said they'd prefer a fixed fee. Each café takes roughly 5 hours a month.</textarea></div>
+<div class="cd" style="border-color: #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16);"><label class="cl" for="e4">Biggest uncertainty</label><div style="position: relative;"><textarea id="e4" class="ed" rows="5" style="background: #fff; border-color: #C8A040; padding-right: 40px;">Whether the per-café workload is predictable enough to price as a flat fee. The year-end rush suggests the hours may spike. I also don't know if £150 covers VAT quarters.</textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 8px; bottom: 10px; width: 28px; height: 28px; border-radius: 50%; border: 1px solid #DDD8CE; background: #F2EDE4; display: flex; align-items: center; justify-content: center; color: #4A4A44;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button></div><span style="font-size: 11.5px; color: #4A4A44;">Edited. The card grows as you type. The mic shows on the field you're in.</span></div>
+<div class="cd" style="grid-column: 1 / -1;"><label class="cl" for="e5">The outcome: who is better off, and how you'd know</label><textarea id="e5" class="ed" rows="2">Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end. I'd see it in on-time monthly records.</textarea></div>
+</div>
+<div style="display: flex; align-items: center; gap: 12px; padding: 16px 0 24px; border-top: 1px solid #DDD8CE; margin-top: 12px;">
+<a href="S06_NextMove.dc.html" class="b1">Save and continue <span aria-hidden="true">→</span></a>
+<a href="S04_Confirm.dc.html" class="b2">Cancel</a>
+<span style="font-size: 12.5px; color: #4A4A44;">Editing the outcome counts as confirming it.</span>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

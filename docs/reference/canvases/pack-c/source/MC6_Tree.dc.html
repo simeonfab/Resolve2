@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hypothesis result motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:24px 30px;display:flex;gap:16px}
+.tree{flex:1;display:flex;flex-direction:column;gap:8px;margin-top:44px}
+.nd{display:flex;align-items:center;gap:10px;height:44px;border-radius:9px;border:1px solid #DDD8CE;background:#fff;padding:0 12px;font-size:13px;font-weight:600}
+.pill{position:relative;margin-left:auto;width:96px;height:22px}
+.pl{position:absolute;inset:0;border-radius:999px;font-size:11.5px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.a{background:#F2EDE4;color:#4A4A44;animation:pa 5000ms infinite}
+.b{background:#E8EFE3;color:#3F5A33;animation:pb 5000ms infinite}
+.ring{position:absolute;inset:-4px;border-radius:999px;border:2px solid #5E7D4F;opacity:0;animation:rg 5000ms infinite}
+.ea{background:#FBF5E6;color:#7A5B12;animation:pa 5000ms infinite}
+.eb{background:#E8EFE3;color:#3F5A33;animation:pb 5000ms infinite}
+.rm{width:240px;margin-top:44px;background:#EAE4D9;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:7px;height:fit-content}
+.cd{background:#fff;border:1px solid #DDD8CE;border-radius:8px;padding:10px;font-size:12.5px;font-weight:600;display:flex;flex-direction:column;gap:7px}
+.gt{position:relative;height:20px}
+.ga{position:absolute;left:0;top:0;border-radius:6px;padding:2px 7px;font-size:11.5px;background:#F2EDE4;color:#4A4A44;animation:pa 5000ms infinite}
+.gbb{position:absolute;left:0;top:0;border-radius:6px;padding:2px 7px;font-size:11.5px;background:#E8EFE3;color:#3F5A33;animation:gb 5000ms infinite}
+.ts{position:absolute;left:50%;bottom:22px;width:420px;margin-left:-210px;background:#1A1A18;color:#F5F1E8;border-radius:12px;padding:11px 14px;font-size:13px;animation:ts 5000ms infinite}
+@keyframes pa{0%,30%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}36%,90%{opacity:0}96%,100%{opacity:1}}
+@keyframes pb{0%,30%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}36%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes rg{0%,30%{opacity:0;transform:scale(1);animation-timing-function:cubic-bezier(.22,.61,.36,1)}31%{opacity:.9}42%,100%{opacity:0;transform:scale(1.25)}}
+@keyframes gb{0%,36%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}42%,90%{opacity:1}96%,100%{opacity:0}}
+@keyframes ts{0%,44%{opacity:0;transform:translateY(16px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}51%,84%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}89%,100%{opacity:0;transform:translateY(16px)}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">C1 · Frameworks to Roadmap · new values · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">A result lands, and you see the gate it opens</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of H1 turning Supported and the roadmap gate opening">
+<div class="sb"></div>
+<div class="wa">
+<div class="tree">
+<div class="nd" style="background: #1A1A18; color: #F5F1E8;">H0 · A fixed-price package works</div>
+<div class="nd" style="margin-left: 22px;">H1 · Workload is predictable<span class="pill"><span class="pl a">Unresolved</span><span class="pl b">Supported</span><span class="ring"></span></span></div>
+<div class="nd" style="margin-left: 48px; background: #F7F3EC; font-weight: 500;">E0 · 12 months of hours<span class="pill"><span class="pl ea">Planned</span><span class="pl eb">1.6× swing</span></span></div>
+<div class="nd" style="margin-left: 22px;">H2 · Cafés want a flat fee<span class="pill"><span class="pl" style="background: #F2EDE4; color: #4A4A44;">Unresolved</span></span></div>
+</div>
+<div class="rm"><div style="font-size: 12px; font-weight: 700; color: #4A4A44;">Next</div><div class="cd">Price to absorb spikes<span class="gt"><span class="ga">◇ H1 result</span><span class="gbb">✓ Gate open</span></span></div><div class="cd">Convert the two willing clients<span style="font-size: 11.5px; background: #F2EDE4; color: #4A4A44; border-radius: 6px; padding: 2px 7px; width: fit-content;">◇ H2 result</span></div></div>
+<div class="ts">H1 supported. Price to absorb spikes can start.</div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Result in</span><span class="d">You record E0's result. Its pill changes <code>300ms e-std</code>.</span></div>
+<div class="row"><span class="t">Hypothesis</span><span class="d">H1 takes its new status <code>300ms e-std</code> with one ring pulse <code>600ms e-out</code>. One pulse, no repeat.</span></div>
+<div class="row"><span class="t">Gate</span><span class="d">The roadmap gate chip turns <code>300ms e-std</code> right after. On a phone or narrow window it changes off screen, so the toast says it.</span></div>
+<div class="row"><span class="t">Toast</span><span class="d">Plain I3 toast, <code>2.6s</code>. Weakened or refuted results use the same motion and say which themes stay closed.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

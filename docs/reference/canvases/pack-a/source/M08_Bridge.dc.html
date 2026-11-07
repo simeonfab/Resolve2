@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M08 Bridge</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#1A1A18;box-shadow:0 20px 60px rgba(0,0,0,.3);color:#F5F1E8}
+.co{position:absolute;inset:0;animation:co 9200ms infinite}
+.glow{position:absolute;left:180px;top:0;width:600px;height:600px;border-radius:50%;background:radial-gradient(circle,rgba(200,160,64,.22) 0%,rgba(200,160,64,.07) 40%,transparent 70%);animation:glowpulse 9200ms infinite}
+.layer{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+.fog{animation:fog 9200ms infinite;transform-origin:center center;will-change:transform,opacity}
+.grow{width:520px;background:#201F1C;border:1px solid rgba(200,160,64,.28);border-radius:16px;padding:34px 36px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.45)}
+.pin{animation:pin 9200ms infinite;flex-direction:column;gap:12px}
+.chip{display:inline-flex;align-items:center;gap:8px;border:1px solid rgba(200,160,64,.45);background:rgba(200,160,64,.08);border-radius:10px;padding:10px 14px;font-size:13.5px;font-weight:600;max-width:520px}
+.brand{animation:brand 9200ms infinite;flex-direction:column;gap:14px}
+.bc{font-size:12px;border:1px solid rgba(255,255,255,.14);border-radius:999px;padding:5px 10px;color:#D8D3C7}
+.park{position:absolute;left:0;right:0;bottom:30px;display:flex;justify-content:center;gap:18px;font-size:12px;color:#8A8578;animation:park 9200ms infinite}
+.mark{position:absolute;left:18px;top:14px;display:flex;align-items:center;gap:7px}
+.mark i{width:20px;height:20px;border-radius:5px;background:#C8A040;display:flex;align-items:center;justify-content:center;font:12px 'DM Serif Display',serif;font-style:normal;color:#1A1A18}
+.mark b{font-size:13px}
+@keyframes glowpulse{0%,23%{opacity:.35}30%{opacity:.85}72%{opacity:.85}100%{opacity:.35}}
+@keyframes co{0%,71.7%{opacity:1}78.3%,100%{opacity:.25}}
+@keyframes fog{0%{opacity:0;transform:scale(.62);animation-timing-function:cubic-bezier(.22,.61,.36,1)}8%{opacity:1;transform:scale(.72);animation-timing-function:cubic-bezier(.33,0,.22,1)}25%{opacity:1;transform:scale(1.05);animation-timing-function:cubic-bezier(.55,0,.85,.35)}31%{opacity:0;transform:scale(1.16)}100%{opacity:0;transform:scale(1.16)}}
+@keyframes pin{0%,26%{opacity:0;transform:translateY(22px) scale(.97)}31%{opacity:1;transform:translateY(0) scale(1)}47%{opacity:1;transform:none}52%{opacity:0;transform:translateY(-16px) scale(.99)}100%{opacity:0}}
+@keyframes brand{0%,50%{opacity:0;transform:translateY(18px)}55%{opacity:1;transform:none}70%{opacity:1;transform:none}75%{opacity:0;transform:translateY(-14px)}100%{opacity:0}}
+@keyframes park{0%,71.7%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}78.3%,100%{opacity:1}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M08 · Screen 10 · Flow Spec Surface B, live on its real 9200ms clock</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Building your project: four beats on ink and amber</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the bridge: fog card, first move, workspace, build checklist">
+<div class="co"><div class="glow"></div></div>
+<div class="mark"><i>R</i><b>Resolve</b></div>
+<div class="layer fog"><div class="grow">
+<div style="font-size: 30px; color: #C8A040;" aria-hidden="true">◆</div>
+<div style="font: 30px 'DM Serif Display', serif; margin-top: 8px;">You just cleared the fog, Simeon.</div>
+<div style="font-size: 13.5px; color: #B4AFA3; margin-top: 10px;">A messy café pricing question, turned into a focused path forward. That's the hard part done.</div>
+</div></div>
+<div class="layer pin"><span class="chip"><span style="width: 18px; height: 18px; border-radius: 50%; background: #C8A040; flex-shrink: 0;"></span>Pull the actual hours you logged on each café for the last 12 months</span><span style="font-size: 13px; color: #B4AFA3;">Bringing your first move with you.</span></div>
+<div class="layer brand"><div style="display: flex; align-items: center; gap: 12px;"><span style="width: 44px; height: 44px; border-radius: 11px; background: #C8A040; color: #1A1A18; display: flex; align-items: center; justify-content: center; font: 24px 'DM Serif Display', serif;">R</span><span style="font-size: 24px; font-weight: 700;">Resolve</span></div><div style="display: flex; gap: 8px;"><span class="bc">Café flat-fee bookkeeping</span><span class="bc">6 themes</span><span class="bc">5 first-week tasks</span></div><span style="font-size: 13px; color: #B4AFA3;">Setting up your workspace.</span></div>
+<div class="park"><span style="color: #D8D3C7;">✓ Creating the project</span><span style="color: #D8D3C7;">✓ Laying out the roadmap</span><span style="color: #F5F1E8;">◌ Adding tasks</span><span>Setting up validation</span><span>Writing the knowledge pages</span></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">B0 · always</span><span class="d">Glow pulses on the shared clock <code>0–23% .35 · 30% .85 · 72% .85 · 100% .35</code>.</span></div>
+<div class="row"><span class="t">B1 · 0–2.85s</span><span class="d">The fog card grows in one smooth zoom <code>scale .62 → .72 → 1.05 → 1.16</code>. 8% to 25% is one segment on <code>cubic-bezier(.33,0,.22,1)</code>. Never subdivide it: that caused the old jutter.</span></div>
+<div class="row"><span class="t">B2 · 2.4–4.8s</span><span class="d">Your real first move pins in <code>translateY(22px) scale(.97) → none</code>, then lifts away <code>-16px</code>. Bound to the live value.</span></div>
+<div class="row"><span class="t">B3 · 4.6–6.9s</span><span class="d">Mark and three chips rise <code>18px</code> and lift <code>-14px</code>. Chips: project name, theme count, first-week task count.</span></div>
+<div class="row"><span class="t">B4 · 6.6s →</span><span class="d">Desktop beat replacing the sign-in. Glow eases down <code>600ms ease</code>, the build checklist fades in <code>600ms e-std</code> and holds until the project is written. Rows tick from real build events.</span></div>
+<div class="row"><span class="t">Exit</span><span class="d">Build done and at least 7.2s passed: M09 starts. Build fails: error on dark with Try again. Reduced motion: skip to B4.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>See and edit everything</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; flex-direction: column; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<header style="height: 60px; flex-shrink: 0; display: flex; align-items: center; gap: 14px; padding: 0 28px; background: #fff; border-bottom: 1px solid #DDD8CE;">
+<a href="#" style="font-size: 13.5px; font-weight: 600; color: #1A1A18; text-decoration: none; border: 1px solid #DDD8CE; border-radius: 9px; padding: 8px 12px;">← Back to the summary</a>
+<div style="flex: 1; text-align: center;"><span style="font-size: 12.5px; color: #4A4A44;">Proposal · </span><span style="font-size: 14px; font-weight: 600;">Café flat-fee bookkeeping</span></div>
+<span style="font-size: 12.5px; color: #4A4A44;">{{saved}}</span>
+<a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 9px; padding: 9px 16px; font-size: 13.5px; font-weight: 600; text-decoration: none;">Adopt and create this project</a>
+</header>
+<div style="flex: 1; min-height: 0; display: flex; max-width: 1240px; width: 100%; margin: 0 auto; box-sizing: border-box; padding: 0 28px;">
+<nav aria-label="Proposal sections" style="width: 210px; flex-shrink: 0; padding: 22px 16px 0 0; display: flex; flex-direction: column; gap: 2px;">
+<sc-for list="{{secs}}" as="s" hint-placeholder-count="7"><a href="#" style="display: flex; justify-content: space-between; padding: 8px 10px; border-radius: 8px; font-size: 13.5px; font-weight: {{s.fw}}; background: {{s.bg}}; color: #1A1A18; text-decoration: none;"><span>{{s.t}}</span><span style="color: #4A4A44; font-weight: 400;">{{s.n}}</span></a></sc-for>
+<p style="margin: 14px 10px 0; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">Nothing here is final. You can change any of it once your project is open.</p>
+</nav>
+<div style="flex: 1; min-width: 0; padding: 22px 0 0 8px; overflow: hidden; display: flex; flex-direction: column; gap: 14px;">
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 22px;">Outcome and H0</h2><span style="font-size: 12px; color: #4A4A44;">Click any text to edit it</span></div>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4A4A44;">Outcome<input value="Café owners know their monthly cost up front and stop sending shoeboxes of receipts at year end." style="height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 11px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18;"></label>
+<label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #4A4A44;">H0 · the belief everything rests on<input value="A fixed-price bookkeeping package works for café clients" style="height: 38px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.18); border-radius: 9px; padding: 0 11px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18;"></label>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 22px;">Hypotheses and experiments</h2><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 6px 11px; font: 600 12.5px 'Inter', sans-serif;">+ Hypothesis</button></div>
+<sc-for list="{{hyps}}" as="x" hint-placeholder-count="4"><div style="display: flex; gap: 10px; align-items: center; padding: 8px 10px; border: 1px solid #EEE9DF; border-radius: 9px;"><span style="width: 26px; font-size: 12px; font-weight: 700; color: #8B4A2A;">{{x.id}}</span><span style="flex: 1; font-size: 13.5px;">{{x.t}}</span><span style="font-size: 12px; color: #4A4A44; background: #F7F3EC; border-radius: 6px; padding: 3px 8px;">{{x.e}}</span><button aria-label="Remove {{x.id}}" style="width: 26px; height: 26px; border: 0; background: none; color: #4A4A44;">✕</button></div></sc-for>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px; display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 22px;">Uncertainties</h2><span style="font-size: 12px; color: #4A4A44;">8 · these become open questions</span></div>
+<sc-for list="{{unc}}" as="u" hint-placeholder-count="3"><div style="display: flex; gap: 10px; align-items: center; font-size: 13.5px; padding: 4px 0;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #C8A040;"></span><span style="flex: 1;">{{u}}</span><span style="font-size: 12px; font-weight: 600; color: #8B4A2A;">Edit</span></div></sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 70px auto 0; width: 480px; text-align: center; display: flex; flex-direction: column; gap: 12px; align-items: center;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">Resolve didn't have enough to propose yet.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">You skipped most of the questions. Answer two or three more, or start the project and fill it in yourself.</p>
+<div style="display: flex; gap: 10px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Answer more questions</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">Start it blank</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Writing the proposal" style="display: flex; flex-direction: column; gap: 14px;"><div style="height: 150px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 220px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><span style="font-size: 13px; color: #4A4A44;">Writing the full proposal from your answers…</span></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 50px auto 0; width: 520px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 24px;">Your last edit didn't save.</div>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">H0 still shows your new wording. Save it again before you adopt, or the project starts with the old one.</p>
+<div style="display: flex; gap: 10px; margin-top: 18px;"><a href="#" style="background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Save again</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Back to the summary</a></div>
+</div>
+</sc-if>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const s = (t, n, on) => ({ t, n, fw: on ? 600 : 500, bg: on ? '#fff' : 'transparent' });
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+saved: state === 'error' ? 'Not saved' : 'Saved',
+secs: [s('Outcome and H0', '', true), s('Hypotheses', '4'), s('Experiments', '3'), s('Uncertainties', '8'), s('Roadmap', '6'), s('First week', '5'), s('Pages', '3')],
+hyps: [
+{ id: 'H1', t: 'Monthly workload is predictable', e: 'E0' },
+{ id: 'H2', t: 'Café clients want a flat fee', e: 'E1' },
+{ id: 'H3', t: 'The segment is reachable beyond word of mouth', e: 'No test yet' },
+{ id: 'H4', t: 'The package ends the shoebox rush', e: 'E2' }
+],
+unc: ['What a café pays you now per year, in total', 'Whether the till export covers staff hours', 'How many cafés you could take on without hiring']
+};
+}
+}
+</script>
+</body>
+</html>

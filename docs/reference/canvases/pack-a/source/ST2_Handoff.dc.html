@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State: 15 s hand-off</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;box-sizing:border-box}
+.qd{width:28px;height:28px;border-radius:50%;border:1px solid #DDD8CE;background:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#4A4A44;box-sizing:border-box}
+.ann{position:absolute;background:#FFF4C2;border:1px solid #E9D9A8;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#1A1A18;width:240px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden; position: relative;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 50%;"></span></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav aria-label="Intake steps" style="width: 72px; flex-shrink: 0; background: #1E1E1A; display: flex; flex-direction: column; align-items: center; gap: 22px; padding-top: 28px;">
+<span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="n" style="background: #C8A040; border-color: #C8A040; color: #1A1A18;">2</span><span class="n">3</span><span class="n">4</span>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 40px 48px 0; box-sizing: border-box; display: flex; gap: 40px;">
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div style="display: flex; align-items: center; gap: 8px;"><span class="qd">1</span><span class="qd">2</span><span class="qd">3</span><span class="qd">4</span><span class="qd">5</span><span class="qd">6</span><span class="qd">7</span><span class="qd" style="background: #C8A040; border-color: #C8A040; color: #1A1A18;">8</span></div>
+<div role="status" style="margin-top: 22px; align-self: flex-start; display: flex; align-items: center; gap: 8px; background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 999px; padding: 6px 12px 6px 8px; font-size: 12.5px; color: #4A4A44;">
+<span style="width: 18px; height: 18px; border-radius: 50%; background: #C8A040; color: #1A1A18; display: inline-flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700;" aria-hidden="true">i</span>
+The AI took longer than 15 s, so this question comes from Resolve's own list.
+</div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A; margin-top: 18px;">Uncertainties · question 8</div>
+<h1 style="margin: 8px 0 20px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px; line-height: 1.22;">What are you least sure about?</h1>
+<textarea aria-label="Your answer" placeholder="Your answer" style="height: 112px; resize: none; box-sizing: border-box; border-radius: 12px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16); background: #fff; padding: 14px 16px; font: 400 15px/1.55 'Inter', sans-serif; outline: none;"></textarea>
+<div style="margin-top: 10px; font-size: 13px; color: #4A4A44;">▾ Why this question? <span style="color: #1A1A18;">Fixed question set: covers "Uncertainties".</span></div>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 22px;">
+<span style="display: inline-flex; background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-weight: 600; font-size: 14.5px;">Back</span>
+<span style="flex: 1;"></span>
+<span style="display: inline-flex; background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-weight: 600; font-size: 14.5px;">Skip this question</span>
+<span style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 12px 20px; font-weight: 600; font-size: 14.5px;">Next →</span>
+</div>
+</section>
+<aside style="width: 380px; flex-shrink: 0; margin-bottom: 24px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 18px 20px; box-sizing: border-box;">
+<div style="font-size: 15px; font-weight: 700;">What Resolve has heard</div>
+<div style="font-size: 12.5px; color: #4A4A44; margin-top: 4px;">Click a label to change it. Edit the words in place.</div>
+<div style="margin-top: 16px; padding: 10px 0; border-top: 1px solid #EEE9DF; display: flex; flex-direction: column; gap: 6px;"><span style="align-self: flex-start; font-size: 11.5px; font-weight: 600; border-radius: 999px; padding: 3px 9px; background: #E8EFE3; color: #3F5A33;">Evidence</span><span style="font-size: 13.5px;">I could take on about four more cafés before I run out of hours</span></div>
+</aside>
+</main>
+</div>
+<div class="ann" style="left: 700px; top: 92px;">Hand-off motion: M04. The late AI answer is dropped, never swapped in under your typing.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

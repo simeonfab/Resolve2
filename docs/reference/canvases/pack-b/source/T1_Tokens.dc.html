@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token additions, Pack B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sec{font-size:13px;font-weight:700;color:#8B4A2A;margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:8px 12px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:8px 12px;border-bottom:1px solid #EEE9DF;vertical-align:middle}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.sw{display:inline-block;width:18px;height:18px;border-radius:5px;border:1px solid #DDD8CE;vertical-align:middle;margin-right:8px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1100px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Adds to the Pack A tokens sheet. No new hues.</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px;">Token additions: shell and daily screens</h1></div>
+<div style="display: flex; gap: 28px;">
+<div style="flex: 1;">
+<div class="sec">Derived tints used in Pack B (please approve, or I swap each for surface or border)</div>
+<table>
+<thead><tr><th>Token</th><th>Value</th><th>Made from</th><th>Use</th></tr></thead>
+<tbody>
+<tr><td>surface-raised</td><td><span class="sw" style="background: #F7F3EC;"></span><code>#F7F3EC</code></td><td>surface, lighter</td><td>Dialog footers, hovered rows, chat sheet</td></tr>
+<tr><td>surface-sunk</td><td><span class="sw" style="background: #EAE4D9;"></span><code>#EAE4D9</code></td><td>surface, darker</td><td>Board columns</td></tr>
+<tr><td>track</td><td><span class="sw" style="background: #E4DED2;"></span><code>#E4DED2</code></td><td>surface, darker</td><td>Segmented control track, progress track, disabled button</td></tr>
+<tr><td>divider</td><td><span class="sw" style="background: #EEE9DF;"></span><code>#EEE9DF</code></td><td>border, lighter</td><td>Rows inside a card</td></tr>
+<tr><td>canvas</td><td><span class="sw" style="background: #E9E3D8;"></span><code>#E9E3D8</code></td><td>surface, darker</td><td>Design canvas only, not in the app</td></tr>
+<tr><td>green-text / green-tint</td><td><span class="sw" style="background: #3F5A33;"></span><code>#3F5A33</code> on <code>#E8EFE3</code></td><td>green</td><td>Evidence tag, Personal calendar, wins</td></tr>
+<tr><td>amber-text</td><td><span class="sw" style="background: #7A5B12;"></span><code>#7A5B12</code> on amber-light</td><td>amber</td><td>Assumption tag, task rows in the calendar</td></tr>
+<tr><td>terracotta-tint</td><td><span class="sw" style="background: #F5E8E1;"></span><code>#F5E8E1</code></td><td>terracotta</td><td>Waiting, priority, Work calendar, errors on light</td></tr>
+</tbody>
+</table>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div class="sec">Shell</div>
+<table><tbody>
+<tr><td>Sidebar width</td><td>248 expanded · 64 collapsed</td></tr>
+<tr><td>Sidebar item</td><td>32 high, radius 8, Inter 500 13.5, text <code>#B4AFA3</code></td></tr>
+<tr><td>Sidebar active</td><td>tint <code>rgba(200,160,64,.16)</code>, text <code>#F5F1E8</code>, icon amber</td></tr>
+<tr><td>Sidebar group label</td><td>Inter 600 11, tracking .04em, <code>#8A8578</code></td></tr>
+<tr><td>Sidebar divider</td><td><code>rgba(255,255,255,.08)</code></td></tr>
+<tr><td>Work area padding</td><td>30 top · 40 sides (32 on Calendar)</td></tr>
+<tr><td>Content caps at 1920</td><td>Home 1240 · Projects 1240 · Tasks 1100 · Calendar full width</td></tr>
+<tr><td>Ask bar</td><td>560 × 48, radius 999, ink, 22 from the bottom, centred on the work area</td></tr>
+</tbody></table>
+</div>
+<div>
+<div class="sec">Overlays</div>
+<table><tbody>
+<tr><td>Backdrop</td><td><code>rgba(26,26,24,.18)</code> panel · <code>.32</code> sheet · <code>.38</code> dialog</td></tr>
+<tr><td>Dialog</td><td>radius 16, shadow <code>0 30px 80px rgba(26,26,24,.35)</code>; widths: Add task 640, Search 680, Event 520</td></tr>
+<tr><td>Sheet</td><td>720 × 82%, radius 20 top, shadow <code>0 -18px 60px rgba(26,26,24,.25)</code></td></tr>
+<tr><td>Side panel</td><td>440 wide, shadow <code>-18px 0 50px rgba(26,26,24,.14)</code></td></tr>
+<tr><td>Toast</td><td>ink, radius 14, 460 wide, 3 px amber timer, sits 10 above the Ask bar</td></tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

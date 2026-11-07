@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home entrance motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0;padding:16px 12px;box-sizing:border-box;display:flex;flex-direction:column;gap:9px}
+.sb span{height:9px;border-radius:3px;background:rgba(255,255,255,.13)}
+.wa{flex:1;position:relative;padding:24px 28px}
+.hd{animation:hd 4000ms infinite}
+.c{border-radius:12px;background:#fff;border:1px solid #DDD8CE}
+.c1{animation:c1 4000ms infinite}.c2{animation:c2 4000ms infinite}.c3{animation:c3 4000ms infinite}.c4{animation:c4 4000ms infinite}.c5{animation:c5 4000ms infinite}.c6{animation:c6 4000ms infinite}
+.bar{position:absolute;left:50%;bottom:18px;width:420px;margin-left:-210px;height:38px;border-radius:999px;background:#1A1A18;animation:bar 4000ms infinite}
+.glow{position:absolute;right:-60px;top:-80px;width:260px;height:260px;border-radius:50%;background:radial-gradient(circle,rgba(200,160,64,.28) 0%,rgba(200,160,64,.06) 45%,transparent 70%);animation:br 3200ms ease-in-out infinite}
+@keyframes hd{0%{opacity:0;transform:translateY(-8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}8.5%,100%{opacity:1;transform:none}}
+@keyframes c1{0%,3%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}14.5%,100%{opacity:1;transform:none}}
+@keyframes c2{0%,4.75%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}16.25%,100%{opacity:1;transform:none}}
+@keyframes c3{0%,6.5%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}18%,100%{opacity:1;transform:none}}
+@keyframes c4{0%,8.25%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}19.75%,100%{opacity:1;transform:none}}
+@keyframes c5{0%,10%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}21.5%,100%{opacity:1;transform:none}}
+@keyframes c6{0%,11.75%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}23.25%,100%{opacity:1;transform:none}}
+@keyframes bar{0%,11.5%{opacity:0;transform:translateY(30px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}23.5%,100%{opacity:1;transform:none}}
+@keyframes br{0%,100%{opacity:.85}50%{opacity:1}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">H1 · Home · Flow Spec E1 · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Home lands in reading order: your move first, context after</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of Home arriving">
+<div class="sb"><span style="width: 60%; background: #C8A040;"></span><span></span><span style="background: rgba(200,160,64,.4);"></span><span></span><span></span><span style="margin-top: 10px;"></span><span></span><span></span></div>
+<div class="wa">
+<div class="hd" style="font: 24px 'DM Serif Display', serif;">Good afternoon, Simeon</div>
+<div style="display: flex; gap: 14px; margin-top: 16px;">
+<div style="flex: 1.25; display: flex; flex-direction: column; gap: 12px;">
+<div class="c1" style="position: relative; overflow: hidden; height: 230px; border-radius: 14px; background: #1A1A18; padding: 18px; box-sizing: border-box; color: #F5F1E8;"><div class="glow"></div><div style="position: relative; font-size: 11px; color: #C8A040; font-weight: 600;">Your highest-value move</div><div style="position: relative; font: 21px 'DM Serif Display', serif; margin-top: 8px;">Pull the actual hours you logged on each café.</div><div style="position: relative; display: inline-block; margin-top: 16px; background: #C8A040; color: #1A1A18; border-radius: 8px; padding: 8px 12px; font-size: 12.5px; font-weight: 600;">Start this →</div></div>
+<div class="c c2" style="height: 140px;"></div>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 10px;"><div class="c c3" style="height: 90px;"></div><div class="c c4" style="height: 64px;"></div><div class="c c5" style="height: 90px;"></div><div class="c6" style="height: 40px; border-radius: 10px; background: #FBF5E6; border: 1px solid #E9D9A8;"></div></div>
+</div>
+<div class="bar"></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">0ms</span><span class="d">Greeting settles <code>340ms e-out, translateY(-8px)</code>.</span></div>
+<div class="row"><span class="t">120ms</span><span class="d">Cards rise <code>460ms e-spring, translateY(18px) scale(.98)</code>, 70ms apart: hero, Today, Since Monday, Waiting on, Projects, Captured.</span></div>
+<div class="row"><span class="t">460ms</span><span class="d">Ask Resolve rises last <code>480ms e-spring, translateY(30px)</code>. Total about 940ms.</span></div>
+<div class="row"><span class="t">Idle</span><span class="d">The hero glow breathes <code>opacity .85 ↔ 1, 3200ms ease-in-out</code>. Nothing else moves at rest.</span></div>
+<div class="row"><span class="t">Return</span><span class="d">Coming back from another section runs S1 (slide), not the full entrance. The entrance plays once per app open.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

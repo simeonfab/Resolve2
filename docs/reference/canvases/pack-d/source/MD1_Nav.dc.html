@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone tabs and quick add motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ph{position:relative;width:360px;height:760px;border-radius:36px;overflow:hidden;background:#F2EDE4;box-shadow:0 24px 70px rgba(0,0,0,.22);border:8px solid #1A1A18;box-sizing:border-box}
+.seg{position:absolute;left:16px;right:16px;top:110px;height:40px;border-radius:12px;background:#E4DED2}
+.th{position:absolute;top:3px;left:3px;width:calc(33.33% - 2px);height:34px;border-radius:10px;background:#fff;animation:th 6000ms infinite}
+.lb{position:absolute;top:0;height:40px;width:33.33%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600}
+.l1,.l2{position:absolute;left:16px;right:16px;top:166px;display:flex;flex-direction:column;gap:8px}
+.l1{animation:l1 6000ms infinite}.l2{animation:l2 6000ms infinite}
+.r{height:56px;border-radius:12px;background:#fff;border:1px solid #DDD8CE}
+.bar{position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #DDD8CE}
+.plus{position:absolute;left:12px;right:12px;bottom:74px;height:46px;border-radius:999px;background:#1A1A18;animation:pl 6000ms infinite}
+.plus::after{content:'+';position:absolute;right:4px;top:4px;width:38px;height:38px;border-radius:50%;background:#C8A040;color:#1A1A18;font:500 20px Inter,sans-serif;display:flex;align-items:center;justify-content:center}
+.dim{position:absolute;inset:0;background:rgba(26,26,24,.38);animation:dm 6000ms infinite}
+.sh{position:absolute;left:0;right:0;bottom:0;height:430px;background:#fff;border-radius:20px 20px 0 0;padding:16px;box-sizing:border-box;animation:sh 6000ms infinite}
+.in{height:48px;border:1.5px solid #C8A040;border-radius:12px;display:flex;align-items:center;padding:0 12px;font-size:14px}
+.k1{animation:k1 6000ms infinite;border-radius:3px}.k2{animation:k2 6000ms infinite;border-radius:3px}
+.c{display:inline-block;margin:10px 6px 0 0;padding:6px 9px;border-radius:8px;font-size:12px;font-weight:600}
+.c1{animation:c1 6000ms infinite}.c2{animation:c2 6000ms infinite}
+.kb{position:absolute;left:0;right:0;bottom:0;height:200px;background:#E4DED2}
+@keyframes th{0%,10%{transform:none;animation-timing-function:cubic-bezier(.4,0,.2,1)}15%,95%{transform:translateX(100%)}100%{transform:none}}
+@keyframes l1{0%,10%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.4,0,.2,1)}13.3%,95%{opacity:0;transform:translateX(-12px)}100%{opacity:1;transform:none}}
+@keyframes l2{0%,10%{opacity:0;transform:translateX(12px);animation-timing-function:cubic-bezier(.4,0,.2,1)}13.3%,95%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes pl{0%,36%{transform:none}37.5%{transform:scale(.92)}39%,100%{transform:none}}
+@keyframes dm{0%,38%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}41%,85%{opacity:1;animation-timing-function:cubic-bezier(.55,0,.85,.35)}89%,100%{opacity:0}}
+@keyframes sh{0%,38%{transform:translateY(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}45%,85%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}89%,100%{transform:translateY(100%)}}
+@keyframes k1{0%,55%{background:transparent;animation-timing-function:cubic-bezier(.4,0,.2,1)}57.7%,100%{background:#FBF5E6}}
+@keyframes k2{0%,62%{background:transparent;animation-timing-function:cubic-bezier(.4,0,.2,1)}64.7%,100%{background:#E8EFE3}}
+@keyframes c1{0%,55%{opacity:0;transform:translateY(-4px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}58.7%,100%{opacity:1;transform:none}}
+@keyframes c2{0%,62%{opacity:0;transform:translateY(-4px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}65.7%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">P1, P3, P4 · phone · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Switch a view with a nudge. Add a task from the middle of the bar.</h1></div>
+<div style="display: flex; gap: 80px; align-items: flex-start;">
+<div class="ph" role="img" aria-label="Animated phone switching from Today to Upcoming, then opening quick add and recognising words">
+<div style="position: absolute; left: 18px; top: 50px; font: 28px 'DM Serif Display', serif;">Today</div>
+<div class="seg"><div class="th"></div><span class="lb" style="left: 0;">Today</span><span class="lb" style="left: 33.33%;">Upcoming</span><span class="lb" style="left: 66.66%;">Inbox</span></div>
+<div class="l1"><div class="r" style="height: 110px; background: #1A1A18; border: 0;"></div><div class="r"></div><div class="r"></div></div>
+<div class="l2"><div style="width: 50%; height: 12px; border-radius: 3px; background: #DDD8CE;"></div><div class="r"></div><div style="width: 40%; height: 12px; border-radius: 3px; background: #DDD8CE;"></div><div class="r"></div><div class="r"></div></div>
+<div class="bar"></div><div class="plus"></div>
+<div class="dim"></div>
+<div class="sh"><div style="font-size: 15px; font-weight: 700; margin-bottom: 12px;">Add a task</div><div class="in">Call mum <span class="k1">&#160;tomorrow 6pm&#160;</span>&#160;<span class="k2">#Home</span></div><span class="c c1" style="background: #FBF5E6; border: 1px solid #E9D9A8;">Tomorrow · 18:00</span><span class="c c2" style="background: #E8EFE3; border: 1px solid #C5D3BC; color: #3F5A33;">Project: Home</span><div class="kb"></div></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Segment (P1)</span><span class="d">Thumb slides <code>300ms e-std</code>. The list swaps with a short cross-fade <code>200ms, translateX ±12px</code>. Shorter than desktop, because the phone screen is small and you switch often.</span></div>
+<div class="row"><span class="t">Press +</span><span class="d">The amber + sits at the end of the Ask pill. The pill dips to <code>scale(.92)</code> for feedback before the sheet moves.</span></div>
+<div class="row"><span class="t">Sheet (P3)</span><span class="d">Dim <code>180ms e-std</code>, sheet <code>420ms e-spring</code> from below. The input takes focus at 120ms so the keyboard rises with it.</span></div>
+<div class="row"><span class="t">Words (P4)</span><span class="d">Each recognised word tints <code>160ms</code> and its chip drops in <code>220ms e-out</code>. Same as Add task on the PC.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

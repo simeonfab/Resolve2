@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone Ask and reconnect motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ph{position:relative;width:360px;height:760px;border-radius:36px;overflow:hidden;background:#F2EDE4;box-shadow:0 24px 70px rgba(0,0,0,.22);border:8px solid #1A1A18;box-sizing:border-box}
+.ct{position:absolute;left:0;right:0;top:0;bottom:70px;padding:50px 14px 0;animation:ct 7000ms infinite}
+.r{height:56px;border-radius:12px;background:#fff;border:1px solid #DDD8CE;margin-top:8px}
+.bn{position:absolute;left:0;right:0;top:0;height:76px;display:flex;align-items:flex-end;padding:0 14px 10px;font-size:13px;box-sizing:border-box;animation:bn 7000ms infinite}
+.b1{position:absolute;inset:0;background:#1A1A18;color:#F5F1E8;display:flex;align-items:flex-end;padding:0 14px 12px;animation:b1 7000ms infinite}
+.b2{position:absolute;inset:0;background:#3F5A33;color:#F5F1E8;display:flex;align-items:flex-end;padding:0 14px 12px;animation:b2 7000ms infinite}
+.bar{position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #DDD8CE}
+.dim{position:absolute;inset:0;background:rgba(26,26,24,.32);animation:dm 7000ms infinite}
+.sh{position:absolute;left:0;right:0;bottom:0;height:82%;background:#F7F3EC;border-radius:20px 20px 0 0;padding:16px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;animation:sh 7000ms infinite}
+.q{align-self:flex-end;background:#1A1A18;color:#F5F1E8;border-radius:14px 14px 4px 14px;padding:9px 12px;font-size:13px}
+.a{background:#fff;border:1px solid #DDD8CE;border-radius:14px 14px 14px 4px;height:90px;animation:an 7000ms infinite}
+@keyframes dm{0%,3%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}6.1%,35%{opacity:1;animation-timing-function:cubic-bezier(.55,0,.85,.35)}39%,100%{opacity:0}}
+@keyframes sh{0%,3%{transform:translateY(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}9.6%,35%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}39%,100%{transform:translateY(100%)}}
+@keyframes an{0%,14%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}19%,100%{opacity:1;transform:none}}
+@keyframes bn{0%,45%{transform:translateY(-100%);animation-timing-function:cubic-bezier(.22,.61,.36,1)}49.3%,84%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}88.3%,100%{transform:translateY(-100%)}}
+@keyframes ct{0%,45%{transform:none;animation-timing-function:cubic-bezier(.22,.61,.36,1)}49.3%,84%{transform:translateY(32px);animation-timing-function:cubic-bezier(.55,0,.85,.35)}88.3%,100%{transform:none}}
+@keyframes b1{0%,70%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}72.9%,100%{opacity:0}}
+@keyframes b2{0%,70%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}72.9%,100%{opacity:1}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">P9, P10, P11 · Flow Spec E4 and new values · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Ask rises over what you were doing. Losing the PC is calm, finding it again is clear.</h1></div>
+<div style="display: flex; gap: 80px; align-items: flex-start;">
+<div class="ph" role="img" aria-label="Animated phone: the Ask sheet opens and answers, then a not-connected banner drops in and turns green when the PC is back">
+<div class="ct"><div style="font: 28px 'DM Serif Display', serif;">Today</div><div class="r" style="height: 110px; background: #1A1A18; border: 0; margin-top: 60px;"></div><div class="r"></div><div class="r"></div><div class="r"></div></div>
+<div class="bn"><div class="b1">Not connected. Showing 14:02.</div><div class="b2">Back in touch. 1 capture sent.</div></div>
+<div class="bar"></div>
+<div class="dim"></div>
+<div class="sh"><span style="width: 36px; height: 4px; border-radius: 2px; background: #DDD8CE; align-self: center;"></span><div style="font-size: 15px; font-weight: 700;">Ask Resolve</div><div class="q">What should I do first today?</div><div class="a"></div></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Ask (P9)</span><span class="d">Dim <code>220ms e-std</code>, sheet <code>460ms e-spring</code> to 82% of the screen, so you still see the top of the page you came from (E4).</span></div>
+<div class="row"><span class="t">Answer</span><span class="d">Fades up <code>260ms e-out, translateY(8px)</code> once, then text streams with no per-word motion.</span></div>
+<div class="row"><span class="t">Lost (P10)</span><span class="d">The banner drops <code>300ms e-out</code> and pushes the page down with it, so nothing hides under it. No shake, no red: it isn't your fault.</span></div>
+<div class="row"><span class="t">Back (P11)</span><span class="d">The banner turns green <code>200ms e-std</code> and says what synced, then leaves <code>300ms e-in</code> after 2 seconds.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decisions and tickets, phone</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.dc{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:11px 14px;display:flex;gap:12px}
+.id{font-size:12px;font-weight:700;color:#8B4A2A;width:30px;flex-shrink:0}
+.dt b{display:block;font-size:14px;margin-bottom:3px}
+.dt span{font-size:13px;color:#4A4A44;line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:7px 10px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:6px 10px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1500px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 36px;">
+<div style="width: 720px; flex-shrink: 0; display: flex; flex-direction: column; gap: 9px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Decisions for you to confirm</h1>
+<div class="dc"><span class="id">D1</span><div class="dt"><b>Light bar plus the Ask pill, as in the original Resolve</b><span>Revised after your review. Tasks, Calendar and Search in a light bar. Above it, the dark pill "Ask Resolve, or capture a thought" with a mic and an amber + for quick add. Today's phone page has five pill tabs at the top instead.</span></div></div>
+<div class="dc"><span class="id">D2</span><div class="dt"><b>The phone matches the desktop look</b><span>Today's phone page is dark with a red accent and the system font. I used the Resolve tokens. The intake stays dark, as in Pack A.</span></div></div>
+<div class="dc"><span class="id">D3</span><div class="dt"><b>Ask on the phone is new</b><span>Today's phone page has no Ask. I added it as a tab because the brief lists the Ask sheet. It needs an engine route (D-E7).</span></div></div>
+<div class="dc"><span class="id">D4</span><div class="dt"><b>Captures wait on the phone</b><span>When the PC can't be reached, a new task is kept on the phone and sent later. Today it shows an error and the text is lost.</span></div></div>
+<div class="dc"><span class="id">D5</span><div class="dt"><b>Swipe to Tomorrow</b><span>Not in the brief. One gesture for the most common phone edit. Drop it if you'd rather keep rows tap-only.</span></div></div>
+<div class="dc"><span class="id">D6</span><div class="dt"><b>Desktop-only sections stay on the PC</b><span>Roadmap, Frameworks, Knowledge base editing, AI Team, Handoffs and Settings aren't on the phone. Results from them open read-only with "Open on your PC".</span></div></div>
+<div class="dc"><span class="id">D7</span><div class="dt"><b>Events are read-only on the phone</b><span>The phone has <code>get_agenda</code> and <code>list_events</code> only. Editing events stays on the PC.</span></div></div>
+<div class="dc"><span class="id">D8</span><div class="dt"><b>Two kinds of trouble</b><span>Error: the PC answered but a request failed. Not connected: the PC can't be reached. A full-screen page only when nothing is cached; otherwise a banner over the last copy.</span></div></div>
+<div class="dc"><span class="id">D9</span><div class="dt"><b>Sample content</b><span>Events, times, Ana, the inbox items, recent searches and "1 capture sent" are placeholders. The 360 board is a check, not a separate design.</span></div></div>
+<div style="margin-top: 10px; font-size: 13px; font-weight: 700; color: #8B4A2A;">Phone tokens (no new colours)</div>
+<table><tbody>
+<tr><td>Safe area</td><td>52 top on screens without a banner · bar and pill 150 including the home indicator</td></tr>
+<tr><td>Type</td><td>Screen title DM Serif Display 32 · row 15.5 · meta 12.5 · button 15 to 16</td></tr>
+<tr><td>Targets</td><td>44 minimum · rows 64 · main buttons 48 to 54 · Ask pill 52 high</td></tr>
+<tr><td>Sheets</td><td>radius 20 top · quick add sits on the keyboard · Ask 82% height</td></tr>
+<tr><td>Side gutter</td><td>18 on screens · 16 in sheets · 14 at 360 wide is the floor</td></tr>
+</tbody></table>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Engineering tickets</h1>
+<table>
+<thead><tr><th>#</th><th>Ticket</th><th>Today</th><th>Engine</th></tr></thead>
+<tbody>
+<tr><td>D-E1</td><td>Serve the intake to the phone: name, bring it in, questions, proposal, adopt</td><td>Not served</td><td>journey and intake calls need a phone route</td></tr>
+<tr><td>D-E2</td><td>Restyle the phone page with Resolve tokens. Bundle the fonts in the binary so the page works without the internet</td><td>Dark, red accent, system font</td><td>server.rs PHONE_HTML</td></tr>
+<tr><td>D-E3</td><td>Bottom bar; Today, Upcoming, Inbox as a segmented control</td><td>Five top tabs</td><td><code>list_tasks</code></td></tr>
+<tr><td>D-E4</td><td>"Your next move" card on Today with Start this and Plan my day</td><td>None</td><td><code>workspace_overview</code>; Plan my day is a saved AI prompt (Pack B B-E21)</td></tr>
+<tr><td>D-E5</td><td>Quick add sheet with live highlighting. Needs a parse-only call that doesn't create the task</td><td>Plain input, create on submit</td><td><code>create_task</code> (nlp.rs); new parse preview</td></tr>
+<tr><td>D-E6</td><td>Offline: cache the last lists with a time, queue captures on the phone, send on reconnect, banner states</td><td>Error text only</td><td>internal</td></tr>
+<tr><td>D-E7</td><td>Ask sheet on the phone. Confirm whether a chat call is reachable over /mcp; if not, add one with the budget check</td><td>Unverified</td><td><code>workspace_overview</code>, <code>get_agenda</code>, ai.rs</td></tr>
+<tr><td>D-E8</td><td>Swipe left to move to Tomorrow (D5)</td><td>None</td><td><code>update_task</code></td></tr>
+<tr><td>D-E9</td><td>Motion as CSS transitions; honour reduced motion</td><td>None</td><td>internal</td></tr>
+<tr><td>D-E10</td><td>Undo after finishing a task. Confirm a completed task can be reopened</td><td>Unverified</td><td><code>complete_task</code>, <code>update_task</code></td></tr>
+<tr><td>D-E11</td><td>Search: type chips, grouped results, "Add as a task" when nothing matches</td><td>Flat list</td><td><code>search</code>, <code>read_page</code>, <code>create_task</code></td></tr>
+<tr><td>D-E12</td><td>Agenda: dated tasks beside events, calendar colours, Today jump</td><td>Events by day</td><td><code>get_agenda</code>, <code>list_events</code></td></tr>
+<tr><td>D-E13</td><td>Tell error from not connected: a network failure versus a 401 or 5xx</td><td>One error message</td><td>internal</td></tr>
+<tr><td>D-E14</td><td>Voice on quick add, Ask and the intake through the browser's speech input. Check support on your testers' phones</td><td>None</td><td>internal</td></tr>
+<tr><td>D-E15</td><td>Pairing by QR from Settings, Sync and phone (shared with C-E22)</td><td>Link with token</td><td>WorkspaceSettings</td></tr>
+<tr><td>D-E16</td><td>360 × 780: nothing scrolls sideways except the chip row</td><td>Unverified</td><td>internal</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1500}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

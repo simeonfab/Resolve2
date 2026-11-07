@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="calendar" collapsed="{{collapsed}}" h="{{h}}" intake="{{no}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 24px 32px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="display: flex; align-items: center; gap: 10px;">
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px; flex: 1;">{{title}}</h1>
+<button aria-label="Previous" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; background: #fff; border-radius: 8px;">‹</button>
+<button style="height: 32px; border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 0 12px; font: 600 13px 'Inter', sans-serif;">Today</button>
+<button aria-label="Next" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; background: #fff; border-radius: 8px;">›</button>
+<div role="tablist" style="display: flex; background: #E4DED2; border-radius: 9px; padding: 3px; margin-left: 6px;"><sc-for list="{{modes}}" as="m" hint-placeholder-count="3"><span role="tab" aria-selected="{{m.sel}}" style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 7px; background: {{m.bg}};">{{m.t}}</span></sc-for></div>
+<a href="#" style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; text-decoration: none;">+ Event</a>
+</div>
+<div style="display: flex; gap: 18px; margin-top: 16px; flex: 1; min-height: 0; padding-bottom: 86px;">
+<aside style="width: 188px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13.5px;">
+<div style="font-size: 11.5px; font-weight: 700; color: #4A4A44; letter-spacing: .04em;">CALENDARS</div>
+<sc-for list="{{cals}}" as="c" hint-placeholder-count="3"><label style="display: flex; align-items: center; gap: 9px;"><span style="width: 16px; height: 16px; border-radius: 4px; background: {{c.c}}; color: #fff; font-size: 10px; display: flex; align-items: center; justify-content: center;">✓</span>{{c.t}}</label></sc-for>
+<a href="#" style="font-size: 13px; font-weight: 600; color: #8B4A2A; text-decoration: none; margin-top: 4px;">+ New calendar</a>
+<div style="margin-top: 14px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 12px; font-size: 12.5px; line-height: 1.5; color: #4A4A44;"><b style="color: #1A1A18; display: block; margin-bottom: 4px;">Tasks show here too</b>Tasks with a date appear as amber rows, on the day they're due.</div>
+</aside>
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column; min-height: 0; position: relative;">
+
+<sc-if value="{{isMonth}}" hint-placeholder-val="{{ true }}">
+<div style="display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); font-size: 11.5px; font-weight: 700; color: #4A4A44; padding-bottom: 6px;"><sc-for list="{{dow}}" as="d" hint-placeholder-count="7"><span style="padding-left: 8px;">{{d}}</span></sc-for></div>
+<div style="flex: 1; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); grid-auto-rows: minmax(0, 1fr); background: #DDD8CE; gap: 1px; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;">
+<sc-for list="{{cells}}" as="c" hint-placeholder-count="35">
+<div style="background: {{c.bg}}; padding: 6px 6px 4px; display: flex; flex-direction: column; gap: 3px; min-height: 0; overflow: hidden;">
+<span style="align-self: flex-start; font-size: 12px; font-weight: 600; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background: {{c.dbg}}; color: {{c.dc}};">{{c.n}}</span>
+<sc-for list="{{c.ev}}" as="e" hint-placeholder-count="1"><span style="font-size: 11px; line-height: 1.3; padding: 2px 5px; border-radius: 4px; background: {{e.bg}}; color: {{e.fg}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 500;">{{e.t}}</span></sc-for>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isWeek}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); font-size: 12px; font-weight: 600; color: #4A4A44; padding-bottom: 6px;"><span></span><sc-for list="{{weekDays}}" as="d" hint-placeholder-count="7"><span style="padding-left: 6px; color: {{d.c}};">{{d.t}}</span></sc-for></div>
+<div style="display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr)); gap: 0 1px; font-size: 11px; padding-bottom: 4px;"><span style="color: #4A4A44; font-size: 10.5px;">All day</span><span></span><span></span><span></span><span></span><span style="background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 4px; padding: 2px 5px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Reconstruct 12 months…</span><span></span><span></span></div>
+<div style="flex: 1; position: relative; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden; display: grid; grid-template-columns: 48px repeat(7, minmax(0, 1fr));">
+<div style="display: flex; flex-direction: column; border-right: 1px solid #EEE9DF;"><sc-for list="{{hours}}" as="hr" hint-placeholder-count="10"><span style="flex: 1; font-size: 10.5px; color: #4A4A44; padding: 2px 6px 0 0; text-align: right; border-top: 1px solid #EEE9DF;">{{hr}}</span></sc-for></div>
+<sc-for list="{{weekCols}}" as="col" hint-placeholder-count="7"><div style="position: relative; border-right: 1px solid #EEE9DF; background: {{col.bg}};"><sc-for list="{{col.ev}}" as="e" hint-placeholder-count="1"><span style="position: absolute; left: 3px; right: 3px; top: {{e.top}}; height: {{e.hgt}}; background: {{e.bg}}; border-left: 3px solid {{e.bd}}; border-radius: 5px; padding: 3px 6px; font-size: 11px; line-height: 1.3; font-weight: 500; overflow: hidden; box-sizing: border-box;">{{e.t}}</span></sc-for></div></sc-for>
+<div aria-hidden="true" style="position: absolute; left: calc(48px + 4 * (100% - 48px) / 7); width: calc((100% - 48px) / 7); top: 57.5%; height: 2px; background: #8B4A2A;"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isAgenda}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; overflow: hidden; display: flex; flex-direction: column; gap: 14px; max-width: 760px;">
+<sc-for list="{{agenda}}" as="d" hint-placeholder-count="3">
+<div><div style="font-size: 13px; font-weight: 700; margin-bottom: 6px; color: {{d.c}};">{{d.t}}</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;"><sc-for list="{{d.rows}}" as="r" hint-placeholder-count="2"><div style="display: flex; gap: 14px; align-items: center; padding: 10px 14px; border-top: {{r.line}};"><span style="width: 86px; font-size: 12.5px; color: #4A4A44; font-variant-numeric: tabular-nums;">{{r.time}}</span><span style="width: 10px; height: 10px; border-radius: {{r.shape}}; background: {{r.c}};"></span><span style="flex: 1; font-size: 14px;">{{r.t}}</span><span style="font-size: 12px; color: #4A4A44;">{{r.m}}</span></div></sc-for></div></div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; left: 50%; top: 45%; transform: translate(-50%, -50%); width: 380px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 20px 22px; text-align: center; box-shadow: 0 10px 30px rgba(26,26,24,.08);"><div style="font-family: 'DM Serif Display', serif; font-size: 22px;">Nothing on your calendar yet.</div><p style="margin: 6px 0 14px; font-size: 13.5px; line-height: 1.5; color: #4A4A44;">Add an event, or give a task a date and it appears here.</p><span style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 9px 14px; font-size: 13.5px; font-weight: 600;">+ Event</span></div>
+</sc-if>
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="position: absolute; inset: 24px 0 0; background: rgba(242,237,228,.7); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #4A4A44;">Loading events…</div>
+</sc-if>
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="position: absolute; left: 50%; top: 40%; transform: translate(-50%, -50%); width: 420px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 18px 20px;"><div style="font-size: 15px; font-weight: 600;">Resolve couldn't load your events.</div><p style="margin: 6px 0 12px; font-size: 13.5px; line-height: 1.5; color: #4A4A44;">Your calendars are saved on this PC. Tasks with dates still show.</p><span style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 9px 14px; font-size: 13.5px; font-weight: 600;">Try again</span></div>
+</sc-if>
+</section>
+</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="calendar" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+
+<sc-if value="{{editor}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(26,26,24,.32);"></div>
+<section role="dialog" aria-label="Edit event" style="position: absolute; left: 50%; top: 80px; transform: translateX(-50%); width: 520px; background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,26,24,.3); overflow: hidden;">
+<div style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;">
+<input aria-label="Event title" value="Call with The Corner Café" style="border: 0; border-bottom: 2px solid #C8A040; padding: 4px 0 8px; font: 400 22px 'DM Serif Display', serif; color: #1A1A18; outline: none;">
+<div style="display: grid; grid-template-columns: 90px 1fr; gap: 12px 14px; align-items: center; font-size: 13.5px;">
+<span style="color: #4A4A44;">When</span><span style="display: flex; gap: 8px; flex-wrap: wrap;"><span style="border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 10px;">Fri 6 Nov</span><span style="border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 10px;">10:30</span><span style="align-self: center;">to</span><span style="border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 10px;">11:00</span></span>
+<span style="color: #4A4A44;">All day</span><span><span role="switch" aria-checked="false" style="display: inline-block; width: 34px; height: 20px; border-radius: 999px; background: #DDD8CE; position: relative;"><span style="position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff;"></span></span></span>
+<span style="color: #4A4A44;">Repeats</span><span style="border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 10px; justify-self: start;">Does not repeat ▾</span>
+<span style="color: #4A4A44;">Calendar</span><span style="display: flex; align-items: center; gap: 8px; border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 10px; justify-self: start;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #8B4A2A;"></span>Work ▾</span>
+<span style="color: #4A4A44; align-self: start; padding-top: 8px;">Notes</span><span style="border: 1px solid #DDD8CE; border-radius: 8px; padding: 9px 10px; min-height: 64px; line-height: 1.5;">Bring the till export so we can check the hours.</span>
+</div>
+</div>
+<div style="display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #EEE9DF; background: #F7F3EC;"><button style="background: none; border: 0; color: #8B4A2A; font: 600 13.5px 'Inter', sans-serif;">Delete</button><span style="flex: 1;"></span><button style="background: #fff; border: 1px solid #DDD8CE; border-radius: 9px; padding: 9px 14px; font: 600 13.5px 'Inter', sans-serif;">Cancel</button><button style="background: #1A1A18; color: #F5F1E8; border: 0; border-radius: 9px; padding: 9px 16px; font: 600 13.5px 'Inter', sans-serif;">Save</button></div>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"view":{"editor":"enum","options":["month","week","agenda"],"default":"month"},"editor":{"editor":"boolean","default":false},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const view = this.props.view ?? 'month';
+const full = state === 'full';
+const work = { bg: '#F5E8E1', fg: '#8B4A2A' }, pers = { bg: '#E8EFE3', fg: '#3F5A33' }, task = { bg: '#FBF5E6', fg: '#7A5B12' };
+const evs = full ? {
+'1': [{ t: '09:00 Pay rent', ...pers }],
+'4': [{ t: '14:00 Accountant check-in', ...work }],
+'6': [{ t: '10:30 Corner Café call', ...work }, { t: 'Reconstruct 12 months…', ...task }],
+'13': [{ t: 'Mark busiest months', ...task }, { t: '+4 more', bg: 'transparent', fg: '#4A4A44' }],
+'19': [{ t: '11:00 Bean & Co. intro', ...work }],
+'27': [{ t: 'Review flat-fee pricing', ...task }]
+} : {};
+const cells = [];
+for (let i = 0; i < 42; i++) {
+let n, inMonth;
+if (i < 6) { n = 26 + i; inMonth = false; } else if (i < 36) { n = i - 5; inMonth = true; } else { n = i - 35; inMonth = false; }
+const today = inMonth && n === 6;
+const ev = inMonth ? (evs[String(n)] || []) : (n === 1 && i >= 36 && full ? [{ t: '09:00 Pay rent', ...pers }] : []);
+cells.push({ n, ev, bg: inMonth ? '#fff' : '#F7F3EC', dbg: today ? '#C8A040' : 'transparent', dc: today ? '#1A1A18' : (inMonth ? '#1A1A18' : '#9A9A92') });
+}
+const mode = (t, k) => ({ t, sel: view === k ? 'true' : 'false', bg: view === k ? '#fff' : 'transparent' });
+const weekDays = ['Mon 2', 'Tue 3', 'Wed 4', 'Thu 5', 'Fri 6', 'Sat 7', 'Sun 8'].map((t, i) => ({ t, c: i === 4 ? '#8B4A2A' : '#4A4A44' }));
+const blk = (t, startH, durH, c) => ({ t, top: ((startH - 8) / 10 * 100) + '%', hgt: (durH / 10 * 100) + '%', bg: c === 'w' ? '#F5E8E1' : '#E8EFE3', bd: c === 'w' ? '#8B4A2A' : '#5E7D4F' });
+const weekCols = [[], [blk('Gym', 8, 1, 'p')], [blk('Accountant check-in', 14, 1, 'w')], [], [blk('Call with The Corner Café', 10.5, .5, 'w'), blk('Send October invoices', 16, .5, 'p')], [], []]
+.map((ev, i) => ({ ev: full ? ev : [], bg: i === 4 ? '#FFFCF5' : '#fff' }));
+const r = (time, t, m, c, shape) => ({ time, t, m, c, shape });
+const lines = (rows) => rows.map((x, i) => ({ ...x, line: i === 0 ? '0' : '1px solid #EEE9DF' }));
+const agenda = full ? [
+{ t: 'Today · Friday 6 November', c: '#8B4A2A', rows: lines([r('10:30–11:00', 'Call with The Corner Café', 'Work', '#8B4A2A', '3px'), r('Due today', 'Reconstruct 12 months of hours per café', 'Café flat-fee', '#C8A040', '50%'), r('16:00', 'Send October invoices', 'Captured', '#C8A040', '50%')]) },
+{ t: 'Friday 13 November', c: '#1A1A18', rows: lines([r('Due', 'Mark the busiest and quietest months', 'Café flat-fee', '#C8A040', '50%'), r('Due', '4 more tasks', 'Café flat-fee', '#C8A040', '50%')]) },
+{ t: 'Thursday 19 November', c: '#1A1A18', rows: lines([r('11:00–11:30', 'Intro call with Bean & Co.', 'Work', '#8B4A2A', '3px')]) }
+] : [];
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false,
+title: view === 'week' ? '2 – 8 November' : (view === 'agenda' ? 'Agenda' : 'November 2026'),
+modes: [mode('Month', 'month'), mode('Week', 'week'), mode('Agenda', 'agenda')],
+cals: [{ t: 'Work', c: '#8B4A2A' }, { t: 'Personal', c: '#5E7D4F' }, { t: 'Tasks with dates', c: '#C8A040' }],
+dow: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], cells,
+weekDays, weekCols, hours: ['8:00', '9:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
+agenda,
+isMonth: view === 'month' && state !== 'error', isWeek: view === 'week' && state !== 'error', isAgenda: view === 'agenda' && full,
+isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+editor: !!this.props.editor
+};
+}
+}
+</script>
+</body>
+</html>

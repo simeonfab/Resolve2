@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion register, Pack B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{text-align:left;font-size:11.5px;font-weight:700;color:#4A4A44;padding:7px 8px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:6px 8px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.4}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+.g td{background:#FBF5E6;font-weight:700;color:#1A1A18}
+.new{display:inline-block;font-size:10.5px;font-weight:700;background:#F5E8E1;color:#8B4A2A;border-radius:999px;padding:1px 7px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#1A1A18}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1500px; box-sizing: border-box; padding: 40px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 14px;">
+<div style="display: flex; justify-content: space-between; align-items: flex-end;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Same easings as Pack A: e-spring (.34,1.56,.64,1) · e-out (.22,.61,.36,1) · e-std (.4,0,.2,1) · e-in (.55,0,.85,.35). Fill both. Stagger in DOM order.</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 38px;">Motion register: shell and daily screens</h1></div>
+<div style="font-size: 12.5px; color: #4A4A44; max-width: 460px; line-height: 1.5;">Source: Flow Spec surface, or <span class="new">New</span> for a desktop transition the spec does not cover. Phone tab-bar motions become sidebar motions on desktop.</div>
+</div>
+<div style="flex: 1; min-height: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;">
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Where</th><th>Trigger</th><th>Duration · easing</th><th>Delay / stagger</th><th>From → to</th><th>Source</th></tr></thead>
+<tbody>
+<tr class="g"><td colspan="8">Shell</td></tr>
+<tr><td>S1</td><td>Section switch</td><td>Work area</td><td>Click a sidebar item</td><td>out 240 e-in · in 400 e-spring</td><td>in at 90ms</td><td><code>out translateX(0 → -24px)</code> · <code>in translateX(28px → 0)</code>. Moving up the sidebar flips the sign.</td><td>E8</td></tr>
+<tr><td>S2</td><td>Active item</td><td>Sidebar</td><td>With S1</td><td>300 e-std</td><td>130ms</td><td><code>background transparent → rgba(200,160,64,.16)</code>, icon → #C8A040</td><td>E8 tab colour</td></tr>
+<tr><td>S3</td><td>Collapse and expand</td><td>Sidebar + work area</td><td>« button or Ctrl \</td><td>320 e-out</td><td>labels fade first 120 e-std</td><td><code>width 248 ↔ 64px</code>; the work area reflows on the same clock</td><td><span class="new">New</span></td></tr>
+<tr><td>S4</td><td>Tooltip</td><td>Collapsed sidebar</td><td>Hover 400ms</td><td>120 e-out</td><td>0</td><td><code>opacity 0, translateX(-4px) → 1, none</code></td><td><span class="new">New</span></td></tr>
+<tr><td>S5</td><td>Menus (workspace, project picker, ⋯)</td><td>Anchored</td><td>Click</td><td>300 e-spring · rows 220 e-out</td><td>40ms · rows 150ms / 40ms</td><td><code>opacity 0, scale(.9) translateY(-6px) → 1, none</code>, origin at the anchor. No backdrop on desktop.</td><td>E7</td></tr>
+<tr class="g"><td colspan="8">Ask Resolve</td></tr>
+<tr><td>A1</td><td>Bar rises</td><td>Every screen</td><td>Screen lands</td><td>480 e-spring</td><td>460ms (Home), 760ms (Tasks)</td><td><code>translateY(30px) → none</code> + fade</td><td>E1, G1</td></tr>
+<tr><td>A2</td><td>Suggestions open</td><td>Above the bar</td><td>Focus the bar</td><td>300 e-spring · rows 220 e-out</td><td>rows 150ms / 40ms</td><td><code>scale(.96) translateY(8px) → none</code>, origin bottom centre</td><td>E7, <span class="new">New</span> origin</td></tr>
+<tr><td>A3</td><td>Sheet opens</td><td>Work area</td><td>Enter, or Ask AI</td><td>dim 240 e-std · sheet 460 e-spring · rows 300 e-out</td><td>sheet 40ms · rows 300ms / 60ms</td><td><code>sheet translateY(100%) → none</code>, 720 wide, 82% tall, centred</td><td>E4</td></tr>
+<tr><td>A4</td><td>Sheet closes</td><td>Work area</td><td>Esc, ×, backdrop</td><td>300 e-in · dim 220 e-std</td><td>dim at 80ms</td><td><code>none → translateY(100%)</code></td><td>G3 close values</td></tr>
+<tr class="g"><td colspan="8">Home</td></tr>
+<tr><td>H1</td><td>Entrance</td><td>Home</td><td>Land or return</td><td>header 340 e-out · cards 460 e-spring</td><td>cards 120ms / 70ms</td><td><code>header translateY(-8px)</code> · <code>cards translateY(18px) scale(.98) → none</code>. Order: hero, today, since Monday, waiting on, projects, captured.</td><td>E1</td></tr>
+<tr><td>H2</td><td>Hero glow breathes</td><td>Hero</td><td>Idle</td><td>3200 ease-in-out loop</td><td>0</td><td><code>opacity .85 ↔ 1</code> on the glow only</td><td>Dashboard Content</td></tr>
+<tr><td>H3</td><td>Start this</td><td>Hero</td><td>Click</td><td>press 240 e-std · route 280 e-in</td><td>route at 160ms</td><td><code>scale .975</code>, then the screen leaves <code>translateX(-28px)</code> and Tasks opens with the editor (G3)</td><td>E5</td></tr>
+<tr><td>H4</td><td>Waiting on expands</td><td>Right rail</td><td>Click the card</td><td>dim 220 e-std · card 420 e-spring · rows 300 e-out</td><td>card 60ms · rows 240ms / 55ms</td><td>Others recede <code>opacity .5</code> (no blur in egui). Detail rows <code>translateY(8px)</code>.</td><td>E2, E3 to close</td></tr>
+<tr class="g"><td colspan="8">Tasks</td></tr>
+<tr><td>T1</td><td>Entrance</td><td>Tasks</td><td>Land</td><td>340 · 420 e-out · bar 640 e-out · sections 460 e-spring</td><td>title 80 · bar 220 · sections 320 / 80</td><td>Progress <code>width 0 → n%</code></td><td>G1</td></tr>
+<tr><td>T2</td><td>Check-off</td><td>Row</td><td>Click the tick only</td><td>tick 300 e-spring · text 220 e-std · row 340 e-in · bar 520 e-out</td><td>text 40 · row 440 · bar 200</td><td><code>tick scale 1 → 1.25 → 1</code>, text <code>opacity .6</code> + strike, row <code>height, margin, padding → 0</code></td><td>G2</td></tr>
+<tr><td>T3</td><td>Editor opens</td><td>Right panel 440</td><td>Click the row body</td><td>panel 420 e-spring · rows 260 e-out · dim 220 e-std</td><td>rows 160ms / 45ms</td><td><code>translateX(100%) → 0</code>. Close 300 e-in.</td><td>G3</td></tr>
+<tr><td>T4</td><td>List ⇄ Board</td><td>Tasks</td><td>Toggle</td><td>thumb 320 e-spring · out 200 e-in · in 380 e-spring</td><td>swap at 200ms</td><td><code>∓18px out, ±24px in</code></td><td>F2</td></tr>
+<tr><td>T5</td><td>Filter change</td><td>All projects</td><td>Captured / Today / Upcoming</td><td>chip 220 e-std · list 300 e-out</td><td>rows 30ms stagger</td><td>List fades <code>translateY(6px)</code>; no slide, filters are not places</td><td>E2 row, <span class="new">New</span></td></tr>
+<tr class="g"><td colspan="8">Add task, Search, Calendar</td></tr>
+<tr><td>Q1</td><td>Dialog opens</td><td>Add task, Search, Event</td><td>Add task, Ctrl K, + Event</td><td>dim 180 e-std · dialog 300 e-spring</td><td>dialog 40ms</td><td><code>opacity 0, scale(.96) translateY(-6px) → 1, none</code>. Close 200 e-in.</td><td>E7 values, <span class="new">New</span> use</td></tr>
+<tr><td>Q2</td><td>Word recognised</td><td>Add task input</td><td>Typing</td><td>160 e-std</td><td>0</td><td>Highlight <code>background transparent → token colour</code>; its chip enters <code>220 e-out, translateY(-4px)</code></td><td><span class="new">New</span></td></tr>
+<tr><td>Q3</td><td>Task lands</td><td>Captured or project list</td><td>Add task saved</td><td>empty 220 e-in · row 380 e-spring</td><td>empty 60 · row 160</td><td>Row <code>height 0, translateY(-8px) → auto, none</code>, "Just captured" chip for 2.6 s</td><td>G4</td></tr>
+<tr><td>Q4</td><td>Search results</td><td>Palette</td><td>Typing</td><td>none</td><td>none</td><td>Results swap at once and the selection jumps. Keyboard first: no motion between keystrokes.</td><td><span class="new">New</span></td></tr>
+<tr><td>C1</td><td>Month, Week, Agenda</td><td>Calendar</td><td>Toggle</td><td>as T4</td><td>as T4</td><td>Thumb springs, view swaps at 200ms</td><td>F2</td></tr>
+<tr><td>C2</td><td>Previous, next</td><td>Calendar</td><td>‹ ›</td><td>out 240 e-in · in 400 e-spring</td><td>in 90ms</td><td>Next: <code>out -24px, in from 28px</code>. Previous flips.</td><td>E8</td></tr>
+<tr class="g"><td colspan="8">Feedback</td></tr>
+<tr><td>I1</td><td>Toast with Undo</td><td>Above the bar</td><td>Complete, delete, Undo button</td><td>in 360 e-spring · timer 4000 linear · out 260 e-in</td><td>out at 4000ms</td><td><code>translateY(20px) → none</code> · timer <code>scaleX(1 → 0)</code> origin left · out <code>translateY(16px)</code></td><td>I1</td></tr>
+<tr><td>I2</td><td>Undo</td><td>Toast + row</td><td>Undo</td><td>toast 260 e-in · row 300 e-spring</td><td>0</td><td>Cancels the pending row collapse. Row returns <code>translateX(-10px) → none</code>, tick empties.</td><td>I2</td></tr>
+<tr><td>I3</td><td>Plain toast</td><td>Above the bar</td><td>Save, Redo, reminder</td><td>in 360 e-spring · out 260 e-in</td><td>out at 2600ms</td><td>No timer, no Undo</td><td>I3</td></tr>
+<tr><td>I4</td><td>Swap</td><td>Toast</td><td>New action while one shows</td><td>out 160 e-in, then I1 or I3 in</td><td>0</td><td>One toast at a time</td><td>I</td></tr>
+<tr><td>R1</td><td>Reduced motion</td><td>All</td><td>OS setting</td><td>≤120 linear</td><td>0</td><td>Opacity only. Loops hold still. Sheets and panels appear in place.</td><td>Pack A M10.5</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1500}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

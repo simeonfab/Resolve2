@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10 Building your project</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.ck{display:flex;align-items:center;gap:8px;font-size:12.5px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; position: relative; overflow: hidden; background: #1A1A18; font-family: 'Inter', sans-serif; color: #F5F1E8;">
+<div style="position: absolute; left: 290px; top: 50px; width: 700px; height: 700px; border-radius: 50%; background: radial-gradient(circle, rgba(200,160,64,.16) 0%, rgba(200,160,64,.05) 40%, transparent 70%);" aria-hidden="true"></div>
+<div class="bm" style="position: absolute; left: 24px; top: 19px;"><i>R</i><b>Resolve</b></div>
+<div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -54%); width: 640px; box-sizing: border-box; background: #201F1C; border: 1px solid rgba(200,160,64,.28); border-radius: 16px; padding: 44px 48px; text-align: center; box-shadow: 0 30px 80px rgba(0,0,0,.45);">
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" aria-hidden="true" style="color: #C8A040;"><path d="M13 7h14v8a7 7 0 0 1-14 0zM13 10H8a5 5 0 0 0 5 6M27 10h5a5 5 0 0 1-5 6M20 22v6M14 33h12M16 28h8v5h-8z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+<h1 style="margin: 14px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px; line-height: 1.15;">You just cleared the fog, Simeon.</h1>
+<p style="margin: 12px 0 0; font-size: 15px; color: #B4AFA3; line-height: 1.55;">A messy café pricing question, turned into a focused path forward. That's the hard part done.</p>
+</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 40px; display: flex; justify-content: center; gap: 22px; color: #8A8578;" aria-live="polite">
+<span class="ck" style="color: #D8D3C7;"><span style="color: #C8A040;">✓</span>Creating the project</span>
+<span class="ck" style="color: #D8D3C7;"><span style="color: #C8A040;">✓</span>Laying out the roadmap</span>
+<span class="ck" style="color: #F5F1E8;"><span style="width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #C8A040; border-right-color: transparent; display: inline-block;"></span>Adding tasks</span>
+<span class="ck">Setting up validation</span>
+<span class="ck">Writing the knowledge pages</span>
+<span class="ck">Saving the intake transcript</span>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

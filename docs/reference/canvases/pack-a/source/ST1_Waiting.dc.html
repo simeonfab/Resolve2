@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State: waiting for AI</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;box-sizing:border-box}
+.li{display:flex;align-items:center;gap:12px;font-size:14px;color:#4A4A44}
+.mk{width:20px;height:20px;border-radius:50%;background:#C8A040;color:#1A1A18;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.em{width:20px;height:20px;border-radius:50%;border:1.5px solid #DDD8CE;flex-shrink:0;box-sizing:border-box}
+.ann{position:absolute;background:#FFF4C2;border:1px solid #E9D9A8;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#1A1A18;width:220px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden; position: relative;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 44%;"></span></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav aria-label="Intake steps" style="width: 72px; flex-shrink: 0; background: #1E1E1A; display: flex; flex-direction: column; align-items: center; gap: 22px; padding-top: 28px;">
+<span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="n" style="background: #C8A040; border-color: #C8A040; color: #1A1A18;">2</span><span class="n">3</span><span class="n">4</span>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 40px 48px 0; box-sizing: border-box; display: flex; gap: 40px;">
+<section style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Question 7</div>
+<div role="status" aria-live="polite" style="margin-top: 14px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 28px 30px; display: flex; flex-direction: column; gap: 18px;">
+<div style="display: flex; align-items: center; gap: 16px;">
+<div style="width: 40px; height: 40px; border-radius: 50%; border: 3px solid #EFE6CF; border-top-color: #C8A040; box-sizing: border-box;" aria-hidden="true"></div>
+<div style="flex: 1;"><div style="font-family: 'DM Serif Display', serif; font-size: 24px;">Thinking about what to ask next…</div><div style="font-size: 13.5px; color: #4A4A44; margin-top: 2px;">Resolve is reading your last answer.</div></div>
+<div style="font-size: 13px; font-weight: 600; color: #4A4A44; font-variant-numeric: tabular-nums; background: #F2EDE4; border-radius: 999px; padding: 5px 10px;">4 s</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px; padding-left: 56px;">
+<div class="li" style="color: #1A1A18;"><span class="mk"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Noting that answer</div>
+<div class="li" style="color: #1A1A18;"><span class="mk"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Checking what's still not covered</div>
+<div class="li"><span class="em"></span>Choosing the next question</div>
+</div>
+<div style="height: 3px; border-radius: 2px; background: #EFE6CF; overflow: hidden;"><div style="width: 27%; height: 3px; background: #C8A040;"></div></div>
+</div>
+<p style="margin: 12px 0 0; font-size: 12.5px; color: #4A4A44;">If this takes more than 15 s, Resolve asks from its own question list.</p>
+</section>
+<aside style="width: 380px; flex-shrink: 0; margin-bottom: 24px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 18px 20px; box-sizing: border-box;">
+<div style="font-size: 15px; font-weight: 700;">What Resolve has heard</div>
+<div style="margin-top: 14px; border: 1px dashed #C8A040; border-radius: 10px; padding: 12px; font-size: 13px; color: #4A4A44; background: #FBF5E6;">Sorting your last answer…</div>
+<div style="margin-top: 10px; height: 14px; width: 70%; border-radius: 4px; background: #F2EDE4;"></div>
+<div style="margin-top: 8px; height: 14px; width: 85%; border-radius: 4px; background: #F2EDE4;"></div>
+</aside>
+</main>
+</div>
+<div class="ann" style="left: 760px; top: 112px;">Counter ticks every second, tabular figures. A checklist row ticks, or the bar moves, at least every 5 s.</div>
+<div class="ann" style="left: 140px; top: 470px;">Bar fills to 15 s (the cut-off), linear. At 15 s: ST2.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

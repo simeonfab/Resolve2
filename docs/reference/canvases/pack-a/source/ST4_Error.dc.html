@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State: error</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
+.st{display:flex;gap:12px;align-items:center}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+table{border-collapse:collapse;width:100%;font-size:13px}
+th{text-align:left;font-size:11.5px;font-weight:700;color:#4A4A44;padding:8px 10px;border-bottom:1px solid #DDD8CE}
+td{padding:8px 10px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 58%;"></span></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="t">Get started</span></div>
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">✓</span><span class="t">Bring it in</span></div>
+<div class="st"><span class="n" style="border-color: #C8A040; color: #C8A040;">3</span><span class="t" style="color: #F5F1E8;">Confirm understanding</span></div>
+<div class="st"><span class="n">4</span><span class="t">Your next move</span></div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 48px 56px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 760px; display: flex; flex-direction: column;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Confirm understanding</div>
+<h1 style="margin: 6px 0 16px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">Resolve couldn't read that just now.</h1>
+<div role="alert" style="display: flex; gap: 12px; align-items: flex-start; background: #fff; border: 1px solid #DDD8CE; border-left: 3px solid #8B4A2A; border-radius: 12px; padding: 14px 16px;">
+<svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true" style="color: #8B4A2A; flex-shrink: 0; margin-top: 1px;"><circle cx="9" cy="9" r="7.2" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.2v4.6M9 12.4v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+<div style="font-size: 14px; line-height: 1.55;"><b style="color: #8B4A2A;">The AI's answer didn't come back in the right shape, even after one retry.</b><br>Nothing you wrote is lost. Try again, or fill the cards yourself and carry on.</div>
+</div>
+<div style="display: flex; gap: 10px; margin-top: 18px;">
+<a href="#" style="display: inline-flex; align-items: center; gap: 8px; background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 13px 22px; font: 600 15px 'Inter', sans-serif; text-decoration: none;">Try again</a>
+<a href="#" style="display: inline-flex; background: #fff; color: #1A1A18; border: 1px solid #DDD8CE; border-radius: 10px; padding: 13px 20px; font: 600 15px 'Inter', sans-serif; text-decoration: none;">Fill the cards yourself</a>
+<a href="#" style="align-self: center; margin-left: 6px; font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Change AI settings</a>
+</div>
+<div style="margin-top: 34px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 6px 8px 8px;">
+<table>
+<thead><tr><th>Step that failed</th><th>Try again does</th><th>Manual path</th></tr></thead>
+<tbody>
+<tr><td>03 Questions</td><td>Asks for the next question again</td><td>Next fixed question from Resolve's own list</td></tr>
+<tr><td>04 Understanding</td><td>Reads your words again</td><td>Fill the cards yourself (blank cards in edit mode)</td></tr>
+<tr><td>06 to 09 Proposal</td><td>Regenerates the failed part only</td><td>Made without AI, from your own words; add items yourself</td></tr>
+<tr><td>10 Build</td><td>Writes the project again</td><td>Back to the whole picture, then See and edit everything</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

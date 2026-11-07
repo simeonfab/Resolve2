@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tasks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="tasks" project="{{projectName}}" collapsed="{{collapsed}}" h="{{h}}" intake="{{no}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 28px 40px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: {{cap}}px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; flex: 1; min-height: 0;">
+<div style="display: flex; align-items: flex-end; gap: 12px;">
+<div style="flex: 1; min-width: 0;">
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">{{eyebrow}}</div>
+<h1 style="margin: 4px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">Tasks</h1>
+</div>
+<sc-if value="{{isProject}}" hint-placeholder-val="{{ true }}">
+<div role="tablist" aria-label="View" style="display: flex; background: #E4DED2; border-radius: 9px; padding: 3px;"><span role="tab" aria-selected="{{listSel}}" style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 7px; background: {{listBg}};">List</span><span role="tab" aria-selected="{{boardSel}}" style="font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 7px; background: {{boardBg}};">Board</span></div>
+</sc-if>
+<a href="#" title="Organise my to-dos with AI" style="display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #DDD8CE; border-radius: 9px; padding: 8px 12px; font-size: 13px; font-weight: 600; color: #1A1A18; text-decoration: none;"><span style="color: #C8A040;" aria-hidden="true">✦</span>Organise</a>
+<a href="#" style="display: inline-flex; align-items: center; gap: 6px; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 9px 14px; font-size: 13px; font-weight: 600; text-decoration: none;">+ Add task</a>
+</div>
+
+<sc-if value="{{isAll}}" hint-placeholder-val="{{ false }}">
+<div role="tablist" style="display: flex; gap: 6px; margin-top: 16px;">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><span role="tab" aria-selected="{{t.sel}}" style="font-size: 13px; font-weight: 600; padding: 7px 12px; border-radius: 999px; background: {{t.bg}}; color: {{t.fg}}; border: 1px solid {{t.bd}};">{{t.t}} <span style="font-weight: 500; opacity: .75;">{{t.n}}</span></span></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{showProgress}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; gap: 12px; margin-top: 14px;"><div style="flex: 1; max-width: 360px; height: 5px; border-radius: 3px; background: #E4DED2; overflow: hidden;"><div style="width: {{pct}}; height: 5px; background: #C8A040;"></div></div><span style="font-size: 12.5px; color: #4A4A44;">{{progressText}}</span><a href="#" style="font-size: 12.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">View completed ›</a></div>
+</sc-if>
+
+<sc-if value="{{isList}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow: hidden; margin-top: 8px; padding-bottom: 90px;">
+<sc-for list="{{sections}}" as="s" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; gap: 8px; margin: 16px 0 8px;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{s.dot}};"></span><span style="font-size: 14px; font-weight: 600;">{{s.t}}</span><span style="font-size: 12.5px; color: #4A4A44;">{{s.n}}</span></div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;">
+<sc-for list="{{s.rows}}" as="r" hint-placeholder-count="2">
+<div style="display: flex; gap: 12px; padding: 11px 14px; border-top: {{r.line}}; background: {{r.bg}};">
+<button aria-label="Complete: {{r.t}}" style="width: 22px; height: 22px; flex-shrink: 0; margin-top: 1px; border-radius: 50%; border: 1.5px solid {{r.ring}}; background: {{r.fill}}; color: #1A1A18; font-size: 11px; display: flex; align-items: center; justify-content: center; padding: 0;">{{r.tick}}</button>
+<a href="#" style="flex: 1; min-width: 0; text-decoration: none; color: #1A1A18;">
+<span style="display: block; font-size: 14px; font-weight: 500; text-decoration: {{r.strike}}; color: {{r.tc}};">{{r.t}}</span>
+<span style="display: {{r.descDisplay}}; font-size: 12.5px; color: #4A4A44; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.d}}</span>
+<span style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 5px; font-size: 11.5px; font-weight: 600;"><span style="color: {{r.dueC}};">{{r.due}}</span><span style="color: #8B4A2A;">{{r.theme}}</span><span style="background: {{r.lb}}; color: {{r.lf}}; border-radius: 999px; padding: 1px 7px;">{{r.label}}</span></span>
+</a>
+</div>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isBoard}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 18px; flex: 1; min-height: 0; padding-bottom: 90px;">
+<sc-for list="{{columns}}" as="c" hint-placeholder-count="4">
+<div style="background: #EAE4D9; border-radius: 12px; padding: 10px; display: flex; flex-direction: column; gap: 8px; min-height: 0;">
+<div style="display: flex; justify-content: space-between; font-size: 13px; font-weight: 700; padding: 2px 4px;"><span>{{c.t}}</span><span style="font-weight: 500; color: #4A4A44;">{{c.n}}</span></div>
+<sc-for list="{{c.cards}}" as="k" hint-placeholder-count="2">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; opacity: {{k.op}};"><span style="font-size: 13.5px; font-weight: 500; line-height: 1.35;">{{k.t}}</span><span style="font-size: 11.5px; font-weight: 600; color: #8B4A2A;">{{k.theme}}</span><span style="font-size: 11.5px; color: #4A4A44;">{{k.due}}</span></div>
+</sc-for>
+<span style="font-size: 12.5px; font-weight: 600; color: #4A4A44; padding: 4px;">+ Add</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 60px auto 0; width: 440px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">{{emptyTitle}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #4A4A44;">{{emptyBody}}</p>
+<div style="display: flex; gap: 10px; margin-top: 8px;"><a href="#" style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">+ Add task</a><a href="#" style="display: inline-flex; background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Open the roadmap</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading tasks" style="margin-top: 22px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px;">
+<sc-for list="{{skel}}" as="x" hint-placeholder-count="5"><div style="display: flex; gap: 12px; padding: 14px; border-top: 1px solid #EEE9DF;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #EEE9DF;"></span><span style="flex: 1; display: flex; flex-direction: column; gap: 6px;"><span style="width: 55%; height: 12px; border-radius: 4px; background: #EEE9DF;"></span><span style="width: 80%; height: 10px; border-radius: 4px; background: #F2EDE4;"></span></span></div></sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin-top: 30px; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 20px 22px; max-width: 560px;">
+<div style="font-size: 16px; font-weight: 600;">Resolve couldn't load these tasks.</div>
+<p style="margin: 6px 0 14px; font-size: 13.5px; line-height: 1.55; color: #4A4A44;">Nothing is lost. Your tasks are saved on this PC.</p>
+<a href="#" style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 16px; font-size: 13.5px; font-weight: 600; text-decoration: none;">Try again</a>
+</div>
+</sc-if>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 22px; display: flex; flex-direction: column; align-items: center; gap: 10px;">
+<sc-if value="{{toastUndo}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="width: 460px; background: #1A1A18; color: #F5F1E8; border-radius: 14px; overflow: hidden; box-shadow: 0 14px 40px rgba(26,26,24,.3);">
+<div style="display: flex; align-items: center; gap: 12px; padding: 12px 14px;"><span style="width: 22px; height: 22px; border-radius: 50%; background: #C8A040; color: #1A1A18; display: flex; align-items: center; justify-content: center; font-size: 11px;">✓</span><span style="flex: 1; font-size: 13.5px;">Completed: Mark the busiest and quietest months</span><button style="border: 0; background: none; color: #C8A040; font: 700 13.5px 'Inter', sans-serif;">Undo</button></div>
+<div style="height: 3px; background: rgba(255,255,255,.1);"><div style="width: 62%; height: 3px; background: #C8A040;"></div></div>
+</div>
+</sc-if>
+<sc-if value="{{toastPlain}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; background: #1A1A18; color: #F5F1E8; border-radius: 999px; padding: 10px 16px; font-size: 13.5px; box-shadow: 0 14px 40px rgba(26,26,24,.3);"><span style="color: #C8A040;">✓</span>Saved</div>
+</sc-if>
+<dc-import name="AskBar" screen="tasks" open="{{no}}" hint-size="560px,48px"></dc-import>
+</div>
+
+<sc-if value="{{panel}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(26,26,24,.18);"></div>
+<aside role="dialog" aria-label="Edit task" style="position: absolute; right: 0; top: 0; bottom: 0; width: 440px; background: #fff; border-left: 1px solid #DDD8CE; box-shadow: -18px 0 50px rgba(26,26,24,.14); display: flex; flex-direction: column;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; border-bottom: 1px solid #EEE9DF;"><button aria-label="Close" style="width: 30px; height: 30px; border: 0; background: #F2EDE4; border-radius: 8px; font-size: 15px;">→</button><span style="font-size: 13px; color: #4A4A44; flex: 1;">Café flat-fee bookkeeping · Now</span><button aria-label="More actions" style="width: 30px; height: 30px; border: 0; background: none; font-size: 16px;">⋯</button></div>
+<div style="flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">Title<input value="Reconstruct 12 months of hours per café" style="height: 42px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16); border-radius: 9px; padding: 0 12px; font: 500 15px 'Inter', sans-serif; color: #1A1A18; outline: none;"></label>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">Theme<span style="height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 12px; display: flex; align-items: center; font: 500 13.5px 'Inter', sans-serif; color: #1A1A18;">Measure true monthly hours ▾</span></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">End date<span style="height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 12px; display: flex; align-items: center; font: 500 13.5px 'Inter', sans-serif; color: #1A1A18;">Fri 13 Nov</span></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">Priority<span style="height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 12px; display: flex; align-items: center; font: 500 13.5px 'Inter', sans-serif; color: #1A1A18;">P2 ▾</span></label>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">Labels<span style="height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 12px; display: flex; align-items: center; gap: 6px; font: 600 11.5px 'Inter', sans-serif;"><span style="background: #E8EFE3; color: #3F5A33; border-radius: 999px; padding: 2px 8px;">evidence</span></span></label>
+</div>
+<label style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">Notes<span style="position: relative; min-height: 150px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 10px 44px 10px 12px; font: 400 13.5px/1.55 'Inter', sans-serif; color: #1A1A18;">For each of your three cafés, list the hours actually worked in each of the last 12 months. Use your timesheets, invoices or diary, not memory.<span aria-hidden="true" style="position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border-radius: 50%; background: #F2EDE4; display: flex; align-items: center; justify-content: center;"><svg width="13" height="13" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="#4A4A44" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="#4A4A44" stroke-width="1.4" stroke-linecap="round"/></svg></span></span></label>
+</div>
+<div style="display: flex; gap: 10px; padding: 14px 20px; border-top: 1px solid #EEE9DF;"><button style="background: #1A1A18; color: #F5F1E8; border: 0; border-radius: 9px; padding: 11px 18px; font: 600 14px 'Inter', sans-serif;">Save</button><button style="background: #fff; border: 1px solid #DDD8CE; border-radius: 9px; padding: 11px 14px; font: 600 14px 'Inter', sans-serif;">Mark complete</button><button style="margin-left: auto; background: none; border: 0; color: #8B4A2A; font: 600 13.5px 'Inter', sans-serif;">Delete</button></div>
+</aside>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"view":{"editor":"enum","options":["list","board"],"default":"list"},"scope":{"editor":"enum","options":["project","all"],"default":"project"},"panel":{"editor":"boolean","default":false},"toast":{"editor":"enum","options":["none","undo","plain"],"default":"none"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const view = this.props.view ?? 'list';
+const scope = this.props.scope ?? 'project';
+const toast = this.props.toast ?? 'none';
+const w = this.props.w ?? 1280;
+const full = state === 'full';
+const all = scope === 'all';
+const L = { evidence: ['#E8EFE3', '#3F5A33'], assumption: ['#FBF5E6', '#7A5B12'], none: ['transparent', 'transparent'] };
+const row = (t, d, due, theme, label, opts) => {
+const o = opts || {};
+const lb = L[label || 'none'];
+return { t, d, due, theme, label: label || '', lb: lb[0], lf: lb[1], dueC: /today|overdue/i.test(due) ? '#8B4A2A' : '#4A4A44',
+ring: o.done ? '#C8A040' : '#B5AE9F', fill: o.done ? '#C8A040' : '#fff', tick: o.done ? '✓' : '', strike: o.done ? 'line-through' : 'none', tc: o.done ? '#9A9A92' : '#1A1A18',
+bg: o.hover ? '#FBF8F2' : '#fff', descDisplay: d ? 'block' : 'none' };
+};
+const withLines = (rows) => rows.map((r, i) => ({ ...r, line: i === 0 ? '0' : '1px solid #EEE9DF' }));
+const projectSections = [
+{ t: 'Now', n: '2 active', dot: '#C8A040', rows: withLines([
+row('Reconstruct 12 months of hours per café', 'For each of your three cafés, list the hours actually worked in each of the last 12 months.', 'Due today', 'Measure true monthly hours', 'evidence', { hover: true }),
+row('Mark the busiest and quietest months', 'For each café, find the highest-hour month and the lowest, and note what drove the peak.', 'Fri 13 Nov', 'Measure true monthly hours', 'assumption', { done: toast === 'undo' })]) },
+{ t: 'Waiting on', n: '1 stalled', dot: '#8B4A2A', rows: withLines([
+row("Hours export from The Corner Café's till system", '', 'Waiting · 3 days', 'Measure true monthly hours', '')]) },
+{ t: 'Upcoming from roadmap', n: '3 queued', dot: '#B5AE9F', rows: withLines([
+row('Model the flat fee against real hours', '', 'Next', 'Price to absorb spikes', 'assumption'),
+row('Draft the fixed-fee offer for two clients', '', 'Next', 'Convert the two willing clients', 'evidence'),
+row('Define the monthly receipt handover', '', 'Next', 'Design the no-shoebox rhythm', 'assumption')]) }
+];
+const allSections = [
+{ t: 'Café flat-fee bookkeeping', n: '1', dot: '#C8A040', rows: withLines([row('Reconstruct 12 months of hours per café', '', 'Due today', 'Measure true monthly hours', 'evidence', { hover: true })]) },
+{ t: 'Website refresh', n: '1', dot: '#8B4A2A', rows: withLines([row('Write the three package descriptions', '', 'Due today', 'Show the packages', '')]) },
+{ t: 'Not in a project', n: '1', dot: '#B5AE9F', rows: withLines([row('Send October invoices', '', 'Today 16:00 · every month', '', '')]) }
+];
+const card = (t, theme, due, op) => ({ t, theme, due, op: op || 1 });
+const columns = [
+{ t: 'Now', n: '2', cards: [card('Reconstruct 12 months of hours per café', 'Measure true monthly hours', 'Due today'), card('Mark the busiest and quietest months', 'Measure true monthly hours', 'Fri 13 Nov')] },
+{ t: 'Next', n: '2', cards: [card('Model the flat fee against real hours', 'Price to absorb spikes', ''), card('Draft the fixed-fee offer for two clients', 'Convert the two willing clients', '')] },
+{ t: 'Later', n: '1', cards: [card('Define the monthly receipt handover', 'Design the no-shoebox rhythm', '')] },
+{ t: 'Done', n: '1', cards: [card('Confirm your roadmap', 'Measure true monthly hours', 'Done Monday', .6)] }
+];
+const chip = (sel) => sel ? { bg: '#1A1A18', fg: '#F5F1E8', bd: '#1A1A18', sel: 'true' } : { bg: '#fff', fg: '#1A1A18', bd: '#DDD8CE', sel: 'false' };
+const tabs = [{ t: 'Captured', n: '2', ...chip(false) }, { t: 'Today', n: '3', ...chip(true) }, { t: 'Upcoming', n: '6', ...chip(false) }, { t: 'Filters and labels', n: '', ...chip(false) }];
+return {
+w, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false,
+cap: w > 1600 ? 1100 : 2000,
+projectName: all ? 'All projects' : 'Café flat-fee bookkeeping',
+eyebrow: all ? 'All projects' : 'Café flat-fee bookkeeping',
+isProject: !all, isAll: all, tabs,
+listSel: view === 'list' ? 'true' : 'false', boardSel: view === 'board' ? 'true' : 'false',
+listBg: view === 'list' ? '#fff' : 'transparent', boardBg: view === 'board' ? '#fff' : 'transparent',
+showProgress: full && !all,
+pct: toast === 'undo' ? '40%' : '20%', progressText: toast === 'undo' ? '2 of 5 done this week' : '1 of 5 done this week',
+isList: full && (view === 'list' || all), isBoard: full && view === 'board' && !all,
+sections: all ? allSections : projectSections, columns,
+isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+emptyTitle: all ? 'Nothing due today.' : 'No tasks in this project yet.',
+emptyBody: all ? 'Tasks with today’s date from every project show here. Captured items wait in Captured.' : 'Add the first one, or open the roadmap and turn a theme into tasks.',
+skel: [1, 2, 3, 4, 5],
+toastUndo: toast === 'undo', toastPlain: toast === 'plain',
+panel: !!this.props.panel
+};
+}
+}
+</script>
+</body>
+</html>

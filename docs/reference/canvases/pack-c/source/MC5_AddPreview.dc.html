@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Knowledge add and preview motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:24px 30px;overflow:hidden}
+.lib{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:16px}
+.k{height:100px;border-radius:10px;background:#fff;border:1px solid #DDD8CE}
+.nk{border-color:#C8A040;background:#FBF5E6;animation:nk 7000ms infinite}
+.d1{position:absolute;inset:0;background:rgba(26,26,24,.32);animation:d1 7000ms infinite}
+.sh{position:absolute;left:50%;bottom:0;width:440px;margin-left:-220px;background:#fff;border-radius:18px 18px 0 0;padding:14px 16px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:8px;box-shadow:0 -18px 60px rgba(26,26,24,.25);animation:sh 7000ms infinite}
+.op{height:44px;border-radius:9px;border:1px solid #DDD8CE}
+.o1{animation:o1 7000ms infinite}.o2{animation:o2 7000ms infinite}.o3{animation:o3 7000ms infinite}.o4{animation:o4 7000ms infinite}
+.d2{position:absolute;inset:0;background:rgba(26,26,24,.18);animation:d2 7000ms infinite}
+.pv{position:absolute;right:0;top:0;bottom:0;width:380px;background:#fff;border-left:1px solid #DDD8CE;box-shadow:-18px 0 50px rgba(26,26,24,.14);padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px;animation:pv 7000ms infinite}
+.doc{flex:1;border:1px solid #DDD8CE;border-radius:9px;animation:dc 7000ms infinite}
+@keyframes d1{0%,2%{opacity:0}5%,25%{opacity:1}28%,100%{opacity:0}}
+@keyframes sh{0%,2%{transform:translateY(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}8.6%,25%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}27.9%,100%{transform:translateY(100%)}}
+@keyframes o1{0%,4.3%{opacity:0;transform:translateY(8px)}8%,25%{opacity:1;transform:none}27%,100%{opacity:0}}
+@keyframes o2{0%,5.1%{opacity:0;transform:translateY(8px)}8.8%,25%{opacity:1;transform:none}27%,100%{opacity:0}}
+@keyframes o3{0%,5.9%{opacity:0;transform:translateY(8px)}9.6%,25%{opacity:1;transform:none}27%,100%{opacity:0}}
+@keyframes o4{0%,6.7%{opacity:0;transform:translateY(8px)}10.4%,25%{opacity:1;transform:none}27%,100%{opacity:0}}
+@keyframes nk{0%,27.9%{opacity:0;transform:scale(.9) translateY(-6px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}33.6%,92%{opacity:1;transform:none}100%{opacity:0}}
+@keyframes d2{0%,50%{opacity:0}53%,85%{opacity:1}89.3%,100%{opacity:0}}
+@keyframes pv{0%,50%{transform:translateX(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}56%,85%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}89.3%,100%{transform:translateX(100%)}}
+@keyframes dc{0%,52.3%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}56.9%,85%{opacity:1;transform:none}89.3%,100%{opacity:0}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">H3, H4 · Knowledge · Flow Spec values · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Add rises from below. A document slides in from the side.</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the add sheet, a new card landing in the library, then a document preview sliding in">
+<div class="sb"></div>
+<div class="wa">
+<div style="font: 24px 'DM Serif Display', serif;">Knowledge</div>
+<div class="lib"><div class="k nk"></div><div class="k"></div><div class="k"></div><div class="k"></div><div class="k"></div><div class="k"></div></div>
+<div class="d1"></div>
+<div class="sh"><span style="width: 36px; height: 4px; border-radius: 2px; background: #DDD8CE; align-self: center;"></span><div style="font: 18px 'DM Serif Display', serif;">Add to Knowledge</div><div class="op o1"></div><div class="op o2"></div><div class="op o3"></div><div class="op o4"></div></div>
+<div class="d2"></div>
+<div class="pv"><span style="width: 70px; height: 16px; border-radius: 5px; background: #E8EFE3;"></span><div style="font: 20px 'DM Serif Display', serif;">Pricing notes</div><div style="height: 60px; border-radius: 9px; background: #F7F3EC;"></div><div class="doc"></div></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Sheet (H3)</span><span class="d">Rises <code>460ms e-spring</code> over a <code>.32</code> dim. Options follow <code>260ms e-out at 160ms, 55ms apart</code>.</span></div>
+<div class="row"><span class="t">New card</span><span class="d">When the sheet closes, the new item lands first in the library <code>400ms e-spring at 120ms, scale(.9) translateY(-6px)</code> with the amber outline for 2 seconds.</span></div>
+<div class="row"><span class="t">Preview (H4)</span><span class="d">Clicking a file pushes the panel in <code>420ms e-spring, translateX(100%) → 0</code>. The document follows <code>320ms e-out at 160ms</code>.</span></div>
+<div class="row"><span class="t">Close</span><span class="d">→ button or Esc <code>300ms e-in</code>. The library under it never moved.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

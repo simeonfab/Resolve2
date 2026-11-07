@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>01 Name</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #1E1E1A; color: #F5F1E8; position: relative; overflow: hidden;">
+<div style="position: absolute; left: 340px; top: -120px; width: 600px; height: 600px; border-radius: 50%; background: radial-gradient(circle, rgba(200,160,64,.20) 0%, rgba(200,160,64,.07) 38%, transparent 70%);" aria-hidden="true"></div>
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; border-bottom: 1px solid rgba(255,255,255,.06); position: relative;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 4%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a></div>
+</div>
+<div style="flex: 1; display: flex; align-items: center; justify-content: center; position: relative;">
+<div style="width: 460px; display: flex; flex-direction: column; gap: 0;">
+<div style="font-size: 13px; font-weight: 600; color: #C8A040;">Let's get started</div>
+<h1 style="margin: 10px 0 28px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 44px; line-height: 1.1; color: #F5F1E8;">What's your name?</h1>
+<label for="nm" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0);">Your first name</label>
+<input id="nm" value="Simeon" style="height: 52px; box-sizing: border-box; border-radius: 10px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.22); background: #201F1C; color: #F5F1E8; font: 400 16px 'Inter', sans-serif; padding: 0 16px; outline: none;">
+<div style="display: flex; align-items: center; gap: 16px; margin-top: 16px;">
+<button style="display: inline-flex; align-items: center; gap: 8px; background: #C8A040; color: #1A1A18; border: 0; border-radius: 10px; padding: 14px 24px; font: 600 15px 'Inter', sans-serif;">Continue <span aria-hidden="true">→</span></button>
+<span style="font-size: 12.5px; color: #8A8578;">Press Enter to continue</span>
+</div>
+</div>
+</div>
+<div style="position: absolute; left: 24px; bottom: 20px; font-size: 12px; color: #8A8578;">Your answers save as you go.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

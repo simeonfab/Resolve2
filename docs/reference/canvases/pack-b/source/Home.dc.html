@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="home" collapsed="{{collapsed}}" intake="{{intake}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; display: flex; flex-direction: column; padding: 30px 40px 0; box-sizing: border-box;">
+<div style="display: flex; align-items: flex-end; gap: 16px; max-width: {{cap}}px; width: 100%; margin: 0 auto;">
+<div style="flex: 1; min-width: 0;">
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px; line-height: 1.15;">Good afternoon, Simeon</h1>
+<p style="margin: 4px 0 0; font-size: 14px; color: #4A4A44;">{{subline}}</p>
+</div>
+<a href="#" style="display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid #DDD8CE; border-radius: 9px; padding: 9px 14px; font-size: 13.5px; font-weight: 600; color: #1A1A18; text-decoration: none;"><span aria-hidden="true" style="color: #8B4A2A;">+</span>New project</a>
+</div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 20px; margin: 22px auto 0; max-width: {{cap}}px; width: 100%; flex: 1; min-height: 0;">
+<section style="flex: 1.25; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+<div style="position: relative; overflow: hidden; background: #1A1A18; color: #F5F1E8; border-radius: 16px; padding: 26px 30px 28px;">
+<div aria-hidden="true" style="position: absolute; right: -90px; top: -120px; width: 360px; height: 360px; border-radius: 50%; background: radial-gradient(circle, rgba(200,160,64,.24) 0%, rgba(200,160,64,.06) 45%, transparent 70%);"></div>
+<div style="position: relative; display: flex; align-items: center; gap: 10px;"><span style="font-size: 12px; font-weight: 600; color: #C8A040;">Your highest-value move</span><span style="font-size: 11.5px; color: #B4AFA3; border: 1px solid rgba(255,255,255,.16); border-radius: 999px; padding: 2px 9px;">Café flat-fee bookkeeping</span></div>
+<h2 style="position: relative; margin: 12px 0 10px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: {{heroSize}}px; line-height: 1.2;">Pull the actual hours you logged on each café for the last 12 months.</h2>
+<p style="position: relative; margin: 0; font-size: 14.5px; line-height: 1.6; color: #D8D3C7;">Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.</p>
+<div style="position: relative; display: flex; align-items: center; gap: 8px; margin-top: 14px; font-size: 12.5px; color: #D8D3C7;"><span style="width: 7px; height: 7px; border-radius: 50%; background: #C8A040;"></span>Focus theme · Measure true monthly hours</div>
+<div style="position: relative; display: flex; align-items: center; gap: 10px; margin-top: 20px;">
+<a href="#" style="display: inline-flex; align-items: center; gap: 8px; background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Start this <span aria-hidden="true">→</span></a>
+<a href="#" style="display: inline-flex; align-items: center; gap: 8px; border: 1px solid rgba(255,255,255,.2); color: #F5F1E8; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; text-decoration: none;"><span aria-hidden="true" style="color: #C8A040;">✦</span>Plan my day</a>
+</div>
+</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px;">
+<div style="display: flex; align-items: baseline; justify-content: space-between;"><span style="font-size: 13px; font-weight: 700;">Today</span><a href="#" style="font-size: 12.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Open calendar →</a></div>
+<sc-for list="{{agenda}}" as="a" hint-placeholder-count="3">
+<div style="display: flex; gap: 14px; padding: 10px 0; border-top: {{a.line}};">
+<span style="width: 52px; flex-shrink: 0; font-size: 12.5px; color: #4A4A44; font-variant-numeric: tabular-nums; padding-top: 1px;">{{a.time}}</span>
+<span style="width: 16px; height: 16px; border-radius: {{a.shape}}; border: 1.5px solid {{a.mark}}; flex-shrink: 0; margin-top: 1px; box-sizing: border-box;"></span>
+<span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 14px; font-weight: 500;">{{a.title}}</span><span style="display: block; font-size: 12px; color: #4A4A44; margin-top: 2px;">{{a.meta}}</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+<aside style="flex: 1; min-width: 0; max-width: 440px; display: flex; flex-direction: column; gap: 12px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 14px 16px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 12px; font-weight: 700; color: #4A4A44;">SINCE MONDAY</span><span style="font-size: 12px; font-weight: 600; color: #3F5A33;">3 done</span></div>
+<sc-for list="{{wins}}" as="x" hint-placeholder-count="3"><div style="display: flex; align-items: center; gap: 10px; margin-top: 8px; font-size: 13.5px;"><span style="width: 16px; height: 16px; border-radius: 50%; background: #E8EFE3; color: #3F5A33; display: flex; align-items: center; justify-content: center; font-size: 10px;">✓</span>{{x}}</div></sc-for>
+</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 14px 16px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 12px; font-weight: 700; color: #4A4A44;">WAITING ON</span><span style="font-size: 12px; font-weight: 600; color: #8B4A2A;">1 stalled</span></div>
+<div style="display: flex; align-items: flex-start; gap: 10px; margin-top: 8px;"><span style="flex: 1; font-size: 13.5px; line-height: 1.45;">Hours export from The Corner Café's till system</span><span style="font-size: 11.5px; font-weight: 600; color: #8B4A2A; background: #F5E8E1; border-radius: 999px; padding: 2px 8px; white-space: nowrap;">3 days</span></div>
+</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 14px 16px;">
+<div style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 12px; font-weight: 700; color: #4A4A44;">PROJECTS</span><a href="#" style="font-size: 12px; font-weight: 600; color: #8B4A2A; text-decoration: none;">All →</a></div>
+<sc-for list="{{projects}}" as="p" hint-placeholder-count="2">
+<div style="margin-top: 10px;"><div style="display: flex; justify-content: space-between; font-size: 13.5px;"><span style="font-weight: 500;">{{p.name}}</span><span style="color: #4A4A44; font-variant-numeric: tabular-nums;">{{p.count}}</span></div><div style="height: 5px; border-radius: 3px; background: #EEE9DF; margin-top: 6px; overflow: hidden;"><div style="width: {{p.pct}}; height: 5px; background: #C8A040; border-radius: 3px;"></div></div></div>
+</sc-for>
+</div>
+<a href="#" style="display: flex; align-items: center; gap: 10px; background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; color: #1A1A18; text-decoration: none;"><span style="font-weight: 700;">2</span><span style="flex: 1;">captured, not in a project yet</span><span style="font-weight: 600; color: #8B4A2A;">Sort →</span></a>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 20px; margin: 22px auto 0; max-width: {{cap}}px; width: 100%;">
+<section style="flex: 1.25; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 30px 32px;">
+<div style="font-size: 12px; font-weight: 600; color: #8B4A2A;">Start here</div>
+<h2 style="margin: 10px 0 10px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px; line-height: 1.2;">Bring in your first project.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">Tell Resolve what's going on, however messy. You'll get one clear first move and a roadmap you can change any time.</p>
+<div style="display: flex; gap: 10px; margin-top: 20px;"><a href="#" style="display: inline-flex; align-items: center; gap: 8px; background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">New project <span aria-hidden="true">→</span></a></div>
+</div>
+<div style="display: flex; align-items: center; gap: 14px; background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 14px; padding: 16px 18px;">
+<span style="width: 10px; height: 10px; border-radius: 50%; background: #C8A040;"></span>
+<span style="flex: 1;"><span style="display: block; font-size: 14.5px; font-weight: 600;">Continue setting up</span><span style="display: block; font-size: 13px; color: #4A4A44; margin-top: 2px;">You stopped at Confirm understanding. Everything you wrote is saved.</span></span>
+<a href="#" style="font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Pick up →</a>
+</div>
+</section>
+<aside style="flex: 1; min-width: 0; max-width: 440px; display: flex; flex-direction: column; gap: 12px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px;"><div style="font-size: 12px; font-weight: 700; color: #4A4A44;">TODAY</div><p style="margin: 8px 0 0; font-size: 13.5px; color: #4A4A44; line-height: 1.5;">Nothing scheduled. Events and dated tasks show here.</p></div>
+<div style="background: #fff; border: 1px dashed #CFC8BA; border-radius: 14px; padding: 16px;"><div style="font-size: 12px; font-weight: 700; color: #4A4A44;">CAPTURED</div><p style="margin: 8px 0 0; font-size: 13.5px; color: #4A4A44; line-height: 1.5;">Nothing yet. Use Add task or the bar below to note anything on your mind.</p></div>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading your day" style="display: flex; gap: 20px; margin: 22px auto 0; max-width: {{cap}}px; width: 100%;">
+<section style="flex: 1.25; display: flex; flex-direction: column; gap: 16px;">
+<div style="height: 300px; border-radius: 16px; background: linear-gradient(90deg, #E4DED2 0%, #EEE9DF 50%, #E4DED2 100%);"></div>
+<div style="height: 170px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE; padding: 16px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;"><span style="width: 60px; height: 12px; border-radius: 4px; background: #EEE9DF;"></span><span style="height: 12px; border-radius: 4px; background: #EEE9DF;"></span><span style="width: 70%; height: 12px; border-radius: 4px; background: #EEE9DF;"></span></div>
+</section>
+<aside style="flex: 1; max-width: 440px; display: flex; flex-direction: column; gap: 12px;">
+<div style="height: 110px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 80px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 110px; border-radius: 14px; background: #fff; border: 1px solid #DDD8CE;"></div>
+<span style="font-size: 12.5px; color: #4A4A44;">Loading your day…</span>
+</aside>
+</div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 20px; margin: 22px auto 0; max-width: {{cap}}px; width: 100%;">
+<section style="flex: 1.25; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+<div role="alert" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="display: flex; gap: 12px; align-items: flex-start;"><svg width="20" height="20" viewBox="0 0 18 18" fill="none" aria-hidden="true" style="color: #8B4A2A; flex-shrink: 0; margin-top: 2px;"><circle cx="9" cy="9" r="7.2" stroke="currentColor" stroke-width="1.5"/><path d="M9 5.2v4.6M9 12.4v.1" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+<div><div style="font-family: 'DM Serif Display', serif; font-size: 24px;">Resolve couldn't plan your day just now.</div><p style="margin: 6px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">The AI didn't answer. Your tasks and calendar are below, and your first move is still on the project.</p></div></div>
+<div style="display: flex; gap: 10px; margin-top: 18px; padding-left: 32px;"><a href="#" style="display: inline-flex; background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Try again</a><a href="#" style="display: inline-flex; background: #fff; border: 1px solid #DDD8CE; color: #1A1A18; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; text-decoration: none;">Open today's tasks</a></div>
+</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 18px;">
+<div style="font-size: 13px; font-weight: 700;">Today</div>
+<sc-for list="{{agenda}}" as="a" hint-placeholder-count="3">
+<div style="display: flex; gap: 14px; padding: 10px 0; border-top: {{a.line}};"><span style="width: 52px; flex-shrink: 0; font-size: 12.5px; color: #4A4A44;">{{a.time}}</span><span style="flex: 1; font-size: 14px;">{{a.title}}</span></div>
+</sc-for>
+</div>
+</section>
+<aside style="flex: 1; min-width: 0; max-width: 440px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 14px 16px; font-size: 13.5px; color: #4A4A44; line-height: 1.5;">Only the plan failed. Everything else on Home loads from your own data, which is saved on this PC.</div>
+</aside>
+</div>
+</sc-if>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 22px; display: flex; justify-content: center; pointer-events: none;"><div style="pointer-events: auto;"><dc-import name="AskBar" screen="home" open="{{no}}" hint-size="560px,48px"></dc-import></div></div>
+
+<sc-if value="{{chat}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(26,26,24,.32);"></div>
+<section role="dialog" aria-label="Ask Resolve" style="position: absolute; left: 50%; bottom: 0; transform: translateX(-50%); width: 720px; height: 82%; background: #F7F3EC; border-radius: 20px 20px 0 0; box-shadow: 0 -18px 60px rgba(26,26,24,.25); display: flex; flex-direction: column; overflow: hidden;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid #DDD8CE; background: #fff;">
+<span style="width: 30px; height: 30px; border-radius: 50%; background: #1A1A18; color: #C8A040; display: flex; align-items: center; justify-content: center; font-size: 13px;" aria-hidden="true">✦</span>
+<span style="flex: 1;"><span style="display: block; font-size: 14.5px; font-weight: 600;">Ask Resolve</span><span style="display: block; font-size: 12px; color: #4A4A44;">General assistant · looking at Home</span></span>
+<span style="font-size: 12px; color: #4A4A44; border: 1px solid #DDD8CE; border-radius: 999px; padding: 3px 10px;">Can change your workspace · Undo works</span>
+<button aria-label="Close" style="width: 32px; height: 32px; border: 0; background: none; font-size: 18px; color: #4A4A44;">×</button>
+</div>
+<div style="flex: 1; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px; overflow: hidden;">
+<div style="align-self: flex-end; max-width: 70%; background: #1A1A18; color: #F5F1E8; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 14px;">What should I focus on right now?</div>
+<div style="align-self: flex-start; max-width: 80%; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px 14px 14px 4px; padding: 12px 14px; font-size: 14px; line-height: 1.55;">Your highest-value move is still pulling 12 months of real hours for each café. Everything else on the roadmap prices off that number. You have a free block after your 10:30 call.</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap;"><span style="font-size: 13px; font-weight: 600; background: #fff; border: 1px solid #DDD8CE; border-radius: 999px; padding: 7px 12px;">Open the task</span><span style="font-size: 13px; font-weight: 600; background: #fff; border: 1px solid #DDD8CE; border-radius: 999px; padding: 7px 12px;">Block 90 minutes at 11:00</span><span style="font-size: 13px; font-weight: 600; background: #fff; border: 1px solid #DDD8CE; border-radius: 999px; padding: 7px 12px;">Plan my day</span></div>
+</div>
+<div style="padding: 12px 16px 16px; background: #fff; border-top: 1px solid #DDD8CE; display: flex; gap: 10px; align-items: center;">
+<div style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16); display: flex; align-items: center; padding: 0 8px 0 14px; font-size: 14px; color: #4A4A44;"><span style="flex: 1;">Ask, or tell Resolve to do something</span><span aria-hidden="true" style="width: 30px; height: 30px; border-radius: 50%; background: #F2EDE4; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="#4A4A44" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="#4A4A44" stroke-width="1.4" stroke-linecap="round"/></svg></span></div>
+<button aria-label="Send" style="width: 44px; height: 44px; border-radius: 50%; border: 0; background: #C8A040; color: #1A1A18; font-size: 18px;">→</button>
+</div>
+</section>
+</sc-if>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"chat":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const w = this.props.w ?? 1280;
+const agenda = [
+{ time: '10:30', title: 'Call with The Corner Café', meta: 'Event · 30 min · Work calendar', mark: '#8B4A2A', shape: '4px' },
+{ time: 'Today', title: 'Reconstruct 12 months of hours per café', meta: 'Task · Café flat-fee bookkeeping', mark: '#C8A040', shape: '50%' },
+{ time: '16:00', title: 'Send October invoices', meta: 'Task · Captured', mark: '#9A9A92', shape: '50%' }
+].map((a, i) => ({ ...a, line: i === 0 ? '0' : '1px solid #EEE9DF' }));
+return {
+w, h: this.props.h ?? 800,
+collapsed: !!this.props.collapsed, chat: !!this.props.chat, no: false,
+intake: state === 'empty',
+cap: w > 1600 ? 1240 : 2000,
+heroSize: w > 1600 ? 34 : 28,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+subline: state === 'empty' ? 'Friday 6 November · nothing scheduled yet' : 'Friday 6 November · 2 due today · 1 event',
+agenda,
+wins: ['Confirmed your roadmap', 'Listed the three cafés and their contacts', 'Set a target fee of £150'],
+projects: [{ name: 'Café flat-fee bookkeeping', count: '1 of 5', pct: '20%' }, { name: 'Website refresh', count: '4 of 9', pct: '44%' }]
+};
+}
+}
+</script>
+</body>
+</html>

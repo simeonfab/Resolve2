@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone check off and swipe motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.ph{position:relative;width:360px;height:760px;border-radius:36px;overflow:hidden;background:#F2EDE4;box-shadow:0 24px 70px rgba(0,0,0,.22);border:8px solid #1A1A18;box-sizing:border-box}
+.list{position:absolute;left:14px;right:14px;top:120px;background:#fff;border:1px solid #DDD8CE;border-radius:14px;overflow:hidden}
+.w{position:relative;overflow:hidden;height:64px;border-top:1px solid #EEE9DF}
+.w:first-child{border-top:0}
+.strip{position:absolute;inset:0;background:#FBF5E6;display:flex;align-items:center;justify-content:flex-end;padding-right:18px;font-size:13px;font-weight:700;color:#7A5B12}
+.rw{position:absolute;inset:0;background:#fff;display:flex;align-items:center;gap:12px;padding:0 14px;font-size:14px}
+.cb{width:24px;height:24px;border-radius:50%;border:1.8px solid #B5AE9F;box-sizing:border-box;flex-shrink:0}
+.w1{animation:h1 7000ms infinite}.r1{animation:r1 7000ms infinite}.cb1{animation:cb 7000ms infinite}
+.w2{animation:h2 7000ms infinite}.r2{animation:r2 7000ms infinite}
+.ts{position:absolute;left:14px;right:14px;bottom:132px;height:52px;border-radius:14px;background:#1A1A18;color:#F5F1E8;display:flex;align-items:center;padding:0 14px;font-size:13.5px;overflow:hidden;animation:ts 7000ms infinite}
+.tm{position:absolute;left:0;bottom:0;height:3px;background:#C8A040;animation:tm 7000ms infinite}
+.bar{position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #DDD8CE}
+@keyframes cb{0%,4%{background:transparent;border-color:#B5AE9F;animation-timing-function:cubic-bezier(.4,0,.2,1)}7%,40%{background:#5E7D4F;border-color:#5E7D4F}44.3%,100%{background:transparent;border-color:#B5AE9F}}
+@keyframes r1{0%,7%{opacity:1;transform:none}9%,16%{opacity:.55;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}20.3%,40%{opacity:0;transform:translateX(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}40.1%{opacity:1;transform:translateX(-10px)}44.3%,100%{opacity:1;transform:none}}
+@keyframes h1{0%,20.3%{height:64px;animation-timing-function:cubic-bezier(.4,0,.2,1)}23.7%,40%{height:0;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}44.3%,100%{height:64px}}
+@keyframes ts{0%,20.3%{opacity:0;transform:translateY(16px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}25.4%,40%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}43.7%,100%{opacity:0;transform:translateY(16px)}}
+@keyframes tm{0%,25.4%{width:100%}40%{width:74%}100%{width:74%}}
+@keyframes r2{0%,55%{transform:none}68%{transform:translateX(-45%);animation-timing-function:cubic-bezier(.22,.61,.36,1)}71.7%,92%{transform:translateX(-100%)}92.1%,100%{transform:none}}
+@keyframes h2{0%,71.7%{height:64px;animation-timing-function:cubic-bezier(.4,0,.2,1)}75.1%,92%{height:0}92.1%,100%{height:64px}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">P6, P7, P8 · Flow Spec G2, I1, I2 · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Tap to finish, swipe to push it to tomorrow. Undo is always one tap.</h1></div>
+<div style="display: flex; gap: 80px; align-items: flex-start;">
+<div class="ph" role="img" aria-label="Animated phone: a task is ticked and leaves, Undo brings it back, then another task is swiped to Tomorrow">
+<div style="position: absolute; left: 18px; top: 50px; font: 28px 'DM Serif Display', serif;">Today</div>
+<div class="list">
+<div class="w w1"><div class="rw r1"><span class="cb cb1"></span>Reconstruct 12 months of hours</div></div>
+<div class="w w2"><div class="strip">Tomorrow →</div><div class="rw r2"><span class="cb"></span>Write the package descriptions</div></div>
+<div class="w"><div class="rw"><span class="cb"></span>Send October invoices</div></div>
+</div>
+<div class="ts"><span style="flex: 1;">Done: Reconstruct 12 months…</span><b style="color: #C8A040;">Undo</b><span class="tm"></span></div>
+<div class="bar"></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Tap (P6)</span><span class="d">The circle fills green <code>200ms e-std</code>. The row stays for 600ms so you see it happened, then leaves <code>300ms e-in</code> and the rows close up.</span></div>
+<div class="row"><span class="t">Toast</span><span class="d">Undo toast <code>360ms e-spring</code> above the bar with the <code>4s</code> amber timer (I1). It never covers the + button.</span></div>
+<div class="row"><span class="t">Undo (P8)</span><span class="d">The row returns <code>300ms e-spring, translateX(-10px) → 0</code> (I2).</span></div>
+<div class="row"><span class="t">Swipe (P7)</span><span class="d">The row follows your finger over an amber Tomorrow strip. Past 35% it commits and slides out <code>260ms e-out</code>. Let go earlier and it springs back. The same toast offers Undo.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

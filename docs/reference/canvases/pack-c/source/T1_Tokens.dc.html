@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Token additions, Pack C</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sec{font-size:13px;font-weight:700;color:#8B4A2A;margin-bottom:10px}
+table{border-collapse:collapse;width:100%;font-size:13px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:8px 12px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:8px 12px;border-bottom:1px solid #EEE9DF;vertical-align:middle}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}
+.pl{display:inline-block;border-radius:999px;padding:3px 10px;font-size:11.5px;font-weight:700}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1100px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Adds to the Pack A and Pack B token sheets. No new hues, no new tints.</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px;">Token additions: project sections</h1></div>
+<div style="display: flex; gap: 28px;">
+<div style="flex: 1; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div class="sec">Status pills (Frameworks, Evidence and Records, roadmap gates)</div>
+<table>
+<thead><tr><th>Status</th><th>Looks like</th><th>Pair</th><th>Note</th></tr></thead>
+<tbody>
+<tr><td>Unresolved</td><td><span class="pl" style="background: #F2EDE4; color: #4A4A44;">Unresolved</span></td><td><code>ink-soft on surface</code></td><td>The default. Neutral on purpose.</td></tr>
+<tr><td>Supported</td><td><span class="pl" style="background: #E8EFE3; color: #3F5A33;">Supported</span></td><td><code>green-text on green-tint</code></td><td>Same pair as the Evidence tag</td></tr>
+<tr><td>Weakened</td><td><span class="pl" style="background: #FBF5E6; color: #7A5B12;">Weakened</span></td><td><code>amber-text on amber-light</code></td><td>Not drawn on a board yet</td></tr>
+<tr><td>Refuted</td><td><span class="pl" style="background: #F5E8E1; color: #8B4A2A;">Refuted</span></td><td><code>terracotta on terracotta-tint</code></td><td>Not drawn on a board yet</td></tr>
+<tr><td>Planned (experiment)</td><td><span class="pl" style="background: #FBF5E6; color: #7A5B12;">Planned</span></td><td><code>amber-text on amber-light</code></td><td>Experiments only</td></tr>
+<tr><td>Gate</td><td><span class="pl" style="background: #F2EDE4; color: #4A4A44; border-radius: 6px;">◇ H1 result</span></td><td><code>ink-soft on surface, radius 6</code></td><td>Turns Supported pair with ✓ when open</td></tr>
+</tbody>
+</table>
+</div>
+<div>
+<div class="sec">Knowledge card kinds</div>
+<table><tbody>
+<tr><td>Page, File, Experiment</td><td><code>ink on surface</code></td></tr>
+<tr><td>Research, Evidence</td><td><code>green-text on green-tint</code></td></tr>
+<tr><td>Hypothesis, Assumption</td><td><code>amber-text on amber-light</code></td></tr>
+<tr><td>Open question, Cut</td><td><code>terracotta on terracotta-tint</code></td></tr>
+</tbody></table>
+</div>
+</div>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div class="sec">Layout values</div>
+<table><tbody>
+<tr><td>Content caps at 1920</td><td>Overview, Frameworks, Knowledge, Handoffs, Help 1240 · Settings 1100 · AI Team 1320 · Roadmap full width</td></tr>
+<tr><td>Reading width</td><td>Page editor text 720 · Help text 680</td></tr>
+<tr><td>Roadmap right rail</td><td>270</td></tr>
+<tr><td>Roadmap columns</td><td>surface-sunk <code>#EAE4D9</code>, radius 12, card gap 8</td></tr>
+<tr><td>Expanded theme card</td><td>amber border, shadow <code>0 8px 24px rgba(26,26,24,.10)</code></td></tr>
+<tr><td>Milestone mark</td><td>9 px square rotated 45°, amber border, filled amber-light when next</td></tr>
+<tr><td>H0 root row</td><td>ink fill, amber id, the one dark row in the tree</td></tr>
+<tr><td>Tree indent</td><td>24 per hypothesis level, experiments 56</td></tr>
+</tbody></table>
+</div>
+<div>
+<div class="sec">Overlays added in Pack C</div>
+<table><tbody>
+<tr><td>Frameworks node editor</td><td>400 wide, inline beside the tree, same shadow as Pack B side panel</td></tr>
+<tr><td>Document preview</td><td>520 wide, Pack B side panel values, dim <code>.18</code></td></tr>
+<tr><td>Add to Knowledge sheet</td><td>620 wide, Pack B sheet values, dim <code>.32</code></td></tr>
+<tr><td>Whole picture</td><td>900 wide dialog, Pack B dialog values, dim <code>.38</code></td></tr>
+<tr><td>Templates, CSV import, Report</td><td>640, 600, 560 wide dialogs</td></tr>
+<tr><td>Proposed-change card</td><td>white, amber border, radius 12, inside the chat</td></tr>
+</tbody></table>
+</div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1100}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

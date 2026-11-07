@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sidebar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<nav aria-label="Main" style="width: {{w}}px; height: {{h}}px; box-sizing: border-box; background: #1E1E1A; color: #B4AFA3; font-family: 'Inter', sans-serif; display: flex; flex-direction: column; padding: 14px {{px}}px 12px; gap: 2px; overflow: hidden; border-right: 1px solid rgba(255,255,255,.06);">
+<sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; align-items: center; gap: 8px; height: 32px;">
+<button style="display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 4px 6px 4px 2px; border-radius: 8px; color: #F5F1E8; font: 600 13.5px 'Inter', sans-serif;" aria-label="Switch workspace"><span style="width: 22px; height: 22px; border-radius: 6px; background: #C8A040; color: #1A1A18; display: flex; align-items: center; justify-content: center; font: 13px 'DM Serif Display', serif;">P</span>Personal <span style="color: #8A8578; font-size: 10px;">▾</span></button>
+<span style="flex: 1;"></span>
+<button aria-label="Undo" style="width: 28px; height: 28px; border: 0; background: none; border-radius: 6px; color: #B4AFA3; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M5.5 4L2.5 7l3 3M2.5 7h7a4 4 0 0 1 0 8H8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button aria-label="Redo" style="width: 28px; height: 28px; border: 0; background: none; border-radius: 6px; color: #8A8578; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10.5 4l3 3-3 3M13.5 7h-7a4 4 0 0 0 0 8H8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button aria-label="Collapse sidebar" style="width: 28px; height: 28px; border: 0; background: none; border-radius: 6px; color: #8A8578; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M9.5 4L5.5 8l4 4M12.5 3v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+</div>
+<div style="display: flex; gap: 6px; margin: 10px 0 8px;">
+<button style="flex: 1; height: 34px; border: 0; border-radius: 8px; background: #C8A040; color: #1A1A18; font: 600 13px 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px;"><span aria-hidden="true" style="font-size: 15px;">+</span>Add task</button>
+<button style="flex: 1; height: 34px; border-radius: 8px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #F5F1E8; font: 600 13px 'Inter', sans-serif; display: flex; align-items: center; justify-content: center; gap: 6px;"><span aria-hidden="true" style="color: #C8A040;">✦</span>Ask AI</button>
+</div>
+</sc-if>
+<sc-if value="{{collapsed}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 6px;">
+<button aria-label="Switch workspace: Personal" style="width: 32px; height: 32px; border: 0; border-radius: 8px; background: #C8A040; color: #1A1A18; font: 15px 'DM Serif Display', serif;">P</button>
+<button aria-label="Expand sidebar" style="width: 32px; height: 28px; border: 0; background: none; color: #8A8578; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M6.5 4l4 4-4 4M3.5 3v10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+<button aria-label="Add task" style="width: 36px; height: 36px; border: 0; border-radius: 9px; background: #C8A040; color: #1A1A18; font: 600 18px 'Inter', sans-serif;">+</button>
+<button aria-label="Ask AI" style="width: 36px; height: 36px; border-radius: 9px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #C8A040; font-size: 14px;">✦</button>
+</div>
+</sc-if>
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="{{g.headStyle}}">{{g.label}}</div>
+<sc-if value="{{g.picker}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}">
+<button style="display: flex; align-items: center; gap: 8px; height: 32px; margin: 2px 0 4px; padding: 0 10px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); color: #F5F1E8; font: 500 13px 'Inter', sans-serif; text-align: left;" aria-label="Choose project"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{dot}};"></span><span style="flex: 1; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;">{{project}}</span><span style="color: #8A8578; font-size: 10px;">▾</span></button>
+</sc-if>
+<sc-if value="{{collapsed}}" hint-placeholder-val="{{ false }}">
+<button aria-label="Choose project: {{project}}" style="width: 36px; height: 30px; margin: 2px auto 4px; border-radius: 8px; border: 1px solid rgba(255,255,255,.14); background: rgba(255,255,255,.04); display: flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: {{dot}};"></span></button>
+</sc-if>
+</sc-if>
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="3">
+<a href="#" aria-label="{{it.label}}" style="{{it.style}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex-shrink: 0; color: {{it.ic}};"><path d="{{it.d}}" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}"><span style="flex: 1;">{{it.label}}</span><span style="font-size: 11.5px; color: #8A8578;">{{it.count}}</span></sc-if></a>
+</sc-for>
+</sc-for>
+<div style="flex: 1;"></div>
+<sc-if value="{{showIntake}}" hint-placeholder-val="{{ true }}">
+<a href="#" style="{{intakeStyle}}"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040; flex-shrink: 0;"></span><sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 12.5px; font-weight: 600; color: #F5F1E8;">Continue setting up…</span><span style="font-size: 11.5px; color: #8A8578; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">New project · step 3 of 4</span></span></sc-if></a>
+</sc-if>
+<sc-for list="{{util}}" as="it" hint-placeholder-count="3">
+<a href="#" aria-label="{{it.label}}" style="{{it.style}}"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="flex-shrink: 0; color: {{it.ic}};"><path d="{{it.d}}" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg><sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}"><span style="flex: 1;">{{it.label}}</span><span style="font-size: 11px; color: #8A8578;">{{it.count}}</span></sc-if></a>
+</sc-for>
+<div style="{{statusStyle}}" title="Saved on this PC. Works offline."><span style="width: 7px; height: 7px; border-radius: 50%; background: #5E7D4F; flex-shrink: 0;"></span><sc-if value="{{expanded}}" hint-placeholder-val="{{ true }}"><span>Saved on this PC · works offline</span></sc-if></div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","projects","calendar","overview","roadmap","tasks","frameworks","knowledge","team","handoffs","search","settings","help"],"default":"home"},"collapsed":{"editor":"boolean","default":false},"project":{"editor":"text","default":"All projects"},"intake":{"editor":"boolean","default":true},"h":{"editor":"int","default":800},"$preview":{"width":248,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const active = this.props.active ?? 'home';
+const collapsed = !!this.props.collapsed;
+const project = this.props.project ?? 'All projects';
+const I = {
+home: 'M2.5 7.5L8 3l5.5 4.5V13a.5.5 0 0 1-.5.5H3a.5.5 0 0 1-.5-.5z',
+projects: 'M2.5 3.5h4l1 1.5h6v7.5h-11z',
+calendar: 'M2.5 4h11v9.5h-11zM2.5 6.5h11M5.5 2.5v3M10.5 2.5v3',
+overview: 'M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11zM8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5z',
+roadmap: 'M2.5 4h7M2.5 8h11M2.5 12h5',
+tasks: 'M2.5 4.5l1.2 1.2L6 3.5M8.5 4.5h5M2.5 10.5l1.2 1.2L6 9.5M8.5 10.5h5',
+frameworks: 'M8 2.5l5 3v5l-5 3-5-3v-5z',
+knowledge: 'M4 2.5h7.5v11L7.75 11 4 13.5z',
+team: 'M6 7a2 2 0 1 0 0-4a2 2 0 1 0 0 4zM2.5 13c0-2 1.5-3.5 3.5-3.5S9.5 11 9.5 13M10.5 7.5a1.7 1.7 0 1 0 0-3.4M11.5 9.6c1.2.4 2 1.7 2 3.4',
+handoffs: 'M3 5.5h9l-2.5-2.5M13 10.5H4l2.5 2.5',
+search: 'M7 2.5a4.5 4.5 0 1 0 0 9a4.5 4.5 0 1 0 0-9zM10.5 10.5l3 3',
+settings: 'M8 5.5a2.5 2.5 0 1 0 0 5a2.5 2.5 0 1 0 0-5zM8 1.5v2M8 12.5v2M1.5 8h2M12.5 8h2M3.4 3.4l1.4 1.4M11.2 11.2l1.4 1.4M3.4 12.6l1.4-1.4M11.2 4.8l1.4-1.4',
+help: 'M8 2.5a5.5 5.5 0 1 0 0 11a5.5 5.5 0 1 0 0-11zM6.3 6.3a1.8 1.8 0 1 1 2.5 1.7c-.5.2-.8.6-.8 1.1v.4M8 11.3v.2'
+};
+const mk = (key, label, count) => {
+const on = key === active;
+const base = 'display:flex;align-items:center;gap:10px;height:32px;border-radius:8px;text-decoration:none;font:500 13.5px Inter,sans-serif;box-sizing:border-box;';
+const look = on ? 'color:#F5F1E8;background:rgba(200,160,64,.16);' : 'color:#B4AFA3;background:transparent;';
+const shape = collapsed ? 'width:40px;margin:0 auto;justify-content:center;padding:0;' : 'padding:0 10px;';
+return { key, label, count: count || '', d: I[key], ic: on ? '#C8A040' : '#B4AFA3', style: base + look + shape };
+};
+const head = (first) => collapsed
+? 'height:1px;background:rgba(255,255,255,.08);margin:' + (first ? '10px' : '10px') + ' 10px 8px;font-size:0;overflow:hidden;'
+: 'font:600 11px Inter,sans-serif;letter-spacing:.04em;color:#8A8578;margin:' + (first ? '6px' : '14px') + ' 10px 6px;';
+const groups = [
+{ label: 'WORKSPACE', headStyle: head(true), picker: false, items: [mk('home', 'Home'), mk('projects', 'Projects'), mk('calendar', 'Calendar')] },
+{ label: 'YOUR PROJECT', headStyle: head(false), picker: true, items: [mk('overview', 'Overview'), mk('roadmap', 'Roadmap'), mk('tasks', 'Tasks', '5'), mk('frameworks', 'Frameworks'), mk('knowledge', 'Knowledge base')] },
+{ label: 'COLLABORATION', headStyle: head(false), picker: false, items: [mk('team', 'AI Team'), mk('handoffs', 'Handoffs')] }
+];
+const util = [mk('search', 'Search', 'Ctrl K'), mk('settings', 'Settings'), mk('help', 'Help')];
+const intakeStyle = collapsed
+? 'display:flex;align-items:center;justify-content:center;width:40px;height:36px;margin:0 auto 6px;border-radius:8px;border:1px solid rgba(200,160,64,.4);text-decoration:none;box-sizing:border-box;'
+: 'display:flex;align-items:center;gap:10px;padding:9px 10px;margin:0 0 6px;border-radius:9px;border:1px solid rgba(200,160,64,.4);background:rgba(200,160,64,.06);text-decoration:none;box-sizing:border-box;';
+const statusStyle = collapsed
+? 'display:flex;justify-content:center;padding:10px 0 2px;'
+: 'display:flex;align-items:center;gap:8px;padding:10px 10px 2px;font:400 11.5px Inter,sans-serif;color:#8A8578;border-top:1px solid rgba(255,255,255,.08);margin-top:6px;';
+return {
+expanded: !collapsed, collapsed, project, groups, util,
+w: collapsed ? 64 : 248, px: collapsed ? 0 : 12, h: this.props.h ?? 800,
+dot: project === 'All projects' ? '#8A8578' : '#C8A040',
+showIntake: this.props.intake ?? true, intakeStyle, statusStyle
+};
+}
+}
+</script>
+</body>
+</html>

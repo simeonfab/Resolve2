@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M03 Bring it in</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:40px 56px;box-sizing:border-box}
+.ta{position:relative;height:250px;border-radius:12px;border:1px solid #C8A040;box-shadow:0 0 0 3px rgba(200,160,64,.16);background:#fff;padding:16px 18px;box-sizing:border-box;font-size:14.5px;line-height:1.6}
+.w1{animation:w1 5000ms infinite}.w2{animation:w2 5000ms infinite}.w3{animation:w3 5000ms infinite}
+.s1{animation:s1 5000ms infinite;color:#4A4A44}.s2{animation:s2 5000ms infinite;color:#4A4A44}.s3{animation:s3 5000ms infinite;color:#4A4A44}
+.mic{position:absolute;right:14px;bottom:14px;width:40px;height:40px;border-radius:50%;border:1px solid #DDD8CE;background:#F2EDE4;display:flex;align-items:center;justify-content:center;color:#4A4A44;animation:mic 5000ms infinite}
+.pulse{position:absolute;inset:0;border-radius:50%;animation:pm 1200ms infinite,pv 5000ms infinite}
+.chip{display:inline-flex;gap:6px;background:#fff;border:1px solid #DDD8CE;border-radius:8px;padding:8px 12px;font-size:12.5px;font-weight:500;margin-top:14px}
+.c1{animation:press 5000ms infinite}
+.cta{display:inline-flex;margin-top:24px;border-radius:10px;padding:12px 20px;font-size:14px;font-weight:600;animation:cta 5000ms infinite}
+@keyframes mic{0%,10%{transform:scale(1);background:#F2EDE4;color:#4A4A44;animation-timing-function:cubic-bezier(.4,0,.2,1)}12.4%{transform:scale(.975)}14.8%,58%{transform:scale(1);background:#8B4A2A;color:#fff;animation-timing-function:cubic-bezier(.4,0,.2,1)}62%,100%{background:#F2EDE4;color:#4A4A44}}
+@keyframes pm{0%,100%{box-shadow:0 0 0 0 rgba(139,74,42,.4)}50%{box-shadow:0 0 0 8px rgba(139,74,42,0)}}
+@keyframes pv{0%,12%{opacity:0}12.1%,58%{opacity:1}58.1%,100%{opacity:0}}
+@keyframes w1{0%,24%{opacity:0}26%,100%{opacity:1}}
+@keyframes w2{0%,36%{opacity:0}38%,100%{opacity:1}}
+@keyframes w3{0%,48%{opacity:0}50%,100%{opacity:1}}
+@keyframes press{0%,68%{transform:scale(1);animation-timing-function:cubic-bezier(.4,0,.2,1)}70.4%{transform:scale(.975);border-color:#C8A040}72.8%,100%{transform:scale(1)}}
+@keyframes s1{0%,70%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}76%,100%{opacity:1;transform:none}}
+@keyframes s2{0%,71.2%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}77.2%,100%{opacity:1;transform:none}}
+@keyframes s3{0%,72.4%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}78.4%,100%{opacity:1;transform:none}}
+@keyframes cta{0%,24%{background:#E4DED2;color:#4A4A44;animation-timing-function:cubic-bezier(.4,0,.2,1)}28%,100%{background:#1A1A18;color:#F5F1E8}}
+.row{display:flex;gap:14px;padding:12px 0;border-top:1px solid #DDD8CE}
+.t{width:110px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M03 · Screen 02b · live loop</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Bring it in: speak, type, or start from a scaffold</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of voice input and a scaffold dropping in">
+<div style="font-size: 12px; font-weight: 600; color: #8B4A2A;">In your own words</div>
+<div style="font: 30px 'DM Serif Display', serif; margin: 4px 0 16px;">Tell Resolve what's going on.</div>
+<div class="ta">
+<span class="w1">I'm a freelance bookkeeper </span><span class="w2">and I want to turn what I do into a fixed-price monthly package </span><span class="w3">for small cafés, instead of charging by the hour.</span>
+<div class="s1" style="margin-top: 10px;">Who it's for:</div>
+<div class="s2">Where it's at now (what's done, what exists, what's decided):</div>
+<div class="s3">What I'm least sure about:</div>
+<div class="mic"><span class="pulse"></span><svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></div>
+</div>
+<div><span class="chip c1" style="font-weight: 600;">Use a template</span> <span class="chip">✦ Try an example</span></div>
+<div class="cta">Continue →</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Mic press</span><span class="d"><code>240ms e-std, scale 1 → .975 → 1</code> (M03.2). Button turns terracotta.</span></div>
+<div class="row"><span class="t">Recording</span><span class="d">Pulse ring <code>1200ms loop: 0 0 0 0 rgba(139,74,42,.4) → 0 0 0 8px rgba(139,74,42,0)</code> (M03.1), straight from the old web intake. Words land in the same box as you speak.</span></div>
+<div class="row"><span class="t">Text arrives</span><span class="d">Continue enables <code>200ms e-std</code> on the first character (M01.3). Empty box: Continue stays off and the hint says why.</span></div>
+<div class="row"><span class="t">Use a template</span><span class="d">Press <code>240ms e-std</code>, then each missing heading drops in <code>300ms e-out, translateY(8px)</code>, 60ms apart (M03.3). It appends below what you wrote and never replaces it. The caret lands on the first empty heading.</span></div>
+<div class="row"><span class="t">Pull-in panel</span><span class="d">Opens in place under the box <code>300ms e-out, translateY(8px)</code>, closes <code>240ms e-in</code> (M03.4). Copy turns to "Copied ✓" for 1.5 s.</span></div>
+<div class="row"><span class="t">Stop</span><span class="d">Click the mic again or press Esc. Ring stops, button eases back <code>200ms e-std</code>.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

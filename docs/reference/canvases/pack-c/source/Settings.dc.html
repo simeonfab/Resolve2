@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="settings" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; padding: 26px 36px 24px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+<div style="max-width: 1100px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+<div><h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Settings</h1><p style="margin: 3px 0 0; font-size: 13px; color: #4A4A44;">Alpha 0.1 · workspace: Personal · everything here is stored on this PC</p></div>
+<div role="tablist" aria-label="Settings" style="display: flex; gap: 4px; border-bottom: 1px solid #DDD8CE;"><sc-for list="{{tabs}}" as="t" hint-placeholder-count="4"><button role="tab" aria-selected="{{t.sel}}" style="border: 0; background: none; padding: 9px 12px 10px; font: {{t.fw}} 13.5px 'Inter', sans-serif; color: {{t.c}}; border-bottom: 2px solid {{t.line}}; margin-bottom: -1px;">{{t.t}}</button></sc-for></div>
+
+<sc-if value="{{tabAi}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 14px;">
+<div style="flex: 1.2; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 10px;">
+<div><h2 style="margin: 0; font-size: 15px; font-weight: 700;">Connect your AI</h2><p style="margin: 2px 0 0; font-size: 12.5px; color: #4A4A44;">Pick the AI Resolve uses, and press Test to prove it replies.</p></div>
+<sc-for list="{{providers}}" as="p" hint-placeholder-count="4"><div style="display: flex; gap: 12px; align-items: center; border: 1px solid {{p.bd}}; background: {{p.bg}}; border-radius: 11px; padding: 10px 12px;"><span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid {{p.ring}}; box-sizing: border-box; background: {{p.dot}}; flex-shrink: 0;"></span><span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 13.5px; font-weight: 600;">{{p.n}}</span><span style="font-size: 12px; color: #4A4A44;">{{p.d}}</span></span><span style="font-size: 12px; font-weight: 600; color: {{p.sc}};">{{p.s}}</span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 6px 11px; font: 600 12px 'Inter', sans-serif;">{{p.b}}</button></div></sc-for>
+<sc-if value="{{testErr}}" hint-placeholder-val="{{ false }}"><div role="alert" style="background: #F5E8E1; border: 1px solid #E2C3B3; border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5;"><b style="color: #8B4A2A;">Claude Code didn't reply.</b> It's installed but not signed in. Open a terminal, run <code>claude</code> once and sign in, then press Test again.</div></sc-if>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Use Resolve from other AI apps (MCP)</h2>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;"><sc-for list="{{mcp}}" as="m" hint-placeholder-count="4"><div style="display: flex; align-items: center; gap: 8px; border: 1px solid #EEE9DF; border-radius: 9px; padding: 8px 10px; font-size: 13px; font-weight: 600;"><span style="flex: 1;">{{m}}</span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 5px 9px; font: 600 11.5px 'Inter', sans-serif;">Copy setup</button></div></sc-for></div>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13px;"><input type="checkbox" checked style="accent-color: #1A1A18;"> Other AI apps can read this workspace</label>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13px;"><input type="checkbox" checked style="accent-color: #1A1A18;"> Read only: they can't change anything</label>
+</section>
+</div>
+<section style="flex: 1; min-width: 0; height: fit-content; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 11px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Spending</h2>
+<div><div style="display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'DM Serif Display', serif; font-size: 30px;">$3.40</span><span style="font-size: 13px; color: #4A4A44;">of $10.00 this month</span></div><div style="height: 6px; border-radius: 3px; background: #E4DED2; margin-top: 6px; overflow: hidden;"><div style="width: 34%; height: 6px; background: #C8A040;"></div></div></div>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">Monthly spending limit<span style="display: flex; align-items: center; gap: 6px; height: 38px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 11px; font: 400 14px 'Inter', sans-serif; color: #1A1A18;">$ <input value="10.00" style="border: 0; outline: 0; flex: 1; font: 400 14px 'Inter', sans-serif;"></span></label>
+<p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">When it's reached, Resolve stops calling the AI and tells you. Everything else keeps working. 0 means no limit.</p>
+<div style="display: flex; gap: 8px;"><label style="flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">Price per million input<input value="$3.00" style="height: 36px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 10px; font: 400 13.5px 'Inter', sans-serif;"></label><label style="flex: 1; display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">Output<input value="$15.00" style="height: 36px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 10px; font: 400 13.5px 'Inter', sans-serif;"></label></div>
+<p style="margin: 0; font-size: 12px; color: #4A4A44;">Only API keys cost per use. Claude Code and Ollama show $0 here.</p>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabSync}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 14px;">
+<section style="flex: 1; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Your phone</h2>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13.5px; font-weight: 600;"><input type="checkbox" checked style="accent-color: #1A1A18;"> Let your phone reach this PC on your home network</label>
+<div style="display: flex; gap: 14px; align-items: center;"><div role="img" aria-label="Pairing code placeholder" style="width: 120px; height: 120px; border-radius: 10px; border: 1.5px dashed #CFC8BA; display: flex; align-items: center; justify-content: center; text-align: center; font-size: 12px; color: #4A4A44; flex-shrink: 0;">QR code<br>to pair</div><div style="font-size: 13px; line-height: 1.6; color: #4A4A44;">Scan with your phone's camera, or open <code>http://192.168.1.20:8797</code> and paste the token.<br>Port <b style="color: #1A1A18;">8797</b> · token <code>••••••••</code> <a href="#" style="color: #8B4A2A; font-weight: 600;">Copy</a></div></div>
+<p style="margin: 0; font-size: 12.5px; color: #4A4A44;">Your phone sees tasks, calendar and search. It works while this PC is awake and on the same network.</p>
+</section>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Sync folder</h2>
+<div style="font-size: 13px; line-height: 1.5;"><code>C:\Users\Simeon\OneDrive\Resolve</code></div>
+<div style="font-size: 12.5px; color: #4A4A44;">Last synced today at 14:02 · <a href="#" style="color: #8B4A2A; font-weight: 600;">Change folder</a></div>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Backups</h2>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13px;"><input type="checkbox" checked style="accent-color: #1A1A18;"> Back up automatically</label>
+<div style="font-size: 13px;">Keep <b>30</b> backups · <a href="#" style="color: #8B4A2A; font-weight: 600;">Restore one</a></div>
+</section>
+<details style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 13px 17px; font-size: 13px;"><summary style="font-weight: 700;">Advanced: hub address and token</summary></details>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabWs}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 14px;">
+<section style="flex: 1; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-size: 15px; font-weight: 700;">All workspaces</h2><button style="border: 0; background: #C8A040; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">+ New workspace</button></div>
+<div style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #C8A040; background: #FBF5E6; border-radius: 10px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #C8A040; display: flex; align-items: center; justify-content: center; font: 14px 'DM Serif Display', serif;">P</span><span style="flex: 1; font-size: 13.5px; font-weight: 600;">Personal <span style="font-weight: 400; color: #4A4A44;">· open now · 2 projects</span></span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 5px 9px; font: 600 12px 'Inter', sans-serif;">Rename</button></div>
+<div style="display: flex; gap: 10px; align-items: center; padding: 10px 12px; border: 1px solid #DDD8CE; border-radius: 10px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #1A1A18; color: #F5F1E8; display: flex; align-items: center; justify-content: center; font: 14px 'DM Serif Display', serif;">W</span><span style="flex: 1; font-size: 13.5px; font-weight: 600;">Work <span style="font-weight: 400; color: #4A4A44;">· 1 project</span></span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 5px 9px; font: 600 12px 'Inter', sans-serif;">Open</button></div>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44; margin-top: 4px;">Open Resolve 2 with<select style="height: 36px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 8px; font: 400 13.5px 'Inter', sans-serif;"><option>The last workspace I used</option></select></label>
+</section>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Import</h2>
+<p style="margin: 0; font-size: 12.5px; color: #4A4A44;">Bring in Markdown pages, CSV tables and .ics calendars.</p>
+<button style="align-self: flex-start; border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Choose files</button>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Export: your data, in open formats</h2>
+<p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #4A4A44;">Every page as Markdown, every database as CSV, all events as .ics, tasks as a Markdown checklist, plus the full workspace as JSON.</p>
+<button style="align-self: flex-start; border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Export everything</button>
+</section>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabAbout}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; gap: 14px;">
+<section style="flex: 1; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">Resolve 2</h2>
+<div style="font-size: 13.5px;">Alpha 0.1, 6 Nov 2026</div>
+<p style="margin: 0; font-size: 13px; line-height: 1.55; color: #4A4A44;">Everything you make is stored on this PC. Resolve sends text to the AI you connect, and nothing to anyone else.</p>
+<div style="display: flex; gap: 8px; margin-top: 4px;"><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 8px 13px; font: 600 12.5px 'Inter', sans-serif;">Report a problem</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 8px 13px; font: 600 12.5px 'Inter', sans-serif;">Open the data folder</button></div>
+</section>
+<div style="flex: 1; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 8px;">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700;">Appearance</h2>
+<div role="radiogroup" style="display: flex; background: #E4DED2; border-radius: 9px; padding: 3px; width: 200px;"><span role="radio" aria-checked="true" style="flex: 1; text-align: center; padding: 6px 0; border-radius: 7px; background: #fff; font-size: 12.5px; font-weight: 600;">Light</span><span role="radio" aria-checked="false" style="flex: 1; text-align: center; padding: 6px 0; font-size: 12.5px; font-weight: 600;">Dark</span></div>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+<h2 style="margin: 0 0 2px; font-size: 15px; font-weight: 700;">Keyboard shortcuts</h2>
+<div style="display: flex; justify-content: space-between;"><span>Search</span><code>Ctrl K</code></div><div style="display: flex; justify-content: space-between;"><span>Undo</span><code>Ctrl Z</code></div><div style="display: flex; justify-content: space-between;"><span>Collapse the sidebar</span><code>Ctrl \</code></div>
+</section>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}"><div role="status" style="font-size: 13px; color: #4A4A44;">Testing Claude Code… this takes up to 20 seconds.</div></sc-if>
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"tab":{"editor":"enum","options":["ai","sync","workspaces","about"],"default":"ai"},"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const tab = this.props.tab ?? 'ai';
+const state = this.props.state ?? 'full';
+const T = [['ai', 'AI and MCP'], ['sync', 'Sync and phone'], ['workspaces', 'Workspaces'], ['about', 'About']];
+const tabs = T.map(([k, t]) => { const on = k === tab; return { t, sel: on ? 'true' : 'false', fw: on ? 700 : 500, c: on ? '#1A1A18' : '#4A4A44', line: on ? '#C8A040' : 'transparent' }; });
+const none = state === 'empty';
+const cc = state === 'loading' ? ['Testing…', '#7A5B12'] : state === 'error' ? ['No reply', '#8B4A2A'] : none ? ['Not set up', '#4A4A44'] : ['Connected', '#3F5A33'];
+const pv = (n, d, on, s, sc, b) => ({ n, d, s, sc, b, bd: on ? '#C8A040' : '#DDD8CE', bg: on ? '#FBF5E6' : '#fff', ring: on ? '#1A1A18' : '#B5AE9F', dot: on ? '#1A1A18' : '#fff' });
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, tabs,
+tabAi: tab === 'ai', tabSync: tab === 'sync', tabWs: tab === 'workspaces', tabAbout: tab === 'about',
+isLoading: state === 'loading' && tab === 'ai', testErr: state === 'error' && tab === 'ai',
+providers: [
+pv('Claude Code', 'Free with Claude Pro or Max. Signed in once on this PC.', !none, cc[0], cc[1], 'Test'),
+pv('Ollama', 'Free, runs on this PC, slower. Uses qwen3.', false, '', '#4A4A44', 'Set up'),
+pv('Claude API key', 'Pay per use. Set a limit in your Anthropic console too.', false, '', '#4A4A44', 'Add key'),
+pv('Other', 'OpenAI key, another local server, or Codex', false, '', '#4A4A44', 'Set up')
+],
+mcp: ['Claude Desktop', 'Claude Code', 'Codex (CLI or IDE)', 'ChatGPT']
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan my day states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3920px; height: 2000px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 40px;">
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Empty · nothing due, no events</span><dc-import name="PlanDay" state="empty" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Loading · reading today's agenda</span><dc-import name="PlanDay" state="loading" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Error · AI didn't reply, today shown by time</span><dc-import name="PlanDay" state="error" hint-size="1280px,800px"></dc-import></div>
+</div>
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Full · sidebar collapsed</span><dc-import name="PlanDay" collapsed="{{yes}}" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Full · 1920 × 1080 (sheet stays 760 wide, centred on the work area)</span><dc-import name="PlanDay" w="{{bw}}" h="{{bh}}" hint-size="1920px,1080px"></dc-import></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3920,"height":2000}}'>
+class Component extends DCLogic {
+renderVals() { return { yes: true, bw: 1920, bh: 1080 }; }
+}
+</script>
+</body>
+</html>
