@@ -1576,9 +1576,9 @@ pub fn project_card(ui: &mut Ui, p: &Pal, c: &ProjectCardView, menu_open: bool) 
                     count_pill(ui, p, t, i);
                 }
             }
-            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.label(RichText::new(c.updated).size(size::SMALL).color(p.dim));
-            });
+        });
+        ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+            ui.label(RichText::new(c.updated).size(size::SMALL).color(p.dim));
         });
     });
     let rect = inner.response.rect;
