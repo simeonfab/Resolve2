@@ -238,6 +238,21 @@ fn shell(t: &mut T) {
     let many = crate::ui::undo_message(&["AI: create task".to_string(), "AI: update page".to_string()], 1);
     t.check("B-E17: the Undo toast names what was undone", one == "Undone: Completed \"Buy milk\"" && many == "Undone: AI: create task and 1 more (1 edited since and left as they are)", format!("{one} / {many}"));
 
+    // rule 5: moving a task (board drag or the editor) is a change set Undo can reverse
+    let mut d = crate::model::WorkspaceData::default();
+    let task = crate::model::Task::new("Ship the flyer".to_string());
+    let tid = task.id.clone();
+    d.tasks.push(task);
+    let cs = d.record_change("Moved \"Ship the flyer\" to Now", "move", |d| {
+        if let Some(t) = d.task_mut(&tid) {
+            t.section = "Now".into();
+        }
+    });
+    let moved = d.task(&tid).map(|t| t.section.clone()).unwrap_or_default();
+    let undone = cs.as_deref().map(|c| d.undo_recorded(c).is_ok()).unwrap_or(false);
+    let back = d.task(&tid).map(|t| t.section.clone()).unwrap_or_default();
+    t.check("rule 5: a task move is recorded and Undo puts it back", moved == "Now" && undone && back.is_empty(), format!("{moved:?} → undone {undone} → {back:?}"));
+
     // B-E14: search types (Tab steps through them) and grouped results
     let mut q = "payroll".to_string();
     let mut seen = vec![];

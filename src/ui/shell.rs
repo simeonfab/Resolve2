@@ -119,6 +119,7 @@ impl App {
         let y = strip.bottom() - space::ASK_BOTTOM - space::ASK_H + moves::ASK_BAR_RISE * (1.0 - f.t);
         let rect = Rect::from_min_size(egui::pos2(strip.center().x - w / 2.0, y), egui::vec2(w, space::ASK_H));
         let id = egui::Id::new("ask-bar");
+
         let mut out = None;
         egui::Area::new(id.with("area")).order(egui::Order::Foreground).fixed_pos(rect.min).show(ctx, |ui| {
             ui.multiply_opacity(f.alpha.clamp(0.0, 1.0));
@@ -127,7 +128,9 @@ impl App {
         let Some(out) = out else { return };
         // the Try panel: open while the bar has focus, or while the pointer is on the panel
         let on_panel = self.ask.try_rect.map_or(false, |r| ctx.input(|i| i.pointer.interact_pos().map_or(false, |pos| r.contains(pos))));
-        let show_try = !copy.suggestions.is_empty() && (out.focused || (self.ask.try_since.is_some() && on_panel));
+        // --open try (screenshots) shows it without focus: a screenshot window may not hold focus
+        let forced = self.temp.contains_key("show_try");
+        let show_try = !copy.suggestions.is_empty() && (out.focused || forced || (self.ask.try_since.is_some() && on_panel));
         if show_try && self.ask.try_since.is_none() {
             self.ask.try_since = Some(self.now);
         } else if !show_try {

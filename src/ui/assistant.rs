@@ -218,7 +218,7 @@ impl App {
                     }
                     ViewState::Error if !last_error => {
                         ui.add_space(space::S12);
-                        let a = error_block(ui, p, "The AI didn't answer. Nothing you wrote is lost.", "Change AI settings");
+                        let a = error_block(ui, p, "The AI didn't answer this time.", "Change AI settings");
                         if a.manual {
                             self.settings_ui.tab = 0;
                             self.go(View::Settings);
@@ -231,7 +231,7 @@ impl App {
             });
         });
         if state == ViewState::Error && last_error {
-            let a = error_block(ui, p, "The AI didn't answer. Nothing you wrote is lost.", "Change AI settings");
+            let a = error_block(ui, p, "The AI didn't answer this time.", "Change AI settings");
             if a.retry {
                 if let Some(q) = &last_question {
                     ask = Some(("Answer".into(), q.clone()));

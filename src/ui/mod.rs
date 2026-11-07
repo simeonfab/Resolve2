@@ -488,6 +488,9 @@ impl App {
         }
         match opts.open.as_deref() {
             Some("ask") => app.page_ui.ai_open = true,
+            Some("try") => {
+                app.temp.insert("show_try".into(), "1".into());
+            }
             // ask:<question>: a real question to the AI, read-only, answered before the screenshot
             Some(o) if o.starts_with("ask:") => {
                 app.page_ui.ai_open = true;
