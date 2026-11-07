@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Help</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="help" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 36px 0; box-sizing: border-box; display: flex; gap: 24px; max-width: 1240px; margin: 0 auto;">
+<nav aria-label="Guide" style="width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 1px;">
+<h1 style="margin: 0 0 10px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Help</h1>
+<sc-for list="{{secs}}" as="s" hint-placeholder-count="15"><a href="#" style="padding: 6px 10px; border-radius: 7px; font-size: 13px; font-weight: {{s.fw}}; background: {{s.bg}}; color: #1A1A18; text-decoration: none;">{{s.t}}</a></sc-for>
+</nav>
+<article style="flex: 1; min-width: 0; max-width: 680px; display: flex; flex-direction: column; gap: 14px;">
+<div style="background: #1A1A18; color: #F5F1E8; border-radius: 16px; padding: 22px 24px; display: flex; flex-direction: column; gap: 10px;">
+<div style="font-size: 12px; font-weight: 700; letter-spacing: .04em; color: #C8A040;">ALPHA</div>
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">Welcome</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #E4DED2;">This is the Resolve alpha. Thank you for being one of the first testers. I made this, and I want to hear what works and what doesn't. Message Simeon on the number he gave you if you get stuck.</p>
+<p style="margin: 0; font-size: 14px; line-height: 1.6; color: #B4AFA3;">If something goes wrong, use Report a problem below. It copies what Simeon needs to know, with no personal data or project content.</p>
+<button style="align-self: flex-start; margin-top: 4px; border: 0; background: #C8A040; border-radius: 9px; padding: 10px 16px; font: 600 13.5px 'Inter', sans-serif; color: #1A1A18;">Report a problem</button>
+</div>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 16px 20px;">
+<h2 style="margin: 0 0 10px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 22px;">Quick start</h2>
+<sc-for list="{{steps}}" as="q" hint-placeholder-count="5"><div style="display: flex; gap: 12px; padding: 7px 0; font-size: 14px; line-height: 1.5;"><span style="width: 24px; height: 24px; border-radius: 50%; background: #FBF5E6; color: #7A5B12; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{q.n}}</span><span><b>{{q.t}}</b> {{q.d}}</span></div></sc-for>
+</section>
+</article>
+
+<sc-if value="{{report}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(26,26,24,.38); display: flex; justify-content: center; padding-top: 70px; z-index: 5;">
+<div role="dialog" aria-label="Report a problem" style="width: 560px; height: fit-content; background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,26,24,.35); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 24px;">Report a problem</h2><button aria-label="Close" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff;">✕</button></div>
+<sc-if value="{{rForm}}" hint-placeholder-val="{{ true }}">
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">What happened?<span style="position: relative; display: block;"><textarea style="width: 100%; height: 86px; box-sizing: border-box; border: 1px solid #C8A040; border-radius: 9px; padding: 9px 42px 9px 11px; font: 400 14px 'Inter', sans-serif; color: #1A1A18; resize: none;">The roadmap didn't save when I moved a theme to Next.</textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 7px; bottom: 9px; width: 30px; height: 30px; border-radius: 50%; border: 0; background: #F2EDE4; color: #4A4A44; font-size: 12px;">●</button></span></label>
+<div style="background: #F7F3EC; border-radius: 10px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6; color: #4A4A44;"><b style="color: #1A1A18;">Also included</b><br><code>Alpha 0.1 · Windows 11 · AI: Claude Code · last error: save_record timeout</code><br>No names, no project text.</div>
+<div style="display: flex; gap: 8px; justify-content: flex-end;"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 10px 14px; font: 600 13px 'Inter', sans-serif;">Cancel</button><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 16px; font: 600 13px 'Inter', sans-serif;">{{rBtn}}</button></div>
+</sc-if>
+<sc-if value="{{rDone}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6;">Copied. Paste it into a message to Simeon. Thank you.</p>
+<button style="align-self: flex-end; border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 16px; font: 600 13px 'Inter', sans-serif;">Done</button>
+</sc-if>
+<sc-if value="{{rErr}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="background: #F5E8E1; border: 1px solid #E2C3B3; border-radius: 10px; padding: 11px 13px; font-size: 13.5px; line-height: 1.5;"><b style="color: #8B4A2A;">Resolve couldn't reach the clipboard.</b> Select the text below and copy it yourself.</div>
+<div style="border: 1px solid #DDD8CE; border-radius: 9px; padding: 10px 12px; font-size: 12.5px; line-height: 1.6;"><code>The roadmap didn't save when I moved a theme to Next. · Alpha 0.1 · Windows 11 · Claude Code · save_record timeout</code></div>
+</sc-if>
+</div>
+</div>
+</sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="plain" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"report":{"editor":"boolean","default":false},"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const T = ['Welcome', 'Quick start', 'Requirements', 'Home', 'Projects', 'Overview', 'Roadmap', 'Tasks', 'Frameworks', 'Knowledge base', 'AI Team', 'Handoffs', 'Calendar', 'Tips', 'Troubleshooting'];
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false,
+report: !!this.props.report || state !== 'full',
+rForm: state === 'full' || state === 'loading', rDone: state === 'empty', rErr: state === 'error',
+rBtn: state === 'loading' ? 'Copying…' : 'Copy the report',
+secs: T.map((t, i) => ({ t, fw: i === 0 ? 600 : 500, bg: i === 0 ? '#fff' : 'transparent' })),
+steps: [
+{ n: '1', t: 'Connect your AI.', d: 'Claude Code, Ollama or a Claude API key. Settings, AI and MCP if you skipped it.' },
+{ n: '2', t: 'Start something new.', d: 'The workspace menu at the top left, or New project.' },
+{ n: '3', t: 'Answer the questions.', d: 'One at a time, in your own words. At most 8.' },
+{ n: '4', t: 'Check the proposal.', d: 'Your next move, the roadmap themes, your first week, the whole picture.' },
+{ n: '5', t: 'Open your project.', d: 'Adopt builds it, then Open my project.' }
+]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decisions and tickets, Pack B</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.dc{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:12px 14px;display:flex;gap:12px}
+.id{font-size:12px;font-weight:700;color:#8B4A2A;width:30px;flex-shrink:0}
+.dt b{display:block;font-size:14px;margin-bottom:3px}
+.dt span{font-size:13px;color:#4A4A44;line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:7px 10px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:7px 10px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1800px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 36px;">
+<div style="width: 720px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Decisions for you to confirm</h1>
+<div class="dc"><span class="id">B1</span><div class="dt"><b>Projects had no mockup</b><span>The brief points Projects at the Portfolio mockup, but that file is your personal portfolio website. I designed Projects from today's working screen: one card per project with outcome, next move, progress and phase counts.</span></div></div>
+<div class="dc"><span class="id">B2</span><div class="dt"><b>Where Ask Resolve lives</b><span>The original chose a floating, page-aware bar (Global Bar Contextual). Today's build opens Ask AI as a right-hand panel. Designed: the floating bar on every screen, opening the E4 sheet centred on the work area. Alternative: keep the right panel and use E4 values for its slide.</span></div></div>
+<div class="dc"><span class="id">B3</span><div class="dt"><b>Ask AI button and the bar</b><span>Both open the same sheet. I kept the sidebar button, because it's where today's users look. Say if you want just the bar.</span></div></div>
+<div class="dc"><span class="id">B4</span><div class="dt"><b>Home is one move first</b><span>Follows the Dashboard Content direction (a): one dark hero for your highest-value move, then Today, Since Monday, Waiting on, Projects, Captured. Today's four stat tiles (Due today, Overdue, Done, Events) are dropped; their numbers move into the subline.</span></div></div>
+<div class="dc"><span class="id">B5</span><div class="dt"><b>A dark sidebar in a light app</b><span>The brief's nav-bg is dark, and it ties the shell to the intake. Every other surface is light.</span></div></div>
+<div class="dc"><span class="id">B6</span><div class="dt"><b>Shorter footer labels</b><span>"Settings, sync and AI" becomes Settings and "Help and tutorial" becomes Help, as the brief lists them.</span></div></div>
+<div class="dc"><span class="id">B7</span><div class="dt"><b>Sample data</b><span>The café project is from your Part 4 run. "Website refresh", The Corner Café call, Bean and Co. and the wins are sample content to fill the screens.</span></div></div>
+<div class="dc"><span class="id">B8</span><div class="dt"><b>Calendar colours</b><span>No new hues: Work uses terracotta, Personal uses green, tasks with dates use amber. A fourth calendar would reuse ink.</span></div></div>
+<div class="dc"><span class="id">B9</span><div class="dt"><b>Derived tints</b><span>Five light tints of surface and border appear on the token sheet. Approve them, or I swap each for surface or border.</span></div></div>
+<div class="dc"><span class="id">B10</span><div class="dt"><b>Plan my day gets its own result</b><span>Today it's a saved prompt (mcp.rs): the AI reads today's agenda, overdue tasks included, and replies in chat. Designed: the same sheet as Ask Resolve, holding a timed plan with a reason per row, what won't fit, Use this plan and Plan again. Use this plan sets task times only; it never moves calendar events.</span></div></div>
+<div class="dc"><span class="id">B11</span><div class="dt"><b>Names after your review</b><span>The middle sidebar group is YOUR PROJECT. Knowledge is Knowledge base. Frameworks stays its own section. Both the Ask AI button and the bar stay (B3).</span></div></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Engineering tickets</h1>
+<table>
+<thead><tr><th>#</th><th>Ticket</th><th>Today</th><th>Engine</th></tr></thead>
+<tbody>
+<tr><td>B-E1</td><td>Sidebar collapse to 64 px with tooltips; remember per workspace; Ctrl \ to toggle</td><td>Fixed width</td><td>internal</td></tr>
+<tr><td>B-E2</td><td>"Continue setting up…" card in the sidebar footer and on Home</td><td>Unfinished intakes listed under the groups</td><td>internal</td></tr>
+<tr><td>B-E3</td><td>Floating Ask Resolve bar on every screen, suggestions above it, sheet centred (E4)</td><td>Ask AI right panel</td><td>internal</td></tr>
+<tr><td>B-E4</td><td>Home layout: hero from the project's first move; Since Monday from completed tasks; Projects progress; Captured count</td><td>Stat tiles and blocks</td><td><code>workspace_overview</code>, <code>list_tasks</code>, <code>list_projects</code>, <code>get_agenda</code></td></tr>
+<tr><td>B-E5</td><td>"Waiting on" needs a task state or label. Confirm whether tasks can be marked waiting; if not, add it</td><td>Unverified</td><td><code>update_task</code></td></tr>
+<tr><td>B-E6</td><td>Home error handling: a failed suggestion shows its error and still loads the rest</td><td>Unverified</td><td>—</td></tr>
+<tr><td>B-E7</td><td>Projects cards: outcome, next move, phase counts, open questions, ⋯ menu (Open, Rename, Edit outcome)</td><td>Name, outcome, counts, progress</td><td><code>list_projects</code>, <code>update_project</code></td></tr>
+<tr><td>B-E8</td><td>Tasks list: Now, Waiting on, Upcoming from roadmap; theme and label chips; "View completed"</td><td>One "Now" section per project</td><td><code>list_tasks</code></td></tr>
+<tr><td>B-E9</td><td>Task editor as a 440 px push panel (G3): title, theme, end date, priority, labels, notes, Save, Mark complete, Delete</td><td>Unverified layout</td><td><code>update_task</code>, <code>complete_task</code>, <code>delete_item</code></td></tr>
+<tr><td>B-E10</td><td>One toast at a time with a fast swap; 4 s timer bar on Undo toasts; 2.6 s plain toasts</td><td>Toasts stack in a list</td><td>internal</td></tr>
+<tr><td>B-E11</td><td>Add task: highlight recognised words in the input; chips without emoji; "Goes to" picker; decide what #Name does when no project has that name</td><td>Chips with emoji icons</td><td><code>create_task</code> (nlp.rs)</td></tr>
+<tr><td>B-E12</td><td>Calendar Agenda view (today: Month, Week, Day); calendars list with toggles and New calendar</td><td>No Agenda mode</td><td><code>get_agenda</code>, <code>list_calendars</code>, <code>create_calendar</code></td></tr>
+<tr><td>B-E13</td><td>Event editor: confirm all-day and repeats are supported by <code>create_event</code> and <code>update_event</code></td><td>Unverified</td><td><code>create_event</code>, <code>update_event</code></td></tr>
+<tr><td>B-E14</td><td>Search palette over the current screen: type chips, Tab to change type, grouped results with snippets</td><td>Search screen</td><td><code>search</code> (prefixes exist)</td></tr>
+<tr><td>B-E15</td><td>"Add as a task" from a search with no results</td><td>None</td><td><code>create_task</code></td></tr>
+<tr><td>B-E16</td><td>Voice on the Ask bar, Add task and task notes (shared with Pack A E2)</td><td>None</td><td>internal</td></tr>
+<tr><td>B-E17</td><td>↶ and ↷ in the sidebar show an I3 toast naming what changed</td><td>Toasts for AI changes only</td><td>history</td></tr>
+<tr><td>B-E18</td><td>Motion helper: width tween for the sidebar, origin-aware scale for menus (shared with Pack A E16)</td><td>None</td><td>internal</td></tr>
+<tr><td>B-E19</td><td>1920 rules: content caps per screen, Projects goes to three columns</td><td>Fluid, uncapped</td><td>internal</td></tr>
+<tr><td>B-E20</td><td>Hero glow and dialog shadows as textures (egui has no CSS gradients or blur; shared with Pack A E17)</td><td>None</td><td>internal</td></tr>
+<tr><td>B-E21</td><td>Plan my day result sheet: ask the AI for a structured reply (time, item, reason, won't fit) and draw it as rows, not chat text. Fallback: today by time when the AI fails</td><td>Saved prompt, reply in chat</td><td><code>get_agenda</code>, ai.rs</td></tr>
+<tr><td>B-E22</td><td>Use this plan writes a start time to each task. Confirm tasks hold a time today</td><td>Unverified (nlp.rs parses times)</td><td><code>update_task</code></td></tr>
+<tr><td>B-E23</td><td>"Change something" re-plans with the typed constraint; Move to Monday sets the due date</td><td>None</td><td><code>update_task</code></td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Check-off, toast and undo motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:26px 34px}
+.list{background:#fff;border:1px solid #DDD8CE;border-radius:12px;overflow:hidden;margin-top:12px}
+.r{display:flex;gap:12px;align-items:center;padding:0 14px;height:52px;border-top:1px solid #EEE9DF;font-size:14px;box-sizing:border-box;overflow:hidden}
+.r:first-child{border-top:0}
+.cb{width:22px;height:22px;border-radius:50%;border:1.5px solid #B5AE9F;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:11px;color:#1A1A18;flex-shrink:0}
+.x{animation:col 6000ms infinite}
+.x .cb{animation:cb 6000ms infinite}
+.x .tt{animation:tt 6000ms infinite}
+.pb{height:5px;border-radius:3px;background:#E4DED2;overflow:hidden;width:300px}
+.pb i{display:block;height:5px;background:#C8A040;animation:pb 6000ms infinite}
+.toast{position:absolute;left:50%;bottom:70px;width:420px;margin-left:-210px;background:#1A1A18;color:#F5F1E8;border-radius:12px;overflow:hidden;animation:to 6000ms infinite}
+.tm{height:3px;background:#C8A040;transform-origin:left;animation:tm 6000ms infinite}
+.bar{position:absolute;left:50%;bottom:18px;width:420px;margin-left:-210px;height:38px;border-radius:999px;background:#1A1A18}
+.undo{animation:un 6000ms infinite;border-radius:5px;padding:2px 4px}
+@keyframes cb{0%,8.3%{transform:scale(1);background:#fff;border-color:#B5AE9F;color:transparent;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}10.8%{transform:scale(1.25);background:#C8A040;border-color:#C8A040;color:#1A1A18}13.3%,50%{transform:scale(1);background:#C8A040;border-color:#C8A040;color:#1A1A18}52%,100%{background:#fff;border-color:#B5AE9F;color:transparent}}
+@keyframes tt{0%,9%{opacity:1;text-decoration:none;animation-timing-function:cubic-bezier(.4,0,.2,1)}12.7%,50%{opacity:.6;text-decoration:line-through}52%,100%{opacity:1;text-decoration:none}}
+@keyframes col{0%,15.7%{height:52px;opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}21.3%,50%{height:0;opacity:0;transform:none;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}55%,100%{height:52px;opacity:1;transform:none}}
+@keyframes pb{0%,11.7%{width:20%;animation-timing-function:cubic-bezier(.22,.61,.36,1)}20.3%,50%{width:40%;animation-timing-function:cubic-bezier(.22,.61,.36,1)}55%,100%{width:20%}}
+@keyframes to{0%,8.3%{opacity:0;transform:translateY(20px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}14.3%,50%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}54.3%,100%{opacity:0;transform:translateY(16px)}}
+@keyframes tm{0%,14.3%{transform:scaleX(1)}50%,100%{transform:scaleX(.465)}}
+@keyframes un{0%,47%{background:transparent}48%,50%{background:rgba(200,160,64,.25)}51%,100%{background:transparent}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">T2, I1, I2 · Tasks · Flow Spec G2 and I · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">The tick completes, the toast offers Undo, Undo brings it back</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of completing a task, the undo toast, and undo restoring the row">
+<div class="sb"></div>
+<div class="wa">
+<div style="font: 26px 'DM Serif Display', serif;">Tasks</div>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: 10px;"><div class="pb"><i></i></div><span style="font-size: 12px; color: #4A4A44;">done this week</span></div>
+<div class="list">
+<div class="r"><span class="cb"></span><span>Reconstruct 12 months of hours per café</span></div>
+<div class="r x"><span class="cb">✓</span><span class="tt">Mark the busiest and quietest months</span></div>
+<div class="r"><span class="cb"></span><span>Model the flat fee against real hours</span></div>
+<div class="r"><span class="cb"></span><span>Draft the fixed-fee offer for two clients</span></div>
+</div>
+<div class="toast"><div style="display: flex; align-items: center; gap: 10px; padding: 11px 14px; font-size: 13px;"><span style="color: #C8A040;">✓</span><span style="flex: 1;">Completed: Mark the busiest and quietest months</span><span class="undo" style="color: #C8A040; font-weight: 700;">Undo</span></div><div class="tm"></div></div>
+<div class="bar"></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Click the tick</span><span class="d">Tick fills amber and pops <code>300ms e-spring, scale 1 → 1.25 → 1</code>. Text dims and strikes <code>220ms e-std at 40ms</code>. Only the tick completes; the row body opens the editor.</span></div>
+<div class="row"><span class="t">+0ms</span><span class="d">Toast rises above the Ask bar <code>360ms e-spring, translateY(20px)</code>. Its amber timer drains <code>4000ms linear</code> (I1).</span></div>
+<div class="row"><span class="t">+200 · +440ms</span><span class="d">Progress advances <code>520ms e-out</code>. The row collapses out <code>340ms e-in, height → 0</code>.</span></div>
+<div class="row"><span class="t">Undo</span><span class="d">Toast drops <code>260ms e-in</code>. The row returns <code>300ms e-spring, translateX(-10px)</code>, the tick empties, the bar steps back (I2). Undo cancels the pending collapse timer.</span></div>
+<div class="row"><span class="t">Ctrl Z</span><span class="d">Same as Undo. The sidebar's ↶ shows the same toast, so you always see what was undone.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

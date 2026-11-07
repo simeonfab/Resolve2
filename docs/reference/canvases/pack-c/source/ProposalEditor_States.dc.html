@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Proposal editor states</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: 3920px; height: 2000px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 40px;">
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Empty · most questions skipped</span><dc-import name="ProposalEditor" state="empty" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Loading · writing the full proposal</span><dc-import name="ProposalEditor" state="loading" hint-size="1280px,800px"></dc-import></div>
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Error · an edit didn't save</span><dc-import name="ProposalEditor" state="error" hint-size="1280px,800px"></dc-import></div>
+</div>
+<div style="display: flex; gap: 40px;">
+<div style="display: flex; flex-direction: column; gap: 10px;"><span style="font-size: 18px; font-weight: 700;">Full · 1920 × 1080 (no sidebar during intake; content caps at 1240)</span><dc-import name="ProposalEditor" w="{{bw}}" h="{{bh}}" hint-size="1920px,1080px"></dc-import></div>
+<div style="width: 1280px; display: flex; flex-direction: column; gap: 12px; padding-top: 40px; font-size: 16px; line-height: 1.6; color: #4A4A44;"><b style="color: #1A1A18; font-size: 18px;">Why no collapsed board</b>The intake runs full window without the sidebar (Pack A). The editor keeps that frame, so there is nothing to collapse. "← Back to the summary" returns to Pack A screen 09 with every edit kept. Adopt here does the same as Adopt on 09.</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":3920,"height":2000}}'>
+class Component extends DCLogic {
+renderVals() { return { bw: 1920, bh: 1080 }; }
+}
+</script>
+</body>
+</html>

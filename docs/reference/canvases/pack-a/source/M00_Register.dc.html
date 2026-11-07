@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Motion register</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+table{border-collapse:collapse;width:100%;font-size:12.5px}
+th{text-align:left;font-size:11.5px;font-weight:700;color:#4A4A44;padding:7px 8px;border-bottom:2px solid #DDD8CE;background:#F7F3EC;position:sticky;top:0}
+td{padding:6px 8px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.4}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+.g td{background:#FBF5E6;font-weight:700;color:#1A1A18}
+.new{display:inline-block;font-size:10.5px;font-weight:700;background:#F5E8E1;color:#8B4A2A;border-radius:999px;padding:1px 7px}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#1A1A18}
+.ez{display:flex;flex-direction:column;gap:2px;background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:10px 14px;flex:1}
+.ez b{font-size:13px}.ez code{font-size:12px}.ez span{font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 2300px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 18px;">
+<div style="display: flex; justify-content: space-between; align-items: flex-end; gap: 32px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">Character: match-seam. Spring on arrivals, calm ease on fades and dims.</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 40px;">Motion register: every animation in the intake</h1>
+</div>
+<div style="font-size: 12.5px; color: #4A4A44; max-width: 520px; line-height: 1.5;">Source column: Flow Spec surface (A to D, E to I), the mockup it came from, or <span class="new">New</span> for a desktop transition the spec does not cover. All timings use fill both. Stagger = delay + index × stagger, in DOM order.</div>
+</div>
+<div style="display: flex; gap: 10px;">
+<div class="ez"><b>e-spring</b><code>cubic-bezier(.34,1.56,.64,1)</code><span>Arrivals, expansions, sheets, panels</span></div>
+<div class="ez"><b>e-out</b><code>cubic-bezier(.22,.61,.36,1)</code><span>Reveals, restores</span></div>
+<div class="ez"><b>e-std</b><code>cubic-bezier(.4,0,.2,1)</code><span>Dims, presses, colour changes</span></div>
+<div class="ez"><b>e-in</b><code>cubic-bezier(.55,0,.85,.35)</code><span>Exits, collapses, route-out</span></div>
+<div class="ez"><b>ease</b><code>cubic-bezier(.25,.1,.25,1)</code><span>Only where the mockup used plain ease</span></div>
+</div>
+<div style="flex: 1; min-height: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow: hidden;">
+<table>
+<thead><tr><th>ID</th><th>Name</th><th>Where</th><th>Trigger</th><th>Duration</th><th>Easing</th><th>Delay / stagger</th><th>From → to</th><th>Source</th></tr></thead>
+<tbody>
+<tr class="g"><td colspan="9">M01 · Front door to welcome (screens 01, 02a)</td></tr>
+<tr><td>M01.1</td><td>Front door extras fade</td><td>01</td><td>Screen lands</td><td>520ms</td><td>ease</td><td>420 / 560 / 700ms</td><td><code>opacity 0, translateY(6px) → 1, none</code> on eyebrow, hint, footer line</td><td>Flow Spec C3</td></tr>
+<tr><td>M01.2</td><td>Field focus ring</td><td>01, all fields</td><td>Focus</td><td>160ms</td><td>e-std</td><td>0</td><td><code>box-shadow 0 0 0 0 → 0 0 0 3px rgba(200,160,64,.22)</code>, border → #C8A040</td><td>Flow Spec tokens + <span class="new">New</span> timing</td></tr>
+<tr><td>M01.3</td><td>Continue enables</td><td>01, 02b, 05</td><td>First character typed</td><td>200ms</td><td>e-std</td><td>0</td><td><code>background #E4DED2 → #C8A040 (dark) / #1A1A18 (light)</code></td><td><span class="new">New</span></td></tr>
+<tr><td>M01.4a</td><td>Front door exits</td><td>01 → 02a</td><td>Continue</td><td>240ms</td><td>e-in</td><td>0</td><td><code>opacity 1 → 0, translateY(0 → -8px)</code></td><td>E3 timing, <span class="new">New</span> axis</td></tr>
+<tr><td>M01.4b</td><td>Rail slides in</td><td>02a</td><td>After M01.4a starts</td><td>420ms</td><td>e-spring</td><td>100ms</td><td><code>translateX(-308px) → 0</code></td><td>G3 push panel values</td></tr>
+<tr><td>M01.4c</td><td>Work pane washes light</td><td>02a</td><td>After M01.4a</td><td>600ms</td><td>e-std</td><td>220ms</td><td><code>background #1E1E1A → #F2EDE4</code></td><td><span class="new">New</span></td></tr>
+<tr><td>M01.5</td><td>Hi, welcome, question, paths</td><td>02a</td><td>Pane washed</td><td>Runs once on a 7000ms clock</td><td>ease</td><td>Hi 0–630 · Welcome in 420–910, out 1680–2170 · Prompt 1960–2660 · Paths 2800–3360, 3220–3780, 3640–4200</td><td><code>Hi translateY(14px) · Welcome 10px · Prompt 10px · Paths 12px → none</code>. Holds at 4200. No loop.</td><td>Onboarding mockup (rHello, rWelcome, rPrompt, rO1–3)</td></tr>
+<tr class="g"><td colspan="9">M02 · Step change (every forward and Back move)</td></tr>
+<tr><td>M02.1</td><td>Content out</td><td>Work pane</td><td>Continue / Next</td><td>240ms</td><td>e-in</td><td>0</td><td><code>opacity 1 → 0, translateX(0 → -24px)</code>. Back: +24px</td><td>E8</td></tr>
+<tr><td>M02.2</td><td>Content in</td><td>Work pane</td><td>After M02.1</td><td>400ms</td><td>e-spring</td><td>90ms</td><td><code>opacity 0 → 1, translateX(28px → 0)</code>. Back: -28px</td><td>E8</td></tr>
+<tr><td>M02.3</td><td>Header settles</td><td>Eyebrow + headline</td><td>With M02.2</td><td>340ms</td><td>e-out</td><td>0</td><td><code>translateY(-8px) → none</code> + fade</td><td>Shared header entrance</td></tr>
+<tr><td>M02.4</td><td>Stepper active colour</td><td>Rail</td><td>Step changes</td><td>300ms</td><td>e-std</td><td>130ms</td><td><code>color, border #8A8578 → #C8A040</code></td><td>E8 tab colour</td></tr>
+<tr><td>M02.5</td><td>Stepper tick pop</td><td>Rail</td><td>Step completes</td><td>300ms</td><td>e-spring</td><td>0</td><td><code>scale 1 → 1.25 → 1</code>, number → tick</td><td>G2 tick pop</td></tr>
+<tr><td>M02.6</td><td>Progress bar advance</td><td>Top bar</td><td>Step changes</td><td>520ms</td><td>e-out</td><td>0</td><td><code>width a% → b%</code></td><td>G2 progress</td></tr>
+<tr><td>M02.7</td><td>Rail collapse</td><td>02b → 03, 08 → 09</td><td>Entering a wide step</td><td>420ms</td><td>e-spring</td><td>labels fade first: 160ms e-std</td><td><code>width 308 → 72px</code></td><td><span class="new">New</span> (G3 values)</td></tr>
+<tr><td>M02.8</td><td>Rail expand</td><td>03 → 04</td><td>Leaving a wide step</td><td>420ms</td><td>e-spring</td><td>labels 220ms e-out at 200ms</td><td><code>width 72 → 308px</code></td><td><span class="new">New</span></td></tr>
+<tr class="g"><td colspan="9">M03 · Bring it in (02b)</td></tr>
+<tr><td>M03.1</td><td>Mic recording pulse</td><td>Mic button</td><td>Recording</td><td>1200ms loop</td><td>ease</td><td>0</td><td><code>box-shadow 0 0 0 0 rgba(139,74,42,.4) → 50%: 0 0 0 8px rgba(139,74,42,0)</code>, bg → #8B4A2A</td><td>Old web intake pulse-mic</td></tr>
+<tr><td>M03.2</td><td>Mic press</td><td>Mic button</td><td>Click</td><td>240ms</td><td>e-std</td><td>0</td><td><code>scale 1 → .975 → 1</code></td><td>E5 press</td></tr>
+<tr><td>M03.4</td><td>Pull-in panel</td><td>02c</td><td>Link click</td><td>300ms in · 240ms out</td><td>e-out · e-in</td><td>0</td><td><code>opacity 0, translateY(8px) → 1, none</code>. Copy → "Copied ✓" 1.5 s</td><td>E2 row, E3</td></tr>
+<tr><td>M03.3</td><td>Template drops in</td><td>Text box</td><td>Use a template</td><td>300ms</td><td>e-out</td><td>0</td><td><code>opacity 0, translateY(8px) → 1, none</code> on inserted lines</td><td>E2 row</td></tr>
+<tr class="g"><td colspan="9">M04 · Questions, waiting and the 15 s hand-off (03)</td></tr>
+<tr><td>M04.1</td><td>Waiting card in</td><td>Question column</td><td>Next pressed</td><td>300ms</td><td>e-out</td><td>0</td><td><code>opacity 0, translateY(8px) → 1, none</code></td><td>E2 row</td></tr>
+<tr><td>M04.2</td><td>Ring spin</td><td>Waiting card</td><td>While waiting</td><td>900ms loop</td><td>linear</td><td>0</td><td><code>rotate 0 → 360deg</code></td><td>Confirm and Next Move loaders</td></tr>
+<tr><td>M04.3</td><td>Checklist tick</td><td>Waiting card</td><td>Real progress event</td><td>150ms</td><td>e-std</td><td>0</td><td><code>mark transparent → #C8A040, check opacity 0 → 1, label #A8A296 → #1A1A18</code></td><td>Loader mockups (3% of 5000ms)</td></tr>
+<tr><td>M04.4</td><td>Wait bar</td><td>Waiting card</td><td>Waiting</td><td>15000ms</td><td>linear</td><td>0</td><td><code>width 0 → 100%</code></td><td><span class="new">New</span></td></tr>
+<tr><td>M04.5</td><td>Question arrives</td><td>Question column</td><td>Answer ready or 15 s</td><td>out 240 · in 460ms</td><td>e-in · e-spring</td><td>in at 0</td><td>Out <code>opacity → 0, translateY(8px) scale(.97)</code> · In <code>translateY(18px) scale(.98) → none</code></td><td>E3 out, E1 card in</td></tr>
+<tr><td>M04.6</td><td>Hand-off note</td><td>Above question</td><td>15 s fallback used</td><td>300ms</td><td>e-out</td><td>240ms</td><td><code>opacity 0, translateY(8px) → 1, none</code></td><td>E2 row</td></tr>
+<tr><td>M04.7</td><td>Heard item lands</td><td>Heard panel</td><td>Answer sorted</td><td>300ms</td><td>e-out</td><td>stagger 55ms</td><td><code>opacity 0, translateY(8px) → 1, none</code>, 1.2s amber tint fade on the new row</td><td>E2 rows</td></tr>
+<tr><td>M04.8</td><td>Heard item removed</td><td>Heard panel</td><td>×</td><td>340ms</td><td>e-in</td><td>0</td><td><code>height, margin, padding → 0</code></td><td>G2 row collapse</td></tr>
+<tr class="g"><td colspan="9">M05 · Confirm, edit mode, no clear outcome (04, 04b, 05)</td></tr>
+<tr><td>M05.1</td><td>Cards stagger in</td><td>Card grid</td><td>Screen lands</td><td>460ms</td><td>e-spring</td><td>120ms / 70ms</td><td><code>opacity 0, translateY(18px) scale(.98) → 1, none</code></td><td>E1 card stack</td></tr>
+<tr><td>M05.2</td><td>Action bar rises</td><td>Footer</td><td>Screen lands</td><td>480ms</td><td>e-spring</td><td>460ms</td><td><code>translateY(30px) → none</code> + fade</td><td>E1 global bar</td></tr>
+<tr><td>M05.3</td><td>Edit mode on</td><td>Each card</td><td>Something's wrong</td><td>220ms</td><td>e-std</td><td>stagger 40ms</td><td><code>border #DDD8CE → #C8A040</code>, text → field crossfade 200ms</td><td>E7 row stagger, <span class="new">New</span></td></tr>
+<tr><td>M05.4</td><td>Action bar swap</td><td>Footer</td><td>Edit mode on / off</td><td>out 200 · in 380ms</td><td>e-in · e-spring</td><td>swap at 200ms</td><td><code>translateX(∓18px) out, translateX(±24px) in</code></td><td>F2 view toggle</td></tr>
+<tr><td>M05.5</td><td>Card grows</td><td>Card</td><td>Text wraps to a new line</td><td>240ms</td><td>e-out</td><td>0</td><td><code>height auto (measured)</code>. No clip during the tween.</td><td><span class="new">New</span></td></tr>
+<tr><td>M05.6</td><td>Reason highlight</td><td>05</td><td>Screen lands</td><td>520ms</td><td>e-out</td><td>300ms</td><td><code>background-size 0% → 100%</code> on the floor reason</td><td><span class="new">New</span></td></tr>
+<tr><td>M05.7</td><td>Check passes</td><td>05</td><td>Re-run passes</td><td>600 · 500ms</td><td>e-spring · ease</td><td>100 · 500ms</td><td>Check <code>scale(.8) → none</code> · "That's the piece we needed." <code>translateY(12px)</code>. Route on at 1200ms.</td><td>OS Reveal vin, rvUp</td></tr>
+<tr class="g"><td colspan="9">M06 · Next move and theme cards (06, 07)</td></tr>
+<tr><td>M06.1</td><td>Do this first card</td><td>06</td><td>Screen lands</td><td>450ms</td><td>e-spring</td><td>0</td><td><code>opacity 0, scale(.94) translateY(10px) → 1, none</code></td><td>Roadmap Cards cardIn</td></tr>
+<tr><td>M06.2</td><td>Now / Next / Later cards</td><td>06</td><td>Screen lands</td><td>500ms</td><td>ease</td><td>200 / 350 / 500ms</td><td><code>opacity 0, translateY(8px) → 1, none</code></td><td>Roadmap Reveal rvA</td></tr>
+<tr><td>M06.3</td><td>Theme card in</td><td>07</td><td>Each theme</td><td>450ms (first) · 500ms (next)</td><td>e-spring</td><td>0</td><td><code>opacity 0, scale(.94) translateY(10px) → 1, none</code></td><td>Roadmap Cards cardIn</td></tr>
+<tr><td>M06.4</td><td>Yes: tick pop</td><td>07</td><td>Yes</td><td>500ms</td><td>e-spring</td><td>120ms</td><td><code>scale(1.6), opacity 0 → scale(1), 1</code></td><td>Roadmap Cards pop</td></tr>
+<tr><td>M06.5</td><td>Yes: row lands in list</td><td>07 right column</td><td>Yes</td><td>450ms</td><td>e-spring</td><td>200ms</td><td><code>opacity 0, translateX(-14px) → 1, none</code></td><td>Roadmap Cards rIn</td></tr>
+<tr><td>M06.6</td><td>Theme segment fills</td><td>07</td><td>Yes or Leave off</td><td>520ms</td><td>e-out</td><td>0</td><td><code>background #DDD8CE → #1A1A18</code></td><td>G2 progress</td></tr>
+<tr><td>M06.7</td><td>Not quite opens</td><td>07</td><td>Not quite</td><td>400ms</td><td>ease</td><td>50 · 300ms</td><td>Field, then Save and continue: <code>translateY(8px) → none</code></td><td>Roadmap Cards up</td></tr>
+<tr class="g"><td colspan="9">M07 · First week, whole picture, Adopt (08, 09)</td></tr>
+<tr><td>M07.1</td><td>Task rows in</td><td>08</td><td>Screen lands</td><td>350ms</td><td>ease</td><td>300ms / 80ms</td><td><code>opacity 0, translateY(6px) → 1, none</code></td><td>Todo List rowIn + 80ms group stagger</td></tr>
+<tr><td>M07.2</td><td>Up next highlight</td><td>08 row 1</td><td>After rows</td><td>300ms</td><td>e-std</td><td>800ms</td><td><code>background #FFFFFF → #1A1A18</code>, text → #F5F1E8</td><td><span class="new">New</span></td></tr>
+<tr><td>M07.3</td><td>Lanes reveal</td><td>09</td><td>Screen lands</td><td>500ms</td><td>ease</td><td>Headers 200 / 350 / 500 · Now 1400 · Next 2000 · Later 2600 · Adopt 3300ms · in-lane 80ms</td><td><code>opacity 0, translateY(8px) → 1, none</code>. Any click finishes it.</td><td>Roadmap Reveal rvA</td></tr>
+<tr><td>M07.4</td><td>Adopt press</td><td>09</td><td>Adopt</td><td>240ms</td><td>e-std</td><td>0</td><td><code>scale 1 → .975 → 1</code></td><td>E5 press</td></tr>
+<tr><td>M07.5</td><td>Hand to the bridge</td><td>09 → 10</td><td>After M07.4</td><td>300ms</td><td>e-in</td><td>160ms</td><td>Work pane, rail, top bar <code>opacity → 0</code> over #1A1A18. Brandmark stays put.</td><td><span class="new">New</span></td></tr>
+<tr class="g"><td colspan="9">M08 · Bridge (10) on a 9200ms clock, runs once</td></tr>
+<tr><td>B0</td><td>Shared glow</td><td>Stage</td><td>Bridge starts</td><td>9200ms</td><td>linear between stops</td><td>0</td><td><code>opacity 0–23% .35 · 30% .85 · 72% .85 · 100% .35</code></td><td>Flow Spec B0</td></tr>
+<tr><td>B1</td><td>Fog card grows</td><td>Stage</td><td>0–2.85s</td><td>9200ms clock</td><td>per segment</td><td>0</td><td><code>0% op0 scale(.62) e-out · 8% op1 .72 bezier(.33,0,.22,1) · 25% op1 1.05 e-in · 31% op0 1.16</code>. 8→25% is one segment.</td><td>Flow Spec B1</td></tr>
+<tr><td>B2</td><td>First move pins</td><td>Stage</td><td>2.4–4.8s</td><td>9200ms clock</td><td>e-std</td><td>0</td><td><code>0–26% op0 translateY(22px) scale(.97) · 31% op1 none · 47% hold · 52% op0 translateY(-16px) scale(.99)</code></td><td>Flow Spec B2</td></tr>
+<tr><td>B3</td><td>Workspace forms</td><td>Stage</td><td>4.6–6.9s</td><td>9200ms clock</td><td>e-std</td><td>0</td><td><code>0–50% op0 translateY(18px) · 55% op1 · 70% hold · 75% op0 translateY(-14px)</code></td><td>Flow Spec B3</td></tr>
+<tr><td>B4</td><td>Build checklist holds</td><td>Stage foot</td><td>6.6s → build done</td><td>600ms</td><td>e-std</td><td>6600ms</td><td>Centre glow <code>opacity → 0</code> (600ms ease), checklist <code>opacity 0 → 1</code>. Holds until the build ends.</td><td>Old web bparkin + centerout; replaces sign-in beat</td></tr>
+<tr class="g"><td colspan="9">M09 · Reveal (11) on a 6500ms clock, runs once</td></tr>
+<tr><td>D1</td><td>Welcome in</td><td>Dark layer</td><td>Build done</td><td>600 · 500 · 500ms</td><td>e-spring · ease · ease</td><td>100 · 500 · 700ms</td><td>Check circle <code>scale(.8) → none</code> · "Welcome in, Simeon." and line <code>translateY(12px) → none</code></td><td>Flow Spec D1, OS Reveal</td></tr>
+<tr><td>D2</td><td>Amber bloom and wash</td><td>Both layers</td><td>2.0–3.8s</td><td>6500ms clock</td><td>linear between stops</td><td>0</td><td><code>xdark 0–34% 1, 44% 0 · xbloom 30% 0 scale(.4), 44% 1 scale(6), 58% 0 scale(11) · xlight 36% 0, 48% 1</code></td><td>Flow Spec D2</td></tr>
+<tr><td>D3</td><td>Project lands</td><td>Light layer</td><td>3.25s</td><td>450ms</td><td>e-spring</td><td>stagger 70ms</td><td><code>opacity 0, scale(.94) translateY(10px) → 1, none</code> on eyebrow, title, chips, first move, CTA</td><td>Flow Spec D3 (cardIn verbatim)</td></tr>
+<tr><td>D4</td><td>Anchor</td><td>Brandmark</td><td>Always</td><td>no motion</td><td>none</td><td>none</td><td>Same x 24, y 19 in dark and light layers</td><td>Flow Spec D4</td></tr>
+<tr class="g"><td colspan="9">M10 · Waiting, error, limit, reduced motion</td></tr>
+<tr><td>M10.1</td><td>Long-wait note</td><td>ST3</td><td>15 s passes</td><td>300ms</td><td>e-out</td><td>0</td><td><code>opacity 0, translateY(8px) → 1, none</code></td><td>E2 row</td></tr>
+<tr><td>M10.2</td><td>Error row in</td><td>ST4</td><td>Call fails</td><td>300ms</td><td>e-out</td><td>0</td><td><code>opacity 0, translateY(8px) → 1, none</code>, waiting card exits 240ms e-in first</td><td>E2 row, E3</td></tr>
+<tr><td>M10.3</td><td>Settled ring breathe</td><td>12</td><td>Limit reached</td><td>3200ms loop</td><td>ease-in-out</td><td>0</td><td><code>opacity .85 → 1 → .85</code>. No rotation.</td><td>Daily Limit mockup</td></tr>
+<tr><td>M10.4</td><td>Resume card</td><td>ST5</td><td>Launch mid-intake</td><td>450ms</td><td>e-spring</td><td>200ms</td><td><code>scale(.94) translateY(10px) → none</code>, background dims 220ms e-std</td><td>cardIn, E2 dim</td></tr>
+<tr><td>M10.5</td><td>Reduced motion</td><td>All</td><td>OS setting</td><td>≤120ms</td><td>linear</td><td>0</td><td>Every move becomes an opacity fade, no translate or scale. Loops hold still. Bridge skips to B4. Reveal crossfades 120ms.</td><td>Daily Limit spec + old web .reduced</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":2300}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

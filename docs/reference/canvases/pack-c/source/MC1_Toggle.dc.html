@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Roadmap toggle motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:24px 30px;overflow:hidden}
+.tg{position:absolute;right:30px;top:26px;width:200px;height:34px;border-radius:9px;background:#E4DED2}
+.th{position:absolute;top:3px;left:3px;width:97px;height:28px;border-radius:7px;background:#fff;box-shadow:0 1px 3px rgba(26,26,24,.12);animation:th 4000ms infinite}
+.tl{position:absolute;top:0;height:34px;width:100px;display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600}
+.cols{position:absolute;left:30px;right:30px;top:84px;display:flex;gap:10px;animation:co 4000ms infinite}
+.col{flex:1;background:#EAE4D9;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:7px;height:420px;box-sizing:border-box}
+.cd{background:#fff;border:1px solid #DDD8CE;border-radius:8px;height:62px}
+.rows{position:absolute;left:30px;right:30px;top:84px;background:#fff;border:1px solid #DDD8CE;border-radius:10px;animation:ro 4000ms infinite}
+.rw{height:52px;border-top:1px solid #EEE9DF;display:flex;align-items:center;gap:12px;padding:0 14px;font-size:13px}
+.rw:first-child{border-top:0}
+.pp{width:44px;height:18px;border-radius:999px;background:#F2EDE4}
+@keyframes th{0%,30%{transform:none;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}38%,80%{transform:translateX(97px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}88%,100%{transform:none}}
+@keyframes co{0%,30%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}35%,85%{opacity:0;transform:translateX(-18px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}94.5%,100%{opacity:1;transform:none}}
+@keyframes ro{0%,35%{opacity:0;transform:translateX(24px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}44.5%,80%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}85%,100%{opacity:0;transform:translateX(24px)}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">F2 · Roadmap · Flow Spec values · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">The same themes, two ways to look at them</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the roadmap switching from phase columns to a theme list and back">
+<div class="sb"></div>
+<div class="wa">
+<div style="font: 24px 'DM Serif Display', serif;">Roadmap</div>
+<div class="tg"><div class="th"></div><span class="tl" style="left: 0;">By phase</span><span class="tl" style="left: 100px;">By theme</span></div>
+<div class="cols"><div class="col"><div class="cd"></div><div class="cd"></div></div><div class="col"><div class="cd"></div><div class="cd"></div></div><div class="col"><div class="cd"></div><div class="cd"></div></div></div>
+<div class="rows"><div class="rw"><span class="pp" style="background: #1A1A18;"></span>Measure true monthly hours</div><div class="rw"><span class="pp" style="background: #1A1A18;"></span>Ask the two willing clients</div><div class="rw"><span class="pp"></span>Price to absorb spikes</div><div class="rw"><span class="pp"></span>Convert the two willing clients</div><div class="rw"><span class="pp"></span>Design the no-shoebox rhythm</div><div class="rw"><span class="pp"></span>Reach cafés beyond word of mouth</div></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Thumb</span><span class="d">Slides to the new label <code>320ms e-spring</code>. It leads, so your eye knows which view is coming.</span></div>
+<div class="row"><span class="t">Old view out</span><span class="d">Columns leave <code>200ms e-in, translateX(-18px)</code>, towards where the thumb came from.</span></div>
+<div class="row"><span class="t">New view in</span><span class="d">Rows arrive <code>380ms e-spring, translateX(24px) → 0</code>. Going back mirrors both directions.</span></div>
+<div class="row"><span class="t">Kept</span><span class="d">The right rail (milestones, blockers, coming up) doesn't move. Only the main area changes.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

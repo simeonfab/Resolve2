@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M06 Theme cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18)}
+.segs{position:absolute;left:44px;top:84px;width:470px;display:flex;gap:6px}
+.sgm{flex:1;height:4px;border-radius:2px;background:#DDD8CE}
+.s1{animation:s1 6000ms infinite}
+.card{position:absolute;left:44px;top:110px;width:470px;background:#fff;border:1px solid #DDD8CE;border-radius:16px;padding:20px 22px;box-sizing:border-box;box-shadow:0 10px 30px rgba(26,26,24,.07)}
+.c1{animation:c1 6000ms infinite}.c2{animation:c2 6000ms infinite}
+.btns{display:flex;gap:8px;margin-top:16px}
+.ya{flex:1;text-align:center;background:#C8A040;border-radius:9px;padding:11px;font-size:12.5px;font-weight:600}
+.nq{flex:1;text-align:center;background:#fff;border:1px solid #DDD8CE;border-radius:9px;padding:11px;font-size:12.5px;font-weight:600}
+.p1{animation:p1 6000ms infinite}.p2{animation:p2 6000ms infinite}
+.tick{position:absolute;right:18px;top:18px;width:30px;height:30px;border-radius:50%;background:#C8A040;display:flex;align-items:center;justify-content:center;animation:tick 6000ms infinite}
+.fx{animation:fx 6000ms infinite;margin-top:12px}
+.sv{animation:sv 6000ms infinite;display:inline-block;margin-top:8px;background:#C8A040;border-radius:8px;padding:8px 12px;font-size:12px;font-weight:600}
+.list{position:absolute;left:560px;top:110px;width:340px}
+.r1{animation:r1 6000ms infinite;display:flex;gap:10px;align-items:center;background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:10px 12px;font-size:13px;margin-top:8px}
+@keyframes s1{0%,25%{background:#DDD8CE;animation-timing-function:cubic-bezier(.22,.61,.36,1)}33.7%,100%{background:#1A1A18}}
+@keyframes c1{0%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}7.5%,33.3%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}37.3%,100%{opacity:0;transform:translateY(8px) scale(.97)}}
+@keyframes c2{0%,37.3%{opacity:0;transform:scale(.94) translateY(10px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}45.7%,100%{opacity:1;transform:none}}
+@keyframes p1{0%,25%{transform:scale(1);animation-timing-function:cubic-bezier(.4,0,.2,1)}27%{transform:scale(.975)}29%,100%{transform:scale(1)}}
+@keyframes p2{0%,63.3%{transform:scale(1);border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}65.3%{transform:scale(.975)}67.3%,100%{transform:scale(1);border-color:#1A1A18}}
+@keyframes tick{0%,27%{opacity:0;transform:scale(1.6);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}35.3%{opacity:1;transform:scale(1)}37.3%,100%{opacity:0}}
+@keyframes r1{0%,28.3%{opacity:0;transform:translateX(-14px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}35.8%,100%{opacity:1;transform:none}}
+@keyframes fx{0%,64.2%{opacity:0;transform:translateY(8px);max-height:0}64.21%{max-height:120px}70.8%,100%{opacity:1;transform:none;max-height:120px}}
+@keyframes sv{0%,68.3%{opacity:0;transform:translateY(8px)}75%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M06 · Screens 06 and 07 · live loop</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Themes: one card at a time, each yes lands on your roadmap</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of accepting one theme and opening Not quite on the next">
+<div style="position: absolute; left: 44px; top: 30px; font: 24px 'DM Serif Display', serif;">Does this belong on your roadmap?</div>
+<div class="segs"><span class="sgm s1"></span><span class="sgm"></span><span class="sgm"></span><span class="sgm"></span><span class="sgm"></span><span class="sgm"></span></div>
+<div class="card c1">
+<span class="tick"><svg width="14" height="14" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="#1A1A18" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+<div style="font-size: 11px; color: #4A4A44;">Theme 1 of 6</div>
+<div style="font: 22px 'DM Serif Display', serif; margin: 6px 0;">Measure true monthly hours</div>
+<div style="font-size: 12.5px; color: #4A4A44; line-height: 1.5;">Reconstruct the real hours per café across a full year, not the 5 hours a month average.</div>
+<div class="btns"><span class="ya p1">Yes, add to my roadmap</span><span class="nq">Not quite</span></div>
+</div>
+<div class="card c2">
+<div style="font-size: 11px; color: #4A4A44;">Theme 2 of 6</div>
+<div style="font: 22px 'DM Serif Display', serif; margin: 6px 0;">Price to absorb spikes</div>
+<div class="btns"><span class="ya">Yes, add to my roadmap</span><span class="nq p2">Not quite</span></div>
+<div class="fx" style="overflow: hidden;"><div style="font-size: 11.5px; color: #4A4A44; margin-bottom: 6px;">What should this theme be instead?</div><div style="height: 34px; border: 1px solid #C8A040; border-radius: 8px; background: #FBF5E6;"></div></div>
+<span class="sv">Save and continue</span>
+</div>
+<div class="list">
+<div style="font-size: 12px; font-weight: 600; color: #4A4A44;">On your roadmap</div>
+<div class="r1"><span style="width: 18px; height: 18px; border-radius: 50%; background: #C8A040;"></span>Measure true monthly hours</div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">06 lands</span><span class="d">Dark "Do this first" card <code>450ms e-spring, scale(.94) translateY(10px)</code> (M06.1). Now, Next, Later follow <code>500ms ease at 200, 350, 500ms</code> (M06.2).</span></div>
+<div class="row"><span class="t">Theme arrives</span><span class="d">Same cardIn spring, reused verbatim as Flow Spec D3 asks (M06.3). A second card edge sits behind it to show more are coming.</span></div>
+<div class="row"><span class="t">Yes</span><span class="d">Press <code>240ms e-std</code>. Tick pops <code>500ms e-spring at 120ms, scale(1.6) → 1</code> (M06.4). Segment fills <code>520ms e-out</code> (M06.6).</span></div>
+<div class="row"><span class="t">+200ms</span><span class="d">The theme lands in "On your roadmap" on the right <code>450ms e-spring, translateX(-14px)</code> (M06.5). Card leaves <code>240ms e-in</code>, next card arrives.</span></div>
+<div class="row"><span class="t">Not quite</span><span class="d">Field opens <code>400ms ease at 50ms</code>, then Save and continue <code>at 300ms</code> (M06.7). "Leave it off the roadmap" sits beside Save; that theme goes to the cut list.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

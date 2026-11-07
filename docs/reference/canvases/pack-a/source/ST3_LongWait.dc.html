@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>State: long wait</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;box-sizing:border-box}
+.st{display:flex;gap:12px;align-items:center}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid #C8A040;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#C8A040;flex-shrink:0;box-sizing:border-box}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.li{display:flex;align-items:center;gap:12px;font-size:14.5px;color:#4A4A44}
+.mk{width:20px;height:20px;border-radius:50%;background:#C8A040;color:#1A1A18;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.em{width:20px;height:20px;border-radius:50%;border:1.5px solid #DDD8CE;flex-shrink:0;box-sizing:border-box}
+.ann{position:absolute;background:#FFF4C2;border:1px solid #E9D9A8;border-radius:8px;padding:8px 10px;font-size:12px;line-height:1.45;color:#1A1A18;width:240px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden; position: relative;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A;">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 68%;"></span></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st"><span class="n">✓</span><span class="t">Get started</span></div>
+<div class="st"><span class="n">✓</span><span class="t">Bring it in</span></div>
+<div class="st"><span class="n">✓</span><span class="t">Confirm understanding</span></div>
+<div class="st"><span class="n">4</span><span class="t" style="color: #F5F1E8;">Your next move</span></div>
+</nav>
+<main style="flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center;">
+<div role="status" aria-live="polite" style="width: 460px; display: flex; flex-direction: column; align-items: center; text-align: center;">
+<div style="width: 64px; height: 64px; border-radius: 50%; border: 3px solid #EFE6CF; border-top-color: #C8A040; border-left-color: #C8A040; box-sizing: border-box;" aria-hidden="true"></div>
+<h1 style="margin: 22px 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">Weighing it up…</h1>
+<p style="margin: 0; font-size: 14.5px; color: #4A4A44;">Writing your plan and your validation side by side.</p>
+<div style="margin-top: 8px; font-size: 13px; font-weight: 600; color: #4A4A44; font-variant-numeric: tabular-nums;">38 s</div>
+<div style="margin-top: 22px; display: flex; flex-direction: column; gap: 12px; align-self: stretch; padding-left: 70px;">
+<div class="li" style="color: #1A1A18;"><span class="mk"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Weighing what matters most</div>
+<div class="li" style="color: #1A1A18;"><span class="mk"><svg width="11" height="11" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 6.2l2.3 2.3L9.5 3.8" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Checking against what you confirmed</div>
+<div class="li" style="color: #1A1A18;"><span style="width: 20px; height: 20px; border-radius: 50%; border: 2px solid #C8A040; border-right-color: transparent; box-sizing: border-box; flex-shrink: 0;"></span>Sequencing the work</div>
+<div class="li"><span class="em"></span>Choosing your first move</div>
+</div>
+<div style="margin-top: 26px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.5; color: #4A4A44; text-align: left;">This step takes about a minute. Your answers are saved, so you can leave and come back to this exact point.</div>
+<div style="margin-top: 14px; display: flex; gap: 16px;">
+<a href="#" style="font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">← Back to the cards</a>
+<a href="#" style="font-size: 13.5px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Leave and come back later</a>
+</div>
+</div>
+</main>
+</div>
+<div class="ann" style="left: 960px; top: 150px;">Proposal only. No fixed fallback exists here, so after 15 s the note card fades in (M10) and the checklist keeps ticking from real progress events.</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

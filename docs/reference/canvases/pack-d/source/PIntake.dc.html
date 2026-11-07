@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone intake</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; position: relative; overflow: hidden; background: #201F1C; font-family: 'Inter', sans-serif; color: #F5F1E8; display: flex; flex-direction: column;">
+<header style="padding: 50px 12px 0 18px; display: flex; align-items: center; gap: 8px;">
+<div style="flex: 1; display: flex; gap: 5px;"><sc-for list="{{dots}}" as="d" hint-placeholder-count="4"><span style="flex: 1; height: 4px; border-radius: 2px; background: {{d}};"></span></sc-for></div>
+<a href="#" style="height: 44px; display: flex; align-items: center; padding: 0 8px; font-size: 14px; font-weight: 600; color: #B4AFA3; text-decoration: none;">Save and exit</a>
+<button aria-label="More" style="width: 44px; height: 44px; border: 0; background: none; color: #B4AFA3; font-size: 18px;">⋯</button>
+</header>
+<main style="flex: 1; min-height: 0; padding: 22px 20px 0; display: flex; flex-direction: column; gap: 14px;">
+
+<sc-if value="{{sName}}" hint-placeholder-val="{{ true }}">
+<div style="font-size: 13px; font-weight: 600; color: #C97A4A;">Welcome to Resolve</div>
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px; line-height: 1.15;">What's your name?</h1>
+<input aria-label="Your name" value="{{nameVal}}" placeholder="Your first name" style="height: 54px; border-radius: 14px; border: 1.5px solid {{inBd}}; background: rgba(255,255,255,.04); color: #F5F1E8; padding: 0 16px; font: 400 18px 'Inter', sans-serif;">
+</sc-if>
+
+<sc-if value="{{sBring}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; font-weight: 600; color: #C97A4A;">Step 2 of 4</div>
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px; line-height: 1.2;">In your own words, tell Resolve what's going on</h1>
+<div style="position: relative;"><textarea aria-label="What's going on" style="width: 100%; height: 170px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid #C8A040; background: rgba(255,255,255,.04); color: #F5F1E8; padding: 14px 54px 14px 14px; font: 400 16px/1.5 'Inter', sans-serif; resize: none;">I do the books for three cafés. They all pay by the hour and send me a shoebox of receipts every January. Two have said they'd like a fixed monthly fee.</textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 8px; bottom: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: #F5F1E8; font-size: 13px;">●</button></div>
+<div style="display: flex; gap: 8px;"><button style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #F5F1E8; font: 600 14px 'Inter', sans-serif;">Use a template</button><button style="flex: 1; height: 44px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #F5F1E8; font: 600 14px 'Inter', sans-serif;">Try an example</button></div>
+<a href="#" style="min-height: 44px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #C8A040; text-decoration: none;">Coming from another AI chat? Get the prompt</a>
+</sc-if>
+
+<sc-if value="{{sQ}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; font-weight: 600; color: #C97A4A;">Question 3 of 8</div>
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px; line-height: 1.2;">What are you least sure about?</h1>
+<div style="position: relative;"><textarea aria-label="Your answer" style="width: 100%; height: 130px; box-sizing: border-box; border-radius: 14px; border: 1.5px solid #C8A040; background: rgba(255,255,255,.04); color: #F5F1E8; padding: 14px 54px 14px 14px; font: 400 16px/1.5 'Inter', sans-serif; resize: none;">Whether a flat fee covers the busy months.</textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 8px; bottom: 10px; width: 44px; height: 44px; border-radius: 50%; border: 0; background: rgba(255,255,255,.1); color: #F5F1E8; font-size: 13px;">●</button></div>
+<a href="#" style="min-height: 48px; display: flex; align-items: center; gap: 10px; padding: 0 14px; border-radius: 12px; background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.1); color: #F5F1E8; text-decoration: none; font-size: 14px;"><span style="color: #C8A040;">✦</span><span style="flex: 1;">Resolve has heard 4 things. Tap to check or edit.</span><span aria-hidden="true">›</span></a>
+</sc-if>
+
+<sc-if value="{{sProp}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 13px; font-weight: 600; color: #C97A4A;">Your proposal</div>
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px; line-height: 1.2;">Do this first</h1>
+<div style="background: #F5F1E8; color: #1A1A18; border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px;"><div style="font-family: 'DM Serif Display', serif; font-size: 21px; line-height: 1.25;">Reconstruct 12 months of hours for each café</div><div style="font-size: 14px; line-height: 1.5; color: #4A4A44;">It tells you if one monthly price can cover January. Everything else waits on it.</div></div>
+<p style="margin: 0; font-size: 14px; line-height: 1.55; color: #B4AFA3;">Nothing here is final. You can change any of it once your project is open.</p>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}"><div role="status" style="display: flex; gap: 8px; align-items: center; font-size: 14.5px; color: #B4AFA3;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #5A5446;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #5A5446;"></span>Reading what you wrote…</div></sc-if>
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="border-radius: 14px; background: rgba(201,122,74,.14); border: 1px solid rgba(201,122,74,.4); padding: 12px 14px; font-size: 14.5px; line-height: 1.5;"><b style="color: #C97A4A;">The AI didn't reply.</b> Carry on with Resolve's own questions. Your answers so far are saved.</div></sc-if>
+<sc-if value="{{isOffline}}" hint-placeholder-val="{{ false }}"><div role="alert" style="border-radius: 14px; background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.12); padding: 12px 14px; font-size: 14.5px; line-height: 1.5;"><b>Your PC isn't reachable.</b> What you've typed is kept on this phone. Carry on when it's back.</div></sc-if>
+</main>
+<footer style="padding: 12px 20px 34px; display: flex; flex-direction: column; gap: 8px;">
+<sc-if value="{{sQ}}" hint-placeholder-val="{{ false }}"><div style="display: flex; gap: 8px;"><button style="height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #F5F1E8; font: 600 15px 'Inter', sans-serif;">Back</button><button style="flex: 1; height: 48px; border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: transparent; color: #F5F1E8; font: 600 15px 'Inter', sans-serif;">Skip this question</button></div></sc-if>
+<button style="height: 54px; border: 0; border-radius: 14px; background: {{btnBg}}; color: {{btnFg}}; font: 600 16px 'Inter', sans-serif;">{{btn}}</button>
+<sc-if value="{{sQ}}" hint-placeholder-val="{{ false }}"><a href="#" style="min-height: 44px; display: flex; align-items: center; justify-content: center; gap: 10px; font-size: 14px; font-weight: 600; color: #B4AFA3; text-decoration: none;">Skip the rest and see my proposal<span style="width: 60px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.12); overflow: hidden;"><span style="display: block; width: 55%; height: 4px; background: #C8A040;"></span></span></a></sc-if>
+<sc-if value="{{sProp}}" hint-placeholder-val="{{ false }}"><a href="#" style="min-height: 44px; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #B4AFA3; text-decoration: none;">Skip to the whole picture</a></sc-if>
+</footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"step":{"editor":"enum","options":["name","bring","question","proposal"],"default":"name"},"state":{"editor":"enum","options":["full","empty","loading","error","offline"],"default":"full"},"w":{"editor":"int","default":390},"h":{"editor":"int","default":844},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const step = this.props.step ?? 'name';
+const s = this.props.state ?? 'full';
+const idx = { name: 0, bring: 1, question: 2, proposal: 3 }[step];
+const blank = s === 'empty' && step === 'name';
+const off = s === 'loading' || s === 'offline' || blank;
+return {
+w: this.props.w ?? 390, h: this.props.h ?? 844,
+dots: [0, 1, 2, 3].map((i) => i <= idx ? '#C8A040' : 'rgba(255,255,255,.14)'),
+sName: step === 'name', sBring: step === 'bring', sQ: step === 'question', sProp: step === 'proposal',
+nameVal: blank ? '' : 'Simeon', inBd: blank ? 'rgba(255,255,255,.2)' : '#C8A040',
+isLoading: s === 'loading', isError: s === 'error', isOffline: s === 'offline',
+btn: step === 'proposal' ? 'Continue' : step === 'question' ? 'Next' : 'Continue',
+btnBg: off ? 'rgba(255,255,255,.1)' : '#C8A040', btnFg: off ? '#8A8578' : '#1A1A18'
+};
+}
+}
+</script>
+</body>
+</html>

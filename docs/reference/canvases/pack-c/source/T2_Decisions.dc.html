@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decisions and tickets, Pack C</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.dc{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:11px 14px;display:flex;gap:12px}
+.id{font-size:12px;font-weight:700;color:#8B4A2A;width:30px;flex-shrink:0}
+.dt b{display:block;font-size:14px;margin-bottom:3px}
+.dt span{font-size:13px;color:#4A4A44;line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:7px 10px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:6px 10px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1900px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 36px;">
+<div style="width: 720px; flex-shrink: 0; display: flex; flex-direction: column; gap: 9px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Decisions for you to confirm</h1>
+<div class="dc"><span class="id">C1</span><div class="dt"><b>Settings tabs follow the brief, not today's build</b><span>The brief asks for AI and MCP, Sync and phone, Workspaces, About. Today's tabs are AI, General, Your data, Advanced. I moved Backups to Sync, Import and Export to Workspaces, Appearance and shortcuts to About.</span></div></div>
+<div class="dc"><span class="id">C2</span><div class="dt"><b>No floating Ask bar on AI Team</b><span>The page already has a chat box. Two inputs at the bottom would compete. The ASK_TEAM wording in nav.rs goes unused.</span></div></div>
+<div class="dc"><span class="id">C3</span><div class="dt"><b>Roadmap themes open in place</b><span>Clicking a theme expands it in its column (F3) with tasks, blocker and actions. No separate theme page.</span></div></div>
+<div class="dc"><span class="id">C4</span><div class="dt"><b>Whole picture is hypotheses × phases</b><span>Rows are H1 to H4, columns Now, Next, Later. It shows which belief each theme rests on. Alternative: rows as themes, with a hypothesis column.</span></div></div>
+<div class="dc"><span class="id">C5</span><div class="dt"><b>The registry shows one method</b><span>Hypothesis Zero is the only entry in FRAMEWORKS. I show a dashed "More methods later" card. Say if you'd rather hide the registry until there's a second.</span></div></div>
+<div class="dc"><span class="id">C6</span><div class="dt"><b>Proposal editor keeps the intake frame</b><span>Full window, no sidebar, a section list on the left, Adopt in the top bar, plus the Pack A line "Nothing here is final".</span></div></div>
+<div class="dc"><span class="id">C7</span><div class="dt"><b>Databases live in Knowledge base, Advanced</b><span>As today. The sidebar stays on Knowledge base while you're in a table.</span></div></div>
+<div class="dc"><span class="id">C8</span><div class="dt"><b>Two extra Add options</b><span>Record evidence and Open question join New page, From a template and Add files. They make records, not pages.</span></div></div>
+<div class="dc"><span class="id">C9</span><div class="dt"><b>Words I wrote</b><span>Template names come from templates.rs. Their one-line descriptions, the role tags' shortened wording and the empty and error copy are mine.</span></div></div>
+<div class="dc"><span class="id">C10</span><div class="dt"><b>Sample content</b><span>Themes beyond Pack B's five, milestones and dates, the 2× and 80% thresholds, Maya, Harbour Kitchen, the Pricing notes, $3.40 of $10, the $3 and $15 prices, the OneDrive path and the IP address are placeholders.</span></div></div>
+<div class="dc"><span class="id">C11</span><div class="dt"><b>Report a problem copies, it doesn't send</b><span>Matches help.rs: it copies what Simeon needs. States are copied, copying, and clipboard blocked.</span></div></div>
+<div class="dc"><span class="id">C12</span><div class="dt"><b>Two status colours not yet drawn</b><span>Weakened and Refuted reuse the amber and terracotta pairs. They're on the token sheet only.</span></div></div>
+<div class="dc"><span class="id">C13</span><div class="dt"><b>F6 needs checking</b><span>I have its values but not its subject. I used it for a theme moving to a new phase.</span></div></div>
+<div class="dc"><span class="id">C14</span><div class="dt"><b>Your naming calls, applied</b><span>The middle sidebar group is now YOUR PROJECT (it was Product management; say if you want another name). Knowledge is now Knowledge base. Frameworks stays its own section. What Frameworks does for the user still needs a plain explanation: parked for a brainstorm.</span></div></div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Engineering tickets</h1>
+<table>
+<thead><tr><th>#</th><th>Ticket</th><th>Today</th><th>Engine</th></tr></thead>
+<tbody>
+<tr><td>C-E1</td><td>Overview: Do this next hero, progress card, What matters now, Resolve suggests, Project context with Brief and Plan links, tasks mini board</td><td>Do this next, progress, what matters, context</td><td><code>resolve_project</code>, <code>list_records</code>, <code>list_tasks</code></td></tr>
+<tr><td>C-E2</td><td>Weekly review button in the Overview header</td><td>Unverified placement</td><td><code>weekly_review</code></td></tr>
+<tr><td>C-E3</td><td>Overview: a failed suggestion shows its error and the rest of the page still loads</td><td>Unverified</td><td>—</td></tr>
+<tr><td>C-E4</td><td>Roadmap theme cards: tag, gate chip, progress bar; expand in place with tasks, blocker, + Task, Move, Open experiment</td><td>Step cards with Next/Later buttons</td><td><code>list_records</code>, <code>update_record</code>, <code>add_record</code></td></tr>
+<tr><td>C-E5</td><td>Gates: link a theme to a hypothesis; the gate opens when the result is Supported. Confirm records can hold this link</td><td>Unverified</td><td><code>update_record</code></td></tr>
+<tr><td>C-E6</td><td>Whole picture overlay (F5): hypotheses × phases, cells open the theme</td><td>None</td><td><code>list_records</code></td></tr>
+<tr><td>C-E7</td><td>Phase move with F6 motion; a failed move rolls back and says so</td><td>Unverified</td><td><code>update_record</code></td></tr>
+<tr><td>C-E8</td><td>Right rail: Milestones, Dependencies and blockers, Coming up. Confirm milestones exist as records</td><td>Present, data unverified</td><td><code>list_records</code>, <code>list_tasks</code></td></tr>
+<tr><td>C-E9</td><td>Frameworks: registry strip, tree with negations, experiments with prediction and threshold, 400 px node editor</td><td>Tree, no editor panel</td><td><code>list_records</code>, <code>update_record</code>, <code>add_record</code></td></tr>
+<tr><td>C-E10</td><td>Result → hypothesis status → gate → I3 toast, in that order (C1 motion)</td><td>None</td><td><code>update_record</code></td></tr>
+<tr><td>C-E11</td><td>Proposal editor: section list, inline edits, Back keeps edits, Adopt from the top bar</td><td>Editor exists; layout differs</td><td><code>update_project</code>, <code>add_record</code>, <code>create_page</code></td></tr>
+<tr><td>C-E12</td><td>Knowledge base: five tabs, chip filters with counts on Evidence and Records, card library, grounding bar with counts</td><td>Tabs and filters exist</td><td><code>list_pages</code>, <code>list_records</code></td></tr>
+<tr><td>C-E13</td><td>Add sheet (H3) with five options; the new item lands first, outlined for 2 s</td><td>+ New page, Add files</td><td><code>create_page</code>, <code>import_pages</code>, <code>add_record</code></td></tr>
+<tr><td>C-E14</td><td>Document preview (H4): what Resolve took from it, links, Open, Move to, Cut</td><td>None</td><td><code>read_page</code>, <code>update_page</code></td></tr>
+<tr><td>C-E15</td><td>Per-file import errors (a scan with no text) while the rest files normally</td><td>Unverified</td><td><code>import_pages</code></td></tr>
+<tr><td>C-E16</td><td>Page editor: toolbar, / menu, Saved state, to-dos count, Linked chips</td><td>Editor exists</td><td><code>update_page</code>, <code>list_page_todos</code></td></tr>
+<tr><td>C-E17</td><td>New page dialog: built-in templates plus your own</td><td>Menu list</td><td><code>create_page</code> (templates.rs)</td></tr>
+<tr><td>C-E18</td><td>Databases: list, table, group and sort; CSV import dialog with column types and destination; rows that fail are listed</td><td>Tables exist; import UI unverified</td><td><code>list_databases</code>, <code>create_database</code>, <code>query_database</code>, <code>add_database_column</code>, <code>add_database_row</code>, <code>update_database_row</code>, <code>import_csv</code></td></tr>
+<tr><td>C-E19</td><td>AI Team: role cards from team.rs, earlier chats per role, proposed-change card (Add it, Not now), budget error inside the chat</td><td>Role chips and chat panel</td><td><code>resolve_project</code>, <code>add_record</code>, <code>update_record</code></td></tr>
+<tr><td>C-E20</td><td>Handoffs: For chips plus Who, brief in five parts, Sent and Done tabs, Reopen, plain brief when the AI fails</td><td>For, What, Create brief, current brief</td><td><code>resolve_project</code>, <code>list_records</code>, <code>add_record</code>, <code>update_record</code></td></tr>
+<tr><td>C-E21</td><td>Settings in four tabs (C1). Spending card: this month against the limit. Confirm month-to-date cost is tracked</td><td>Prices and budget fields exist</td><td>AppSettings</td></tr>
+<tr><td>C-E22</td><td>Phone pairing: QR code holding address and token</td><td>Port and token fields; QR unverified</td><td>WorkspaceSettings</td></tr>
+<tr><td>C-E23</td><td>Help: guide list from GUIDE, Welcome as the dark card, Report dialog showing what's included, clipboard fallback</td><td>Guide and Report exist</td><td>help.rs</td></tr>
+<tr><td>C-E24</td><td>Voice on Handoffs, AI Team and Report (shared with Pack A E2, B-E16)</td><td>None</td><td>internal</td></tr>
+<tr><td>C-E25</td><td>1920 caps per screen (token sheet)</td><td>Fluid, uncapped</td><td>internal</td></tr>
+<tr><td>C-E26</td><td>Height spring helper for F3 and the add sheet (shared with B-E18)</td><td>None</td><td>internal</td></tr>
+</tbody>
+</table>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1900}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>

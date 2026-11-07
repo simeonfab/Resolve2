@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone agenda</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; position: relative; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column;">
+<sc-if value="{{offline}}" hint-placeholder-val="{{ false }}"><div role="status" style="margin-top: 44px; background: #1A1A18; color: #F5F1E8; padding: 10px 16px; font-size: 13px; display: flex; gap: 10px; align-items: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C97A4A;"></span><span style="flex: 1;">Not connected. Showing your week as of 14:02.</span><a href="#" style="color: #C8A040; font-weight: 600; text-decoration: none; min-height: 44px; display: flex; align-items: center;">Retry</a></div></sc-if>
+<header style="padding: {{topPad}}px 18px 4px; display: flex; align-items: flex-end;"><div style="flex: 1;"><div style="font-size: 13px; color: #4A4A44;">Next 7 days</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 32px;">Calendar</h1></div><a href="#" style="height: 44px; padding: 0 12px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #8B4A2A; text-decoration: none;">Today</a></header>
+<main style="flex: 1; min-height: 0; overflow: hidden; padding: 8px 18px 160px; display: flex; flex-direction: column; gap: 6px;">
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{days}}" as="d" hint-placeholder-count="3">
+<div style="font-size: 13px; font-weight: 700; color: {{d.c}}; margin-top: 10px;">{{d.t}}</div>
+<sc-for list="{{d.items}}" as="e" hint-placeholder-count="2">
+<a href="#" style="display: flex; gap: 12px; align-items: stretch; min-height: 56px; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 8px 12px 8px 8px; text-decoration: none; color: #1A1A18; box-sizing: border-box;"><span style="width: 4px; border-radius: 2px; background: {{e.bar}};"></span><span style="width: 50px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: #4A4A44; padding-top: 2px;">{{e.time}}</span><span style="flex: 1; min-width: 0;"><span style="display: block; font-size: 15px; line-height: 1.35;">{{e.t}}</span><span style="font-size: 12.5px; color: #4A4A44;">{{e.m}}</span></span></a>
+</sc-for>
+</sc-for>
+</sc-if>
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}"><div style="margin-top: 80px; text-align: center; display: flex; flex-direction: column; gap: 10px; padding: 0 12px;"><h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">A clear week.</h2><p style="margin: 0; font-size: 15px; line-height: 1.55; color: #4A4A44;">No events and no dated tasks in the next 7 days. Add events on your PC, or give a task a date.</p></div></sc-if>
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Loading your week" style="display: flex; flex-direction: column; gap: 8px; margin-top: 10px;"><div style="width: 40%; height: 14px; border-radius: 4px; background: #E4DED2;"></div><div style="height: 58px; border-radius: 12px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 58px; border-radius: 12px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="width: 40%; height: 14px; border-radius: 4px; background: #E4DED2; margin-top: 10px;"></div><div style="height: 58px; border-radius: 12px; background: #fff; border: 1px solid #DDD8CE;"></div></div></sc-if>
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="margin-top: 40px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 20px;"><div style="font-family: 'DM Serif Display', serif; font-size: 22px;">Your calendar didn't load.</div><p style="margin: 8px 0 0; font-size: 14.5px; line-height: 1.55; color: #4A4A44;">Your PC answered but the agenda failed. Tasks still work. Try again.</p><a href="#" style="margin-top: 16px; height: 48px; display: flex; align-items: center; justify-content: center; background: #1A1A18; color: #F5F1E8; border-radius: 12px; font-size: 15px; font-weight: 600; text-decoration: none;">Try again</a></div></sc-if>
+</main>
+<div style="position: absolute; left: 0; right: 0; bottom: 0;"><dc-import name="TabBar" active="calendar" w="{{w}}" hint-size="390px,150px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error","offline"],"default":"full"},"w":{"editor":"int","default":390},"h":{"editor":"int","default":844},"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+const s = this.props.state ?? 'full';
+const W = '#8B4A2A', P = '#5E7D4F', T = '#C8A040';
+const e = (time, t, m, bar) => ({ time, t, m, bar });
+const off = s === 'offline';
+return {
+w: this.props.w ?? 390, h: this.props.h ?? 844, offline: off, topPad: off ? 14 : 52,
+isFull: s === 'full' || off, isEmpty: s === 'empty', isLoading: s === 'loading', isError: s === 'error',
+days: [
+{ t: 'Today · Fri 6 Nov', c: '#8B4A2A', items: [e('11:00', 'Call with The Corner Café', 'Work · 30 min', W), e('16:00', 'Send October invoices', 'Task · every month', T)] },
+{ t: 'Sat 7 Nov', c: '#4A4A44', items: [e('10:00', 'Chase the till export', 'Task', T), e('19:30', 'Dinner at Ana’s', 'Personal', P)] },
+{ t: 'Mon 9 Nov', c: '#4A4A44', items: [e('All day', 'Bean and Co. stock take', 'Work', W)] }
+]
+};
+}
+}
+</script>
+</body>
+</html>

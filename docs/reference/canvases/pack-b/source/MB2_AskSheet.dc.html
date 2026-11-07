@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ask Resolve sheet motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:24px 28px;overflow:hidden}
+.bar{position:absolute;left:50%;bottom:18px;width:440px;margin-left:-220px;height:40px;border-radius:999px;background:#1A1A18;display:flex;align-items:center;gap:10px;padding:0 16px;box-sizing:border-box;color:#B4AFA3;font-size:13px}
+.sug{position:absolute;left:50%;bottom:66px;width:440px;margin-left:-220px;background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:10px 8px;box-sizing:border-box;transform-origin:bottom center;animation:sug 5000ms infinite}
+.sr{padding:7px 10px;font-size:13px;border-radius:7px}
+.r1{animation:r1 5000ms infinite}.r2{animation:r2 5000ms infinite}.r3{animation:r3 5000ms infinite}
+.dim{position:absolute;inset:0;background:rgba(26,26,24,.32);animation:dim 5000ms infinite}
+.sheet{position:absolute;left:50%;bottom:0;width:560px;margin-left:-280px;height:82%;background:#F7F3EC;border-radius:16px 16px 0 0;box-shadow:0 -14px 40px rgba(26,26,24,.25);animation:sh 5000ms infinite;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:10px}
+.k1{animation:k1 5000ms infinite}.k2{animation:k2 5000ms infinite}.k3{animation:k3 5000ms infinite}.k4{animation:k4 5000ms infinite}
+@keyframes sug{0%,12%{opacity:0;transform:scale(.96) translateY(8px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}18%,36%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}39.2%,100%{opacity:0;transform:scale(.96) translateY(8px)}}
+@keyframes r1{0%,15%{opacity:0;transform:translateY(-4px)}19.4%,100%{opacity:1;transform:none}}
+@keyframes r2{0%,15.8%{opacity:0;transform:translateY(-4px)}20.2%,100%{opacity:1;transform:none}}
+@keyframes r3{0%,16.6%{opacity:0;transform:translateY(-4px)}21%,100%{opacity:1;transform:none}}
+@keyframes dim{0%,36%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}40.8%,81.6%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}86%,100%{opacity:0}}
+@keyframes sh{0%,36.8%{transform:translateY(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}46%,80%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}86%,100%{transform:translateY(100%)}}
+@keyframes k1{0%,42%{opacity:0;transform:translateY(10px)}48%,100%{opacity:1;transform:none}}
+@keyframes k2{0%,43.2%{opacity:0;transform:translateY(10px)}49.2%,100%{opacity:1;transform:none}}
+@keyframes k3{0%,44.4%{opacity:0;transform:translateY(10px)}50.4%,100%{opacity:1;transform:none}}
+@keyframes k4{0%,45.6%{opacity:0;transform:translateY(10px)}51.6%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">A2, A3, A4 · Ask Resolve · Flow Spec E4 · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">One bar, three steps: focus, ask, read the answer</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the Ask Resolve bar opening its suggestions and then the sheet">
+<div class="sb"></div>
+<div class="wa">
+<div style="font: 24px 'DM Serif Display', serif;">Good afternoon, Simeon</div>
+<div style="display: flex; gap: 14px; margin-top: 16px;"><div style="flex: 1.25; height: 230px; border-radius: 14px; background: #1A1A18;"></div><div style="flex: 1; display: flex; flex-direction: column; gap: 10px;"><div style="height: 90px; border-radius: 12px; background: #fff;"></div><div style="height: 90px; border-radius: 12px; background: #fff;"></div></div></div>
+<div class="sug"><div style="font-size: 11px; font-weight: 600; color: #8B4A2A; padding: 0 10px 4px;">Try</div><div class="sr r1" style="background: #F7F3EC;">What should I focus on right now?</div><div class="sr r2">Why is my most important item blocked?</div><div class="sr r3">Capture a quick note</div></div>
+<div class="bar"><span style="color: #C8A040;">✦</span>Ask Resolve, or capture a thought</div>
+<div class="dim"></div>
+<div class="sheet">
+<div class="k1" style="display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 10px; padding: 8px 10px; font-size: 13px; font-weight: 600;">Ask Resolve <span style="font-weight: 400; color: #4A4A44;">· looking at Home</span></div>
+<div class="k2" style="align-self: flex-end; background: #1A1A18; color: #F5F1E8; border-radius: 12px; padding: 8px 12px; font-size: 13px;">What should I focus on right now?</div>
+<div class="k3" style="align-self: flex-start; max-width: 80%; background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 10px 12px; font-size: 13px; line-height: 1.5;">Your highest-value move is still pulling 12 months of real hours for each café.</div>
+<div class="k4" style="margin-top: auto; height: 38px; border-radius: 10px; border: 1px solid #C8A040; background: #fff;"></div>
+</div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Focus the bar</span><span class="d">Three suggestions for this screen open above it <code>300ms e-spring, scale(.96) translateY(8px)</code>, rows <code>220ms e-out, 40ms apart</code> (A2). Wording comes from nav.rs per screen.</span></div>
+<div class="row"><span class="t">Enter</span><span class="d">Suggestions close. The work area dims <code>240ms e-std</code>. The sheet rises <code>460ms e-spring, translateY(100%) → none</code> at 40ms. Header, your message, the answer and the input follow <code>300ms e-out at 300ms, 60ms apart</code> (A3, E4).</span></div>
+<div class="row"><span class="t">Desktop size</span><span class="d">The sheet is 720 wide and 82% tall, centred on the work area. The sidebar and the sides of the screen stay visible, so you keep your place.</span></div>
+<div class="row"><span class="t">Esc</span><span class="d">Sheet drops <code>300ms e-in</code>, dim clears <code>220ms e-std at 80ms</code> (A4). The conversation is kept, as today.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

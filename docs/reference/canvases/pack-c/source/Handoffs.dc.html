@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Handoffs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="handoffs" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 32px 0; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+<div style="max-width: 1240px; width: 100%; margin: 0 auto;"><div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Café flat-fee bookkeeping</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Handoffs</h1></div>
+<div style="display: flex; gap: 16px; max-width: 1240px; width: 100%; margin: 0 auto; flex: 1; min-height: 0; padding-bottom: 86px; box-sizing: border-box;">
+<div style="width: 360px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 15px 17px; display: flex; flex-direction: column; gap: 10px;">
+<h2 style="margin: 0; font-size: 14px; font-weight: 700;">New handoff</h2>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 12px; font-weight: 600; color: #4A4A44;">For<div role="radiogroup" style="display: flex; gap: 6px;"><span role="radio" aria-checked="false" style="border: 1px solid #DDD8CE; border-radius: 999px; padding: 6px 11px; font-size: 12.5px; color: #1A1A18;">Claude Code</span><span role="radio" aria-checked="false" style="border: 1px solid #DDD8CE; border-radius: 999px; padding: 6px 11px; font-size: 12.5px; color: #1A1A18;">Codex</span><span role="radio" aria-checked="true" style="border: 1px solid #1A1A18; background: #1A1A18; color: #F5F1E8; border-radius: 999px; padding: 6px 11px; font-size: 12.5px;">A person</span></div></div>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">Who<input value="Maya, who does my admin" style="height: 36px; border: 1px solid #DDD8CE; border-radius: 9px; padding: 0 10px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18;"></label>
+<label style="display: flex; flex-direction: column; gap: 5px; font-size: 12px; font-weight: 600; color: #4A4A44;">What they should do<span style="position: relative; display: block;"><textarea style="width: 100%; height: 66px; box-sizing: border-box; border: 1px solid #C8A040; border-radius: 9px; padding: 8px 40px 8px 10px; font: 400 13.5px 'Inter', sans-serif; color: #1A1A18; resize: none;">Pull 12 months of hours for each café from the till exports</textarea><button aria-label="Speak instead of typing" style="position: absolute; right: 6px; bottom: 8px; width: 28px; height: 28px; border-radius: 50%; border: 0; background: #F2EDE4; color: #4A4A44; font-size: 12px;">●</button></span></label>
+<button style="border: 0; background: #C8A040; border-radius: 9px; padding: 10px 0; font: 600 13.5px 'Inter', sans-serif; color: #1A1A18;">Create brief</button>
+</section>
+<section style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; padding: 12px 15px; display: flex; flex-direction: column; gap: 4px; flex: 1; min-height: 0;">
+<div role="tablist" style="display: flex; gap: 14px; margin-bottom: 4px;"><span role="tab" aria-selected="true" style="font-size: 13px; font-weight: 700; border-bottom: 2px solid #C8A040; padding-bottom: 4px;">Sent · {{sentN}}</span><span role="tab" aria-selected="false" style="font-size: 13px; color: #4A4A44; padding-bottom: 4px;">Done · {{doneN}}</span></div>
+<sc-for list="{{sent}}" as="s" hint-placeholder-count="2"><div style="display: flex; gap: 10px; align-items: center; padding: 7px 0; border-top: 1px solid #EEE9DF; font-size: 13px;"><span style="flex: 1; min-width: 0;"><span style="display: block; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.t}}</span><span style="font-size: 12px; color: #4A4A44;">{{s.m}}</span></span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 7px; padding: 5px 9px; font: 600 12px 'Inter', sans-serif;">{{s.a}}</button></div></sc-for>
+<sc-if value="{{noneSent}}" hint-placeholder-val="{{ false }}"><p style="margin: 6px 0 0; font-size: 12.5px; color: #4A4A44; line-height: 1.5;">No saved handoffs yet. Briefs you mark Sent wait here until they're done.</p></sc-if>
+</section>
+</div>
+
+<section style="flex: 1; min-width: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; display: flex; flex-direction: column; overflow: hidden;">
+<div style="display: flex; align-items: center; gap: 8px; padding: 12px 18px; border-bottom: 1px solid #EEE9DF;"><span style="flex: 1; font-size: 14px; font-weight: 700;">{{briefTitle}}</span><sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 11px; font: 600 12.5px 'Inter', sans-serif;">Copy</button><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Mark sent</button></sc-if></div>
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 16px 20px; display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; line-height: 1.55; overflow: hidden;">
+<div><b style="display: block; font-size: 12px; color: #8B4A2A; margin-bottom: 2px;">THE JOB</b>Pull 12 months of staff hours for each of the three cafés from their till exports, one row per café per month.</div>
+<div><b style="display: block; font-size: 12px; color: #8B4A2A; margin-bottom: 2px;">WHAT ALREADY EXISTS</b>Bean and Co. and Harbour Kitchen exports are in Knowledge. The Corner Café export hasn't arrived yet.</div>
+<div><b style="display: block; font-size: 12px; color: #8B4A2A; margin-bottom: 2px;">WHY IT MATTERS</b>These numbers decide whether a flat fee is safe to offer (H1). The price call with two clients waits on them.</div>
+<div><b style="display: block; font-size: 12px; color: #8B4A2A; margin-bottom: 2px;">OFF LIMITS</b>Don't contact the cafés about pricing. Don't change their billing.</div>
+<div><b style="display: block; font-size: 12px; color: #8B4A2A; margin-bottom: 2px;">DONE WHEN</b>The Hours log database has 36 rows, and the busiest and quietest month are marked per café.</div>
+</div>
+</sc-if>
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}"><div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 8px; padding: 30px;"><h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 24px;">Write a brief for someone else</h2><p style="margin: 0; max-width: 380px; font-size: 14px; line-height: 1.6; color: #4A4A44;">Say who it's for and what they should do. Resolve adds what exists, why it matters, what's off limits and when it's done.</p></div></sc-if>
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}"><div role="status" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;"><span style="font-size: 13px; color: #4A4A44;">Writing the brief from the project…</span><div style="height: 12px; border-radius: 4px; background: #EEE9DF;"></div><div style="height: 12px; width: 85%; border-radius: 4px; background: #EEE9DF;"></div><div style="height: 12px; width: 70%; border-radius: 4px; background: #EEE9DF;"></div></div></sc-if>
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="margin: 18px 20px; border: 1px solid #E2C3B3; background: #F5E8E1; border-radius: 12px; padding: 14px 16px; font-size: 13.5px; line-height: 1.55;"><b style="color: #8B4A2A;">The AI didn't reply.</b> You have a plain brief made from the project instead. It's usable, just less polished. Try again for the rewritten one.<div style="display: flex; gap: 8px; margin-top: 10px;"><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Try again</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Use the plain brief</button></div></div></sc-if>
+<div style="margin-top: auto; padding: 10px 18px; border-top: 1px solid #EEE9DF; background: #F7F3EC; font-size: 12.5px; color: #4A4A44;">Current project brief (always up to date) · <a href="#" style="color: #8B4A2A; font-weight: 600;">Copy it</a></div>
+</section>
+</div>
+<div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="handoffs" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const empty = state === 'empty';
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false,
+isFull: state === 'full', isEmpty: empty, isLoading: state === 'loading', isError: state === 'error',
+briefTitle: empty ? 'Brief' : 'Brief for Maya',
+sent: empty ? [] : [{ t: 'Build the flat-fee calculator sheet', m: 'Claude Code · sent Tue', a: 'Mark done' }, { t: 'Chase the till export', m: 'Maya · sent Mon', a: 'Mark done' }, { t: 'Draft the fixed-fee offer letter', m: 'Codex · done last week', a: 'Reopen' }],
+sentN: empty ? '0' : '2', doneN: empty ? '0' : '1', noneSent: empty
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M10 Waiting, error, limit</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.tile{background:#F2EDE4;border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.12);height:330px;position:relative;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.cap{display:flex;flex-direction:column;gap:6px;padding:14px 4px 0}
+.cap b{font-size:15px}
+.cap span{font-size:13px;line-height:1.5;color:#4A4A44}
+.cap code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#1A1A18}
+.ring{width:48px;height:48px;border-radius:50%;border:3px solid #EFE6CF;border-top-color:#C8A040;box-sizing:border-box;animation:spin 900ms linear infinite}
+.mk{width:20px;height:20px;border-radius:50%;border:1.5px solid #DDD8CE;box-sizing:border-box;animation:tk 4000ms infinite}
+.lb{font-size:14px;animation:lb 4000ms infinite}
+.wcard{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:16px;width:300px;animation:wout 4000ms infinite;position:absolute}
+.err{position:absolute;width:320px;background:#fff;border:1px solid #DDD8CE;border-left:3px solid #8B4A2A;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.5;animation:ein 4000ms infinite}
+.settled{width:64px;height:64px;border-radius:50%;border:3px solid #C8A040;box-sizing:border-box;box-shadow:0 0 0 8px rgba(200,160,64,.12);animation:breathe 3200ms ease-in-out infinite}
+.note{position:absolute;bottom:36px;width:300px;background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:#4A4A44;animation:nin 4000ms infinite}
+.rm{width:300px;background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:16px;font-size:13px;animation:rm 4000ms infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes tk{0%,30%{background:transparent;border-color:#DDD8CE}33.75%,100%{background:#C8A040;border-color:#C8A040}}
+@keyframes lb{0%,30%{color:#A8A296}33.75%,100%{color:#1A1A18}}
+@keyframes wout{0%,40%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}46%,100%{opacity:0;transform:translateY(8px) scale(.97)}}
+@keyframes ein{0%,46%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}53.5%,100%{opacity:1;transform:none}}
+@keyframes breathe{0%,100%{opacity:.85}50%{opacity:1}}
+@keyframes nin{0%,40%{opacity:0;transform:translateY(8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}47.5%,100%{opacity:1;transform:none}}
+@keyframes rm{0%,40%{opacity:0}43%,100%{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M10 · States across every screen · live loops</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">The small motions that keep waiting honest</h1>
+</div>
+<div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 28px;">
+<div>
+<div class="tile" role="img" aria-label="Spinning ring with a checklist row ticking">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 18px;"><div class="ring"></div><div style="display: flex; align-items: center; gap: 10px;"><span class="mk"></span><span class="lb">Checking what's still not covered</span></div></div>
+</div>
+<div class="cap"><b>Working: ring and tick</b><span>Ring <code>900ms linear</code> loop. A row ticks on a real event <code>150ms e-std</code>: mark fills amber, label darkens <code>#A8A296 → #1A1A18</code>. (M04.2, M04.3)</span></div>
+</div>
+<div>
+<div class="tile" role="img" aria-label="Waiting card leaves and an error row arrives">
+<div class="wcard"><div style="display: flex; align-items: center; gap: 10px;"><div class="ring" style="width: 28px; height: 28px;"></div><span style="font: 17px 'DM Serif Display', serif;">Reading what you wrote…</span></div></div>
+<div class="err"><b style="color: #8B4A2A;">Resolve couldn't read that just now.</b><br>Nothing you wrote is lost.<div style="display: flex; gap: 8px; margin-top: 10px;"><span style="background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 12px;">Try again</span><span style="background: #fff; border: 1px solid #DDD8CE; border-radius: 8px; padding: 7px 12px; font-weight: 600; font-size: 12px;">Do it yourself</span></div></div>
+</div>
+<div class="cap"><b>Failed: card out, error in</b><span>Waiting card <code>240ms e-in, translateY(8px) scale(.97)</code>, then the error row <code>300ms e-out, translateY(8px)</code>. Focus moves to Try again. (M10.2)</span></div>
+</div>
+<div>
+<div class="tile" role="img" aria-label="Still ring breathing slowly">
+<div class="settled"></div>
+<div class="note">This step takes about a minute. Your answers are saved.</div>
+</div>
+<div class="cap"><b>Limit and long wait</b><span>AI limit: the ring stops turning and breathes <code>opacity .85 ↔ 1, 3200ms ease-in-out</code>. Still means paused, not broken. (M10.3) Long wait: note card at 15 s <code>300ms e-out</code>. (M10.1)</span></div>
+</div>
+<div>
+<div class="tile" role="img" aria-label="Reduced motion: a plain fade">
+<div class="rm"><b>Reduced motion</b><div style="margin-top: 6px; color: #4A4A44; line-height: 1.5;">This card only fades. No slide, no scale, no bounce.</div></div>
+</div>
+<div class="cap"><b>Reduced motion (OS setting)</b><span>Every move becomes an opacity fade <code>≤120ms linear</code>. Loops hold still at full opacity. The bridge skips to the build checklist. The reveal crossfades in 120ms. (M10.5)</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

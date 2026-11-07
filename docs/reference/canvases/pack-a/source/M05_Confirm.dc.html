@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M05 Confirm cards</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);padding:32px 44px;box-sizing:border-box}
+.gr{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:start}
+.cd{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:12px 14px;font-size:12.5px;line-height:1.5;overflow:hidden}
+.cd b{display:block;font-size:11px;color:#8B4A2A;margin-bottom:4px}
+.i1{animation:i1 6000ms infinite}.i2{animation:i2 6000ms infinite}.i3{animation:i3 6000ms infinite}.i4{animation:i4 6000ms infinite,grow 6000ms infinite}.i5{animation:i5 6000ms infinite}
+.ex{animation:ex 6000ms infinite;max-height:0;overflow:hidden;display:block}
+.bar{position:absolute;left:44px;right:44px;bottom:28px;height:46px;animation:bar 6000ms infinite}
+.b{position:absolute;left:0;top:0;display:flex;gap:10px}
+.bt{border-radius:9px;padding:12px 16px;font-size:12.5px;font-weight:600}
+.va{animation:va 6000ms infinite}.vb{animation:vb 6000ms infinite}
+@keyframes i1{0%,2%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}9.67%,33.3%{opacity:1;transform:none;border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}37%,100%{opacity:1;border-color:#C8A040}}
+@keyframes i2{0%,3.17%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}10.83%,34%{opacity:1;transform:none;border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}37.7%,100%{opacity:1;border-color:#C8A040}}
+@keyframes i3{0%,4.33%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}12%,34.7%{opacity:1;transform:none;border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}38.4%,100%{opacity:1;border-color:#C8A040}}
+@keyframes i4{0%,5.5%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}13.17%,35.3%{opacity:1;transform:none;border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}39%,100%{opacity:1;border-color:#C8A040;box-shadow:0 0 0 3px rgba(200,160,64,.16)}}
+@keyframes i5{0%,6.67%{opacity:0;transform:translateY(18px) scale(.98);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}14.33%,36%{opacity:1;transform:none;border-color:#DDD8CE;animation-timing-function:cubic-bezier(.4,0,.2,1)}39.7%,100%{opacity:1;border-color:#C8A040}}
+@keyframes ex{0%,53.3%{max-height:0;animation-timing-function:cubic-bezier(.22,.61,.36,1)}57.3%,100%{max-height:40px}}
+@keyframes grow{0%,100%{}}
+@keyframes bar{0%,7.67%{opacity:0;transform:translateY(30px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}15.33%,100%{opacity:1;transform:none}}
+@keyframes va{0%,33.3%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}36.7%,100%{opacity:0;transform:translateX(-18px)}}
+@keyframes vb{0%,36.7%{opacity:0;transform:translateX(24px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}43%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M05 · Screens 04, 04b, 05 · live loop</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Confirm: cards arrive in order, edit mode lights them up, cards grow to fit</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the confirm cards arriving and switching to edit mode">
+<div style="font: 26px 'DM Serif Display', serif; margin-bottom: 14px;">Here's what Resolve understood.</div>
+<div class="gr">
+<div class="cd i1"><b>Project</b>You are a freelance bookkeeper turning hourly café work into a fixed-price monthly package.</div>
+<div class="cd i2"><b>What you want</b>To move café clients from hourly billing to a flat monthly fee so your income is steadier.</div>
+<div class="cd i3"><b>Where it is</b>Three café clients billed hourly, two of whom said they'd prefer a fixed fee.</div>
+<div class="cd i4"><b>Biggest uncertainty</b>Whether the per-café workload is predictable enough to price as a flat fee.<span class="ex">I also don't know if £150 covers VAT quarters.</span></div>
+<div class="cd i5" style="grid-column: 1 / -1;"><b>The outcome</b>Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end.</div>
+</div>
+<div class="bar">
+<div class="b va"><span class="bt" style="background: #1A1A18; color: #F5F1E8;">This looks right, show me the proposal →</span><span class="bt" style="background: #fff; border: 1px solid #DDD8CE;">Something's wrong, let me change it</span></div>
+<div class="b vb"><span class="bt" style="background: #1A1A18; color: #F5F1E8;">Save and continue →</span><span class="bt" style="background: #fff; border: 1px solid #DDD8CE;">Cancel</span></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Screen lands</span><span class="d">Cards stagger in <code>460ms e-spring, delay 120ms, stagger 70ms, translateY(18px) scale(.98)</code> (M05.1). Reading order: project, want, where, uncertainty, outcome.</span></div>
+<div class="row"><span class="t">460ms</span><span class="d">Action bar rises last <code>480ms e-spring, translateY(30px)</code> (M05.2), like the global bar in E1.</span></div>
+<div class="row"><span class="t">Something's wrong</span><span class="d">Each card's border turns amber <code>220ms e-std, stagger 40ms</code>, text becomes a field (M05.3). The two actions swap <code>200ms e-in out, 380ms e-spring in</code> (M05.4).</span></div>
+<div class="row"><span class="t">Typing</span><span class="d">The card grows to the measured height <code>240ms e-out</code> (M05.5). It never clips mid-tween and its neighbour reflows with it.</span></div>
+<div class="row"><span class="t">05 lands</span><span class="d">The floor reason highlights left to right <code>520ms e-out at 300ms</code> (M05.6).</span></div>
+<div class="row"><span class="t">05 passes</span><span class="d">Check circle <code>600ms e-spring, scale(.8)</code>, "That's the piece we needed." <code>500ms ease at 500ms</code>, then M02 to 06 at 1200ms (M05.7). No confetti.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

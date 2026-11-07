@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>02a Welcome and situation</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bm{display:flex;align-items:center;gap:9px}
+.bm i{width:26px;height:26px;border-radius:7px;background:#C8A040;display:flex;align-items:center;justify-content:center;color:#1A1A18;font-family:'DM Serif Display',serif;font-size:15px;font-style:normal}
+.bm b{font-size:16px;font-weight:700;color:#F5F1E8}
+.pg{width:360px;height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.pg span{display:block;height:4px;background:#C8A040;border-radius:2px}
+.tb{margin-left:auto;display:flex;gap:8px}
+.tb a{font-size:12px;font-weight:600;color:#B4AFA3;border:1px solid rgba(255,255,255,.14);border-radius:7px;padding:7px 12px;text-decoration:none}
+.rl{width:308px;flex-shrink:0;background:#1E1E1A;padding:28px 24px;display:flex;flex-direction:column;gap:22px;border-right:1px solid rgba(255,255,255,.06);box-sizing:border-box}
+.st{display:flex;gap:12px}
+.st .n{width:26px;height:26px;border-radius:50%;border:1px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#8A8578;flex-shrink:0;box-sizing:border-box}
+.st.on .n,.st.ok .n{border-color:#C8A040;color:#C8A040}
+.st .t{font-size:13.5px;font-weight:600;color:#8A8578}
+.st .d{font-size:12px;color:#8A8578;line-height:1.45;margin-top:3px}
+.st.on .t{color:#F5F1E8}.st.on .d{color:#B4AFA3}
+.ac{margin-top:auto;border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:14px;font-size:12px;color:#B4AFA3;line-height:1.5}
+.ac b{display:block;font-size:11px;color:#C8A040;margin-bottom:6px}
+.op{display:flex;gap:16px;align-items:flex-start;background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:18px 20px;text-decoration:none;color:#1A1A18}
+.op .ic{width:40px;height:40px;border-radius:10px;background:#FBF5E6;display:flex;align-items:center;justify-content:center;color:#8B4A2A;flex-shrink:0}
+.op .ot{font-size:15px;font-weight:600}
+.op .od{font-size:13.5px;color:#4A4A44;line-height:1.5;margin-top:4px}
+</style>
+</helmet>
+<div style="width: 1280px; height: 800px; display: flex; flex-direction: column; font-family: 'Inter', sans-serif; background: #F2EDE4; color: #1A1A18; overflow: hidden;">
+<div style="height: 64px; flex-shrink: 0; display: flex; align-items: center; gap: 20px; padding: 0 24px; background: #1E1E1A; border-bottom: 1px solid rgba(255,255,255,.06);">
+<div class="bm"><i>R</i><b>Resolve</b></div>
+<div class="pg"><span style="width: 10%;"></span></div>
+<div class="tb"><a href="#" title="Your answers are saved. Pick up from Home.">Save and exit</a><a href="#" aria-label="More options: Start this intake again">⋯</a></div>
+</div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<nav class="rl" aria-label="Intake steps">
+<div class="st on"><span class="n">1</span><div><div class="t">Get started</div><div class="d">Tell Resolve your name and what you need help with</div></div></div>
+<div class="st"><span class="n">2</span><div><div class="t">Bring it in</div><div class="d">Share your project context: rough notes, imports, anything you have</div></div></div>
+<div class="st"><span class="n">3</span><div><div class="t">Confirm understanding</div><div class="d">Check what Resolve understood and fill any gaps</div></div></div>
+<div class="st"><span class="n">4</span><div><div class="t">Your next move</div><div class="d">One clear recommended action and a roadmap built from your project</div></div></div>
+<div class="ac"><b>Saved as you go</b>Leave any time. Resolve opens on this same step when you come back.</div>
+</nav>
+<main style="flex: 1; min-width: 0; padding: 72px 72px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 720px; display: flex; flex-direction: column;">
+<h1 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 52px; line-height: 1.05;">Hi Simeon.</h1>
+<p style="margin: 36px 0 0; font-size: 14px; font-weight: 600; color: #8B4A2A;">So,</p>
+<h2 style="margin: 4px 0 20px; font-size: 24px; font-weight: 700; line-height: 1.3;">What do you need help with?</h2>
+<div style="display: flex; flex-direction: column; gap: 12px;">
+<a href="S02b_BringItIn.dc.html" class="op" style="border-color: #C8A040; box-shadow: 0 0 0 3px rgba(200,160,64,.16);">
+<span class="ic"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 6.5A1.5 1.5 0 0 1 4.5 5h3.2l1.6 1.8h6.2A1.5 1.5 0 0 1 17 8.3v6.2A1.5 1.5 0 0 1 15.5 16h-11A1.5 1.5 0 0 1 3 14.5z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+<span><span class="ot" style="display: block;">I have a messy project</span><span class="od" style="display: block;">Notes everywhere, old AI chats, no clear next step. Help me make sense of it.</span></span>
+</a>
+<div class="op" aria-disabled="true" style="background: #EEE9DF; border-color: #E4DED2; color: #4A4A44; cursor: not-allowed;">
+<span class="ic" style="background: #E4DED2; color: #4A4A44;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M10 3a5 5 0 0 0-3 9v2h6v-2a5 5 0 0 0-3-9zM8 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+<span style="flex: 1;"><span class="ot" style="display: block;">I have a new idea</span><span class="od" style="display: block;">I want to shape it into something real.</span></span>
+<span style="align-self: center; font-size: 11.5px; font-weight: 600; color: #4A4A44; background: #fff; border: 1px solid #DDD8CE; border-radius: 999px; padding: 3px 9px;">Coming soon</span>
+</div>
+<div class="op" aria-disabled="true" style="background: #EEE9DF; border-color: #E4DED2; color: #4A4A44; cursor: not-allowed;">
+<span class="ic" style="background: #E4DED2; color: #4A4A44;"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="7" stroke="currentColor" stroke-width="1.5"/><path d="M12.8 7.2l-1.6 4-4 1.6 1.6-4z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span>
+<span style="flex: 1;"><span class="ot" style="display: block;">I'm stuck, not sure where to start</span><span class="od" style="display: block;">Help me figure out what the actual problem is.</span></span>
+<span style="align-self: center; font-size: 11.5px; font-weight: 600; color: #4A4A44; background: #fff; border: 1px solid #DDD8CE; border-radius: 999px; padding: 3px 9px;">Coming soon</span>
+</div>
+</div>
+<p style="margin: 16px 0 0; font-size: 12.5px; color: #4A4A44;">Press Enter or click to continue. The other two paths open in a later release.</p>
+</div>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

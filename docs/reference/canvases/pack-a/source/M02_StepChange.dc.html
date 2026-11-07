@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>M02 Step change</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex;flex-direction:column}
+.tp{height:48px;flex-shrink:0;background:#1E1E1A;display:flex;align-items:center;gap:14px;padding:0 18px}
+.tp i{width:20px;height:20px;border-radius:5px;background:#C8A040;display:flex;align-items:center;justify-content:center;font:12px 'DM Serif Display',serif;font-style:normal;color:#1A1A18}
+.tp b{font-size:13px;color:#F5F1E8}
+.bar{width:270px;height:3px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.bar span{display:block;height:3px;background:#C8A040;animation:bar 4000ms infinite}
+.rl{width:231px;flex-shrink:0;background:#1E1E1A;padding:22px 18px;box-sizing:border-box;display:flex;flex-direction:column;gap:18px;overflow:hidden;animation:rl 4000ms infinite}
+.st{display:flex;align-items:center;gap:10px}
+.n{width:22px;height:22px;border-radius:50%;border:1px solid rgba(255,255,255,.16);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#8A8578;box-sizing:border-box}
+.lb{font-size:12px;font-weight:600;color:#8A8578;white-space:nowrap;animation:lb 4000ms infinite}
+.n1{border-color:#C8A040;color:#C8A040;animation:pop 4000ms infinite}
+.n2{animation:act 4000ms infinite}
+.pane{flex:1;position:relative;overflow:hidden}
+.blk{position:absolute;left:48px;top:40px;right:48px}
+.a{animation:aout 4000ms infinite}
+.b{animation:bin 4000ms infinite}
+.hd{animation:hd 4000ms infinite}
+.ln{height:12px;border-radius:3px;background:#DDD8CE;margin-top:10px}
+.cd{height:90px;border-radius:10px;background:#fff;border:1px solid #DDD8CE;margin-top:14px}
+@keyframes bar{0%,20%{width:30%;animation-timing-function:cubic-bezier(.22,.61,.36,1)}33%,100%{width:45%}}
+@keyframes aout{0%,20%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}26%,100%{opacity:0;transform:translateX(-24px)}}
+@keyframes bin{0%,22.25%{opacity:0;transform:translateX(28px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}32.25%,100%{opacity:1;transform:none}}
+@keyframes hd{0%,22.25%{opacity:0;transform:translateY(-8px);animation-timing-function:cubic-bezier(.22,.61,.36,1)}30.75%,100%{opacity:1;transform:none}}
+@keyframes act{0%,23.25%{color:#8A8578;border-color:rgba(255,255,255,.16);background:transparent;animation-timing-function:cubic-bezier(.4,0,.2,1)}30.75%,100%{color:#1A1A18;border-color:#C8A040;background:#C8A040}}
+@keyframes pop{0%,20%{transform:scale(1);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}23.75%{transform:scale(1.25)}27.5%,100%{transform:scale(1)}}
+@keyframes rl{0%,55%{width:231px;padding-left:18px;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}65.5%,85%{width:54px;padding-left:16px;animation-timing-function:cubic-bezier(.34,1.56,.64,1)}95.5%,100%{width:231px;padding-left:18px}}
+@keyframes lb{0%,55%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}59%,90%{opacity:0;animation-timing-function:cubic-bezier(.22,.61,.36,1)}95.5%,100%{opacity:1}}
+.row{display:flex;gap:14px;padding:12px 0;border-top:1px solid #DDD8CE}
+.t{width:110px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A;font-variant-numeric:tabular-nums}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div>
+<div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">M02 · Every step change, forward and Back · live loop</div>
+<h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Step change: the page moves, the frame stays</h1>
+</div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of a step change and the rail collapsing">
+<div class="tp"><i>R</i><b>Resolve</b><div class="bar"><span></span></div></div>
+<div style="flex: 1; display: flex; min-height: 0;">
+<div class="rl">
+<div class="st"><span class="n n1">✓</span><span class="lb">Get started</span></div>
+<div class="st"><span class="n n2">2</span><span class="lb">Bring it in</span></div>
+<div class="st"><span class="n">3</span><span class="lb">Confirm understanding</span></div>
+<div class="st"><span class="n">4</span><span class="lb">Your next move</span></div>
+</div>
+<div class="pane">
+<div class="blk a"><div style="font: 30px 'DM Serif Display', serif;">Hi Simeon.</div><div class="cd" style="height: 50px;"></div><div class="cd" style="height: 50px; margin-top: 8px;"></div><div class="cd" style="height: 50px; margin-top: 8px;"></div></div>
+<div class="blk b"><div class="hd"><div style="font-size: 11px; font-weight: 600; color: #8B4A2A;">In your own words</div><div style="font: 28px 'DM Serif Display', serif; margin-top: 4px;">Tell Resolve what's going on.</div></div><div class="cd" style="height: 170px; border-color: #C8A040;"></div><div class="ln" style="width: 50%;"></div><div class="ln" style="width: 30%;"></div></div>
+</div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">0ms Continue</span><span class="d">Old page leaves <code>240ms e-in, translateX(0 → -24px)</code> + fade (M02.1). Frame (top bar, rail, footer) never moves.</span></div>
+<div class="row"><span class="t">90ms</span><span class="d">New page arrives <code>400ms e-spring, translateX(28px → 0)</code> (M02.2). Header settles <code>340ms e-out, translateY(-8px)</code> (M02.3).</span></div>
+<div class="row"><span class="t">0 – 300ms</span><span class="d">Finished step pops to a tick <code>300ms e-spring, scale 1 → 1.25 → 1</code> (M02.5).</span></div>
+<div class="row"><span class="t">130 – 430ms</span><span class="d">Next step turns amber <code>300ms e-std</code> (M02.4). Lands mid-transition, like the tab colour in E8.</span></div>
+<div class="row"><span class="t">0 – 520ms</span><span class="d">Top progress advances <code>520ms e-out</code> (M02.6).</span></div>
+<div class="row"><span class="t">Back</span><span class="d">Same values, signs flipped: out +24px, in from -28px. Your words stay in the fields.</span></div>
+<div class="row"><span class="t">Wide steps</span><span class="d">Into 03 and 09 the rail collapses to 72px <code>420ms e-spring</code>, labels fade first <code>160ms e-std</code> (M02.7). Out of them it expands back (M02.8). Shown at 2.2s in the loop.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

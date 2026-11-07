@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Databases</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}th{text-align:left;font-size:12px;font-weight:700;color:#4A4A44;padding:9px 12px;border-bottom:1px solid #DDD8CE;background:#F7F3EC;white-space:nowrap}td{padding:9px 12px;border-bottom:1px solid #EEE9DF;font-size:13px;white-space:nowrap}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="knowledge" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; position: relative; padding: 26px 36px 0; box-sizing: border-box; display: flex; flex-direction: column;">
+<div style="max-width: 1240px; width: 100%; margin: 0 auto; display: flex; flex-direction: column; gap: 14px;">
+<div><div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Knowledge base · Advanced: databases</div><h1 style="margin: 2px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">Café clients</h1></div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; gap: 16px;">
+<nav aria-label="Databases" style="width: 200px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px;">
+<a href="#" style="padding: 8px 10px; border-radius: 8px; background: #fff; font-size: 13.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">▦ Café clients <span style="float: right; color: #4A4A44; font-weight: 400;">3</span></a>
+<a href="#" style="padding: 8px 10px; border-radius: 8px; font-size: 13.5px; color: #1A1A18; text-decoration: none;">▦ Hours log <span style="float: right; color: #4A4A44;">36</span></a>
+<button style="margin-top: 6px; text-align: left; border: 1px dashed #CFC8BA; background: transparent; border-radius: 8px; padding: 8px 10px; font: 600 13px 'Inter', sans-serif; color: #4A4A44;">+ New database</button>
+<div style="font-size: 12px; color: #4A4A44; padding: 8px 10px 0; line-height: 1.5;">Templates: CRM, Projects</div>
+</nav>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; gap: 8px; flex-wrap: wrap;"><button style="border: 0; background: #C8A040; border-radius: 8px; padding: 8px 12px; font: 600 12.5px 'Inter', sans-serif;">+ Row</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 8px 12px; font: 600 12.5px 'Inter', sans-serif;">+ Column</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 8px 12px; font: 600 12.5px 'Inter', sans-serif;">Import CSV</button><span style="flex: 1;"></span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 8px 12px; font: 600 12.5px 'Inter', sans-serif;">Group: Billing</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 8px 12px; font: 600 12.5px 'Inter', sans-serif;">Sort</button></div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; overflow-x: auto;">
+<table style="border-collapse: collapse; width: 100%;">
+<thead><tr><th>Café</th><th>Billing</th><th>Avg hours / month</th><th>Busiest month</th><th>Flat fee?</th><th>Next step</th></tr></thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="3"><tr style="background: {{r.bg}};"><td style="font-weight: 600;">{{r.c}}</td><td>{{r.b}}</td><td style="font-variant-numeric: tabular-nums;">{{r.h}}</td><td>{{r.m}}</td><td><span style="font-size: 12px; font-weight: 600; border-radius: 6px; padding: 2px 8px; background: {{r.sBg}}; color: {{r.sFg}};">{{r.s}}</span></td><td style="color: #4A4A44;">{{r.n}}</td></tr></sc-for>
+<tr><td colspan="6" style="color: #4A4A44; border-bottom: 0;">+ New row</td></tr>
+</tbody>
+</table>
+</div>
+<p style="margin: 0; font-size: 12px; color: #4A4A44;">Saved as CSV in your workspace folder. Resolve and the AI Team can read these rows.</p>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="margin: 40px auto 0; width: 520px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 12px;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 28px;">No databases in this project.</h2>
+<p style="margin: 0; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">A database is a table you sort and filter: clients, hours, prices. Bring in a spreadsheet as CSV, or start from a template.</p>
+<div style="display: flex; gap: 10px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 12px 20px; font-size: 14.5px; font-weight: 600; text-decoration: none;">Import a CSV</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">Start from CRM</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 12px 18px; font-size: 14.5px; font-weight: 600; color: #1A1A18; text-decoration: none;">Blank table</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" aria-label="Loading the table" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 10px;"><div style="height: 18px; border-radius: 4px; background: #EEE9DF;"></div><div style="height: 18px; border-radius: 4px; background: #EEE9DF;"></div><div style="height: 18px; width: 70%; border-radius: 4px; background: #EEE9DF;"></div></div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 30px auto 0; width: 560px; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 24px 26px;">
+<div style="font-family: 'DM Serif Display', serif; font-size: 24px;">Rows 14 to 16 didn't import.</div>
+<p style="margin: 8px 0 0; font-size: 14px; line-height: 1.55; color: #4A4A44;">Their Hours column has text where a number should be. The other 33 rows are in. Fix those rows in the file and import again, or bring them in as text.</p>
+<div style="display: flex; gap: 10px; margin-top: 18px;"><a href="#" style="background: #1A1A18; color: #F5F1E8; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Import them as text</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Show the 3 rows</a></div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{imp}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; inset: 0; background: rgba(26,26,24,.38); display: flex; justify-content: center; padding-top: 70px; z-index: 5;">
+<div role="dialog" aria-label="Import CSV" style="width: 600px; height: fit-content; background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,26,24,.35); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+<div style="display: flex; align-items: center;"><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 24px;">Import corner-cafe-hours.csv</h2><button aria-label="Close" style="width: 32px; height: 32px; border: 1px solid #DDD8CE; border-radius: 8px; background: #fff;">✕</button></div>
+<div style="font-size: 13px; color: #4A4A44;">36 rows, 4 columns. Check what each column is.</div>
+<sc-for list="{{map}}" as="m" hint-placeholder-count="4"><div style="display: flex; gap: 12px; align-items: center; padding: 8px 10px; border: 1px solid #EEE9DF; border-radius: 9px; font-size: 13px;"><span style="width: 120px; font-weight: 600;">{{m.c}}</span><span style="flex: 1; color: #4A4A44;">{{m.e}}</span><span style="border: 1px solid #DDD8CE; border-radius: 7px; padding: 5px 9px; font-size: 12.5px;">{{m.t}} ▾</span></div></sc-for>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13px;"><input type="radio" name="dest" checked> New database: Hours log</label>
+<label style="display: flex; gap: 10px; align-items: center; font-size: 13px;"><input type="radio" name="dest"> Add rows to Café clients</label>
+<div style="display: flex; gap: 8px; justify-content: flex-end;"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 9px; padding: 10px 14px; font: 600 13px 'Inter', sans-serif;">Cancel</button><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 9px; padding: 10px 16px; font: 600 13px 'Inter', sans-serif;">Import 36 rows</button></div>
+</div>
+</div>
+</sc-if>
+<div style="position: absolute; left: 0; right: 0; bottom: 20px; display: flex; justify-content: center;"><dc-import name="AskBar" screen="knowledge" open="{{no}}" hint-size="560px,48px"></dc-import></div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"imp":{"editor":"boolean","default":false},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const Y = ['Said yes', '#E8EFE3', '#3F5A33'], M = ['Not asked', '#F2EDE4', '#4A4A44'];
+const r = (c, b, h, m, s, n, hi) => ({ c, b, h, m, s: s[0], sBg: s[1], sFg: s[2], n, bg: hi ? '#FBF8F2' : '#fff' });
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed, no: false, imp: !!this.props.imp,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+rows: [r('The Corner Café', 'Hourly', 'waiting on export', '—', Y, 'Chase till export', true), r('Bean and Co.', 'Hourly', '14', 'January', Y, 'Book the price call'), r('Harbour Kitchen', 'Hourly', '9', 'April', M, 'Ask after E1')],
+map: [{ c: 'date', e: '2025-11-01', t: 'Date' }, { c: 'staff', e: 'Ana', t: 'Text' }, { c: 'hours', e: '6.5', t: 'Number' }, { c: 'task', e: 'Receipts', t: 'Select' }]
+};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Plan my day</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; position: relative; overflow: hidden; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Home" collapsed="{{collapsed}}" w="{{w}}" h="{{h}}" hint-size="1280px,800px"></dc-import>
+<div style="position: absolute; top: 0; bottom: 0; right: 0; left: {{sbw}}px; background: rgba(26,26,24,.32);"></div>
+<section role="dialog" aria-label="Plan my day" style="position: absolute; bottom: 0; left: {{sheetLeft}}px; width: 760px; height: {{sheetH}}px; background: #F7F3EC; border-radius: 20px 20px 0 0; box-shadow: 0 -18px 60px rgba(26,26,24,.25); display: flex; flex-direction: column;">
+<header style="padding: 12px 24px 10px; display: flex; flex-direction: column; gap: 4px; border-bottom: 1px solid #DDD8CE;">
+<span style="width: 40px; height: 4px; border-radius: 2px; background: #DDD8CE; align-self: center; margin-bottom: 6px;"></span>
+<div style="display: flex; align-items: center; gap: 10px;"><span aria-hidden="true" style="color: #C8A040;">✦</span><h2 style="margin: 0; flex: 1; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">Your plan for Friday</h2><button aria-label="Close" style="width: 36px; height: 36px; border: 1px solid #DDD8CE; border-radius: 9px; background: #fff; font-size: 14px;">✕</button></div>
+<div style="font-size: 13px; color: #4A4A44;">{{sub}}</div>
+</header>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; overflow: hidden; padding: 14px 24px 0; display: flex; flex-direction: column; gap: 10px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; overflow: hidden;">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+<div style="display: flex; gap: 14px; align-items: flex-start; padding: 10px 14px; border-top: 1px solid #EEE9DF; background: {{r.bg}};">
+<span style="width: 92px; flex-shrink: 0; font-size: 13px; font-weight: 600; color: #4A4A44; padding-top: 1px; font-variant-numeric: tabular-nums;">{{r.time}}</span>
+<span style="width: 4px; align-self: stretch; border-radius: 2px; background: {{r.bar}}; flex-shrink: 0;"></span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 14.5px; font-weight: {{r.fw}}; line-height: 1.35;">{{r.t}}</span><span style="font-size: 12.5px; line-height: 1.45; color: #4A4A44;">{{r.why}}</span></span>
+<span style="font-size: 11.5px; font-weight: 700; border-radius: 6px; padding: 2px 8px; background: {{r.tagBg}}; color: {{r.tagFg}}; white-space: nowrap;">{{r.tag}}</span>
+</div>
+</sc-for>
+</div>
+<div style="background: #F5E8E1; border: 1px solid #E2C3B3; border-radius: 12px; padding: 11px 14px; display: flex; gap: 12px; align-items: center;"><span style="flex: 1; font-size: 13.5px; line-height: 1.5;"><b style="color: #8B4A2A;">Won't fit today.</b> Mark the busiest and quietest months needs the full hours count first.</span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 11px; font: 600 12.5px 'Inter', sans-serif; white-space: nowrap;">Move to Monday</button></div>
+</div>
+<footer style="padding: 12px 24px 18px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; gap: 8px;"><button style="flex: 1; height: 44px; border: 0; border-radius: 11px; background: #C8A040; color: #1A1A18; font: 600 14.5px 'Inter', sans-serif;">Use this plan</button><button style="height: 44px; padding: 0 16px; border: 1px solid #DDD8CE; border-radius: 11px; background: #fff; font: 600 14px 'Inter', sans-serif;">Plan again</button></div>
+<div style="display: flex; align-items: center; gap: 10px; height: 46px; border: 1px solid #DDD8CE; border-radius: 12px; background: #fff; padding: 0 6px 0 14px;"><input aria-label="Change the plan" placeholder="Change something: I can't start before 10" style="flex: 1; border: 0; outline: 0; font: 400 14px 'Inter', sans-serif; background: transparent; min-width: 0;"><button aria-label="Speak instead of typing" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #F2EDE4; color: #4A4A44; font-size: 12px;">●</button></div>
+<p style="margin: 0; font-size: 12px; color: #4A4A44;">Use this plan gives each task today a start time. Nothing moves in your calendar.</p>
+</footer>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; gap: 10px; padding: 30px;">
+<h3 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">Nothing to plan today.</h3>
+<p style="margin: 0; max-width: 420px; font-size: 14.5px; line-height: 1.6; color: #4A4A44;">No events, and no tasks due or overdue. Pull something forward from Upcoming, or take the day.</p>
+<div style="display: flex; gap: 8px; margin-top: 6px;"><a href="#" style="background: #C8A040; color: #1A1A18; border-radius: 10px; padding: 11px 18px; font-size: 14px; font-weight: 600; text-decoration: none;">Show Upcoming</a><a href="#" style="background: #fff; border: 1px solid #DDD8CE; border-radius: 10px; padding: 11px 16px; font-size: 14px; font-weight: 600; color: #1A1A18; text-decoration: none;">Close</a></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 10px;">
+<div style="display: flex; gap: 8px; align-items: center; font-size: 14px; color: #4A4A44;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #E9D9A8;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #E9D9A8;"></span>Reading today's 2 events and 5 tasks, overdue included…</div>
+<div style="height: 52px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 52px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 52px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div><div style="height: 52px; border-radius: 10px; background: #fff; border: 1px solid #DDD8CE;"></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; padding: 18px 24px; display: flex; flex-direction: column; gap: 12px;">
+<div role="alert" style="background: #F5E8E1; border: 1px solid #E2C3B3; border-radius: 12px; padding: 12px 14px; font-size: 14px; line-height: 1.5;"><b style="color: #8B4A2A;">The AI didn't reply, so there's no suggested order.</b> Here is today as it stands, by time. Plan it yourself, or try again.</div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 14px; overflow: hidden;"><sc-for list="{{plain}}" as="p" hint-placeholder-count="4"><div style="display: flex; gap: 14px; padding: 10px 14px; border-top: 1px solid #EEE9DF; font-size: 14px;"><span style="width: 92px; color: #4A4A44; font-weight: 600; font-size: 13px;">{{p.time}}</span><span>{{p.t}}</span></div></sc-for></div>
+<button style="align-self: flex-start; height: 42px; padding: 0 16px; border: 0; border-radius: 10px; background: #1A1A18; color: #F5F1E8; font: 600 14px 'Inter', sans-serif;">Try again</button>
+</div>
+</sc-if>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const s = this.props.state ?? 'full';
+const w = this.props.w ?? 1280, h = this.props.h ?? 800;
+const collapsed = !!this.props.collapsed;
+const sbw = collapsed ? 64 : 248;
+const T = ['Task', '#FBF5E6', '#7A5B12'], E = ['Event', '#F5E8E1', '#8B4A2A'], O = ['Overdue', '#F5E8E1', '#8B4A2A'];
+const r = (time, t, why, tag, bar, first) => ({ time, t, why, tag: tag[0], tagBg: tag[1], tagFg: tag[2], bar, fw: first ? 700 : 600, bg: first ? '#FFFDF7' : '#fff' });
+return {
+w, h, collapsed, sbw,
+sheetLeft: Math.round(sbw + (w - sbw - 760) / 2), sheetH: Math.round(h * .88),
+isFull: s === 'full', isEmpty: s === 'empty', isLoading: s === 'loading', isError: s === 'error',
+sub: s === 'full' ? 'From your agenda at 09:12 · 2 events, 5 tasks, 1 overdue · 1 clash found' : 'Friday 6 November',
+rows: [
+r('09:30 – 11:00', 'Reconstruct hours for Bean and Co. and Harbour Kitchen', 'Your highest-value move. Start while the morning is clear.', T, '#C8A040', true),
+r('11:00 – 11:30', 'Call with The Corner Café', 'Ask about the till export while you have them.', E, '#8B4A2A'),
+r('11:30 – 11:45', 'Chase the till export', 'Overdue 3 days. Five minutes straight after the call.', O, '#8B4A2A'),
+r('11:45 – 12:45', 'Write the three package descriptions', 'Website refresh. Needs a clear hour, so it goes before lunch.', T, '#C8A040'),
+r('14:00 – 15:30', 'Finish the hours count', 'Picks up where the morning left off.', T, '#C8A040'),
+r('16:00', 'Send October invoices', 'Fixed time. Repeats every month.', T, '#C8A040')
+],
+plain: [{ time: '11:00', t: 'Call with The Corner Café' }, { time: '16:00', t: 'Send October invoices' }, { time: 'No time', t: 'Reconstruct 12 months of hours per café' }, { time: 'Overdue', t: 'Chase the till export' }]
+};
+}
+}
+</script>
+</body>
+</html>

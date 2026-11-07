@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AI Team</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; display: flex; overflow: hidden; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Sidebar" active="team" collapsed="{{collapsed}}" h="{{h}}" hint-size="248px,800px"></dc-import>
+<main style="flex: 1; min-width: 0; padding: 26px 32px 24px; box-sizing: border-box; display: flex; gap: 18px; max-width: 1320px; margin: 0 auto;">
+<div style="width: 280px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;">
+<div style="font-size: 12.5px; font-weight: 600; color: #8B4A2A;">Café flat-fee bookkeeping</div>
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 30px;">AI Team</h1>
+<sc-for list="{{roles}}" as="r" hint-placeholder-count="5"><button aria-pressed="{{r.sel}}" style="display: flex; gap: 11px; align-items: center; text-align: left; border: 1px solid {{r.bd}}; background: {{r.bg}}; border-radius: 12px; padding: 10px 12px; font-family: 'Inter', sans-serif; color: #1A1A18;"><span style="width: 34px; height: 34px; border-radius: 10px; background: {{r.avBg}}; color: {{r.avFg}}; display: flex; align-items: center; justify-content: center; font: 16px 'DM Serif Display', serif; flex-shrink: 0;">{{r.av}}</span><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">{{r.n}}</span><span style="font-size: 12px; color: #4A4A44;">{{r.t}}</span></span></button></sc-for>
+<div style="font-size: 12px; font-weight: 700; color: #4A4A44; margin: 10px 2px 0;">Earlier with the Validation Lead</div>
+<a href="#" style="font-size: 13px; color: #1A1A18; text-decoration: none; padding: 6px 2px;">Is two yes answers enough for H2? · Tue</a>
+<a href="#" style="font-size: 13px; color: #1A1A18; text-decoration: none; padding: 6px 2px;">Threshold for E0 · Mon</a>
+</div>
+
+<section aria-label="Conversation" style="flex: 1; min-width: 0; background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; display: flex; flex-direction: column; overflow: hidden;">
+<div style="display: flex; align-items: center; gap: 10px; padding: 13px 18px; border-bottom: 1px solid #EEE9DF;"><span style="font-size: 14.5px; font-weight: 700; flex: 1;">Validation Lead</span><span style="font-size: 12px; color: #4A4A44;">Reads your brief, roadmap, H0 tree and 26 records</span><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 6px 10px; font: 600 12px 'Inter', sans-serif;">New chat</button></div>
+
+<sc-if value="{{isFull}}" hint-placeholder-val="{{ true }}">
+<div style="flex: 1; min-height: 0; padding: 18px; display: flex; flex-direction: column; gap: 14px; overflow: hidden;">
+<div style="align-self: flex-end; max-width: 70%; background: #1A1A18; color: #F5F1E8; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 14px; line-height: 1.5;">Two clients said yes in principle. Is that enough to call H2 supported?</div>
+<div style="max-width: 82%; display: flex; flex-direction: column; gap: 10px;">
+<div style="background: #F7F3EC; border-radius: 14px 14px 14px 4px; padding: 12px 14px; font-size: 14px; line-height: 1.55;">No. A yes in principle costs them nothing. E1 tests it properly: a written price, and a deadline to sign. Your threshold says at least one signs within two weeks. I'd add a second check: ask both what they pay you now per year, so the price lands against a real number.</div>
+<div style="border: 1px solid #C8A040; border-radius: 12px; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; background: #fff;">
+<div style="font-size: 12px; font-weight: 700; color: #7A5B12;">PROPOSED CHANGE</div>
+<div style="font-size: 13.5px; line-height: 1.45;">Add an open question to H2: <b>What does each café pay you now per year?</b></div>
+<div style="display: flex; gap: 8px;"><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Add it</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Not now</button><span style="font-size: 12px; color: #4A4A44; align-self: center;">↶ in the sidebar undoes it</span></div>
+</div>
+</div>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto;"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 999px; padding: 6px 12px; font: 500 12.5px 'Inter', sans-serif;">Which hypothesis is weakest?</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 999px; padding: 6px 12px; font: 500 12.5px 'Inter', sans-serif;">Write this up as a handoff</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isEmpty}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 10px; text-align: center; padding: 30px;">
+<h2 style="margin: 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 26px;">Ask the Validation Lead</h2>
+<p style="margin: 0; max-width: 420px; font-size: 14px; line-height: 1.6; color: #4A4A44;">Hypothesis Zero and evidence. It reads this project before it answers, and proposes changes for you to accept.</p>
+<div style="display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px;"><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 999px; padding: 7px 13px; font: 500 13px 'Inter', sans-serif;">Which hypothesis is weakest?</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 999px; padding: 7px 13px; font: 500 13px 'Inter', sans-serif;">Suggest a cheap test for H0</button></div>
+</div>
+</sc-if>
+
+<sc-if value="{{isLoading}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<div style="align-self: flex-end; max-width: 70%; background: #1A1A18; color: #F5F1E8; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 14px;">Two clients said yes in principle. Is that enough to call H2 supported?</div>
+<div style="display: flex; gap: 8px; align-items: center; font-size: 13px; color: #4A4A44;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #C8A040;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #E9D9A8;"></span><span style="width: 8px; height: 8px; border-radius: 50%; background: #E9D9A8;"></span>Reading H2, E1 and your two records…</div>
+</div>
+</sc-if>
+
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div style="flex: 1; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+<div style="align-self: flex-end; max-width: 70%; background: #1A1A18; color: #F5F1E8; border-radius: 14px 14px 4px 14px; padding: 10px 14px; font-size: 14px;">Two clients said yes in principle. Is that enough to call H2 supported?</div>
+<div role="alert" style="max-width: 82%; border: 1px solid #E2C3B3; background: #F5E8E1; border-radius: 12px; padding: 12px 14px; font-size: 13.5px; line-height: 1.5; color: #1A1A18;"><b style="color: #8B4A2A;">This month's AI budget ($10) is used up.</b> Raise it in Settings, AI and MCP, or carry on by hand. Your question is kept.<div style="display: flex; gap: 8px; margin-top: 10px;"><button style="border: 0; background: #1A1A18; color: #F5F1E8; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Open Settings</button><button style="border: 1px solid #DDD8CE; background: #fff; border-radius: 8px; padding: 7px 12px; font: 600 12.5px 'Inter', sans-serif;">Copy my question</button></div></div>
+</div>
+</sc-if>
+
+<div style="margin: 0 14px 14px; display: flex; align-items: center; gap: 10px; border: 1px solid #DDD8CE; border-radius: 14px; padding: 6px 6px 6px 14px;"><input placeholder="Ask the Validation Lead" aria-label="Message" style="flex: 1; border: 0; outline: 0; font: 400 14px 'Inter', sans-serif; height: 34px; background: transparent;"><button aria-label="Speak instead of typing" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #F2EDE4; color: #4A4A44;"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg></button><button aria-label="Send" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #C8A040; color: #1A1A18; font-size: 15px;">↑</button></div>
+</section>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","loading","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const r = (av, n, t, on) => ({ av, n, t, sel: on ? 'true' : 'false', bd: on ? '#C8A040' : '#DDD8CE', bg: on ? '#FBF5E6' : '#fff', avBg: on ? '#1A1A18' : '#F2EDE4', avFg: on ? '#C8A040' : '#1A1A18' });
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed,
+isFull: state === 'full', isEmpty: state === 'empty', isLoading: state === 'loading', isError: state === 'error',
+roles: [r('✦', 'General assistant', 'Ask anything · same chat as Ask AI'), r('P', 'Product Director', 'Direction, roadmap and priorities'), r('H', 'Validation Lead', 'Hypothesis Zero and evidence', true), r('G', 'Growth Lead', 'Customers and positioning'), r('T', 'Tech Lead', 'Build and delivery')]
+};
+}
+}
+</script>
+</body>
+</html>

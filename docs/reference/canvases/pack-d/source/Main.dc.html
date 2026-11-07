@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Phone map</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px;color:#4A4A44}</style>
+</helmet>
+<div style="width: 2400px; height: 1100px; box-sizing: border-box; padding: 48px 56px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 30px;">
+<div style="display: flex; gap: 40px; align-items: flex-end;">
+<div style="flex: 1;"><div style="font-size: 14px; font-weight: 600; color: #8B4A2A;">Pack D · 390 × 844, checked at 360 × 780 · touch targets 44 or more</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 46px;">The phone is for a quick look and a quick capture. The PC does the thinking.</h1></div>
+<div style="width: 720px; background: #1A1A18; color: #F5F1E8; border-radius: 16px; padding: 18px 22px;"><div style="font-size: 12px; font-weight: 700; letter-spacing: .04em; color: #C8A040;">NAVIGATION: BOTTOM BAR</div><p style="margin: 6px 0 0; font-size: 15px; line-height: 1.55;">As in the original Resolve: a light bar for the three places you go every day, with the dark Ask pill floating above it. You use the phone one-handed for a few seconds at a time, so everything sits under your thumb.</p></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 20px;">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+<div style="background: #fff; border: 1px solid {{t.bd}}; border-radius: 16px; padding: 18px 20px; display: flex; flex-direction: column; gap: 9px;">
+<div style="display: flex; align-items: center; gap: 10px;"><span style="width: 36px; height: 36px; border-radius: 10px; background: {{t.ib}}; color: {{t.ic}}; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700;">{{t.i}}</span><span style="font-family: 'DM Serif Display', serif; font-size: 24px;">{{t.t}}</span></div>
+<div style="font-size: 13.5px; line-height: 1.5;">{{t.d}}</div>
+<div style="font-size: 12.5px; line-height: 1.5; background: #F7F3EC; border-radius: 9px; padding: 8px 11px;"><b>Leads to → </b>{{t.l}}</div>
+<div style="font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 11px; color: #4A4A44;">{{t.e}}</div>
+</div>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 18px 20px;"><div style="font-size: 15px; font-weight: 700; margin-bottom: 6px;">Not connected, on every screen</div><div style="font-size: 13.5px; line-height: 1.55; color: #4A4A44;">The phone reads your PC over home Wi-Fi. When the PC sleeps or you leave the network, a banner says so, you keep what you last saw, and new captures wait on the phone until it's back.</div></div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 18px 20px;"><div style="font-size: 15px; font-weight: 700; margin-bottom: 6px;">The intake</div><div style="font-size: 13.5px; line-height: 1.55; color: #4A4A44;">Reached from "Continue setting up" on Today. Same steps as Pack A, one column, keyboard-aware. Not served to the phone today.</div></div>
+<div style="background: #fff; border: 1px solid #DDD8CE; border-radius: 16px; padding: 18px 20px;"><div style="font-size: 15px; font-weight: 700; margin-bottom: 6px;">What stays on the PC</div><div style="font-size: 13.5px; line-height: 1.55; color: #4A4A44;">Roadmap, Frameworks, Knowledge base editing, AI Team, Handoffs, Settings. A task or search result from them opens read-only, with "Open on your PC".</div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":2400,"height":1100}}'>
+class Component extends DCLogic {
+renderVals() {
+const t = (i, tt, d, l, e, hi) => ({ i, t: tt, d, l, e, bd: hi ? '#C8A040' : '#DDD8CE', ib: hi ? '#C8A040' : '#F2EDE4', ic: '#1A1A18' });
+return { tabs: [
+t('✓', 'Tasks', 'Today, Upcoming and Inbox as tabs at the top. Tap the circle to finish a task. Swipe for Tomorrow.', 'Task sheet, Continue setting up', 'list_tasks · complete_task · update_task · plan_my_day'),
+t('▦', 'Calendar', 'An agenda for the next 7 days: events and tasks with a date, by day.', 'Event sheet (read-only)', 'get_agenda · list_events'),
+t('+', 'Add', 'The amber + at the end of the Ask pill. Type or speak. Resolve shows what it understood before you save.', 'Lands in Inbox or its project', 'create_task (nlp.rs)', true),
+t('⌕', 'Search', 'Everything in the workspace: tasks, events, pages, projects, rows.', 'Task sheet, page reader', 'search · read_page'),
+t('✦', 'Ask', 'Tap the dark pill above the bar. Ask Resolve opens in a sheet over whatever you were looking at.', 'Answers, Add as a task', 'workspace_overview · plan_my_day')
+] };
+}
+}
+</script>
+</body>
+</html>

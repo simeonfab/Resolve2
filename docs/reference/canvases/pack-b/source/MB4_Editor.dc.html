@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Editor and Add task motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sg{position:relative;width:960px;height:600px;border-radius:12px;overflow:hidden;background:#F2EDE4;box-shadow:0 20px 60px rgba(0,0,0,.18);display:flex}
+.sb{width:186px;background:#1E1E1A;flex-shrink:0}
+.wa{flex:1;position:relative;padding:26px 34px;overflow:hidden}
+.list{background:#fff;border:1px solid #DDD8CE;border-radius:12px;margin-top:16px}
+.r{display:flex;gap:12px;align-items:center;padding:0 14px;height:50px;border-top:1px solid #EEE9DF;font-size:14px}
+.r:first-child{border-top:0}
+.cb{width:22px;height:22px;border-radius:50%;border:1.5px solid #B5AE9F;box-sizing:border-box}
+.hit{animation:hit 6000ms infinite}
+.dim1{position:absolute;inset:0;background:rgba(26,26,24,.18);animation:d1 6000ms infinite}
+.panel{position:absolute;right:0;top:0;bottom:0;width:330px;background:#fff;border-left:1px solid #DDD8CE;box-shadow:-14px 0 40px rgba(26,26,24,.14);padding:18px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px;animation:pn 6000ms infinite}
+.f{border:1px solid #DDD8CE;border-radius:8px;height:34px}
+.e1{animation:e1 6000ms infinite}.e2{animation:e2 6000ms infinite}.e3{animation:e3 6000ms infinite}.e4{animation:e4 6000ms infinite}
+.dim2{position:absolute;inset:0;background:rgba(26,26,24,.38);animation:d2 6000ms infinite}
+.dlg{position:absolute;left:50%;top:90px;width:480px;margin-left:-240px;background:#fff;border-radius:14px;padding:16px;box-sizing:border-box;animation:dg 6000ms infinite;box-shadow:0 30px 80px rgba(26,26,24,.3)}
+.tk{border-radius:3px;padding:0 2px}
+.k1{animation:k1 6000ms infinite}.k2{animation:k2 6000ms infinite}.k3{animation:k3 6000ms infinite}
+.ch{display:inline-block;font-size:12px;border-radius:7px;padding:5px 8px;margin:8px 6px 0 0}
+.c1{animation:c1 6000ms infinite}.c2{animation:c2 6000ms infinite}.c3{animation:c3 6000ms infinite}
+@keyframes hit{0%,3%{background:#fff}4%,40%{background:#FBF8F2}45%,100%{background:#fff}}
+@keyframes d1{0%,5%{opacity:0;animation-timing-function:cubic-bezier(.4,0,.2,1)}8.7%,40%{opacity:1;animation-timing-function:cubic-bezier(.4,0,.2,1)}45%,100%{opacity:0}}
+@keyframes pn{0%,5%{transform:translateX(100%);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}12%,40%{transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}45%,100%{transform:translateX(100%)}}
+@keyframes e1{0%,7.7%{opacity:0;transform:translateY(8px)}12%,100%{opacity:1;transform:none}}
+@keyframes e2{0%,8.4%{opacity:0;transform:translateY(8px)}12.7%,100%{opacity:1;transform:none}}
+@keyframes e3{0%,9.2%{opacity:0;transform:translateY(8px)}13.5%,100%{opacity:1;transform:none}}
+@keyframes e4{0%,9.9%{opacity:0;transform:translateY(8px)}14.2%,100%{opacity:1;transform:none}}
+@keyframes d2{0%,50%{opacity:0}53%,93.3%{opacity:1}96.7%,100%{opacity:0}}
+@keyframes dg{0%,50.7%{opacity:0;transform:scale(.96) translateY(-6px);animation-timing-function:cubic-bezier(.34,1.56,.64,1)}55.7%,93.3%{opacity:1;transform:none;animation-timing-function:cubic-bezier(.55,0,.85,.35)}96.7%,100%{opacity:0;transform:scale(.96) translateY(-6px)}}
+@keyframes k1{0%,60%{background:transparent}62.7%,100%{background:#FBF5E6}}
+@keyframes k2{0%,65%{background:transparent}67.7%,100%{background:#F5E8E1}}
+@keyframes k3{0%,70%{background:transparent}72.7%,100%{background:#E8EFE3}}
+@keyframes c1{0%,60%{opacity:0;transform:translateY(-4px)}63.7%,100%{opacity:1;transform:none}}
+@keyframes c2{0%,65%{opacity:0;transform:translateY(-4px)}68.7%,100%{opacity:1;transform:none}}
+@keyframes c3{0%,70%{opacity:0;transform:translateY(-4px)}73.7%,100%{opacity:1;transform:none}}
+.row{display:flex;gap:14px;padding:11px 0;border-top:1px solid #DDD8CE}
+.t{width:120px;flex-shrink:0;font-size:12.5px;font-weight:700;color:#8B4A2A}
+.d{font-size:13.5px;line-height:1.5}
+.d code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12px;color:#4A4A44}
+</style>
+</helmet>
+<div style="width: 1920px; height: 980px; box-sizing: border-box; padding: 40px 48px; background: #E9E3D8; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; flex-direction: column; gap: 24px;">
+<div><div style="font-size: 13px; font-weight: 600; color: #8B4A2A;">T3, Q1, Q2 · Flow Spec G3, E7 · live loop</div><h1 style="margin: 6px 0 0; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">The editor pushes in from the right. Add task drops from above.</h1></div>
+<div style="display: flex; gap: 48px; align-items: flex-start;">
+<div class="sg" role="img" aria-label="Animated preview of the task editor sliding in, then the Add task dialog recognising words">
+<div class="sb"></div>
+<div class="wa">
+<div style="font: 26px 'DM Serif Display', serif;">Tasks</div>
+<div class="list"><div class="r hit"><span class="cb"></span>Reconstruct 12 months of hours per café</div><div class="r"><span class="cb"></span>Mark the busiest and quietest months</div><div class="r"><span class="cb"></span>Model the flat fee against real hours</div></div>
+<div class="dim1"></div>
+<div class="panel"><div class="e1" style="font-size: 12px; color: #4A4A44;">Café flat-fee bookkeeping · Now</div><div class="e2 f" style="border-color: #C8A040; display: flex; align-items: center; padding: 0 10px; font-size: 13px; font-weight: 500;">Reconstruct 12 months of hours…</div><div class="e3" style="display: flex; gap: 8px;"><div class="f" style="flex: 1;"></div><div class="f" style="flex: 1;"></div></div><div class="e4 f" style="height: 120px;"></div></div>
+<div class="dim2"></div>
+<div class="dlg"><div style="font-size: 13px; font-weight: 700; margin-bottom: 10px;">Add task</div><div style="border: 1px solid #C8A040; border-radius: 10px; padding: 10px 12px; font-size: 15px;">Pay rent <span class="tk k1">every month 9am</span> <span class="tk k2">p1</span> <span class="tk k3">#Home</span></div><div><span class="ch c1" style="background: #FBF5E6; border: 1px solid #E9D9A8;">↻ Every month · 9:00</span><span class="ch c2" style="background: #F5E8E1; border: 1px solid #E2C3B3; color: #8B4A2A; font-weight: 600;">Priority 1</span><span class="ch c3" style="background: #E8EFE3; border: 1px solid #C5D3BC; color: #3F5A33; font-weight: 600;">Project: Home</span></div></div>
+</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column;">
+<div class="row"><span class="t">Click the row</span><span class="d">The list dims <code>220ms e-std</code>. The 440 px panel pushes in <code>420ms e-spring, translateX(100%) → 0</code>. Fields follow <code>260ms e-out at 160ms, 45ms apart</code> (G3).</span></div>
+<div class="row"><span class="t">Close</span><span class="d">→ button or Esc: <code>300ms e-in, back to translateX(100%)</code>. Unsaved edits ask first.</span></div>
+<div class="row"><span class="t">Add task</span><span class="d">Dim <code>180ms e-std</code>, dialog <code>300ms e-spring, scale(.96) translateY(-6px)</code> (Q1). The same values open Search and the event editor.</span></div>
+<div class="row"><span class="t">Typing</span><span class="d">Each word the parser recognises gets its colour <code>160ms e-std</code> and its chip drops in <code>220ms e-out, translateY(-4px)</code> (Q2). You see what Resolve understood before you save.</span></div>
+<div class="row"><span class="t">Enter</span><span class="d">Dialog closes <code>200ms e-in</code>, the task lands in its list (Q3, G4) and an I3 toast says where it went.</span></div>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":980}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

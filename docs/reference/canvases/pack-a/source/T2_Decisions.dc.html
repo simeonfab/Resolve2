@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Decisions and engineering tickets</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.sec{font-size:13px;font-weight:700;color:#8B4A2A;margin-bottom:10px}
+.dc{background:#fff;border:1px solid #DDD8CE;border-radius:12px;padding:12px 14px;display:flex;gap:12px}
+.id{font-size:12px;font-weight:700;color:#8B4A2A;width:30px;flex-shrink:0}
+.dt b{display:block;font-size:14px;margin-bottom:3px}
+.dt span{font-size:13px;color:#4A4A44;line-height:1.5}
+table{border-collapse:collapse;width:100%;font-size:12.5px;background:#fff;border:1px solid #DDD8CE}
+th{text-align:left;font-size:11.5px;color:#4A4A44;font-weight:700;padding:7px 10px;border-bottom:2px solid #DDD8CE;background:#F7F3EC}
+td{padding:7px 10px;border-bottom:1px solid #EEE9DF;vertical-align:top;line-height:1.45}
+td:first-child{font-weight:700;color:#8B4A2A;white-space:nowrap}
+code{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:11.5px}
+</style>
+</helmet>
+<div style="width: 1920px; height: 1900px; box-sizing: border-box; padding: 44px 48px; background: #F2EDE4; font-family: 'Inter', sans-serif; color: #1A1A18; display: flex; gap: 36px;">
+<div style="width: 760px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Decisions for you to confirm</h1>
+<p style="margin: 0 0 8px; font-size: 13.5px; color: #4A4A44; line-height: 1.5;">Where the sources disagree, or the brief leaves room. Each one is designed with my pick. Say the word and I switch it.</p>
+<div class="dc"><span class="id">D1</span><div class="dt"><b>Dark or light while you work</b><span>The brief says the intake is dark. The desktop mockups use a dark top bar and rail with a light work pane. Today's build is all dark. Designed: dark front door, dark bridge, dark start of the reveal, and dark frame with light pane for 02a to 09. The dark to light reveal still lands, because the bridge is fully dark. Alternative: keep every step dark.</span></div></div>
+<div class="dc"><span class="id">D2</span><div class="dt"><b>No sign-in in Resolve 2</b><span>Flow Spec B4 ends the bridge on a sign-in, and D1 says "You're in." Neither exists here. Designed: the name screen takes the Surface C layout, B4 becomes the build checklist, and D1 reads "Welcome in, Simeon." (from the OS Reveal mockup).</span></div></div>
+<div class="dc"><span class="id">D3</span><div class="dt"><b>Three paths or one (agreed)</b><span>"New idea" and "Stuck" show greyed out with Coming soon. Only "I have a messy project" is live.</span></div></div>
+<div class="dc"><span class="id">D4</span><div class="dt"><b>What the reveal shows</b><span>Today it repeats the whole picture with Open my project. Designed: project name, three counts, the first move, then Open my project, so the dark to light moment lands on something new. Confirm.</span></div></div>
+<div class="dc"><span class="id">D5</span><div class="dt"><b>The 60 s proposal</b><span>Your Part 4 report measured about 60 s on the Claude Code subscription. The 15 s fixed-question rule cannot apply to a proposal. Designed: a long-wait note at 15 s with "Leave and come back later" (ST3). The real fix is speed (API path or a faster plan model), which is unverified.</span></div></div>
+<div class="dc"><span class="id">D6</span><div class="dt"><b>Dashes in the original wording</b><span>"This looks right — build my path", "Adopt — create this project", "The outcome — who is better off". I replaced each dash with a comma or colon and kept every word. Confirm, or I put the originals back.</span></div></div>
+<div class="dc"><span class="id">D7</span><div class="dt"><b>"Daily limit" means your AI limit</b><span>The original copy says Resolve builds a set number of roadmaps a day. Resolve 2 has no such limit: it stops on your monthly AI budget (ai.rs check_budget) or the provider's own cap. Copy rewritten to say that, with Continue without AI. Confirm.</span></div></div>
+<div class="dc"><span class="id">D8</span><div class="dt"><b>Rail footer card</b><span>The original "After this session: unlock the ability to save your path" does not fit a local app that saves every answer. Replaced with "Saved as you go".</span></div></div>
+<div class="dc"><span class="id">D9</span><div class="dt"><b>Top bar actions (agreed)</b><span>"Save and exit" saves and goes to Home, as Exit does today. Restart moves into the ⋯ menu as "Start this intake again (keeps your name)". Home shows a "Continue setting up" card.</span></div></div>
+<div class="dc"><span class="id">D10</span><div class="dt"><b>See and edit everything (agreed)</b><span>Removed from 06 to 08. Those screens get "Nothing here is final. You can change any of it once your project is open." and "Skip to the whole picture". On 09 the link reads "Edit the full proposal". No skip to dashboard before Adopt.</span></div></div>
+<div class="dc"><span class="id">D11</span><div class="dt"><b>Starting help and pull-in prompt (agreed)</b><span>02b: "Use a template" and "Try an example". The pull-in prompt asks the other AI the same 11 questions, marks assumptions and writes "Not covered" when unsure.</span></div></div>
+<div class="dc"><span class="id">D12</span><div class="dt"><b>AI setup screen (parked)</b><span>Sits between 02a and 02b, only when no AI is connected. To design later.</span></div></div>
+<div style="margin-top: 10px; font-size: 12.5px; color: #4A4A44; line-height: 1.5;">Not in this pack: app shell and Home, phone frames (Pack D), the See and edit everything editor (Pack C).</div>
+</div>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+<h1 style="margin: 0 0 6px; font-family: 'DM Serif Display', serif; font-weight: 400; font-size: 36px;">Engineering tickets: designed here, not in today's journey</h1>
+<table>
+<thead><tr><th>#</th><th>Ticket</th><th>What today's build does</th><th>Screens</th></tr></thead>
+<tbody>
+<tr><td>E1</td><td>Welcome screen with three paths: messy project live, new idea and stuck disabled with Coming soon</td><td>Hard-codes "messy_project", skips the choice</td><td>02a</td></tr>
+<tr><td>E2</td><td>Voice input on every multi-line field (02b, 03, 04b, 05, 07 Not quite): mic, recording state, speech to text into the field</td><td>No voice in the intake</td><td>02b, 03, 04b, 05, 07, M03</td></tr>
+<tr><td>E3</td><td>No clear outcome halt screen with a floor reason and one question from a floor service; answer re-runs the check</td><td>v1 has a one-time re-ask on confirm (<code>apply_verdict</code>); the v2 journey has no halt screen</td><td>05, M05</td></tr>
+<tr><td>E4</td><td>Intake stepper rail (4 steps), collapsing to 72 px on wide steps</td><td>Top progress bar only</td><td>All, M02</td></tr>
+<tr><td>E5</td><td>Waiting component: narrated checklist driven by real progress events, seconds counter, 15 s bar, a visible change at least every 5 s</td><td>One progress line with a seconds counter</td><td>ST1, M04</td></tr>
+<tr><td>E6</td><td>15 s hand-off chip, "Why this question" filled from the fixed set, late answer dropped</td><td>A note in the waiting text; fixed questions exist in <code>TARGETS</code></td><td>ST2, M04</td></tr>
+<tr><td>E7</td><td>Long-wait note for the proposal after 15 s, with Leave and come back later</td><td>Counter runs past 15 s with no note</td><td>ST3</td></tr>
+<tr><td>E8</td><td>Error state per step: Try again plus the manual path in the ST4 table, focus on Try again</td><td>Try again exists at the ending; other steps show the raw error string</td><td>ST4, M10</td></tr>
+<tr><td>E9</td><td>Resume card on launch mid-intake</td><td>Saves the stage; unfinished intakes are listed in the sidebar; no welcome back</td><td>ST5</td></tr>
+<tr><td>E10</td><td>AI limit screen: catch the budget error and provider caps, freeze the checklist, Continue without AI</td><td>Budget error message exists in ai.rs; no dedicated screen</td><td>12, M10</td></tr>
+<tr><td>E11</td><td>Limit checklist strings must match the waiting checklist character for character</td><td>New strings</td><td>12, ST3</td></tr>
+<tr><td>E12</td><td>Theme screen: "On your roadmap" list, segment bar, card edge behind</td><td>"Theme 1 of 6" text and two buttons</td><td>07, M06</td></tr>
+<tr><td>E13</td><td>Next move: Now / Next / Later strip from the roadmap themes</td><td>Do this first and Continue only</td><td>06</td></tr>
+<tr><td>E14</td><td>Bridge beats B0 to B4 bound to live values; ends on build done, minimum 7.2 s</td><td>A static "Building your project…" checklist</td><td>10, M08</td></tr>
+<tr><td>E15</td><td>Reveal D1 to D4: dark layer, amber bloom, light layer, anchored brandmark</td><td>Repeats the whole picture</td><td>11, M09</td></tr>
+<tr><td>E16</td><td>Motion helper for egui 0.29: cubic-bezier easing, keyframe tracks, stagger, repaint while animating, reduced motion flag</td><td>No shared easing curves or keyframe helper in the app</td><td>All</td></tr>
+<tr><td>E17</td><td>Radial amber glow and bloom: pre-rendered texture or gradient mesh (egui has no CSS gradients or blur)</td><td>None</td><td>01, 06, 10, 11</td></tr>
+<tr><td>E18</td><td>Tokens: add pane, terracotta-on-dark, text-on-dark set, shadows; resize HERO, QUESTION, ANSWER; fix amber and green text on light</td><td>theme.rs as listed on the tokens sheet</td><td>All</td></tr>
+<tr><td>E19</td><td>Skip on click for long reveal sequences (09 lanes, 02a welcome)</td><td>None</td><td>02a, 09</td></tr>
+<tr><td>E20</td><td>1920 rules: column cap 960 centred, heard panel 440, rail unchanged</td><td>Column 680 left-aligned</td><td>ST6</td></tr>
+<tr><td>E21</td><td>"Use a template" inserts the 8 headings below what you wrote; "Try an example" fills them with a sample</td><td>Two scaffolds (rebrand, decision) in <code>SITUATIONS</code></td><td>02b, M03</td></tr>
+<tr><td>E22</td><td>New pull-in prompt (11 questions) in <code>IMPORT_PROMPT</code>; panel with Copy and "Copied ✓"</td><td>Short summary prompt, label and button</td><td>02c</td></tr>
+<tr><td>E23</td><td>Heard panel: label menu (Evidence, Assumption, Question), pencil and × on hover, inline edit with Enter and Esc, first-time hint</td><td>Click a label to cycle it; text editable in place</td><td>03</td></tr>
+<tr><td>E24</td><td>Question row: Back · Skip this question · Next, and "Skip the rest and see my proposal" with the coverage bar</td><td>Back · Next · Skip, plus "Show me the proposal"</td><td>03, ST2</td></tr>
+<tr><td>E25</td><td>Top bar: "Save and exit" and a ⋯ menu holding Restart; Home "Continue setting up" card</td><td>Exit and Restart side by side</td><td>All</td></tr>
+<tr><td>E26</td><td>"Skip to the whole picture" on 06 to 08; "Edit the full proposal" only on 09; reassurance line on 06 to 08</td><td>"See and edit everything" on every ending screen</td><td>06 to 09</td></tr>
+<tr><td>E27</td><td>Self-test: the first move equals task 1 of week 1 and sits in the first Now theme</td><td>Matches in the Part 4 run; not checked by a test</td><td>06, 08</td></tr>
+<tr><td>E28</td><td>Validate screen 12: map provider rate limits and the Claude Code usage cap, then force the budget stop and screenshot</td><td>Only the budget stop is known</td><td>12</td></tr>
+</tbody>
+</table>
+<p style="margin: 6px 0 0; font-size: 12.5px; color: #4A4A44; line-height: 1.5;">Ownership per CLAUDE.md: E18 sits with the visual layer (theme.rs, widgets.rs). Everything else touches view structure or logic and sits with the builder.</p>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1900}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

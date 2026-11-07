@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Add task</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=DM+Serif+Display&amp;display=swap" rel="stylesheet">
+<style>body{margin:0}</style>
+</helmet>
+<div style="width: {{w}}px; height: {{h}}px; position: relative; overflow: hidden; font-family: 'Inter', sans-serif; color: #1A1A18;">
+<dc-import name="Tasks" collapsed="{{collapsed}}" w="{{w}}" h="{{h}}" hint-size="1280px,800px"></dc-import>
+<div aria-hidden="true" style="position: absolute; inset: 0; background: rgba(26,26,24,.38);"></div>
+<section role="dialog" aria-label="Add task" style="position: absolute; left: 50%; top: 110px; transform: translateX(-50%); width: 640px; background: #fff; border-radius: 16px; box-shadow: 0 30px 80px rgba(26,26,24,.35); overflow: hidden;">
+<div style="padding: 18px 20px 0; display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 15px; font-weight: 700;">Add task</span><span style="font-size: 12px; color: #4A4A44;">Type it the way you'd say it</span></div>
+<div style="margin: 12px 20px 0; position: relative; border: 1px solid {{inputBorder}}; box-shadow: 0 0 0 3px rgba(200,160,64,.16); border-radius: 12px; padding: 14px 52px 14px 16px; font-size: 17px; line-height: 1.5; min-height: 26px;">
+<sc-if value="{{hasText}}" hint-placeholder-val="{{ true }}"><span>Pay rent </span><span style="background: #FBF5E6; box-shadow: inset 0 -2px 0 #E9D9A8; border-radius: 3px; padding: 0 2px;">every month</span> <span style="background: #FBF5E6; box-shadow: inset 0 -2px 0 #E9D9A8; border-radius: 3px; padding: 0 2px;">9am</span> <span style="background: #F5E8E1; box-shadow: inset 0 -2px 0 #E2C3B3; border-radius: 3px; padding: 0 2px;">p1</span> <span style="background: #E8EFE3; box-shadow: inset 0 -2px 0 #C5D3BC; border-radius: 3px; padding: 0 2px;">#Home</span></sc-if>
+<sc-if value="{{noText}}" hint-placeholder-val="{{ false }}"><span style="color: #4A4A44;">e.g. Call the garage tomorrow 9am</span></sc-if>
+<span aria-hidden="true" style="position: absolute; right: 10px; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: #F2EDE4; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 16 16" fill="none"><rect x="5.5" y="2" width="5" height="8" rx="2.5" stroke="#4A4A44" stroke-width="1.4"/><path d="M3.5 7.5a4.5 4.5 0 0 0 9 0M8 12v2" stroke="#4A4A44" stroke-width="1.4" stroke-linecap="round"/></svg></span>
+</div>
+<sc-if value="{{hasText}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 14px 20px 4px;">
+<div style="font-size: 12px; font-weight: 600; color: #8B4A2A; margin-bottom: 8px;">Resolve understood</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px;">
+<span style="font-size: 13px; background: #fff; border: 1px solid #DDD8CE; border-radius: 8px; padding: 6px 10px;"><span style="color: #4A4A44;">Task </span><b>Pay rent</b></span>
+<span style="font-size: 13px; background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 8px; padding: 6px 10px;">↻ Every month</span>
+<span style="font-size: 13px; background: #FBF5E6; border: 1px solid #E9D9A8; border-radius: 8px; padding: 6px 10px;">9:00</span>
+<span style="font-size: 13px; background: #F5E8E1; border: 1px solid #E2C3B3; border-radius: 8px; padding: 6px 10px; color: #8B4A2A; font-weight: 600;">Priority 1</span>
+<span style="font-size: 13px; background: #E8EFE3; border: 1px solid #C5D3BC; border-radius: 8px; padding: 6px 10px; color: #3F5A33; font-weight: 600;">Project: Home</span>
+</div>
+<p style="margin: 10px 0 0; font-size: 12.5px; color: #4A4A44;">Click a chip to change it. Backspace on a highlighted word turns it back into plain text.</p>
+</div>
+</sc-if>
+<sc-if value="{{noText}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 14px 20px 4px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 16px; font-size: 13px; color: #4A4A44;">
+<span><b style="color: #1A1A18;">tomorrow 9am</b> sets the date and time</span>
+<span><b style="color: #1A1A18;">every month</b> repeats it</span>
+<span><b style="color: #1A1A18;">p1</b> to <b style="color: #1A1A18;">p4</b> sets priority</span>
+<span><b style="color: #1A1A18;">#Project</b> files it, <b style="color: #1A1A18;">@label</b> tags it</span>
+</div>
+</sc-if>
+<sc-if value="{{isError}}" hint-placeholder-val="{{ false }}">
+<div role="alert" style="margin: 12px 20px 0; display: flex; gap: 10px; align-items: center; background: #F5E8E1; border-radius: 9px; padding: 10px 12px; font-size: 13.5px; color: #1A1A18;"><b style="color: #8B4A2A;">Couldn't save the task.</b> Your text is still here. Press Enter to try again.</div>
+</sc-if>
+<div style="display: flex; align-items: center; gap: 10px; padding: 16px 20px; margin-top: 12px; border-top: 1px solid #EEE9DF; background: #F7F3EC;">
+<span style="font-size: 12.5px; color: #4A4A44; display: flex; align-items: center; gap: 6px;">Goes to <span style="font-weight: 600; color: #1A1A18; background: #fff; border: 1px solid #DDD8CE; border-radius: 7px; padding: 4px 8px;">{{dest}} ▾</span></span>
+<span style="flex: 1;"></span>
+<button style="background: #fff; border: 1px solid #DDD8CE; border-radius: 9px; padding: 10px 14px; font: 600 13.5px 'Inter', sans-serif; color: #1A1A18;">Cancel <span style="color: #4A4A44; font-weight: 500;">Esc</span></button>
+<button style="background: {{saveBg}}; color: {{saveFg}}; border: 0; border-radius: 9px; padding: 10px 16px; font: 600 13.5px 'Inter', sans-serif;">{{saveText}}</button>
+</div>
+</section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"state":{"editor":"enum","options":["full","empty","saving","error"],"default":"full"},"collapsed":{"editor":"boolean","default":false},"w":{"editor":"int","default":1280},"h":{"editor":"int","default":800},"$preview":{"width":1280,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+const state = this.props.state ?? 'full';
+const empty = state === 'empty';
+return {
+w: this.props.w ?? 1280, h: this.props.h ?? 800, collapsed: !!this.props.collapsed,
+hasText: !empty, noText: empty, isError: state === 'error',
+inputBorder: state === 'error' ? '#8B4A2A' : '#C8A040',
+dest: empty ? 'Captured' : 'Home',
+saveBg: empty ? '#E4DED2' : '#1A1A18', saveFg: empty ? '#4A4A44' : '#F5F1E8',
+saveText: state === 'saving' ? 'Adding…' : 'Add task  Enter'
+};
+}
+}
+</script>
+</body>
+</html>
