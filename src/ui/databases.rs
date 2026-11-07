@@ -4,16 +4,7 @@ use super::*;
 use eframe::egui::{self, Color32, RichText, Sense, Stroke};
 
 pub fn select_color(opt: &str) -> Color32 {
-    let palette = [
-        Color32::from_rgb(90, 140, 220),
-        Color32::from_rgb(220, 140, 60),
-        Color32::from_rgb(80, 170, 120),
-        Color32::from_rgb(200, 90, 150),
-        Color32::from_rgb(150, 110, 220),
-        Color32::from_rgb(210, 180, 60),
-        Color32::from_rgb(220, 90, 80),
-        Color32::from_rgb(120, 140, 150),
-    ];
+    let palette = SERIES;
     let mut h: u32 = 7;
     for b in opt.bytes() {
         h = h.wrapping_mul(31).wrapping_add(b as u32);
@@ -201,7 +192,7 @@ impl App {
                     as_template = true;
                     ui.close_menu();
                 }
-                if ui.button(RichText::new("🗑 Delete database").color(p.accent)).clicked() {
+                if ui.button(RichText::new("🗑 Delete database").color(p.accent_text)).clicked() {
                     delete = true;
                     ui.close_menu();
                 }
@@ -454,7 +445,7 @@ impl App {
                                         ui.close_menu();
                                     }
                                 });
-                                if ci > 0 && ui.button(RichText::new("🗑 Delete property").color(p.accent)).clicked() {
+                                if ci > 0 && ui.button(RichText::new("🗑 Delete property").color(p.accent_text)).clicked() {
                                     col_action = Some((ci, "delete"));
                                     ui.close_menu();
                                 }
@@ -527,7 +518,7 @@ impl App {
                     egui::ScrollArea::horizontal().id_salt(("dbb", id, embedded)).auto_shrink([false, true]).show(ui, |ui| {
                         ui.horizontal_top(|ui| {
                             for lane in &lanes {
-                                let frame = egui::Frame::none().fill(if p.dark { Color32::from_rgb(36, 36, 36) } else { Color32::from_rgb(248, 247, 245) }).rounding(10.0).inner_margin(egui::Margin::same(8.0));
+                                let frame = egui::Frame::none().fill(p.surface_sunk).rounding(10.0).inner_margin(egui::Margin::same(8.0));
                                 let (_, dropped) = ui.dnd_drop_zone::<String, ()>(frame, |ui| {
                                     ui.set_width(250.0);
                                     ui.set_min_height(160.0);

@@ -10,10 +10,10 @@ use super::*;
 use crate::resolve::roles;
 use crate::resolve::{assess, Kind, ProjectContext, Record};
 
-const INK: Color32 = Color32::from_rgb(26, 26, 24);
-const ON_INK: Color32 = Color32::from_rgb(251, 248, 242);
-const ON_INK_SOFT: Color32 = Color32::from_rgb(201, 196, 183);
-const EYEBROW: Color32 = Color32::from_rgb(217, 169, 124);
+const INK: Color32 = tok::INK;
+const ON_INK: Color32 = tok::TEXT_ON_DARK;
+const ON_INK_SOFT: Color32 = tok::TEXT_ON_DARK_SOFT;
+const EYEBROW: Color32 = tok::TERRACOTTA_ON_DARK;
 
 fn status_color(r: &Record, p: &Pal) -> Color32 {
     match r.status.as_str() {

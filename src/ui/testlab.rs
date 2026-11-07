@@ -93,11 +93,11 @@ impl App {
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             centered(ui, 1100.0, |ui| {
                 ui.add_space(20.0);
-                ui.label(RichText::new("Test Intake").font(fserif(size::HERO)));
+                ui.label(RichText::new("Test Intake").font(fserif(size::STEP_TITLE)));
                 ui.label(RichText::new("Run the full intake journey — questions, proposal, bridge and reveal — on sample scenarios or your own answers, with any AI provider. Inspect every question's reasoning and the raw AI calls.").size(size::SMALL).color(p.dim));
                 if !self.lab.msg.is_empty() {
                     ui.add_space(6.0);
-                    ui.label(RichText::new(&self.lab.msg).size(size::SMALL).color(p.accent));
+                    ui.label(RichText::new(&self.lab.msg).size(size::SMALL).color(p.accent_text));
                 }
                 ui.add_space(14.0);
                 self.lab_new(ui, p);
@@ -303,7 +303,7 @@ impl App {
                     for ph in ["Now", "Next", "Later"] {
                         let items: Vec<String> = pr.roadmap.iter().filter(|x| x.phase == ph).map(|x| format!("[{}] {}", x.basis, x.title)).collect();
                         if !items.is_empty() {
-                            ui.label(RichText::new(ph).size(size::SMALL).color(p.accent).strong());
+                            ui.label(RichText::new(ph).size(size::SMALL).color(p.accent_text).strong());
                             for i in items {
                                 ui.label(RichText::new(i).size(size::SMALL));
                             }

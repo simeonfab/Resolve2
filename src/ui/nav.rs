@@ -140,7 +140,7 @@ impl App {
             View::Page(_) | View::Database(_) => Target::Sec(Section::Knowledge),
             View::Settings => Target::Settings,
             View::Help => Target::Help,
-            View::Intake(_) | View::TestLab | View::ConnectAi => return None,
+            View::Intake(_) | View::TestLab | View::ConnectAi | View::Gallery => return None,
         })
     }
 
@@ -212,13 +212,17 @@ impl App {
         }
     }
 
-    pub fn nav_sidebar(&mut self, ctx: &egui::Context, p: &Pal) {
+    pub fn nav_sidebar(&mut self, ctx: &egui::Context, _p: &Pal) {
+        // the sidebar is nav-bg in light and dark alike: it draws with the dark palette
+        let dp = sidebar_pal();
+        let p = &dp;
         egui::SidePanel::left("sidebar")
             .resizable(true)
             .default_width(268.0)
             .width_range(220.0..=380.0)
             .frame(egui::Frame::none().fill(p.side).inner_margin(egui::Margin { left: 10.0, right: 10.0, top: 12.0, bottom: 8.0 }))
             .show(ctx, |ui| {
+                ui.style_mut().visuals = visuals(p);
                 // workspace switcher, undo / redo, light-dark
                 ui.horizontal(|ui| {
                     let meta = self.store.meta.clone();
@@ -381,7 +385,7 @@ impl App {
         ui.label(RichText::new(section).size(size::SMALL).color(p.eyebrow));
         ui.horizontal_wrapped(|ui| {
             ui.label(RichText::new("●").color(rgb(pr.color)).size(18.0));
-            ui.label(RichText::new(&pr.name).font(fserif(size::HERO)));
+            ui.label(RichText::new(&pr.name).font(fserif(size::STEP_TITLE)));
         });
         ui.add_space(4.0);
         hline(ui, p);

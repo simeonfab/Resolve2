@@ -163,7 +163,7 @@ impl App {
 
     pub(super) fn ij_name(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         eyebrow(ui, p, "Let's get started");
-        ui.label(RichText::new("What's your name?").font(fserif(size::HERO)));
+        ui.label(RichText::new("What's your name?").font(fserif(size::STEP_TITLE)));
         ui.add_space(8.0);
         let r = ui.add(egui::TextEdit::singleline(&mut it.name).hint_text("Your first name").font(fp(size::ANSWER)).desired_width(320.0));
         if self.resolve_ui.focus_qa.as_deref() != Some("name") {
@@ -191,7 +191,7 @@ impl App {
             ui.add_space(14.0);
         }
         eyebrow(ui, p, "In your own words");
-        ui.label(RichText::new("Tell Resolve what's going on.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Tell Resolve what's going on.").font(fserif(size::STEP_TITLE)));
         ui.label(RichText::new("The idea or project, however it comes out. What exists, what's confusing, what you're trying to decide. Don't tidy it up.").size(size::SMALL).color(p.dim));
         ui.add_space(10.0);
         let aid = egui::Id::new(("bring", &it.id));
@@ -432,7 +432,7 @@ impl App {
             it.editing = false;
             return;
         }
-        ui.label(RichText::new("Here's what Resolve understood.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Here's what Resolve understood.").font(fserif(size::STEP_TITLE)));
         ui.label(RichText::new(if it.editing { "Change anything that's wrong — the outcome in your own words." } else { "Check it — it shapes everything that follows." }).size(size::SMALL).color(p.dim));
         ui.add_space(12.0);
         let editing = it.editing;

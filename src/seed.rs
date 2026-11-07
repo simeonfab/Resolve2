@@ -8,7 +8,7 @@ pub fn seed_empty(d: &mut WorkspaceData) {
     let t = now_ms();
     d.version = 1;
     // a new workspace holds no content of ours, just one calendar to put events in
-    d.calendars.push(Calendar { id: new_id(), name: "Personal".into(), color: [63, 81, 181], visible: true, updated: t, ..Default::default() });
+    d.calendars.push(Calendar { id: new_id(), name: "Personal".into(), color: crate::ui::theme::PICK_COLOURS[1], visible: true, updated: t, ..Default::default() });
 }
 
 fn at(h: u32, m: u32) -> NaiveTime {

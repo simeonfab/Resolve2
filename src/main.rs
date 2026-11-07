@@ -12,6 +12,8 @@
 //!   resolve2 --list-workspaces
 //!   resolve2 --install-shortcuts            add Resolve 2 to the desktop and Start menu
 //!   resolve2 --test-connection claude-code|ollama|anthropic   one real test reply (Connect your AI)
+//!   resolve2 --view gallery [--state full|empty|loading|error] [--theme light|dark] [--reduced-motion]
+//!            [--size 1920x1080] --screenshot shot.png      the component gallery (and any view's states)
 
 // the release build (what testers get) opens as a normal windowed app, with no console window
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -30,6 +32,7 @@ mod selftest_resolve;
 mod selftest_safety;
 mod selftest_journey;
 mod selftest_alpha;
+mod selftest_p0;
 mod server;
 mod store;
 mod templates;
@@ -318,6 +321,12 @@ fn main() {
         workspace: workspace.clone(),
         view: arg_value(&args, "--view"),
         testlab,
+        // screenshot helpers (in memory only; never saved): which of the four states to draw,
+        // light or dark, and reduced motion
+        state: arg_value(&args, "--state"),
+        theme: arg_value(&args, "--theme"),
+        reduced_motion: args.iter().any(|a| a == "--reduced-motion"),
+        scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
     };
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
