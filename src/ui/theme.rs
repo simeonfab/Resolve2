@@ -492,6 +492,15 @@ pub fn semibold() -> FontFamily {
     FontFamily::Name("semibold".into())
 }
 
+/// Inter Medium (500): the sidebar items, and wherever the brief or canvas says 500.
+pub fn medium() -> FontFamily {
+    FontFamily::Name("medium".into())
+}
+
+pub fn fm(size: f32) -> FontId {
+    FontId::new(size, medium())
+}
+
 pub fn fb(size: f32) -> FontId {
     FontId::new(size, bold())
 }
@@ -553,12 +562,17 @@ pub fn install_fonts(ctx: &egui::Context) {
     // DM Serif Display for the one dominant headline per screen. System fonts stay as fallbacks
     // for characters outside their Latin subset.
     fonts.font_data.insert("inter".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Regular.ttf")));
+    fonts.font_data.insert("inter-medium".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Medium.ttf")));
     fonts.font_data.insert("inter-semi".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-SemiBold.ttf")));
     fonts.font_data.insert("inter-bold".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Bold.ttf")));
     fonts.font_data.insert("dm-serif".into(), FontData::from_static(include_bytes!("../../assets/fonts/DMSerifDisplay-Regular.ttf")));
     prop.insert(0, "inter".into());
     semi.insert(0, "inter-semi".into());
     boldf.insert(0, "inter-bold".into());
+    // medium: Inter Medium first, then the regular chain for anything outside its subset
+    let mut med = prop.clone();
+    med.insert(0, "inter-medium".into());
+    fonts.families.insert(medium(), med);
     fonts.families.insert(FontFamily::Proportional, prop);
     fonts.families.insert(bold(), boldf.clone());
     let mut serif_f = boldf.clone();

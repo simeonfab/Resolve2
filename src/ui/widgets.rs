@@ -1044,8 +1044,8 @@ pub fn side_item(ui: &mut Ui, icon: Icon, label: &str, right: Option<String>, ac
         let right_g = right.map(|r| painter.layout_no_wrap(r, fp(size::SMALL), tok::TEXT_ON_DARK_MUTED.gamma_multiply(labels)));
         let right_w = right_g.as_ref().map_or(space::S8, |g| g.size().x + space::S18);
         let room = rect.width() - space::NAV_LABEL_X - right_w;
-        let text = fit_text(painter, label, fp(size::NAV), room);
-        painter.text(rect.left_center() + egui::vec2(space::NAV_LABEL_X, 0.0), Align2::LEFT_CENTER, text, fp(size::NAV), fg.gamma_multiply(labels));
+        let text = fit_text(painter, label, fm(size::NAV), room);
+        painter.text(rect.left_center() + egui::vec2(space::NAV_LABEL_X, 0.0), Align2::LEFT_CENTER, text, fm(size::NAV), fg.gamma_multiply(labels));
         if let Some(g) = right_g {
             painter.galley(egui::pos2(rect.right() - space::S10 - g.size().x, rect.center().y - g.size().y / 2.0), g, tok::TEXT_ON_DARK_MUTED);
         }
