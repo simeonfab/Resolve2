@@ -61,7 +61,7 @@ impl App {
             let mut cancel = false;
             egui::Frame::none().stroke(Stroke::new(1.0, p.line)).rounding(8.0).inner_margin(egui::Margin::same(10.0)).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.add_text).hint_text("Task name — try: Pay rent every month 9am p1 @bills").frame(false).font(fs(14.5)).desired_width(f32::INFINITY));
+                let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.add_text).hint_text("Task name, for example: Pay rent every month 9am p1 @bills").frame(false).font(fs(14.5)).desired_width(f32::INFINITY));
                 if !r.has_focus() && self.temp.remove("focus_add").is_some() {
                     r.request_focus();
                 }
@@ -182,7 +182,7 @@ impl App {
                         Some(pg) => app.go(View::Page(pg)),
                         None => {
                             let name = app.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
-                            let mut pg = Page::new(format!("{name} — Project brief"));
+                            let mut pg = Page::new(format!("{name}: Project brief"));
                             pg.icon = "📁".into();
                             pg.blocks = vec![Block::new(BlockKind::H2, "Goal"), Block::new(BlockKind::Paragraph, ""), Block::new(BlockKind::H2, "Notes"), Block::new(BlockKind::Paragraph, "")];
                             let pgid = pg.id.clone();
@@ -486,20 +486,23 @@ impl App {
                 TAct::Toggle(id) => self.toggle_task(&id),
                 TAct::Open(id) => self.open_task = Some(id),
                 TAct::Move(id, sec) => {
-                    if let Some(t) = self.store.data.task_mut(&id) {
-                        t.section = sec;
-                        t.updated = now_ms();
-                        t.order = now_ms();
-                    }
-                    let subs: Vec<Id> = self.store.data.subtasks(&id).iter().map(|s| s.id.clone()).collect();
-                    let sec = self.store.data.task(&id).map(|t| t.section.clone()).unwrap_or_default();
-                    for s in subs {
-                        if let Some(t) = self.store.data.task_mut(&s) {
+                    // a move can be undone from its toast (rule 5)
+                    let title = self.store.data.task(&id).map(|t| t.title.clone()).unwrap_or_default();
+                    let label = format!("Moved \"{title}\" to {}", if sec.is_empty() { "No section" } else { sec.as_str() });
+                    self.undoable(&label, "move", move |d| {
+                        if let Some(t) = d.task_mut(&id) {
                             t.section = sec.clone();
                             t.updated = now_ms();
+                            t.order = now_ms();
                         }
-                    }
-                    self.touch();
+                        let subs: Vec<Id> = d.subtasks(&id).iter().map(|s| s.id.clone()).collect();
+                        for s in subs {
+                            if let Some(t) = d.task_mut(&s) {
+                                t.section = sec.clone();
+                                t.updated = now_ms();
+                            }
+                        }
+                    });
                 }
             }
         }
@@ -827,18 +830,32 @@ impl App {
             let moved_project = self.store.data.task(tid).map(|o| o.project_id != t.project_id || o.section != t.section).unwrap_or(false);
             t.updated = now_ms();
             let (proj, sec) = (t.project_id.clone(), t.section.clone());
-            *self.store.data.task_mut(tid).unwrap() = t.clone();
             if moved_project {
-                let subs: Vec<Id> = self.store.data.subtasks(tid).iter().map(|s| s.id.clone()).collect();
-                for s in subs {
-                    if let Some(x) = self.store.data.task_mut(&s) {
-                        x.project_id = proj.clone();
-                        x.section = sec.clone();
-                        x.updated = now_ms();
+                // a move can be undone from its toast (rule 5)
+                let where_to = match proj.as_deref().and_then(|p| self.store.data.project(p)) {
+                    Some(pr) if !sec.is_empty() => format!("{} · {sec}", pr.name),
+                    Some(pr) => pr.name.clone(),
+                    None => "Captured".to_string(),
+                };
+                let label = format!("Moved \"{}\" to {where_to}", t.title);
+                let (tid2, t2) = (tid.to_string(), t.clone());
+                self.undoable(&label, "move", move |d| {
+                    if let Some(x) = d.task_mut(&tid2) {
+                        *x = t2;
                     }
-                }
+                    let subs: Vec<Id> = d.subtasks(&tid2).iter().map(|s| s.id.clone()).collect();
+                    for s in subs {
+                        if let Some(x) = d.task_mut(&s) {
+                            x.project_id = proj.clone();
+                            x.section = sec.clone();
+                            x.updated = now_ms();
+                        }
+                    }
+                });
+            } else {
+                *self.store.data.task_mut(tid).unwrap() = t.clone();
+                self.touch();
             }
-            self.touch();
         }
         if toggle {
             self.toggle_task(tid);

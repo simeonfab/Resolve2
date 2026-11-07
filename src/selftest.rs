@@ -329,6 +329,7 @@ pub fn run() -> i32 {
     crate::selftest_journey::run(&mut t, personal.clone(), port + 11);
     crate::selftest_alpha::run(&mut t, &base);
     crate::selftest_p0::run(&mut t);
+    crate::selftest_p1::run(&mut t);
     reg = Registry::load();
     t.check("workspace list persists (Personal + the one made in the test)", reg.workspaces.len() == 2, reg.workspaces.len());
     println!("\n{} passed, {} failed", t.pass, t.fail);

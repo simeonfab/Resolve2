@@ -169,7 +169,7 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
     match p {
         Ok(mut p) => {
             journey::sanitise(&mut p, &i.clone());
-            log(&format!("proposal: {} — {}", p.name, p.summary));
+            log(&format!("proposal: {} ({})", p.name, p.summary));
             i.proposal = Some(p);
         }
         Err(e) => {

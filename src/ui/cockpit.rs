@@ -57,7 +57,7 @@ impl App {
                     }
                 }
                 None => {
-                    ui.label(RichText::new("Nothing open — plan the next piece of work.").font(fserif(20.0)).color(ON_INK));
+                    ui.label(RichText::new("Nothing open. Plan the next piece of work.").font(fserif(20.0)).color(ON_INK));
                 }
             }
         });
@@ -140,7 +140,7 @@ impl App {
                 ("What you want", &mut c.understanding.goal),
                 ("Where it is", &mut c.understanding.state),
                 ("Biggest uncertainty", &mut c.understanding.uncertainty),
-                ("Outcome — who is better off, and how would you know?", &mut c.outcome),
+                ("Outcome: who is better off, and how would you know?", &mut c.outcome),
                 ("Notes", &mut c.notes),
             ];
             for (label, v) in fields {
@@ -166,7 +166,7 @@ impl App {
                 ui.add_space(6.0);
                 ui.label(RichText::new("Not yet").font(fs(14.0)));
                 for n in ctx.recommendation.do_not_yet.iter().filter(|n| !n.item.trim().is_empty()) {
-                    ui.label(RichText::new(format!("• {} — {}", n.item, n.reason)).size(13.0).color(p.dim));
+                    ui.label(RichText::new(format!("• {}: {}", n.item, n.reason)).size(13.0).color(p.dim));
                 }
             });
             card(&mut cols[1], p, |ui| {
@@ -206,7 +206,7 @@ impl App {
             ui.set_width(ui.available_width());
             ui.label(RichText::new(roles::ACTIONS.iter().find(|a| a.id == action).map(|a| a.label).unwrap_or("Proposals")).font(fs(15.0)));
             ui.label(RichText::new(&summary).size(13.0));
-            ui.label(RichText::new("Proposed by AI — nothing is added until you confirm.").size(11.5).color(p.faint));
+            ui.label(RichText::new("Proposed by AI. Nothing is added until you confirm.").size(11.5).color(p.faint));
             for (i, it) in items.iter().enumerate() {
                 let mut depth = 0;
                 let mut cur = it.parent;
@@ -509,7 +509,7 @@ impl App {
     pub(super) fn cockpit_handoff(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, ctx: &ProjectContext) {
         let brief = roles::handoff_brief(&self.store.data, ctx);
         ui.label(RichText::new("Hand off to an execution tool").font(fs(16.0)));
-        ui.label(RichText::new("A self-contained brief built from the project's real state — paste it into Codex, Claude Code, Cursor or ChatGPT. They can also read and update this workspace directly over MCP (Settings → Advanced).").size(12.5).color(p.dim));
+        ui.label(RichText::new("A self-contained brief built from the project's real state. Paste it into Codex, Claude Code, Cursor or ChatGPT. They can also read and update this workspace directly over MCP (Settings → Advanced).").size(12.5).color(p.dim));
         let (mut copy, mut save) = (false, false);
         ui.horizontal(|ui| {
             copy = primary_button(ui, p, "Copy brief").clicked();

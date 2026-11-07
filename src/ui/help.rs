@@ -18,7 +18,7 @@ const GUIDE: &[(&str, &str, &[&str])] = &[
     ),
     (
         "Quick start",
-        "1. **Connect your AI** — Claude Code, Ollama or a Claude API key (Settings → AI if you skipped it).\n2. **Start something new with Resolve** — the workspace menu at the top left, or New project.\n3. **Answer the questions** — one at a time, in your own words. At most 8.\n4. **Check the proposal** — your next move, the roadmap themes, your first week, the whole picture.\n5. **Open your project** — Adopt builds it; then Open my project.",
+        "1. **Connect your AI**: Claude Code, Ollama or a Claude API key (Settings → AI if you skipped it).\n2. **Start something new with Resolve**: the workspace menu at the top left, or New project.\n3. **Answer the questions**: one at a time, in your own words. At most 8.\n4. **Check the proposal**: your next move, the roadmap themes, your first week, the whole picture.\n5. **Open your project**: Adopt builds it; then Open my project.",
         &["## Start a project with Resolve"],
     ),
     (
@@ -38,39 +38,39 @@ const GUIDE: &[(&str, &str, &[&str])] = &[
     ),
     (
         "Overview",
-        "Pick a project in the sidebar's picker. Overview shows **Do this next**, progress, what matters now, and the context from your intake (edit it here; everything else reads from it). The ResolveOS buttons ask the AI to challenge assumptions, plan validation or prepare the build — nothing is added until you confirm. **Plan page** and **Tasks board** are here too.",
+        "Pick a project in the sidebar's picker. Overview shows **Do this next**, progress, what matters now, and the context from your intake (edit it here; everything else reads from it). The ResolveOS buttons ask the AI to challenge assumptions, plan validation or prepare the build. Nothing is added until you confirm. **Plan page** and **Tasks board** are here too.",
         &[],
     ),
     (
         "Roadmap",
-        "Now, Next and Later — **By phase** (columns) or **By theme** (each theme with its tasks). Dates come from sequence, not the calendar: each card shows its step number.\n\n- **Add a theme**: type it, pick Now / Next / Later, press **+ Theme**. Move it with ← and →.\n- **Milestones**: type one in *New milestone…* and press **+ Milestone**. They're listed under the lanes; open Knowledge → Evidence & Records to set *Done when…* and mark them Reached.\n- **Dependencies**: on a theme's **⋯** menu, choose **Comes after** to say which theme it waits for. Waiting-on items (Dependency and Blocker records) are listed under the lanes.\n- **Validation gates**: on the **⋯** menu, choose a hypothesis; the theme waits until that hypothesis is Supported.\n- **Coming up**: dated tasks in the next 14 days, filled in from your tasks' due dates automatically.",
+        "Now, Next and Later, shown **By phase** (columns) or **By theme** (each theme with its tasks). Dates come from sequence, not the calendar: each card shows its step number.\n\n- **Add a theme**: type it, pick Now / Next / Later, press **+ Theme**. Move it with ← and →.\n- **Milestones**: type one in *New milestone…* and press **+ Milestone**. They're listed under the lanes; open Knowledge → Evidence & Records to set *Done when…* and mark them Reached.\n- **Dependencies**: on a theme's **⋯** menu, choose **Comes after** to say which theme it waits for. Waiting-on items (Dependency and Blocker records) are listed under the lanes.\n- **Validation gates**: on the **⋯** menu, choose a hypothesis; the theme waits until that hypothesis is Supported.\n- **Coming up**: dated tasks in the next 14 days, filled in from your tasks' due dates automatically.",
         &[],
     ),
     ("Tasks", "With a project picked: its tasks, sections and board. With *All projects*: **Captured**, **Today**, **Upcoming** and **Filters & labels** across everything.", &["## 2. Tasks"]),
     (
         "Frameworks",
-        "**Hypothesis Zero**: H0 is the baseline hypothesis; every hypothesis has its negation; any hypothesis can have sub-hypotheses and experiments. Fix an experiment's thresholds before running it — they lock once it's Running. Results update the hypothesis (unresolved, supported, weakened, refuted) and can gate roadmap themes.",
+        "**Hypothesis Zero**: H0 is the baseline hypothesis; every hypothesis has its negation; any hypothesis can have sub-hypotheses and experiments. Fix an experiment's thresholds before running it: they lock once it's Running. Results update the hypothesis (unresolved, supported, weakened, refuted) and can gate roadmap themes.",
         &[],
     ),
     (
         "Knowledge",
-        "Everything the project knows, in tabs: **Brief & documents**, **Research**, **Cut list** (what you decided not to do yet), **Evidence & Records** (hypothesis results, experiments, decisions, evidence and history, linked to each other), and **Advanced: databases**.\n\n**Add files** (or drag files onto the window) takes .md, .txt, .docx and .pdf. Resolve reads each one and files it in the right place — with an AI connected it decides; without one it guesses from the file name and headings and says so. Click another place to move a file.",
+        "Everything the project knows, in tabs: **Brief & documents**, **Research**, **Cut list** (what you decided not to do yet), **Evidence & Records** (hypothesis results, experiments, decisions, evidence and history, linked to each other), and **Advanced: databases**.\n\n**Add files** (or drag files onto the window) takes .md, .txt, .docx and .pdf. Resolve reads each one and files it in the right place. With an AI connected it decides; without one it guesses from the file name and headings and says so. Click another place to move a file.",
         &["## 3. Pages", "## 4. Databases", "## 6. Search", "## 7. Bring your data in"],
     ),
     (
         "AI Team",
-        "Five specialists — **General assistant**, **Product Director**, **Validation Lead**, **Growth Lead** and **Tech Lead** — each reading your project's real context. **Ask AI** in the sidebar is the General assistant: the same conversation. With Claude, changes they make can be undone (↶). Local models can read but not change anything.",
+        "Five specialists (**General assistant**, **Product Director**, **Validation Lead**, **Growth Lead** and **Tech Lead**), each reading your project's real context. **Ask AI** in the sidebar is the General assistant: the same conversation. With Claude, changes they make can be undone (↶). Local models can read but not change anything.",
         &["## 10. AI assistants"],
     ),
     (
         "Handoffs",
-        "Write a brief for someone else — Claude Code, Codex or a person. Say who it's for and what they should do; Resolve writes the brief from that and the project's real context (what already exists on it, why it matters, what's off limits, when it's done). With an AI connected, it rewrites the brief in a few seconds. Copy it, mark it Sent or Done.",
+        "Write a brief for someone else: Claude Code, Codex or a person. Say who it's for and what they should do; Resolve writes the brief from that and the project's real context (what already exists on it, why it matters, what's off limits, when it's done). With an AI connected, it rewrites the brief in a few seconds. Copy it, mark it Sent or Done.",
         &[],
     ),
     ("Calendar", "Your events and dated tasks: day, week and month.", &["## 5. Calendar"]),
     (
         "Tips",
-        "- **Windows+H** starts voice typing in any text box — talk instead of typing your answers.\n- **Ctrl+Q** adds a task, **Ctrl+K** searches everything, **Ctrl+N** makes a new page.\n- **Ctrl+Z / Ctrl+Y** undo and redo (when you're not typing in a box).\n- **Esc** leaves the intake with everything saved; it picks up where you stopped.",
+        "- **Windows+H** starts voice typing in any text box, so you can talk instead of typing your answers.\n- **Ctrl+Q** adds a task, **Ctrl+K** searches everything, **Ctrl+N** makes a new page.\n- **Ctrl+Z / Ctrl+Y** undo and redo (when you're not typing in a box).\n- **Esc** leaves the intake with everything saved; it picks up where you stopped.",
         &["## 11. Good to know"],
     ),
     (
@@ -107,7 +107,7 @@ fn section_text(i: usize) -> String {
 
 /// The whole guide as text (Copy as text).
 pub fn guide_text() -> String {
-    let mut s = format!("# Resolve — help ({})\n\n", crate::store::VERSION);
+    let mut s = format!("# Resolve help ({})\n\n", crate::store::VERSION);
     for i in 0..GUIDE.len() {
         s.push_str(&section_text(i));
         s.push('\n');

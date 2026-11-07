@@ -121,8 +121,8 @@ fn navigation(t: &mut T, s: &mut Store) {
     // the sidebar comes from one config, in the brief's order, and nothing appears twice
     use crate::ui::nav::{Section, Target, NAV, UTILITIES, FRAMEWORKS};
     let labels: Vec<&str> = NAV.iter().flat_map(|g| g.items.iter().map(|i| i.label)).collect();
-    t.check("sidebar groups: Workspace, Product management (with picker), Collaboration", NAV.iter().map(|g| g.label).collect::<Vec<_>>() == ["Workspace", "Product management", "Collaboration"] && NAV[1].picker, NAV.iter().map(|g| g.label).collect::<Vec<_>>().join(", "));
-    t.check("sidebar items in the brief's order", labels == ["Home", "Projects", "Calendar", "Overview", "Roadmap", "Tasks", "Frameworks", "Knowledge", "AI Team", "Handoffs"], labels.join(", "));
+    t.check("sidebar groups: Workspace, Your project (with picker), Collaboration (B-E24)", NAV.iter().map(|g| g.label).collect::<Vec<_>>() == ["Workspace", "Your project", "Collaboration"] && NAV[1].picker, NAV.iter().map(|g| g.label).collect::<Vec<_>>().join(", "));
+    t.check("sidebar items in the brief's order", labels == ["Home", "Projects", "Calendar", "Overview", "Roadmap", "Tasks", "Frameworks", "Knowledge base", "AI Team", "Handoffs"], labels.join(", "));
     let utils: Vec<&str> = UTILITIES.iter().map(|i| i.label).collect();
     t.check("bottom: Search, Settings, Help", utils.len() == 3 && utils[0] == "Search" && utils[1].starts_with("Settings") && utils[2].starts_with("Help"), utils.join(", "));
     let mut targets: Vec<Target> = NAV.iter().flat_map(|g| g.items.iter().map(|i| i.target)).chain(UTILITIES.iter().map(|i| i.target)).collect();

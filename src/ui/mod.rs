@@ -3,6 +3,7 @@ pub mod widgets;
 pub mod motion;
 pub mod toast;
 mod gallery;
+pub mod shell;
 mod calendar;
 mod cockpit;
 pub mod connect;
@@ -85,6 +86,8 @@ pub struct Palette {
     pub query: String,
     pub sel: usize,
     pub focus: bool,
+    /// When it opened (0 = this frame), for its entrance.
+    pub opened: f64,
 }
 
 #[derive(Clone)]
@@ -184,6 +187,14 @@ pub struct StartOpts {
     pub reduced_motion: bool,
     /// --scroll PX: start scrolled down (screenshots of long views).
     pub scroll: Option<f32>,
+    /// --collapsed: the sidebar collapsed (screenshots; not saved).
+    pub collapsed: bool,
+    /// --open ask[:question]|search[:query]|setup: open the Ask sheet (optionally asking a real
+    /// question first), the search palette, or show an unfinished sample intake (screenshots).
+    pub open: Option<String>,
+    /// --provider / --model: the AI for a screenshot run (in memory, never saved).
+    pub provider: Option<String>,
+    pub model: Option<String>,
 }
 
 pub struct App {
@@ -237,6 +248,14 @@ pub struct App {
     pub toaster: toast::Toaster,
     /// --state full|empty|loading|error: which state views draw (screenshots of the four states).
     pub view_state: ViewState,
+    /// Never write to disk (screenshots that swap in sample or empty data).
+    pub no_save: bool,
+    /// The sidebar collapsing or expanding: (when, collapsing?).
+    pub sidebar_anim: Option<(f64, bool)>,
+    /// The Ask bar and sheet.
+    pub ask: shell::AskUi,
+    /// The search palette while it closes.
+    pub search_fx: Option<shell::SearchFx>,
 }
 
 /// The four states every view draws (Rules, item 3).
@@ -325,6 +344,10 @@ impl App {
             import: import_ui::ImportUi::default(),
             toaster: toast::Toaster::default(),
             view_state: ViewState::default(),
+            no_save: false,
+            sidebar_anim: None,
+            ask: shell::AskUi::default(),
+            search_fx: None,
         };
         app.page_ui.ai_open = open_ai;
         // reduced motion: the saved setting, or --reduced-motion for a screenshot
@@ -344,6 +367,8 @@ impl App {
             _ => ViewState::Full,
         };
         if app.shot.is_some() {
+            // sample or empty data for a screenshot must never reach the disk
+            app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty"));
             match opts.state.as_deref() {
                 Some("full") => {
                     let mut d = WorkspaceData::default();
@@ -357,6 +382,10 @@ impl App {
                 }
                 _ => {}
             }
+        }
+        // --collapsed: in memory only
+        if opts.collapsed {
+            app.store.settings.sidebar_collapsed = true;
         }
         if opts.view.as_deref() == Some("gallery") {
             app.view = View::Gallery;
@@ -447,6 +476,39 @@ impl App {
                 _ => {}
             }
         }
+        // --open ask | search[:query] (screenshots)
+        // --provider / --model: the AI for a screenshot run, in memory only
+        if app.shot.is_some() {
+            if let Some(pv) = &opts.provider {
+                app.reg.settings.ai_provider = pv.clone();
+            }
+            if let Some(m) = &opts.model {
+                app.reg.settings.ai_model = m.clone();
+            }
+        }
+        match opts.open.as_deref() {
+            Some("ask") => app.page_ui.ai_open = true,
+            Some("try") => {
+                app.temp.insert("show_try".into(), "1".into());
+            }
+            // ask:<question>: a real question to the AI, read-only, answered before the screenshot
+            Some(o) if o.starts_with("ask:") => {
+                app.page_ui.ai_open = true;
+                app.page_ui.ai_can_act = false;
+                let q = o["ask:".len()..].to_string();
+                app.ask_send(&q);
+            }
+            // setup: an unfinished sample intake in memory (screenshots of "Continue setting up…")
+            Some("setup") if app.no_save => {
+                let mut i = crate::resolve::intake::Intake::new();
+                i.name = "Sam".into();
+                i.stage = "confirm".into();
+                i.input = "Sample answers for a screenshot.".into();
+                app.store.data.intakes.push(i);
+            }
+            Some(o) if o.starts_with("search") => app.palette = Some(Palette { query: o.strip_prefix("search").unwrap_or("").trim_start_matches(':').to_string(), sel: 0, focus: true, opened: 0.0 }),
+            _ => {}
+        }
         app
     }
 
@@ -481,6 +543,10 @@ impl App {
     }
 
     pub fn save_now(&mut self) {
+        if self.no_save {
+            self.dirty = false;
+            return;
+        }
         match self.store.save() {
             Ok(()) => self.dirty = false,
             Err(e) => {
@@ -669,6 +735,7 @@ impl App {
 
     /// Undo one change set, or several (comma-separated ids, undone newest first).
     pub fn undo(&mut self, cs: &str) {
+        let labels: Vec<String> = cs.split(',').filter_map(|id| self.store.data.history.iter().find(|c| c.id == id).map(|c| c.label.clone())).collect();
         let (mut n, mut skipped, mut err) = (0, 0, None);
         for id in cs.split(',').rev() {
             // kept as an "undo" change set, so Redo can bring it back
@@ -683,7 +750,7 @@ impl App {
         self.touch();
         match err {
             Some(e) if n == 0 => self.toast(e),
-            _ => self.toast(if skipped > 0 { format!("Undone ({n} restored; {skipped} edited since and left as they are)") } else { "Undone".to_string() }),
+            _ => self.toast(undo_message(&labels, skipped)),
         }
         self.undo_toasts.retain(|t| t.2 != cs);
     }
@@ -711,7 +778,7 @@ impl App {
             pg.icon = t.icon.to_string();
             pg.blocks = blocks;
             if t.name == "Meeting notes" || t.name == "Daily journal" {
-                pg.title = format!("{} — {}", t.name, today().format("%-d %b %Y"));
+                pg.title = format!("{} ({})", t.name, today().format("%-d %b %Y"));
             }
         }
     }
@@ -758,7 +825,7 @@ impl App {
             if t.reminded_for != key && now >= fire && now - fire < Duration::hours(6) {
                 t.reminded_for = key;
                 t.updated = now_ms();
-                alerts.push(format!("⏰ {} — due {}", t.title, fmt_time(tm)));
+                alerts.push(format!("⏰ {}, due {}", t.title, fmt_time(tm)));
             }
         }
         for e in &self.store.data.events {
@@ -808,7 +875,7 @@ impl App {
             )
         });
         if k {
-            self.palette = Some(Palette { query: String::new(), sel: 0, focus: true });
+            self.palette = Some(Palette { query: String::new(), sel: 0, focus: true, opened: 0.0 });
             self.quick = None;
         }
         if q {
@@ -822,8 +889,14 @@ impl App {
         if n {
             self.new_page(None);
         }
+        let backslash = ctx.input_mut(|i| i.consume_key(Modifiers::COMMAND, Key::Backslash));
+        if backslash && !matches!(self.view, View::Intake(_) | View::ConnectAi | View::Gallery) {
+            self.toggle_sidebar();
+        }
         if esc {
-            if self.palette.is_some() {
+            if self.page_ui.ai_open {
+                self.page_ui.ai_open = false;
+            } else if self.palette.is_some() {
                 self.palette = None;
             } else if self.quick.is_some() {
                 self.quick = None;
@@ -905,10 +978,9 @@ impl App {
                 };
                 let mut r = None;
                 ui.horizontal(|ui| {
-                    r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).hint_text(hint).font(fp(17.0)).desired_width(ui.available_width() - 30.0).frame(false).margin(egui::vec2(4.0, 8.0))));
-                    if mic_button(ui, p) {
-                        q.focus = true;
-                    }
+                    let quick_id = egui::Id::new("quick-add-text");
+                    r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).id(quick_id).hint_text(hint).font(fp(17.0)).desired_width(ui.available_width() - 30.0).frame(false).margin(egui::vec2(4.0, 8.0))));
+                    mic_for(ui, p, quick_id, p.dark);
                 });
                 let r = r.unwrap();
                 if q.focus {
@@ -1017,119 +1089,6 @@ impl App {
         }
     }
 
-    fn palette_window(&mut self, ctx: &egui::Context, p: &Pal) {
-        let Some(mut pal_state) = self.palette.take() else { return };
-        let mut keep = true;
-        let mut chosen: Option<usize> = None;
-        let hits = crate::search::search(&self.store.data, &pal_state.query, 30);
-        // commands when nothing typed
-        let cmds: Vec<(&str, &str)> = vec![
-            ("🏠", "Home dashboard"),
-            ("📥", "Inbox"),
-            ("📅", "Today"),
-            ("📆", "Calendar"),
-            ("📄", "New page"),
-            ("▦", "New database"),
-            ("⚙", "Settings"),
-            ("🌓", "Toggle dark mode"),
-        ];
-        let n_items = if pal_state.query.trim().is_empty() { cmds.len() } else { hits.len() + 2 };
-        let (down, up, enter) = ctx.input_mut(|i| (i.consume_key(Modifiers::NONE, Key::ArrowDown), i.consume_key(Modifiers::NONE, Key::ArrowUp), i.key_pressed(Key::Enter)));
-        if down {
-            pal_state.sel = (pal_state.sel + 1).min(n_items.saturating_sub(1));
-        }
-        if up {
-            pal_state.sel = pal_state.sel.saturating_sub(1);
-        }
-        egui::Window::new("palette")
-            .title_bar(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_TOP, [0.0, 90.0])
-            .fixed_size([640.0, 0.0])
-            .show(ctx, |ui| {
-                let r = ui.add(egui::TextEdit::singleline(&mut pal_state.query).hint_text("🔍  Search pages, tasks, events, databases…   (page: task: event: db:)").font(fp(17.0)).desired_width(f32::INFINITY).frame(false).margin(egui::vec2(4.0, 8.0)));
-                if pal_state.focus {
-                    r.request_focus();
-                    pal_state.focus = false;
-                }
-                if r.changed() {
-                    pal_state.sel = 0;
-                }
-                if enter {
-                    chosen = Some(pal_state.sel);
-                }
-                ui.separator();
-                egui::ScrollArea::vertical().max_height(440.0).show(ui, |ui| {
-                    if pal_state.query.trim().is_empty() {
-                        ui.label(RichText::new("Jump to").size(12.0).color(p.dim));
-                        for (i, (icon, label)) in cmds.iter().enumerate() {
-                            let sel = i == pal_state.sel;
-                            if ui.add(egui::SelectableLabel::new(sel, format!("{icon}   {label}"))).clicked() {
-                                chosen = Some(i);
-                            }
-                        }
-                    } else {
-                        if hits.is_empty() {
-                            ui.label(RichText::new("No matches").color(p.dim));
-                        }
-                        for (i, h) in hits.iter().enumerate() {
-                            let sel = i == pal_state.sel;
-                            let resp = ui.add(egui::SelectableLabel::new(sel, RichText::new(format!("{}  {}", h.kind.icon(), h.title)).font(fp(14.5))));
-                            ui.label(RichText::new(format!("      {} · {}", h.kind.label(), h.snippet)).size(12.0).color(p.dim));
-                            if resp.clicked() {
-                                chosen = Some(i);
-                            }
-                        }
-                        ui.separator();
-                        let base = hits.len();
-                        if ui.add(egui::SelectableLabel::new(pal_state.sel == base, format!("+ Add task \"{}\"", pal_state.query.trim()))).clicked() {
-                            chosen = Some(base);
-                        }
-                        if ui.add(egui::SelectableLabel::new(pal_state.sel == base + 1, format!("+ New page \"{}\"", pal_state.query.trim()))).clicked() {
-                            chosen = Some(base + 1);
-                        }
-                    }
-                });
-            });
-        if let Some(i) = chosen {
-            keep = false;
-            if pal_state.query.trim().is_empty() {
-                match i {
-                    0 => self.go(View::Dashboard),
-                    1 => self.go(View::Inbox),
-                    2 => self.go(View::Today),
-                    3 => self.go(View::Calendar),
-                    4 => {
-                        self.new_page(None);
-                    }
-                    5 => {
-                        self.new_database();
-                    }
-                    6 => self.go(View::Settings),
-                    _ => {
-                        self.reg.settings.dark = !self.reg.settings.dark;
-                        self.reg.save();
-                    }
-                }
-            } else if i < hits.len() {
-                self.open_hit(&hits[i]);
-            } else if i == hits.len() {
-                let q = pal_state.query.clone();
-                self.add_task_text(&q, None, "", None, None, None);
-                self.toast("Task added to Inbox");
-            } else {
-                let id = self.new_page(None);
-                if let Some(pg) = self.store.data.page_mut(&id) {
-                    pg.title = pal_state.query.trim().to_string();
-                }
-                self.temp.remove("focus_title");
-            }
-        }
-        if keep {
-            self.palette = Some(pal_state);
-        }
-    }
-
     pub fn open_hit(&mut self, h: &crate::search::Hit) {
         use crate::search::HitKind;
         match h.kind {
@@ -1186,7 +1145,10 @@ impl App {
     fn handle_screenshot(&mut self, ctx: &egui::Context) {
         let Some(shot) = self.shot.as_mut() else { return };
         ctx.request_repaint();
-        if self.frame >= 120 && !shot.requested {
+        // a real question asked for the screenshot: wait for its answer (at most 3 minutes)
+        let waiting = self.resolve_ui.chat_job.is_some() && self.now < 180.0;
+        let Some(shot) = self.shot.as_mut() else { return };
+        if self.frame >= 120 && !shot.requested && !waiting {
             shot.requested = true;
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot);
         }
@@ -1212,7 +1174,7 @@ impl App {
                 }
             }
         });
-        if saved || self.frame > 900 {
+        if saved || (self.frame > 900 && !waiting) {
             if self.dirty {
                 self.save_now();
             }
@@ -1342,20 +1304,29 @@ impl eframe::App for App {
                 self.open_task = None;
             }
         }
-        if self.page_ui.ai_open && !full_screen {
-            let pid = match &self.view {
-                View::Page(id) => Some(id.clone()),
-                _ => None,
-            };
-            self.ai_panel(ctx, &p, pid);
+        // the Ask Resolve bar floats in a strip kept clear under the screen (not on AI Team,
+        // which has its own chat box)
+        let bar = !full_screen && nav::shows_ask_bar(self.nav_target_of(&self.view));
+        let mut strip: Option<egui::Rect> = None;
+        if bar {
+            egui::TopBottomPanel::bottom("ask-strip").exact_height(space::ASK_STRIP).show_separator_line(false).frame(egui::Frame::none().fill(p.bg)).show(ctx, |ui| {
+                strip = Some(ui.max_rect());
+            });
         }
         egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg)).show(ctx, |ui| {
-            // toasts and the Ask bar centre on the work area
-            self.toaster.work = Some(ui.max_rect());
+            // toasts, the Ask bar and the sheet centre on the work area
+            let work = ui.max_rect();
+            self.toaster.work = Some(strip.map_or(work, |s| work.union(s)));
             self.central(ui, &p);
         });
+        if let Some(s) = strip {
+            self.ask_bar_ui(ctx, &p, s);
+        }
+        if !full_screen {
+            self.ask_sheet(ctx, &p);
+        }
         self.quick_window(ctx, &p);
-        self.palette_window(ctx, &p);
+        self.search_palette(ctx, &p);
         self.event_window(ctx, &p);
         self.new_ws_window(ctx, &p);
         self.toasts_ui(ctx, &p);
@@ -1368,6 +1339,20 @@ impl eframe::App for App {
         }
         self.handle_screenshot(ctx);
         ctx.request_repaint_after(std::time::Duration::from_millis(1000));
+    }
+}
+
+/// The toast after Undo (B-E17): names what was undone.
+pub fn undo_message(labels: &[String], skipped: usize) -> String {
+    let what = match labels {
+        [] => String::new(),
+        [one] => format!(": {one}"),
+        [first, rest @ ..] => format!(": {first} and {} more", rest.len()),
+    };
+    if skipped > 0 {
+        format!("Undone{what} ({skipped} edited since and left as they are)")
+    } else {
+        format!("Undone{what}")
     }
 }
 

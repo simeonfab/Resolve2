@@ -46,7 +46,7 @@ impl App {
             return;
         }
         if self.import.job.is_some() {
-            self.toast("Still adding the last files — try again in a moment");
+            self.toast("Still adding the last files. Try again in a moment.");
             return;
         }
         let cfg = crate::ai::current_config();
@@ -121,7 +121,7 @@ impl App {
                             crate::ai::set_last_error(e);
                         }
                         None => {
-                            let msg = format!("Put \"{}\" in {} — {}", r.title, files::label(&r.place), if r.how == "ai" { format!("sorted by the AI: {}", r.why) } else { r.why.clone() });
+                            let msg = format!("Put \"{}\" in {} ({})", r.title, files::label(&r.place), if r.how == "ai" { format!("sorted by the AI: {}", r.why) } else { r.why.clone() });
                             self.import.log.push((placed.get(i).map(|x| x.0.clone()), msg));
                             i += 1;
                         }
@@ -129,7 +129,7 @@ impl App {
                 }
                 if let Some((_, m)) = self.import.log.first() {
                     let m = m.clone();
-                    self.toast(if self.import.log.len() > 1 { format!("{m} (and {} more — see Knowledge)", self.import.log.len() - 1) } else { m });
+                    self.toast(if self.import.log.len() > 1 { format!("{m} (and {} more, see Knowledge)", self.import.log.len() - 1) } else { m });
                 }
                 self.resolve_ui.knowledge_tab = 0;
                 self.go(View::Sec(nav::Section::Knowledge));
@@ -159,7 +159,7 @@ impl App {
     /// "Add files" (Knowledge): the button, the working line, and what the last batch did.
     pub(super) fn add_files_bar(&mut self, ui: &mut egui::Ui, p: &Pal) {
         ui.horizontal_wrapped(|ui| {
-            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Add files")).on_hover_text(".md, .txt, .docx or .pdf — or drag files onto the window").clicked() {
+            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Add files")).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
                 let paths = pick_files();
                 let target = ImportTarget::Knowledge(self.current_project.clone());
                 self.import_files(target, paths);
@@ -232,7 +232,7 @@ impl App {
     /// The intake's "Attach a brief or notes" row.
     pub(super) fn attach_row(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut crate::resolve::Intake) {
         ui.horizontal_wrapped(|ui| {
-            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Attach a brief or notes")).on_hover_text(".md, .txt, .docx or .pdf — or drag files onto the window").clicked() {
+            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Attach a brief or notes")).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
                 let paths = pick_files();
                 self.import_files(ImportTarget::Intake(it.id.clone()), paths);
             }

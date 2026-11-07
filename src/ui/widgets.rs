@@ -259,16 +259,35 @@ pub fn start_voice_typing() {
     let _ = std::process::Command::new("powershell").args(["-NoProfile", "-NonInteractive", "-WindowStyle", "Hidden", "-Command", script]).spawn();
 }
 
-/// A 🎤 button; returns true when pressed (caller focuses its text box).
-pub fn mic_button(ui: &mut Ui, p: &Pal) -> bool {
-    // the shared mic (E2). Until a speech-to-text approach is approved it starts Windows voice typing (Win+H), as before.
-    let r = mic(ui, p, MicState::Idle, p.dark).on_hover_text("Speak instead of typing (Windows voice typing, Win+H)");
+/// The mic for one text field (E2, voice by Windows voice typing as Simeon chose on 7 Nov 2026).
+/// Click: the field gets focus and Windows voice typing (Win+H) opens, so speech is typed into it.
+/// The button shows Recording from then until the field loses focus or the mic is clicked again
+/// (which presses Win+H again, closing voice typing). Windows does not tell apps whether its
+/// voice typing panel is open, so this state follows the click and the focus, not the panel.
+pub fn mic_for(ui: &mut Ui, p: &Pal, field: egui::Id, on_dark: bool) -> Response {
+    let key = field.with("mic-on");
+    let now = ui.input(|i| i.time);
+    let mut since: Option<f64> = ui.data(|d| d.get_temp(key)).flatten();
+    // the click itself takes focus from the field for a frame, so allow a moment before reading focus
+    if let Some(t0) = since {
+        if now - t0 > 0.6 && !ui.memory(|m| m.has_focus(field)) {
+            since = None;
+        }
+    }
+    let state = if since.is_some() { MicState::Recording } else { MicState::Idle };
+    let r = mic(ui, p, state, on_dark);
     if r.clicked() {
         start_voice_typing();
-        true
-    } else {
-        false
+        since = if since.is_some() { None } else { Some(now) };
+        if since.is_some() {
+            ui.memory_mut(|m| m.request_focus(field));
+        }
     }
+    if since.is_some() {
+        ui.ctx().request_repaint_after(std::time::Duration::from_millis(250));
+    }
+    ui.data_mut(|d| d.insert_temp(key, since));
+    r
 }
 
 /// HH:MM text field. Returns true when the time changed.
@@ -798,4 +817,492 @@ pub mod moves {
     pub const SIDEBAR_WIDTH: Timing = timing(320.0, 120.0, E_OUT);
     /// Theme expands: height 360 e-spring.
     pub const EXPAND: Timing = timing(360.0, 0.0, E_SPRING);
+    /// Sidebar labels fade 120 e-std (before the width when collapsing, after it when expanding).
+    pub const SIDEBAR_LABELS: Timing = timing(120.0, 0.0, E_STD);
+    /// Ask bar rises 480 e-spring (y 30), at 460 on Home and 760 on Tasks.
+    pub const ASK_BAR: Timing = timing(480.0, 460.0, E_SPRING);
+    pub const ASK_BAR_TASKS_DELAY: f32 = 760.0;
+    pub const ASK_BAR_RISE: f32 = 30.0;
+    /// The Try panel: 300 e-spring from the bottom centre (scale .96 → 1).
+    pub const TRY: Timing = timing(300.0, 0.0, E_SPRING);
+    pub const TRY_SCALE: f32 = 0.96;
+    /// Ask sheet: dim 240 e-std; sheet 460 e-spring at 40 (y 100% → 0); rows 300 e-out, stagger
+    /// 60; close 300 e-in, the dim leaving at 80.
+    pub const SHEET_DIM: Timing = timing(240.0, 0.0, E_STD);
+    pub const SHEET_IN: Timing = timing(460.0, 40.0, E_SPRING);
+    pub const SHEET_ROWS: Timing = timing(300.0, 40.0, E_OUT);
+    pub const SHEET_ROWS_STAGGER: f32 = 60.0;
+    pub const SHEET_OUT: Timing = timing(300.0, 0.0, E_IN);
+    pub const SHEET_DIM_OUT: Timing = timing(240.0, 80.0, E_STD);
+    /// Dialogs (the search palette): dim 180 e-std, dialog 300 e-spring at 40 (scale .96, y −6),
+    /// close 200 e-in. Search results swap with no motion.
+    pub const DIALOG_DIM: Timing = timing(180.0, 0.0, E_STD);
+    pub const DIALOG_IN: Timing = timing(300.0, 40.0, E_SPRING);
+    pub const DIALOG_OUT: Timing = timing(200.0, 0.0, E_IN);
+    pub const DIALOG_SCALE: f32 = 0.96;
+    pub const DIALOG_RISE: f32 = 6.0;
+}
+
+// ======================================================================================
+// Shell components (Phase 1): sidebar items and icons, the Ask bar, sheets, dialogs and the
+// search palette's rows. Views place them; everything they draw comes from theme.rs.
+// ======================================================================================
+
+/// Line icons for the shell: 16 px, stroke 1.4.
+#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+pub enum Icon {
+    Home,
+    Projects,
+    Calendar,
+    Overview,
+    Roadmap,
+    Tasks,
+    Frameworks,
+    Knowledge,
+    Team,
+    Handoffs,
+    Search,
+    Settings,
+    Help,
+    Plus,
+    Spark,
+    Undo,
+    Redo,
+    Collapse,
+    Expand,
+    Close,
+    Down,
+    Resume,
+}
+
+/// Draw one line icon centred on `c`.
+pub fn paint_icon(painter: &egui::Painter, c: Pos2, icon: Icon, col: Color32) {
+    let st = Stroke::new(stroke::ICON, col);
+    let v = |x: f32, y: f32| c + egui::vec2(x, y);
+    let star = |r: f32, k: f32| -> Vec<Pos2> {
+        (0..8).map(|i| {
+            let a = std::f32::consts::FRAC_PI_4 * i as f32 - std::f32::consts::FRAC_PI_2;
+            let rr = if i % 2 == 0 { r } else { r * k };
+            c + egui::vec2(a.cos(), a.sin()) * rr
+        }).collect()
+    };
+    match icon {
+        Icon::Home => {
+            painter.add(Shape::line(vec![v(-6.5, -0.5), v(0.0, -6.5), v(6.5, -0.5)], st));
+            painter.add(Shape::line(vec![v(-5.0, -2.0), v(-5.0, 6.5), v(5.0, 6.5), v(5.0, -2.0)], st));
+            painter.add(Shape::line(vec![v(-1.8, 6.5), v(-1.8, 2.5), v(1.8, 2.5), v(1.8, 6.5)], st));
+        }
+        Icon::Projects => {
+            for (x, y) in [(-6.5, -6.5), (0.8, -6.5), (-6.5, 0.8), (0.8, 0.8)] {
+                painter.rect_stroke(Rect::from_min_size(v(x, y), egui::vec2(5.7, 5.7)), 1.5, st);
+            }
+        }
+        Icon::Calendar => {
+            painter.rect_stroke(Rect::from_min_max(v(-6.5, -5.0), v(6.5, 6.5)), 2.0, st);
+            painter.line_segment([v(-6.5, -1.2), v(6.5, -1.2)], st);
+            painter.line_segment([v(-3.0, -7.0), v(-3.0, -3.5)], st);
+            painter.line_segment([v(3.0, -7.0), v(3.0, -3.5)], st);
+        }
+        Icon::Overview => {
+            painter.circle_stroke(c, 6.5, st);
+            painter.circle_stroke(c, 3.0, st);
+            painter.circle_filled(c, 1.0, col);
+        }
+        Icon::Roadmap => {
+            for (x0, x1, y) in [(-6.5, 2.5, -4.5), (-3.5, 6.5, 0.0), (-6.5, 0.5, 4.5)] {
+                painter.line_segment([v(x0, y), v(x1, y)], st);
+                painter.circle_filled(v(x0, y), 1.3, col);
+            }
+        }
+        Icon::Tasks => {
+            painter.rect_stroke(Rect::from_center_size(c, egui::vec2(13.0, 13.0)), 3.0, st);
+            painter.add(Shape::line(vec![v(-3.2, 0.2), v(-0.8, 2.6), v(3.6, -2.2)], st));
+        }
+        Icon::Frameworks => {
+            painter.circle_stroke(v(0.0, -4.5), 2.2, st);
+            painter.circle_stroke(v(-4.5, 4.5), 2.2, st);
+            painter.circle_stroke(v(4.5, 4.5), 2.2, st);
+            painter.line_segment([v(-1.2, -2.6), v(-3.4, 2.5)], st);
+            painter.line_segment([v(1.2, -2.6), v(3.4, 2.5)], st);
+        }
+        Icon::Knowledge => {
+            painter.add(Shape::line(vec![v(0.0, -4.5), v(-2.5, -6.0), v(-6.5, -6.0), v(-6.5, 5.0), v(-2.5, 5.0), v(0.0, 6.5)], st));
+            painter.add(Shape::line(vec![v(0.0, -4.5), v(2.5, -6.0), v(6.5, -6.0), v(6.5, 5.0), v(2.5, 5.0), v(0.0, 6.5)], st));
+            painter.line_segment([v(0.0, -4.5), v(0.0, 6.5)], st);
+        }
+        Icon::Team | Icon::Spark => {
+            painter.add(Shape::closed_line(star(7.0, 0.32), st));
+        }
+        Icon::Handoffs => {
+            painter.line_segment([v(-6.5, -2.8), v(6.0, -2.8)], st);
+            painter.add(Shape::line(vec![v(3.5, -5.3), v(6.0, -2.8), v(3.5, -0.3)], st));
+            painter.line_segment([v(6.5, 2.8), v(-6.0, 2.8)], st);
+            painter.add(Shape::line(vec![v(-3.5, 0.3), v(-6.0, 2.8), v(-3.5, 5.3)], st));
+        }
+        Icon::Search => {
+            painter.circle_stroke(v(-1.2, -1.2), 5.0, st);
+            painter.line_segment([v(2.6, 2.6), v(6.5, 6.5)], st);
+        }
+        Icon::Settings => {
+            painter.circle_stroke(c, 4.6, st);
+            painter.circle_stroke(c, 1.8, st);
+            for i in 0..8 {
+                let a = std::f32::consts::FRAC_PI_4 * i as f32;
+                let d = egui::vec2(a.cos(), a.sin());
+                painter.line_segment([c + d * 4.6, c + d * 6.8], st);
+            }
+        }
+        Icon::Help => {
+            painter.circle_stroke(c, 6.8, st);
+            let q: Vec<Pos2> = (0..=10).map(|i| {
+                let a = std::f32::consts::PI * (1.0 + i as f32 / 10.0 * 1.25);
+                v(0.0, -2.0) + egui::vec2(a.cos(), a.sin()) * 2.6
+            }).collect();
+            let end = *q.last().unwrap();
+            painter.add(Shape::line(q, st));
+            painter.line_segment([end, v(0.0, 2.0)], st);
+            painter.circle_filled(v(0.0, 4.4), 0.9, col);
+        }
+        Icon::Plus => {
+            painter.line_segment([v(-5.5, 0.0), v(5.5, 0.0)], st);
+            painter.line_segment([v(0.0, -5.5), v(0.0, 5.5)], st);
+        }
+        Icon::Undo | Icon::Redo => {
+            let m = if icon == Icon::Undo { 1.0 } else { -1.0 };
+            let arc: Vec<Pos2> = (0..=12).map(|i| {
+                let a = -std::f32::consts::PI * i as f32 / 12.0;
+                v(m * 5.0 * a.cos(), 5.0 * a.sin() + 2.5)
+            }).collect();
+            painter.add(Shape::line(arc, st));
+            painter.add(Shape::line(vec![v(-m * 7.5, 0.0), v(-m * 5.0, 2.8), v(-m * 2.5, 0.0)], st));
+        }
+        Icon::Collapse | Icon::Expand => {
+            let m = if icon == Icon::Collapse { 1.0 } else { -1.0 };
+            for dx in [-2.2, 2.2] {
+                painter.add(Shape::line(vec![v(m * (dx + 2.2), -4.5), v(m * (dx - 2.2), 0.0), v(m * (dx + 2.2), 4.5)], st));
+            }
+        }
+        Icon::Close => {
+            painter.line_segment([v(-5.0, -5.0), v(5.0, 5.0)], st);
+            painter.line_segment([v(5.0, -5.0), v(-5.0, 5.0)], st);
+        }
+        Icon::Down => {
+            painter.add(Shape::line(vec![v(-3.5, -1.5), v(0.0, 2.0), v(3.5, -1.5)], st));
+        }
+        Icon::Resume => {
+            painter.circle_stroke(c, 6.8, st);
+            painter.add(Shape::closed_line(vec![v(-1.8, -3.5), v(3.6, 0.0), v(-1.8, 3.5)], st));
+        }
+    }
+}
+
+/// A 16 px icon as a widget (allocates its square).
+pub fn icon_widget(ui: &mut Ui, icon: Icon, col: Color32) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(space::NAV_ICON, space::NAV_ICON), Sense::hover());
+    paint_icon(ui.painter(), rect.center(), icon, col);
+    resp
+}
+
+/// A small round icon button (undo, redo, collapse, close). `on_dark` for the sidebar.
+pub fn icon_button(ui: &mut Ui, icon: Icon, enabled: bool, on_dark: bool) -> Response {
+    let d = space::NAV_ICON + space::S10;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(d, d), if enabled { Sense::click() } else { Sense::hover() });
+    let (fg, hover) = if on_dark { (tok::TEXT_ON_DARK_SOFT, tok::PANE_HOVER) } else { (tok::INK_SOFT, tok::SURFACE_SUNK) };
+    if enabled && resp.hovered() {
+        ui.painter().rect_filled(rect, radius::SMALL_BUTTON, hover);
+    }
+    let col = if enabled { fg } else { fg.gamma_multiply(0.35) };
+    paint_icon(ui.painter(), rect.center(), icon, col);
+    if enabled { resp.on_hover_cursor(egui::CursorIcon::PointingHand) } else { resp }
+}
+
+/// The amber workspace tile with the workspace's initial.
+pub fn ws_tile(painter: &egui::Painter, rect: Rect, initial: &str) {
+    painter.rect_filled(rect, radius::TILE, tok::AMBER);
+    painter.text(rect.center(), Align2::CENTER_CENTER, initial, fb(size::LABEL), tok::INK);
+}
+
+/// One sidebar item: 32 high, radius 8, icon 16 at 20 from the left, label Inter 13.5 in
+/// text-on-dark-soft. Active: amber .16 fill (300 e-std), label text-on-dark, icon amber.
+/// `labels` (1 → 0) fades the label and count when the sidebar collapses; collapsed items are
+/// 40 wide, so the icon is centred without moving.
+pub fn side_item(ui: &mut Ui, icon: Icon, label: &str, right: Option<String>, active: bool, labels: f32) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::NAV_ITEM_H), Sense::click());
+    let tint = motion::tween(ui.ctx(), resp.id.with("active"), if active { 1.0 } else { 0.0 }, timing(300.0, 0.0, E_STD));
+    let painter = ui.painter();
+    if resp.hovered() && !active {
+        painter.rect_filled(rect, radius::NAV_ITEM, tok::PANE_RAISED);
+    }
+    if tint > 0.001 {
+        painter.rect_filled(rect, radius::NAV_ITEM, tok::AMBER_16_ON_NAV.gamma_multiply(tint));
+    }
+    let icon_col = if active { tok::AMBER } else { tok::TEXT_ON_DARK_SOFT };
+    paint_icon(painter, rect.left_center() + egui::vec2(space::NAV_ICON_X, 0.0), icon, icon_col);
+    if labels > 0.01 {
+        let fg = if active { tok::TEXT_ON_DARK } else { tok::TEXT_ON_DARK_SOFT };
+        // the right-hand note: a count (Tasks) or a shortcut (Search)
+        let right_g = right.map(|r| painter.layout_no_wrap(r, fp(size::SMALL), tok::TEXT_ON_DARK_MUTED.gamma_multiply(labels)));
+        let right_w = right_g.as_ref().map_or(space::S8, |g| g.size().x + space::S18);
+        let room = rect.width() - space::NAV_LABEL_X - right_w;
+        let text = fit_text(painter, label, fp(size::NAV), room);
+        painter.text(rect.left_center() + egui::vec2(space::NAV_LABEL_X, 0.0), Align2::LEFT_CENTER, text, fp(size::NAV), fg.gamma_multiply(labels));
+        if let Some(g) = right_g {
+            painter.galley(egui::pos2(rect.right() - space::S10 - g.size().x, rect.center().y - g.size().y / 2.0), g, tok::TEXT_ON_DARK_MUTED);
+        }
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// Shorten `text` with "…" to fit `width`.
+pub fn fit_text(painter: &egui::Painter, text: &str, font: egui::FontId, width: f32) -> String {
+    if painter.layout_no_wrap(text.to_string(), font.clone(), Color32::WHITE).size().x <= width {
+        return text.to_string();
+    }
+    let mut t: String = text.to_string();
+    while !t.is_empty() && painter.layout_no_wrap(format!("{t}…"), font.clone(), Color32::WHITE).size().x > width {
+        t.pop();
+    }
+    format!("{}…", t.trim_end())
+}
+
+/// A sidebar group label (Inter 600 11, letter spacing .04em, text-on-dark-muted). When the
+/// sidebar collapses the label fades and a thin divider takes its place.
+pub fn side_group(ui: &mut Ui, label: &str, labels: f32) {
+    ui.add_space(space::S12);
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), size::GROUP + space::S8), Sense::hover());
+    let painter = ui.painter();
+    if labels > 0.01 {
+        let mut job = egui::text::LayoutJob::default();
+        job.append(&label.to_uppercase(), 0.0, egui::TextFormat { font_id: fs(size::GROUP), color: tok::TEXT_ON_DARK_MUTED.gamma_multiply(labels), extra_letter_spacing: size::GROUP_SPACING, ..Default::default() });
+        let g = painter.layout_job(job);
+        painter.galley(egui::pos2(rect.left() + space::NAV_PAD, rect.center().y - g.size().y / 2.0), g, tok::TEXT_ON_DARK_MUTED);
+    }
+    if labels < 0.99 {
+        let y = rect.center().y;
+        painter.line_segment([egui::pos2(rect.left() + space::S8, y), egui::pos2(rect.right() - space::S8, y)], Stroke::new(stroke::HAIR, tok::white_a(0.08 * (1.0 - labels))));
+    }
+}
+
+/// A full-width divider in the sidebar (white .08).
+pub fn side_divider(ui: &mut Ui) {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::S10), Sense::hover());
+    ui.painter().line_segment([rect.left_center(), rect.right_center()], Stroke::new(stroke::HAIR, tok::white_a(0.08)));
+}
+
+/// The tooltip beside a collapsed sidebar item (S4): after 400 ms of hover, its name slides in
+/// from x −4 over 120 ms e-out.
+pub fn side_tip(ui: &Ui, resp: &Response, text: &str) {
+    let ctx = ui.ctx();
+    let id = resp.id.with("side-tip");
+    if !resp.hovered() {
+        ctx.data_mut(|d| d.remove::<f64>(id));
+        return;
+    }
+    let now = ui.input(|i| i.time);
+    let since = ctx.data_mut(|d| *d.get_temp_mut_or_insert_with(id, || now));
+    let f = motion::frame_at(((now - since) * 1000.0) as f32, timing(120.0, 400.0, E_OUT), motion::reduced());
+    if !f.done {
+        ctx.request_repaint();
+    }
+    if f.alpha <= 0.0 {
+        return;
+    }
+    let x = resp.rect.right() + space::NAV_TIP_GAP - 4.0 * (1.0 - f.t);
+    egui::Area::new(id).order(egui::Order::Tooltip).fixed_pos(egui::pos2(x, resp.rect.center().y)).pivot(Align2::LEFT_CENTER).interactable(false).show(ctx, |ui| {
+        ui.multiply_opacity(f.alpha);
+        egui::Frame::none().fill(tok::INK).stroke(Stroke::new(stroke::HAIR, tok::white_a(0.10))).rounding(Rounding::same(radius::SMALL_BUTTON)).inner_margin(egui::Margin::symmetric(space::S10, space::S6)).show(ui, |ui| {
+            ui.add(egui::Label::new(RichText::new(text).font(fp(size::LABEL)).color(tok::TEXT_ON_DARK)).extend());
+        });
+    });
+}
+
+/// The sidebar's two buttons: Add task (amber) and Ask AI (outlined, ✦ amber). Press scales to
+/// .975. With `labels` at 0 (collapsed) only the icon shows.
+pub fn side_button(ui: &mut Ui, primary: bool, icon: Icon, label: &str, labels: f32, on: bool) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::NAV_BUTTON_H), Sense::click());
+    let s = motion::tween(ui.ctx(), resp.id.with("press"), if resp.is_pointer_button_down_on() { 0.975 } else { 1.0 }, timing(240.0, 0.0, E_STD));
+    let r = motion::scale_about(rect, rect.center(), s);
+    let painter = ui.painter();
+    let (fg, icon_col) = if primary {
+        painter.rect_filled(r, radius::BUTTON, if resp.hovered() { tok::AMBER.gamma_multiply(0.9) } else { tok::AMBER });
+        (tok::INK, tok::INK)
+    } else {
+        let fill = if on { tok::AMBER_16_ON_NAV } else if resp.hovered() { tok::PANE_RAISED } else { Color32::TRANSPARENT };
+        painter.rect(r, radius::BUTTON, fill, Stroke::new(stroke::HAIR, tok::white_a(0.18)));
+        (tok::TEXT_ON_DARK, tok::AMBER)
+    };
+    if labels > 0.01 {
+        let g = painter.layout_no_wrap(label.to_string(), fs(size::LABEL), fg.gamma_multiply(labels));
+        let total = space::NAV_ICON + space::S6 + g.size().x;
+        let x0 = r.center().x - total / 2.0;
+        paint_icon(painter, egui::pos2(x0 + space::NAV_ICON / 2.0, r.center().y), icon, icon_col);
+        painter.galley(egui::pos2(x0 + space::NAV_ICON + space::S6, r.center().y - g.size().y / 2.0), g, fg);
+    } else {
+        paint_icon(painter, r.center(), icon, icon_col);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// "Continue setting up…" (B-E2): an amber-tinted card in the sidebar footer, shown only while
+/// an intake is unfinished. Collapsed, it is the resume icon with an amber dot.
+pub fn setup_card(ui: &mut Ui, title: &str, line: &str, labels: f32) -> Response {
+    let h = if labels > 0.01 { space::NAV_ITEM_H + space::S18 } else { space::NAV_ITEM_H };
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), h), Sense::click());
+    let painter = ui.painter();
+    painter.rect_filled(rect, radius::BUTTON, if resp.hovered() { tok::AMBER_16_ON_NAV } else { tok::AMBER_16_ON_NAV.gamma_multiply(0.75) });
+    let ic = egui::pos2(rect.left() + space::NAV_ICON_X, rect.center().y);
+    paint_icon(painter, ic, Icon::Resume, tok::AMBER);
+    if labels > 0.01 {
+        painter.text(egui::pos2(rect.left() + space::NAV_LABEL_X, rect.center().y - space::S8), Align2::LEFT_CENTER, title, fs(size::LABEL), tok::TEXT_ON_DARK.gamma_multiply(labels));
+        let line = fit_text(painter, line, fp(size::TINY), rect.width() - space::NAV_LABEL_X - space::S8);
+        painter.text(egui::pos2(rect.left() + space::NAV_LABEL_X, rect.center().y + space::S8), Align2::LEFT_CENTER, line, fp(size::TINY), tok::TEXT_ON_DARK_SOFT.gamma_multiply(labels));
+    } else {
+        painter.circle_filled(ic + egui::vec2(space::S8, -space::S8), stroke::DOT / 2.0 + 1.0, tok::AMBER);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The save status at the foot of the sidebar: a dot (green when all is well, terracotta on an
+/// error) and the line. Collapsed: the dot only.
+pub fn side_status(ui: &mut Ui, text: &str, ok: bool, labels: f32) -> Response {
+    let w = ui.available_width();
+    let text_w = w - space::NAV_LABEL_X + space::S10;
+    let g = (labels > 0.01).then(|| ui.painter().layout(text.to_string(), fp(size::TINY), tok::TEXT_ON_DARK_MUTED.gamma_multiply(labels), text_w));
+    let h = g.as_ref().map_or(space::S18, |g| g.size().y.max(space::S18));
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::hover());
+    let dot = egui::pos2(rect.left() + space::NAV_ICON_X, rect.top() + space::S8 + 1.0);
+    ui.painter().circle_filled(dot, stroke::DOT / 2.0 + 0.5, if ok { tok::GREEN } else { tok::TERRACOTTA_ON_DARK });
+    if let Some(g) = g {
+        ui.painter().galley(egui::pos2(rect.left() + space::NAV_ICON_X + space::S10, rect.top()), g, tok::TEXT_ON_DARK_MUTED);
+    }
+    resp
+}
+
+/// The project picker's row (dot + name + ▾) on the dark sidebar. Collapsed: the dot alone.
+pub fn picker_row(ui: &mut Ui, dot: Color32, name: &str, labels: f32) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::NAV_ITEM_H), Sense::click());
+    let painter = ui.painter();
+    painter.rect(rect, radius::NAV_ITEM, if resp.hovered() { tok::PANE_HOVER } else { tok::PANE_RAISED }, Stroke::new(stroke::HAIR, tok::PANE_TRACK));
+    painter.circle_filled(rect.left_center() + egui::vec2(space::NAV_ICON_X, 0.0), stroke::DOT, dot);
+    if labels > 0.01 {
+        let room = rect.width() - space::NAV_LABEL_X - space::S24;
+        let text = fit_text(painter, name, fs(size::LABEL), room);
+        painter.text(rect.left_center() + egui::vec2(space::NAV_LABEL_X - space::S8, 0.0), Align2::LEFT_CENTER, text, fs(size::LABEL), tok::TEXT_ON_DARK.gamma_multiply(labels));
+        paint_icon(painter, rect.right_center() - egui::vec2(space::S14, 0.0), Icon::Down, tok::TEXT_ON_DARK_SOFT.gamma_multiply(labels));
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// What the Ask bar did this frame.
+pub struct AskBarOut {
+    /// Enter pressed (with or without text).
+    pub submit: bool,
+    pub focused: bool,
+}
+
+/// The Ask Resolve bar (B-E3): a 560 × 48 ink pill, ✦ in amber on the left, the screen's
+/// placeholder, a 34 px mic on the right. `rect` is where it sits this frame.
+pub fn ask_bar(ui: &mut Ui, p: &Pal, rect: Rect, id: egui::Id, text: &mut String, placeholder: &str) -> AskBarOut {
+    let painter = ui.painter().clone();
+    painter.add(Shape::Rect(shadow::ASK_BAR.as_shape(rect, Rounding::same(radius::PILL))));
+    let edge = if ui.visuals().dark_mode { Stroke::new(stroke::HAIR, tok::white_a(0.10)) } else { Stroke::NONE };
+    painter.rect(rect, radius::PILL, tok::INK, edge);
+    let mut out = AskBarOut { submit: false, focused: false };
+    let inner = rect.shrink2(egui::vec2(space::S16, 0.0));
+    ui.allocate_new_ui(egui::UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)), |ui| {
+        icon_widget(ui, Icon::Spark, tok::AMBER);
+        ui.add_space(space::S10);
+        let w = ui.available_width() - space::MIC - space::S10;
+        let r = ui.add(
+            egui::TextEdit::singleline(text)
+                .id(id)
+                .frame(false)
+                .hint_text(RichText::new(placeholder).color(tok::TEXT_ON_DARK_MUTED))
+                .text_color(tok::TEXT_ON_DARK)
+                .font(fp(size::BODY))
+                .desired_width(w),
+        );
+        out.focused = r.has_focus();
+        out.submit = r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+        ui.add_space(space::S10 - space::S16 / 2.0);
+        mic_for(ui, p, id, true);
+    });
+    out
+}
+
+/// The "Try" panel above the Ask bar: the screen's suggestions. Returns the one clicked.
+pub fn try_panel(ui: &mut Ui, p: &Pal, suggestions: &[&str]) -> Option<usize> {
+    let mut picked = None;
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).shadow(shadow::CARD_LIFT[1]).inner_margin(egui::Margin::same(space::S12)).show(ui, |ui| {
+        ui.set_width(space::ASK_W - space::S12 * 2.0);
+        ui.label(RichText::new("Try").font(fs(size::GROUP)).color(p.faint));
+        ui.add_space(space::S4);
+        for (i, s) in suggestions.iter().enumerate() {
+            let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::NAV_ITEM_H), Sense::click());
+            if resp.hovered() {
+                ui.painter().rect_filled(rect, radius::NAV_ITEM, p.hover);
+            }
+            paint_icon(ui.painter(), rect.left_center() + egui::vec2(space::S14, 0.0), Icon::Spark, p.accent_text);
+            ui.painter().text(rect.left_center() + egui::vec2(space::S30, 0.0), Align2::LEFT_CENTER, *s, fp(size::BODY), p.text);
+            if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                picked = Some(i);
+            }
+        }
+    });
+    picked
+}
+
+/// Paint a backdrop over `rect` at `alpha` (sheet .32, dialog .38). Returns true when clicked.
+pub fn backdrop(ui: &mut Ui, rect: Rect, alpha: f32) -> bool {
+    let resp = ui.allocate_rect(rect, Sense::click());
+    ui.painter().rect_filled(rect, 0.0, tok::ink_a(alpha));
+    resp.clicked()
+}
+
+/// A sheet rising from the bottom (A3): surface-raised, radius 20 on the top corners only.
+pub fn sheet_frame(p: &Pal) -> egui::Frame {
+    let r = radius::SHEET;
+    egui::Frame::none().fill(p.surface_raised).rounding(Rounding { nw: r, ne: r, sw: 0.0, se: 0.0 }).shadow(shadow::SHEET).inner_margin(egui::Margin { left: space::S24, right: space::S24, top: space::S18, bottom: space::S16 })
+}
+
+/// A centred dialog: card, radius 16, dialog shadow.
+pub fn dialog_frame(p: &Pal) -> egui::Frame {
+    let edge = if p.dark { Stroke::new(stroke::HAIR, tok::white_a(0.10)) } else { Stroke::NONE };
+    egui::Frame::none().fill(p.card).stroke(edge).rounding(Rounding::same(radius::DIALOG)).shadow(shadow::DIALOG)
+}
+
+/// A key hint ("Esc", "Enter", "↑ ↓").
+pub fn kbd(ui: &mut Ui, p: &Pal, key: &str) -> Response {
+    let g = ui.painter().layout_no_wrap(key.to_string(), fp(size::TINY), p.dim);
+    let (rect, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S10, space::S4), Sense::hover());
+    ui.painter().rect(rect, radius::GATE, p.surface_sunk, Stroke::new(stroke::HAIR, p.line));
+    ui.painter().galley(rect.min + egui::vec2(space::S10 / 2.0, space::S4 / 2.0), g, p.dim);
+    resp
+}
+
+/// An uppercase group heading in a list (search results, Try).
+pub fn list_heading(ui: &mut Ui, p: &Pal, text: &str) {
+    let mut job = egui::text::LayoutJob::default();
+    job.append(&text.to_uppercase(), 0.0, egui::TextFormat { font_id: fs(size::GROUP), color: p.faint, extra_letter_spacing: size::GROUP_SPACING, ..Default::default() });
+    ui.add_space(space::S8);
+    ui.label(job);
+    ui.add_space(space::S4);
+}
+
+/// One search result: title, then the kind and a snippet. Selected rows take the amber tint.
+pub fn search_row(ui: &mut Ui, p: &Pal, title: &str, meta: &str, selected: bool) -> Response {
+    let w = ui.available_width();
+    let h = size::BODY + size::SMALL + space::S26;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let painter = ui.painter();
+    if selected {
+        painter.rect_filled(rect, radius::NAV_ITEM, p.accent_soft);
+    } else if resp.hovered() {
+        painter.rect_filled(rect, radius::NAV_ITEM, p.hover);
+    }
+    let x = rect.left() + space::S12;
+    let room = w - space::S24;
+    painter.text(egui::pos2(x, rect.top() + space::S8), Align2::LEFT_TOP, fit_text(painter, title, fp(size::BODY), room), fp(size::BODY), p.text);
+    painter.text(egui::pos2(x, rect.bottom() - space::S8), Align2::LEFT_BOTTOM, fit_text(painter, meta, fp(size::SMALL), room), fp(size::SMALL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

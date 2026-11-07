@@ -118,7 +118,7 @@ fn serve_one(store: &mut Store, mut req: tiny_http::Request) {
     }
     match (req.method().clone(), path.as_str()) {
         (Method::Get, "/") | (Method::Get, "/phone") => respond(req, 200, "text/html; charset=utf-8", PHONE_HTML.replace("{{NAME}}", &html_escape(&store.meta.name))),
-        (Method::Get, "/manifest.json") => respond(req, 200, "application/json", format!(r##"{{"name":"Resolve 2 — {}","short_name":"Resolve 2","start_url":"/","display":"standalone","background_color":"#1e1e1e","theme_color":"#1e1e1e"}}"##, store.meta.name.replace('"', ""))),
+        (Method::Get, "/manifest.json") => respond(req, 200, "application/json", format!(r##"{{"name":"Resolve 2: {}","short_name":"Resolve 2","start_url":"/","display":"standalone","background_color":"#1e1e1e","theme_color":"#1e1e1e"}}"##, store.meta.name.replace('"', ""))),
         (Method::Get, "/health") => respond(req, 200, "text/plain", "ok".into()),
         (Method::Post, "/mcp") => {
             if !token_ok(&req, &store.settings.token) {
@@ -171,7 +171,7 @@ fn html_escape(s: &str) -> String {
 const PHONE_HTML: &str = r##"<!doctype html>
 <html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <link rel="manifest" href="/manifest.json"><meta name="theme-color" content="#1e1e1e">
-<title>Resolve 2 — {{NAME}}</title>
+<title>Resolve 2: {{NAME}}</title>
 <style>
 :root{--bg:#1e1e1e;--card:#282828;--line:#333;--text:#eee;--dim:#999;--red:#dc4c3e;--accent:#dc4c3e}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.4 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}

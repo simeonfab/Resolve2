@@ -72,7 +72,7 @@ impl App {
                 ui.painter().rect_filled(bar, 2.0, p.on_ink_soft.linear_multiply(0.25));
                 ui.painter().rect_filled(egui::Rect::from_min_size(bar.min, egui::vec2(bar.width() * pct as f32, 4.0)), 2.0, p.accent);
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ui.add(egui::Button::new(RichText::new("Exit").size(size::SMALL).color(p.on_ink_soft)).frame(false)).on_hover_text("Leave the intake — your answers are saved (Esc)").clicked() {
+                    if ui.add(egui::Button::new(RichText::new("Exit").size(size::SMALL).color(p.on_ink_soft)).frame(false)).on_hover_text("Leave the intake. Your answers are saved (Esc)").clicked() {
                         exit = true;
                     }
                     if ui.add(egui::Button::new(RichText::new("↻ Restart").size(size::SMALL).color(p.on_ink_soft)).frame(false)).on_hover_text("Start this intake again (keeps your name)").clicked() {
@@ -89,7 +89,7 @@ impl App {
         if self.testlab {
             egui::Frame::none().fill(p.banner_bg).inner_margin(egui::Margin::symmetric(20.0, 6.0)).show(ui, |ui| {
                 ui.set_width(ui.available_width());
-                ui.label(RichText::new(format!("TEST MODE — sandbox data in {} · nothing touches your real workspaces · provider: {}", crate::store::root().display(), if it.provider.is_empty() { "app default".to_string() } else { it.provider.replace('|', " / ") })).size(size::SMALL).color(p.banner_text).strong());
+                ui.label(RichText::new(format!("TEST MODE: sandbox data in {} · nothing touches your real workspaces · provider: {}", crate::store::root().display(), if it.provider.is_empty() { "app default".to_string() } else { it.provider.replace('|', " / ") })).size(size::SMALL).color(p.banner_text).strong());
             });
         }
         if !busy && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, Key::Escape)) {
@@ -116,7 +116,7 @@ impl App {
                                 ui.label(RichText::new(&self.resolve_ui.busy).font(fs(size::SECTION)));
                             });
                             let cfg = journey::cfg_for(&it);
-                            let who = match cfg { Some(c) => format!("{} · {}", c.provider, if c.model.is_empty() { "default model".into() } else { c.model }), None => "No AI — fixed question set".into() };
+                            let who = match cfg { Some(c) => format!("{} · {}", c.provider, if c.model.is_empty() { "default model".into() } else { c.model }), None => "No AI (fixed question set)".into() };
                             let note = if self.resolve_ui.fg.as_ref().map_or(false, |f| f.1 == "next") { " · if it takes over 15 s, Resolve asks from its fixed questions" } else { "" };
                             ui.label(RichText::new(format!("{secs:.0} s · {who}{note}")).size(size::TINY).color(p.faint));
                         });

@@ -36,7 +36,7 @@ pub fn seed(d: &mut WorkspaceData) {
     let mut review = Page::new("Weekly Review");
     review.icon = "🚨".into();
     review.favorite = true;
-    let mut lab = Page::new("Boredom Lab — Project brief");
+    let mut lab = Page::new("Boredom Lab: Project brief");
     lab.icon = "🧪".into();
     lab.favorite = true;
     let mut ideas = Page::new("Ideas & Notes");
@@ -48,11 +48,11 @@ pub fn seed(d: &mut WorkspaceData) {
     lab_meeting.parent = Some(lab.id.clone());
 
     welcome.blocks = vec![
-        Block::new(BlockKind::Paragraph, "One place for your **pages**, **tasks** and **calendar** — stored on your own computer, readable by your AI assistants."),
+        Block::new(BlockKind::Paragraph, "One place for your **pages**, **tasks** and **calendar**, stored on your own computer, readable by your AI assistants."),
         Block::new(BlockKind::Callout, "**Tip:** press Ctrl+Q anywhere to capture a task like *Call the garage tomorrow 9am p1 #Home*."),
         Block::new(BlockKind::H2, "What you can do"),
         Block::new(BlockKind::Bullet, "Write pages with headings, lists, to-dos, quotes, code and callouts. Type / for the block menu."),
-        Block::new(BlockKind::Bullet, "Link pages with [[Weekly Review]] style links — backlinks appear at the bottom."),
+        Block::new(BlockKind::Bullet, "Link pages with [[Weekly Review]] style links. Backlinks appear at the bottom."),
         Block::new(BlockKind::Bullet, "Build tables and kanban boards in databases, like the [[Job search]] tracker."),
         Block::new(BlockKind::Bullet, "Plan tasks with priorities, subtasks, reminders and repeating due dates."),
         Block::new(BlockKind::Bullet, "See tasks and events together on the calendar in day, week and month views."),
@@ -71,11 +71,11 @@ pub fn seed(d: &mut WorkspaceData) {
         Block::new(BlockKind::Paragraph, "This is deliberately **v0**. For the first few weeks the goal is to collect real examples and adjust the routine from evidence."),
         Block::new(BlockKind::Callout, "**Rule:** judge a task by its effect on your week, not by how urgent it feels."),
         Block::new(BlockKind::H2, "Operating model"),
-        Block::new(BlockKind::Numbered, "**Capture** — empty your head into the Inbox."),
-        Block::new(BlockKind::Numbered, "**Clarify** — give every task a project, priority and date."),
-        Block::new(BlockKind::Numbered, "**Schedule** — block time on the calendar for the big three."),
-        Block::new(BlockKind::Numbered, "**Review** — check projects in [[Boredom Lab — Project brief]] and the job tracker."),
-        Block::new(BlockKind::Numbered, "**Reflect** — note one thing to improve next week."),
+        Block::new(BlockKind::Numbered, "**Capture**: empty your head into the Inbox."),
+        Block::new(BlockKind::Numbered, "**Clarify**: give every task a project, priority and date."),
+        Block::new(BlockKind::Numbered, "**Schedule**: block time on the calendar for the big three."),
+        Block::new(BlockKind::Numbered, "**Review**: check projects in [[Boredom Lab: Project brief]] and the job tracker."),
+        Block::new(BlockKind::Numbered, "**Reflect**: note one thing to improve next week."),
         Block::new(BlockKind::Divider, ""),
         Block::new(BlockKind::Quote, "What gets scheduled gets done."),
     ];
@@ -96,7 +96,7 @@ pub fn seed(d: &mut WorkspaceData) {
         Block::new(BlockKind::Code, "score = votes * 2 + bonus"),
     ];
     ideas.blocks = vec![
-        Block::new(BlockKind::Paragraph, "A scratchpad. Anything here can become a task — select a line and use the AI panel to *extract tasks*."),
+        Block::new(BlockKind::Paragraph, "A scratchpad. Anything here can become a task. Select a line and use the AI panel to *extract tasks*."),
         Block::new(BlockKind::Bullet, "Learn to make sourdough"),
         Block::new(BlockKind::Bullet, "Weekend trip in spring"),
     ];
@@ -177,7 +177,7 @@ pub fn seed(d: &mut WorkspaceData) {
         updated: t,
     };
     jobs_page.blocks = vec![
-        Block::new(BlockKind::Paragraph, "Target: **5 applications a week**. The tracker below is a live database — switch it to a board to drag cards between stages."),
+        Block::new(BlockKind::Paragraph, "Target: **5 applications a week**. The tracker below is a live database. Switch it to a board to drag cards between stages."),
         Block::new(BlockKind::Database, jobs_db.id.clone()),
     ];
 
@@ -347,7 +347,7 @@ fn seed_resolve(d: &mut WorkspaceData) {
     d.intakes.push(i);
     if let Ok(pid) = crate::resolve::intake::handoff(d, &id) {
         if let Some(c) = d.context_for_mut(&pid) {
-            c.notes = "Sample project — made with the manual (no-AI) intake.".into();
+            c.notes = "Sample project, made with the manual (no-AI) intake.".into();
         }
     }
 }

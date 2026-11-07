@@ -212,7 +212,7 @@ impl App {
                         tpl.blocks = tpl.blocks.iter().map(|b| Block { id: new_id(), ..b.clone() }).collect();
                         self.store.data.pages.push(tpl);
                         self.touch();
-                        self.toast("Saved as a template — use it from Pages → +");
+                        self.toast("Saved as a template. Use it from Pages → +");
                         ui.close_menu();
                     }
                     if ui.button("✔ Turn this page's to-dos into tasks").on_hover_text("Without AI: dates, times, p1-p4, #project and @labels written in each to-do are picked up. For smart sorting into projects use ✨ Ask AI → Organise my to-dos.").clicked() {
@@ -255,7 +255,7 @@ impl App {
                     }
                 });
                 let ai_label = if self.page_ui.ai_open { "✨ AI ✓" } else { "✨ AI" };
-                if ui.button(ai_label).on_hover_text("Local AI assistant (Ollama / LM Studio) — free, runs on this PC").clicked() {
+                if ui.button(ai_label).on_hover_text("Local AI assistant (Ollama / LM Studio): free, runs on this PC").clicked() {
                     self.page_ui.ai_open = !self.page_ui.ai_open;
                 }
                 let star = if page.favorite { RichText::new("★").color(p.accent).size(17.0) } else { RichText::new("☆").size(17.0).color(p.dim) };
@@ -361,7 +361,7 @@ impl App {
                 // click below to add
                 let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 60.0), Sense::click());
                 if resp.hovered() {
-                    ui.painter().text(rect.left_top() + egui::vec2(4.0, 8.0), Align2::LEFT_TOP, "Click to add a block — type / for commands", fp(14.0), p.faint);
+                    ui.painter().text(rect.left_top() + egui::vec2(4.0, 8.0), Align2::LEFT_TOP, "Click to add a block, or type / for commands", fp(14.0), p.faint);
                 }
                 if resp.clicked() {
                     let last_empty = self.store.data.page(pid).and_then(|x| x.blocks.last()).map(|b| b.kind == BlockKind::Paragraph && b.text.is_empty()).unwrap_or(false);
@@ -650,7 +650,7 @@ impl App {
                                     let w = avail - 30.0 - if linked.is_some() { 170.0 } else { 0.0 };
                                     let r = draw_text(ui, b, w);
                                     if let Some((label, tid)) = linked {
-                                        if chip(ui, &label, p.accent).on_hover_text("This to-do is a task — ticking either one ticks both. Click to open the task.").clicked() {
+                                        if chip(ui, &label, p.accent).on_hover_text("This to-do is a task: ticking either one ticks both. Click to open the task.").clicked() {
                                             self.open_task = Some(tid);
                                         }
                                     }

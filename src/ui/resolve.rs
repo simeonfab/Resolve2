@@ -437,7 +437,7 @@ impl App {
         match intake::handoff(&mut self.store.data, id) {
             Ok(pid) => {
                 self.save_now();
-                self.toast("Your project is set up — first move pinned");
+                self.toast("Your project is set up. First move pinned.");
                 self.resolve_ui.tab = 0;
                 self.go(View::Resolve(pid));
             }
@@ -457,8 +457,23 @@ impl App {
 }
 
 /// Unfinished intakes, newest first (for the sidebar and Home).
+/// Unfinished intakes, newest first: (id, title, which of the rail's four steps it is on).
 pub fn open_intakes(d: &WorkspaceData) -> Vec<(Id, String, u8)> {
-    let mut v: Vec<&Intake> = d.intakes.iter().filter(|i| i.status == "in_progress" && (i.step > 0 || !i.input.is_empty())).collect();
+    let mut v: Vec<&Intake> = d.intakes.iter().filter(|i| i.status == "in_progress" && (i.step > 0 || !i.input.is_empty() || (i.is_v2() && !matches!(i.stage.as_str(), "" | "name" | "done")))).collect();
     v.sort_by_key(|i| std::cmp::Reverse(i.updated));
-    v.into_iter().map(|i| (i.id.clone(), i.title(), i.step)).collect()
+    v.into_iter().map(|i| (i.id.clone(), i.title(), rail_step(i))).collect()
+}
+
+/// The intake rail's step (1 Get started, 2 Bring it in, 3 Confirm understanding, 4 Your next
+/// move) an intake is on.
+pub fn rail_step(i: &Intake) -> u8 {
+    if !i.is_v2() {
+        return (i.step + 1).min(4);
+    }
+    match i.stage.as_str() {
+        "" | "name" => 1,
+        "bring" => 2,
+        "questions" | "confirm" => 3,
+        _ => 4,
+    }
 }

@@ -101,7 +101,7 @@ impl BlockKind {
             BlockKind::Quote => "❝",
             BlockKind::Code => "</>",
             BlockKind::Callout => "💡",
-            BlockKind::Divider => "—",
+            BlockKind::Divider => "---",
             BlockKind::PageLink => "↗",
             BlockKind::Database => "▦",
         }
