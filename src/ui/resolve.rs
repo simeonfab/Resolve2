@@ -90,7 +90,7 @@ pub struct ResolveUi {
 }
 
 pub fn amber() -> Color32 {
-    Color32::from_rgb(200, 160, 64)
+    tok::AMBER
 }
 
 impl App {

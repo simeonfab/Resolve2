@@ -146,7 +146,7 @@ impl App {
                 ui.set_width(w);
                 ui.add_space(18.0);
                 let (title, _, _) = GUIDE[sel];
-                ui.label(RichText::new(title).font(fserif(size::HERO)));
+                ui.label(RichText::new(title).font(fserif(size::STEP_TITLE)));
                 ui.add_space(8.0);
                 let text = section_text(sel);
                 let body = text.splitn(2, '\n').nth(1).unwrap_or("").to_string();

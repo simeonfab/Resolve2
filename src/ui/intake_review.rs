@@ -89,7 +89,7 @@ impl App {
     pub(super) fn ij_editor(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let Some(mut pr) = it.proposal.clone() else { return };
         let ai = journey::cfg_for(it).is_some() && !pr.offline;
-        ui.label(RichText::new("Everything in your proposal.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Everything in your proposal.").font(fserif(size::STEP_TITLE)));
         ui.label(RichText::new("Edit, remove or regenerate anything. Nothing is created until you press Adopt. Labels show what each item rests on.").size(size::SMALL).color(p.dim));
         if pr.offline {
             ui.label(RichText::new("Made without AI, from your own words only — add roadmap items and tasks yourself, or connect a model and regenerate.").size(size::SMALL).color(p.orange));
@@ -284,7 +284,7 @@ impl App {
             self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
         }
         let (iid, step, mut st, snap) = self.resolve_ui.adopt.take().unwrap();
-        ui.label(RichText::new("Building your project…").font(fserif(size::HERO)));
+        ui.label(RichText::new("Building your project…").font(fserif(size::STEP_TITLE)));
         ui.add_space(12.0);
         for (k, label) in journey::ADOPT_STEPS.iter().enumerate() {
             ui.horizontal(|ui| {
@@ -334,7 +334,7 @@ impl App {
             return;
         };
         ui.label(RichText::new("Your roadmap").size(size::SMALL).color(p.eyebrow).strong());
-        ui.label(RichText::new("Here's the whole picture.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Here's the whole picture.").font(fserif(size::STEP_TITLE)));
         ui.add_space(14.0);
         let d = &self.store.data;
         let items: Vec<crate::resolve::Record> = d.records.iter().filter(|r| r.project_id.as_deref() == Some(&pid) && r.kind == Kind::Roadmap).cloned().collect();

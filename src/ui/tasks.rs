@@ -225,7 +225,7 @@ impl App {
                         app.go(View::Inbox);
                         ui.close_menu();
                     }
-                    if ui.button(RichText::new("🗑 Delete project and its tasks").color(p.accent)).clicked() {
+                    if ui.button(RichText::new("🗑 Delete project and its tasks").color(p.accent_text)).clicked() {
                         { let name = app.store.data.project(&pid).map(|p| p.name.clone()).unwrap_or_default(); let pp = pid.clone(); app.undoable(&format!("Deleted project \"{name}\""), "delete", |d| d.delete_project(&pp)); }
                         app.touch();
                         app.view = View::Inbox;
@@ -265,7 +265,7 @@ impl App {
                         ui.horizontal(|ui| {
                             ui.label(RichText::new("Overdue").font(fb(14.0)));
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                if ghost_button(ui, RichText::new("Reschedule").color(p.accent).size(13.0)).clicked() {
+                                if ghost_button(ui, RichText::new("Reschedule").color(p.accent_text).size(13.0)).clicked() {
                                     resched = true;
                                 }
                             });
@@ -306,7 +306,7 @@ impl App {
                     let d = &self.store.data;
                     let overdue: Vec<Id> = d.tasks.iter().filter(|t| t.is_overdue() && t.due.map_or(false, |x| x < t0)).map(|t| t.id.clone()).collect();
                     if !overdue.is_empty() {
-                        ui.label(RichText::new("Overdue").font(fb(14.0)).color(p.accent));
+                        ui.label(RichText::new("Overdue").font(fb(14.0)).color(p.accent_text));
                         hline(ui, p);
                         self.render_tasks(ui, p, &overdue, true, false, &mut acts);
                         ui.add_space(12.0);
@@ -548,7 +548,7 @@ impl App {
         egui::ScrollArea::horizontal().id_salt("board").auto_shrink([false, true]).show(ui, |ui| {
             ui.horizontal_top(|ui| {
                 for sec in &cols {
-                    let frame = egui::Frame::none().fill(if p.dark { Color32::from_rgb(36, 36, 36) } else { Color32::from_rgb(248, 247, 245) }).rounding(10.0).inner_margin(egui::Margin::same(10.0));
+                    let frame = egui::Frame::none().fill(p.surface_sunk).rounding(10.0).inner_margin(egui::Margin::same(10.0));
                     let (_, dropped) = ui.dnd_drop_zone::<Id, ()>(frame, |ui| {
                         ui.set_width(270.0);
                         ui.set_min_height(300.0);
@@ -678,7 +678,7 @@ impl App {
                     });
                 }
                 ui.horizontal(|ui| {
-                    ui.label(RichText::new("+").color(p.accent));
+                    ui.label(RichText::new("+").color(p.accent_text));
                     let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.sub_text).hint_text("Add sub-task (Enter)").frame(false).desired_width(f32::INFINITY));
                     if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !self.tasks_ui.sub_text.trim().is_empty() {
                         add_sub = Some(std::mem::take(&mut self.tasks_ui.sub_text));

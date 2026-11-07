@@ -1130,7 +1130,7 @@ impl App {
                 egui::Frame::none().fill(p.toast_bg).rounding(8.0).inner_margin(egui::Margin::symmetric(14.0, 10.0)).show(ui, |ui| {
                     ui.horizontal(|ui| {
                         ui.label(RichText::new(msg).color(p.toast_text).size(13.5));
-                        if ui.add(egui::Button::new(RichText::new("Undo").color(p.accent).strong()).frame(false)).clicked() {
+                        if ui.add(egui::Button::new(RichText::new("Undo").color(p.accent_text).strong()).frame(false)).clicked() {
                             undo = Some(cs.clone());
                         }
                     });

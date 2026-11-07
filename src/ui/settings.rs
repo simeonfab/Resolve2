@@ -289,7 +289,7 @@ impl App {
                 ("Esc", "Close dialogs and panels"),
             ] {
                 ui.horizontal(|ui| {
-                    ui.add_sized([70.0, 18.0], egui::Label::new(RichText::new(k).monospace().color(p.accent)));
+                    ui.add_sized([70.0, 18.0], egui::Label::new(RichText::new(k).monospace().color(p.accent_text)));
                     ui.label(RichText::new(v).size(13.0));
                 });
             }
@@ -369,13 +369,13 @@ impl App {
             ui.add_space(6.0);
             if self.reg.workspaces.len() > 1 {
                 if !self.settings_ui.confirm_remove_ws {
-                    if ui.button(RichText::new("Remove this workspace from the list…").color(p.accent)).clicked() {
+                    if ui.button(RichText::new("Remove this workspace from the list…").color(p.accent_text)).clicked() {
                         self.settings_ui.confirm_remove_ws = true;
                     }
                 } else {
                     ui.label(RichText::new("It disappears from Resolve 2, but its folder (and backups) stay on disk so nothing is lost.").color(p.orange));
                     ui.horizontal(|ui| {
-                        if ui.button(RichText::new("Yes, remove it").color(p.accent)).clicked() {
+                        if ui.button(RichText::new("Yes, remove it").color(p.accent_text)).clicked() {
                             let id = self.store.meta.id.clone();
                             self.reg.workspaces.retain(|w| w.id != id);
                             self.reg.save();
@@ -498,7 +498,7 @@ impl App {
                     ui.label(RichText::new(dt.format("%a %-d %b %Y  %H:%M").to_string()).size(13.0));
                     ui.label(RichText::new(format!("{} KB", size / 1024)).size(12.0).color(p.dim));
                     if self.settings_ui.confirm_restore.as_ref() == Some(path) {
-                        if ui.button(RichText::new("Confirm restore").color(p.accent)).clicked() {
+                        if ui.button(RichText::new("Confirm restore").color(p.accent_text)).clicked() {
                             let pth = path.clone();
                             self.settings_ui.message = match self.store.restore(&pth) {
                                 Ok(()) => "Restored. (Your state just before restoring was backed up too.)".into(),
@@ -573,7 +573,7 @@ impl App {
                 }
             });
             if let Some(e) = &self.server_error {
-                ui.label(RichText::new(format!("⚠ {e}")).color(p.accent));
+                ui.label(RichText::new(format!("⚠ {e}")).color(p.accent_text));
             }
             let ip = crate::server::lan_ip().unwrap_or_else(|| "this-pc".into());
             let url = format!("http://{ip}:{}/?token={}", self.store.settings.server_port, self.store.settings.token);

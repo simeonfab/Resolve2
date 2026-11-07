@@ -261,7 +261,7 @@ pub fn start_voice_typing() {
 
 /// A 🎤 button; returns true when pressed (caller focuses its text box).
 pub fn mic_button(ui: &mut Ui, p: &Pal) -> bool {
-    let r = ui.add(egui::Button::new(RichText::new("🎤").size(15.0).color(p.accent)).frame(false)).on_hover_text("Speak instead of typing (Windows voice typing, Win+H)");
+    let r = ui.add(egui::Button::new(RichText::new("🎤").size(15.0).color(p.accent_text)).frame(false)).on_hover_text("Speak instead of typing (Windows voice typing, Win+H)");
     if r.clicked() {
         start_voice_typing();
         true

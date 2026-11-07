@@ -43,8 +43,8 @@ running) — never kill the user's window.
 ## Ownership split (two agents)
 | Owner | Owns | Must not |
 |---|---|---|
-| **Codex / Craft Anything builder** | data models, business logic, AI and intake logic, routing, view *structure* (`src/model.rs`, `store.rs`, `resolve/`, `ai.rs`, `mcp.rs`, view files' layout and behaviour) | change token values or component styling except when unavoidable — then say so in the commit message |
-| **Claude (visual layer, from GitHub)** | `src/ui/theme.rs` (tokens) and `src/ui/widgets.rs` (component styles) | change data, logic or routing |
+| **Craft Anything builder** | data models, business logic, AI and intake logic, routing, view *structure* (`src/model.rs`, `store.rs`, `resolve/`, `ai.rs`, `mcp.rs`, view files' layout and behaviour) and, **for the 2026 redesign (build brief 7 Nov 2026, phases 0 to 6), also `src/ui/theme.rs` and `src/ui/widgets.rs`** | put colours, fonts, sizes, radii or spacing anywhere but `theme.rs`, or component styling anywhere but `widgets.rs` |
+| **Claude (visual layer, from GitHub)** | not active during the redesign; `theme.rs` and `widgets.rs` are the builder's until Simeon says otherwise | change data, logic or routing |
 
 No hard-coded colours, fonts, sizes, spacing or radii in view code: use `theme.rs` tokens. (Legacy
 hard-coded values still exist in views — see docs/RECONCILIATION.md §2.6 Part 6; don't add new ones.)

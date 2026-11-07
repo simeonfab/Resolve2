@@ -381,7 +381,7 @@ impl App {
         ui.label(RichText::new(section).size(size::SMALL).color(p.eyebrow));
         ui.horizontal_wrapped(|ui| {
             ui.label(RichText::new("●").color(rgb(pr.color)).size(18.0));
-            ui.label(RichText::new(&pr.name).font(fserif(size::HERO)));
+            ui.label(RichText::new(&pr.name).font(fserif(size::STEP_TITLE)));
         });
         ui.add_space(4.0);
         hline(ui, p);

@@ -105,7 +105,7 @@ pub(crate) fn inline_job(text: &str, size: f32, family_bold: bool, color: Color3
                     4 => {
                         f.font_id = FontId::monospace(size - 2.0);
                         f.background = p.code;
-                        f.color = if p.dark { Color32::from_rgb(235, 120, 110) } else { Color32::from_rgb(200, 60, 50) };
+                        f.color = p.orange;
                     }
                     _ => f.italics = true,
                 }
@@ -249,7 +249,7 @@ impl App {
                         });
                     });
                     ui.separator();
-                    if ui.button(RichText::new("🗑 Delete page").color(p.accent)).clicked() {
+                    if ui.button(RichText::new("🗑 Delete page").color(p.accent_text)).clicked() {
                         delete_page = true;
                         ui.close_menu();
                     }
@@ -258,7 +258,7 @@ impl App {
                 if ui.button(ai_label).on_hover_text("Local AI assistant (Ollama / LM Studio) — free, runs on this PC").clicked() {
                     self.page_ui.ai_open = !self.page_ui.ai_open;
                 }
-                let star = if page.favorite { RichText::new("★").color(Color32::from_rgb(246, 191, 38)).size(17.0) } else { RichText::new("☆").size(17.0).color(p.dim) };
+                let star = if page.favorite { RichText::new("★").color(p.accent).size(17.0) } else { RichText::new("☆").size(17.0).color(p.dim) };
                 if ghost_button(ui, star).on_hover_text("Favourite").clicked() {
                     if let Some(pg) = self.store.data.page_mut(pid) {
                         pg.favorite = !pg.favorite;
@@ -518,7 +518,7 @@ impl App {
                             }
                             ui.close_menu();
                         }
-                        if ui.button(RichText::new("🗑 Delete").color(p.accent)).clicked() {
+                        if ui.button(RichText::new("🗑 Delete").color(p.accent_text)).clicked() {
                             acts.push(BAct::Delete(i));
                             ui.close_menu();
                         }
@@ -983,7 +983,7 @@ impl App {
         ui.add_space(10.0);
         ui.horizontal(|ui| {
             ui.label(RichText::new(format!("Linked tasks · {}", tasks.len())).font(fs(13.0)).color(p.dim));
-            if ghost_button(ui, RichText::new("+ Add task for this page").size(12.5).color(p.accent)).clicked() {
+            if ghost_button(ui, RichText::new("+ Add task for this page").size(12.5).color(p.accent_text)).clicked() {
                 add_task = true;
             }
         });

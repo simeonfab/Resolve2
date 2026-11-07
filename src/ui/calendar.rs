@@ -74,7 +74,7 @@ fn layout_day(mut items: Vec<(f32, f32, CalItem)>) -> Vec<Placed> {
 fn text_on(c: Color32) -> Color32 {
     let l = 0.299 * c.r() as f32 + 0.587 * c.g() as f32 + 0.114 * c.b() as f32;
     if l > 170.0 {
-        Color32::from_rgb(30, 30, 30)
+        tok::INK
     } else {
         Color32::WHITE
     }
@@ -191,7 +191,7 @@ impl App {
                                     }
                                 }
                             });
-                            if self.store.data.calendars.len() > 1 && ui.button(RichText::new("🗑 Delete calendar and its events").color(p.accent)).clicked() {
+                            if self.store.data.calendars.len() > 1 && ui.button(RichText::new("🗑 Delete calendar and its events").color(p.accent_text)).clicked() {
                                 { let cid = c.id.clone(); self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", |d| d.delete_calendar(&cid)); }
                                 self.touch();
                                 ui.close_menu();
@@ -531,8 +531,8 @@ impl App {
             if let Some(i) = days.iter().position(|x| *x == now.date()) {
                 let y = top + now.time().num_seconds_from_midnight() as f32 / 3600.0 * hour_h;
                 let x0 = grid.left() + gutter + col_w * i as f32;
-                ui.painter().line_segment([Pos2::new(x0, y), Pos2::new(x0 + col_w, y)], Stroke::new(2.0, Color32::from_rgb(234, 67, 53)));
-                ui.painter().circle_filled(Pos2::new(x0, y), 5.0, Color32::from_rgb(234, 67, 53));
+                ui.painter().line_segment([Pos2::new(x0, y), Pos2::new(x0 + col_w, y)], Stroke::new(2.0, tok::TERRACOTTA));
+                ui.painter().circle_filled(Pos2::new(x0, y), 5.0, tok::TERRACOTTA);
             }
         });
         if let Some(nd) = new_drag {
@@ -776,7 +776,7 @@ impl App {
                 }
                 ui.add_space(8.0);
                 ui.horizontal(|ui| {
-                    if dr.id.is_some() && ui.button(RichText::new("🗑 Delete").color(p.accent)).clicked() {
+                    if dr.id.is_some() && ui.button(RichText::new("🗑 Delete").color(p.accent_text)).clicked() {
                         delete = true;
                     }
                     ui.with_layout(Layout::right_to_left(Align::Center), |ui| {

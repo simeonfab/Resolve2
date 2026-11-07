@@ -72,7 +72,7 @@ impl App {
                 let mut submit = false;
                 egui::Frame::none().fill(p.card).stroke(egui::Stroke::new(1.0, p.line)).rounding(10.0).inner_margin(egui::Margin::symmetric(14.0, 8.0)).show(ui, |ui| {
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new("⊕").size(20.0).color(p.accent));
+                        ui.label(RichText::new("⊕").size(20.0).color(p.accent_text));
                         let text = self.temp.entry("dash_capture".into()).or_default();
                         let r = ui.add(egui::TextEdit::singleline(text).hint_text("Quick capture — e.g. Call the garage tomorrow 9am").frame(false).font(fp(15.0)).desired_width(ui.available_width() - 110.0));
                         if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
@@ -120,7 +120,7 @@ impl App {
                 egui::Frame::none().fill(p.callout).rounding(10.0).inner_margin(egui::Margin::symmetric(16.0, 12.0)).show(ui, |ui| {
                     ui.set_width(ui.available_width());
                     ui.horizontal(|ui| {
-                        ui.label(RichText::new("✦ Resolve").font(fs(15.0)).color(p.accent));
+                        ui.label(RichText::new("✦ Resolve").font(fs(15.0)).color(p.accent_text));
                         ui.label(RichText::new("your guided projects and their next move").size(12.5).color(p.dim));
                         ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                             if primary_button(ui, p, "New project").on_hover_text("Opens the intake").clicked() {
@@ -199,7 +199,7 @@ impl App {
                             ui.horizontal(|ui| {
                                 ui.label(RichText::new("Today").font(fb(17.0)));
                                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                                    if overdue > 0 && ghost_button(ui, RichText::new("Reschedule overdue → today").size(12.0).color(p.accent)).clicked() {
+                                    if overdue > 0 && ghost_button(ui, RichText::new("Reschedule overdue → today").size(12.0).color(p.accent_text)).clicked() {
                                         reschedule = true;
                                     }
                                 });
@@ -221,7 +221,7 @@ impl App {
                                 }
                             }
                             if list.len() > 9 {
-                                if ghost_button(ui, RichText::new(format!("+ {} more in Today", list.len() - 9)).color(p.accent)).clicked() {
+                                if ghost_button(ui, RichText::new(format!("+ {} more in Today", list.len() - 9)).color(p.accent_text)).clicked() {
                                     go_to = Some(View::Today);
                                 }
                             }
@@ -247,7 +247,7 @@ impl App {
                                     open_task = Some(t.id.clone());
                                 }
                             }
-                            if cap.len() > 6 && ghost_button(ui, RichText::new(format!("+ {} more in Tasks → Captured", cap.len() - 6)).color(p.accent)).clicked() {
+                            if cap.len() > 6 && ghost_button(ui, RichText::new(format!("+ {} more in Tasks → Captured", cap.len() - 6)).color(p.accent_text)).clicked() {
                                 go_to = Some(View::Inbox);
                             }
                         });
@@ -315,7 +315,7 @@ impl App {
                                 if !now_drawn && !all_day && start > now {
                                     now_drawn = true;
                                     ui.horizontal(|ui| {
-                                        ui.label(RichText::new(fmt_time(now.time())).size(11.0).color(p.accent));
+                                        ui.label(RichText::new(fmt_time(now.time())).size(11.0).color(p.accent_text));
                                         let (r, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 8.0), Sense::hover());
                                         ui.painter().circle_filled(r.left_center(), 4.0, p.accent);
                                         ui.painter().line_segment([r.left_center(), r.right_center()], egui::Stroke::new(1.5, p.accent));

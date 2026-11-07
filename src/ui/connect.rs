@@ -149,7 +149,7 @@ impl App {
             ui.add_space(36.0);
             centered(ui, space::COLUMN + 80.0, |ui| {
                 ui.label(RichText::new("Before you start").size(size::SMALL).color(p.eyebrow));
-                ui.label(RichText::new("Connect your AI").font(fserif(size::HERO)));
+                ui.label(RichText::new("Connect your AI").font(fserif(size::STEP_TITLE)));
                 wrap_label(ui, RichText::new("Resolve uses an AI to ask good questions and write your plan. Pick one and press Test. You can change it later in Settings.").size(size::BODY).color(p.dim));
                 ui.add_space(14.0);
                 self.connect_cards(ui, p);
@@ -233,7 +233,7 @@ impl App {
                 Some(Ok(models)) => {
                     let has_qwen = models.iter().any(|m| m.starts_with("qwen3"));
                     let txt = if models.is_empty() { "✓ Ollama is running, but no model is downloaded yet.".to_string() } else { format!("✓ Ollama is running. Models: {}", models.join(", ")) };
-                    wrap_label(ui, RichText::new(txt).size(size::SMALL).color(p.green));
+                    wrap_label(ui, RichText::new(txt).size(size::SMALL).color(p.green_text));
                     if !has_qwen {
                         if models.iter().all(|m| m.starts_with("llama3.2")) && !models.is_empty() {
                             ui.label(RichText::new("llama3.2: Fine for trying the flow, weak for real projects.").size(size::SMALL).color(p.orange));
@@ -302,7 +302,7 @@ impl App {
         }
         match self.connect.results.get(which) {
             Some(Ok(reply)) => {
-                wrap_label(ui, RichText::new(format!("✓ Connected. It said: \"{}\"", reply.chars().take(120).collect::<String>())).size(size::SMALL).color(p.green));
+                wrap_label(ui, RichText::new(format!("✓ Connected. It said: \"{}\"", reply.chars().take(120).collect::<String>())).size(size::SMALL).color(p.green_text));
             }
             Some(Err(e)) => {
                 wrap_label(ui, RichText::new(format!("✗ {e}")).size(size::SMALL).color(p.orange));
@@ -316,7 +316,7 @@ impl App {
             ui.set_width(ui.available_width());
             ui.vertical(|ui| {
                 ui.horizontal_wrapped(|ui| {
-                    ui.label(RichText::new(n).font(fserif(size::TITLE)).color(p.accent));
+                    ui.label(RichText::new(n).font(fserif(size::TITLE)).color(p.accent_text));
                     ui.label(RichText::new(title).font(fs(size::TITLE)));
                     if let Some(t) = tag {
                         chip(ui, t, p.accent);
@@ -355,7 +355,7 @@ impl App {
                     self.temp.insert("report_copied".into(), "1".into());
                 }
                 if self.temp.contains_key("report_copied") {
-                    ui.label(RichText::new("✓ Copied. Paste this to Simeon.").size(size::SMALL).color(p.green));
+                    ui.label(RichText::new("✓ Copied. Paste this to Simeon.").size(size::SMALL).color(p.green_text));
                 } else {
                     ui.label(RichText::new("Paste this to Simeon.").size(size::SMALL).color(p.faint));
                 }

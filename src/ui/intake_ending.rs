@@ -76,7 +76,7 @@ impl App {
     fn ie_next_move(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let Some(pr) = it.proposal.as_mut() else { return };
         eyebrow(ui, p, "Your next move");
-        ui.label(RichText::new("Here's what to do next.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Here's what to do next.").font(fserif(size::STEP_TITLE)));
         ui.add_space(10.0);
         egui::Frame::none().fill(p.ink).rounding(space::RADIUS).inner_margin(space::CARD_PAD + 4.0).show(ui, |ui| {
             ui.set_width(ui.available_width());
@@ -106,7 +106,7 @@ impl App {
         let Some(pr) = it.proposal.as_mut() else { return };
         let n = pr.roadmap.len();
         eyebrow(ui, p, "Your roadmap");
-        ui.label(RichText::new("Does this belong on your roadmap?").font(fserif(size::HERO)));
+        ui.label(RichText::new("Does this belong on your roadmap?").font(fserif(size::STEP_TITLE)));
         if n == 0 {
             ui.label(RichText::new("There are no roadmap themes yet. Add one, or carry on and add them later.").size(size::SMALL).color(p.dim));
             if ui.button("+ Add a theme").clicked() {
@@ -195,7 +195,7 @@ impl App {
     fn ie_first_week(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let Some(pr) = it.proposal.as_ref() else { return };
         eyebrow(ui, p, "Your first week");
-        ui.label(RichText::new("Here's where to begin.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Here's where to begin.").font(fserif(size::STEP_TITLE)));
         ui.add_space(10.0);
         let now: Vec<&Item> = pr.tasks.iter().filter(|t| t.phase == "Now" || t.phase.is_empty()).collect();
         if now.is_empty() {
@@ -224,7 +224,7 @@ impl App {
     fn ie_whole_picture(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let Some(pr) = it.proposal.clone() else { return };
         eyebrow(ui, p, "Your roadmap");
-        ui.label(RichText::new("Here's the whole picture.").font(fserif(size::HERO)));
+        ui.label(RichText::new("Here's the whole picture.").font(fserif(size::STEP_TITLE)));
         ui.add_space(4.0);
         ui.horizontal_wrapped(|ui| {
             ui.label(RichText::new("Project name").size(size::SMALL).color(p.dim));
