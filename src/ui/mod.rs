@@ -503,7 +503,18 @@ impl App {
                         _ => (rest.to_string(), None),
                     };
                     // screenshots use the canvases' café intake (in memory only)
-                    let sample = if app.shot.is_some() && app.view_state != ViewState::Empty { Some(crate::seed::intake_sample(&mut app.store.data)) } else { None };
+                    let sample = if app.shot.is_some() { Some(crate::seed::intake_sample(&mut app.store.data)) } else { None };
+                    // empty: a new intake, one question asked and nothing heard yet
+                    if let (Some(sid), ViewState::Empty) = (&sample, app.view_state) {
+                        if let Some(i) = app.store.data.intakes.iter_mut().find(|i| &i.id == sid) {
+                            i.qas.truncate(1);
+                            i.qas[0].answer = String::new();
+                            i.qas[0].classified = String::new();
+                            i.heard.clear();
+                            i.understanding = None;
+                            i.proposal = None;
+                        }
+                    }
                     let pick = sample.clone().or_else(|| app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone())).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
                     if let Some(id) = pick {
                         if let Some(i) = app.store.data.intakes.iter_mut().find(|i| i.id == id) {
