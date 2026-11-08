@@ -223,6 +223,51 @@ pub fn parse(input: &str, today: NaiveDate) -> Capture {
     parse_used(input, today).0
 }
 
+/// The text without its `#name` word (case doesn't matter).
+pub fn without_tag(text: &str, name: &str) -> String {
+    let tag = format!("#{}", name.to_lowercase());
+    text.split_whitespace().filter(|w| w.to_lowercase() != tag).collect::<Vec<_>>().join(" ")
+}
+
+/// An existing project name close to a typed #Name that matches none (B-E11): same letters
+/// ignoring case, spaces and hyphens; one starting with the other; or at most two letters off.
+pub fn closest_project<'a>(typed: &str, names: &'a [String]) -> Option<&'a String> {
+    let norm = |s: &str| s.to_lowercase().chars().filter(|c| c.is_alphanumeric()).collect::<String>();
+    let t = norm(typed);
+    if t.is_empty() {
+        return None;
+    }
+    let dist = |a: &str, b: &str| -> usize {
+        let (a, b): (Vec<char>, Vec<char>) = (a.chars().collect(), b.chars().collect());
+        let mut prev: Vec<usize> = (0..=b.len()).collect();
+        for i in 1..=a.len() {
+            let mut cur = vec![i; b.len() + 1];
+            for j in 1..=b.len() {
+                cur[j] = (prev[j] + 1).min(cur[j - 1] + 1).min(prev[j - 1] + usize::from(a[i - 1] != b[j - 1]));
+            }
+            prev = cur;
+        }
+        prev[b.len()]
+    };
+    names
+        .iter()
+        .map(|n| (n, norm(n)))
+        .filter(|(_, n)| !n.is_empty())
+        .filter_map(|(orig, n)| {
+            let score = if n == t {
+                0
+            } else if t.len() >= 3 && (n.starts_with(&t) || t.starts_with(n.as_str())) {
+                1
+            } else {
+                let dd = dist(&t, &n);
+                if dd <= 2 && t.len() >= 4 { 1 + dd } else { return None }
+            };
+            Some((score, orig))
+        })
+        .min_by_key(|x| x.0)
+        .map(|x| x.1)
+}
+
 /// What a recognised word means, for highlighting it as you type (B-E11).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Recognised {

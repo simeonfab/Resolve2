@@ -85,6 +85,8 @@ pub struct QuickAdd {
     pub opened: f64,
     /// The last save failed: the text stays and the dialog says so.
     pub error: bool,
+    /// The "New project: Name" chip was dismissed (×): saving won't create that project.
+    pub new_project_off: bool,
 }
 
 pub struct Palette {
@@ -691,11 +693,18 @@ impl App {
             View::Calendar => (None, Some(self.cal.anchor)),
             _ => (None, None),
         };
-        self.quick = Some(QuickAdd { text: String::new(), kind, project, section: String::new(), due, parent: None, page: None, focus: true, opened: f64::NAN, error: false });
+        self.quick = Some(QuickAdd { text: String::new(), kind, project, section: String::new(), due, parent: None, page: None, focus: true, opened: f64::NAN, error: false, new_project_off: false });
     }
 
     /// Create a task from quick-capture text. Returns the new id.
+    /// A #Name with no matching project goes nowhere new: the task keeps `project` (B-E11).
     pub fn add_task_text(&mut self, text: &str, project: Option<Id>, section: &str, default_due: Option<NaiveDate>, parent: Option<Id>, page: Option<Id>) -> Option<Id> {
+        self.add_task_text_with(text, project, section, default_due, parent, page, false)
+    }
+
+    /// As `add_task_text`; `create_project` makes the #Name project when none matches (only Add
+    /// task does this, when its "New project" chip is still showing at save).
+    pub fn add_task_text_with(&mut self, text: &str, project: Option<Id>, section: &str, default_due: Option<NaiveDate>, parent: Option<Id>, page: Option<Id>, create_project: bool) -> Option<Id> {
         let c = crate::nlp::parse(text, today());
         if c.title.trim().is_empty() {
             return None;
@@ -715,13 +724,14 @@ impl App {
             t.project_id = match self.store.data.project_by_name(pname) {
                 Some(p) => Some(p.id.clone()),
                 None if pname.eq_ignore_ascii_case("inbox") => None,
-                None => {
-                    let palette: [[u8; 3]; 5] = [[219, 76, 63], [41, 171, 135], [20, 170, 245], [175, 56, 235], [255, 153, 51]];
-                    let pr = Project { id: new_id(), name: pname.clone(), color: palette[self.store.data.projects.len() % 5], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
+                // only when asked (Add task's "New project" chip); never quietly
+                None if create_project => {
+                    let pr = Project { id: new_id(), name: pname.clone(), color: PICK_COLOURS[self.store.data.projects.len() % PICK_COLOURS.len()], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
                     let id = pr.id.clone();
                     self.store.data.projects.push(pr);
                     Some(id)
                 }
+                None => t.project_id.clone(),
             };
         }
         if let Some(pid) = &parent {
@@ -1025,6 +1035,8 @@ impl App {
             QuickKind::Page => ("New page", "Page title", "Create page"),
         };
         let today_ = today();
+        // "Did you mean …?" clicked: (the typed #Name, the existing project)
+        let mut did_mean: Option<(String, String)> = None;
         egui::Area::new(area_id).order(egui::Order::Foreground).fixed_pos(origin).pivot(Align2::CENTER_TOP).show(ctx, |ui| {
             ui.multiply_opacity(f.alpha.clamp(0.0, 1.0));
             dialog_frame(p).show(ui, |ui| {
@@ -1093,7 +1105,28 @@ impl App {
                                 }
                             }
                             for (s, k) in c.plain_chips() {
-                                understood_chip(ui, p, "", &s, Some(k));
+                                if k != crate::nlp::Recognised::Project {
+                                    understood_chip(ui, p, "", &s, Some(k));
+                                    continue;
+                                }
+                                // #Name: an existing project, or a new one only if the chip stays (B-E11)
+                                let name = c.project.clone().unwrap_or_default();
+                                if self.store.data.project_by_name(&name).is_some() || name.eq_ignore_ascii_case("inbox") {
+                                    understood_chip(ui, p, "", &s, Some(k));
+                                    continue;
+                                }
+                                if !q.new_project_off {
+                                    understood_chip(ui, p, "", &format!("New project: {name}"), Some(crate::nlp::Recognised::When));
+                                    if icon_button(ui, Icon::Close, true, false).on_hover_text("Don't create this project").clicked() {
+                                        q.new_project_off = true;
+                                    }
+                                }
+                                let names: Vec<String> = self.store.data.projects.iter().filter(|x| !x.archived).map(|x| x.name.clone()).collect();
+                                if let Some(close) = crate::nlp::closest_project(&name, &names) {
+                                    if understood_chip(ui, p, "", &format!("Did you mean {close}?"), Some(crate::nlp::Recognised::Project)).on_hover_text("Use this project instead").clicked() {
+                                        did_mean = Some((name.clone(), close.clone()));
+                                    }
+                                }
                             }
                             if q.parent.is_some() {
                                 understood_chip(ui, p, "", "Subtask", Some(crate::nlp::Recognised::Label));
@@ -1114,7 +1147,12 @@ impl App {
                         if q.kind == QuickKind::Task {
                             ui.label(RichText::new("Goes to").size(size::LABEL).color(p.dim));
                             let named = crate::nlp::parse(&q.text, today_).project;
-                            let label = named.clone().unwrap_or_else(|| if q.project.is_some() { self.store.data.project_name(&q.project) } else { "Captured".to_string() });
+                            let fallback = if q.project.is_some() { self.store.data.project_name(&q.project) } else { "Captured".to_string() };
+                            let label = match named {
+                                Some(n) if self.store.data.project_by_name(&n).is_some() => n,
+                                Some(n) if !q.new_project_off && !n.eq_ignore_ascii_case("inbox") => format!("New project: {n}"),
+                                _ => fallback,
+                            };
                             egui::ComboBox::from_id_salt("qa-project").selected_text(RichText::new(label).font(fs(size::LABEL))).width(space::S40 * 4.5).show_ui(ui, |ui| {
                                 ui.selectable_value(&mut q.project, None, "Captured");
                                 for pr in self.store.data.projects.iter().filter(|x| !x.archived) {
@@ -1135,11 +1173,21 @@ impl App {
             });
         });
         motion::transform_layer(ctx, egui::LayerId::new(egui::Order::Foreground, area_id), origin, moves::DIALOG_SCALE + (1.0 - moves::DIALOG_SCALE) * f.t, egui::vec2(0.0, -moves::DIALOG_RISE * (1.0 - f.t)));
+        // "Did you mean …?": the task goes to that project and the #Name word leaves the text
+        if let Some((typed, project)) = did_mean {
+            q.text = crate::nlp::without_tag(&q.text, &typed);
+            q.project = self.store.data.project_by_name(&project).map(|x| x.id.clone());
+            q.new_project_off = false;
+            q.focus = true;
+        }
         if submit && !q.text.trim().is_empty() {
             match q.kind {
                 QuickKind::Task => {
                     let title = crate::nlp::parse(&q.text, today()).title;
-                    if self.add_task_text(&q.text, q.project.clone(), &q.section, q.due, q.parent.clone(), q.page.clone()).is_some() {
+                    // a #Name with no project is made only if its "New project" chip is still showing
+                    let create = !q.new_project_off;
+                    if self.add_task_text_with(&q.text, q.project.clone(), &q.section, q.due, q.parent.clone(), q.page.clone(), create).is_some() {
+                        q.new_project_off = false;
                         self.toast(format!("Added: {title}"));
                         q.error = false;
                     } else {

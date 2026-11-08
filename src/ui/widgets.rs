@@ -1774,7 +1774,7 @@ pub fn progress_line(ui: &mut Ui, p: &Pal, frac: f32, width: f32) {
 
 /// A "Resolve understood" chip in Add task (no emoji): the task itself (white, "Task <b>title</b>"),
 /// or a recognised part tinted by what it is.
-pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Option<crate::nlp::Recognised>) {
+pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Option<crate::nlp::Recognised>) -> Response {
     use crate::nlp::Recognised;
     let (bg, fg, edge) = match kind {
         None => (p.card, p.text, p.line),
@@ -1788,9 +1788,21 @@ pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Optio
     }
     job.append(text, 0.0, egui::TextFormat { font_id: fs(size::LABEL), color: fg, ..Default::default() });
     let g = ui.painter().layout_job(job);
-    let (r, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S22, space::S14), Sense::hover());
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S22, space::S14), Sense::click());
     ui.painter().rect(r, radius::SMALL_BUTTON, bg, Stroke::new(stroke::HAIR, edge));
     ui.painter().galley(r.min + egui::vec2(space::S22 / 2.0, space::S14 / 2.0), g, fg);
+    resp
+}
+
+/// A button the full width of its column (Plan my day's "Use this plan").
+pub fn wide_button(ui: &mut Ui, p: &Pal, kind: ButtonKind, text: &str, enabled: bool) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::BUTTON_H + space::S8), if enabled { Sense::click() } else { Sense::hover() });
+    let (fill, fg, edge) = button_colours(p, kind, enabled, resp.hovered());
+    let s = motion::tween(ui.ctx(), resp.id.with("press"), if resp.is_pointer_button_down_on() { 0.975 } else { 1.0 }, timing(240.0, 0.0, E_STD));
+    let r = motion::scale_about(rect, rect.center(), s);
+    ui.painter().rect(r, radius::BUTTON, fill, edge);
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, text, fs(size::BUTTON), fg);
+    if enabled { resp.on_hover_cursor(egui::CursorIcon::PointingHand) } else { resp }
 }
 
 /// One row of Plan my day: the time (92 wide), a 4 px bar (amber task, terracotta event or

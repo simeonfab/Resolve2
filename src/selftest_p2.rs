@@ -77,6 +77,53 @@ pub fn run(t: &mut T) {
         format!("{spans:?} {chips:?}"),
     );
 
+    // B-E5: waiting since; old data loads unchanged, and marking it can be undone
+    let old: Result<crate::model::Task, _> = serde_json::from_str(r#"{"id":"t1","title":"Old task","priority":4,"created":1,"updated":1}"#);
+    let saved = old.as_ref().map(|x| serde_json::to_string(x).unwrap_or_default()).unwrap_or_default();
+    t.check("B-E5: a task saved before waiting existed loads unchanged, and saves without the new fields", old.as_ref().map_or(false, |x| x.waiting_since.is_none() && x.planned_start.is_none()) && !saved.contains("waiting_since") && !saved.contains("planned_start"), &saved);
+    let mut w = crate::model::WorkspaceData::default();
+    let wt = crate::model::Task::new("Ask for the till export".to_string());
+    let wid = wt.id.clone();
+    w.tasks.push(wt);
+    let cs = w.record_change("Waiting on \"Ask for the till export\"", "edit", |d| {
+        if let Some(x) = d.task_mut(&wid) {
+            x.waiting_since = Some(1);
+        }
+    });
+    let marked = w.task(&wid).map_or(false, |x| x.waiting_since.is_some());
+    let undone = cs.as_deref().map_or(false, |c| w.undo_recorded(c).is_ok()) && w.task(&wid).map_or(false, |x| x.waiting_since.is_none());
+    t.check("B-E5: marking a task waiting is a change set Undo reverses", marked && undone, "");
+    let wt_model = crate::ui::tasks::project_tasks_model(&d, &cafe, crate::model::now_ms(), at);
+    t.check("B-E5: a waiting task sits in Waiting on (with its days), not in Now; Home's card lists it", wt_model.waiting.iter().any(|w| w.4 && w.1.starts_with("Hours export") && w.2 == "Waiting · 3 days") && !wt_model.now.iter().any(|(id, _)| d.task(id).map_or(false, |x| x.title.starts_with("Hours export"))) && m.waiting.iter().any(|(w, a)| w.starts_with("Hours export") && a == "3 days"), format!("{:?}", wt_model.waiting));
+
+    // B-E22: Use this plan writes only the planned start, replaces earlier ones, and the
+    // calendar's Agenda shows the task at that time
+    let mut pd = d.clone();
+    let rec = pd.tasks.iter().find(|x| x.title == "Reconstruct 12 months of hours per café").cloned().unwrap();
+    let before = (rec.due, rec.due_time, rec.reminder_min);
+    let plan1 = crate::ui::plan::Plan { rows: vec![crate::ui::plan::PlanRow { time: "09:30 – 11:00".into(), item: rec.title.clone(), why: String::new(), tag: "Task".into(), task: Some(rec.id.clone()) }], ..Default::default() };
+    let starts = crate::ui::plan::plan_starts(&plan1, at.date());
+    crate::ui::plan::apply_plan(&mut pd, &starts, at.date());
+    let after1 = pd.task(&rec.id).cloned().unwrap();
+    let agenda = crate::ui::calendar::agenda_days(&pd, at.date(), 1, true, at.date());
+    let shows = agenda.first().map_or(false, |(_, l)| l.iter().any(|x| x.title == rec.title && x.time == "Planned 09:30"));
+    let plan2 = crate::ui::plan::Plan { rows: vec![crate::ui::plan::PlanRow { time: "14:00".into(), item: "Send October invoices".into(), why: String::new(), tag: "Task".into(), task: pd.tasks.iter().find(|x| x.title == "Send October invoices").map(|x| x.id.clone()) }], ..Default::default() };
+    let s2 = crate::ui::plan::plan_starts(&plan2, at.date());
+    crate::ui::plan::apply_plan(&mut pd, &s2, at.date());
+    t.check(
+        "B-E22: Use this plan sets only the planned start (due date, time and reminder untouched), the Agenda shows it, and a new plan replaces it",
+        after1.planned_start.map(|x| x.format("%H:%M").to_string()) == Some("09:30".into()) && (after1.due, after1.due_time, after1.reminder_min) == before && shows && pd.task(&rec.id).map_or(false, |x| x.planned_start.is_none()),
+        format!("{:?} {shows}", after1.planned_start),
+    );
+
+    // B-E11: #Name with no project: nothing is created quietly; a close name is offered
+    let names = vec!["Café flat-fee bookkeeping".to_string(), "Website refresh".to_string(), "Home".to_string()];
+    t.check(
+        "B-E11: a close project name is offered for a #Name that matches none (\"Did you mean …?\"), and choosing it removes the #word",
+        crate::nlp::closest_project("Websit", &names).map(|s| s.as_str()) == Some("Website refresh") && crate::nlp::closest_project("Hom", &names).map(|s| s.as_str()) == Some("Home") && crate::nlp::closest_project("Garden", &names).is_none() && crate::nlp::without_tag("Fix gate #Hom tomorrow", "Hom") == "Fix gate tomorrow",
+        "",
+    );
+
     // B-E8: one project's tasks in Now, Waiting on and Upcoming from roadmap, with their themes
     let tm = crate::ui::tasks::project_tasks_model(&d, &cafe, crate::model::now_ms(), at);
     let first_now = tm.now.first().and_then(|(id, th)| d.task(id).map(|t| (t.title.clone(), th.clone())));

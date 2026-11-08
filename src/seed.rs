@@ -443,6 +443,7 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
         tasks: vec![
             item("Reconstruct 12 months of hours per café", "For each of your three cafés, list the hours actually worked in each of the last 12 months.", "evidence", "Now", Some(0)),
             item("Mark the busiest and quietest months", "For each café, find the highest-hour month and the lowest, and note what drove the peak.", "assumption", "Now", Some(0)),
+            item("Hours export from The Corner Café's till system", "", "evidence", "Now", Some(0)),
             item("Book a call with each willing client", "", "assumption", "Now", Some(1)),
             item("Ask what they pay now per year", "", "assumption", "Now", Some(1)),
             item("Model the flat fee against real hours", "Set an hourly rate you would accept, multiply by average monthly hours, then add a buffer for the spike months.", "assumption", "Next", Some(2)),
@@ -481,15 +482,8 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
             x.completed_at = at;
         });
     }
-    // waiting on someone else: a Dependency record, waiting for three days
-    let mut wait = crate::resolve::records::Record::new(crate::resolve::records::Kind::Dependency, cafe_id.clone(), "Hours export from The Corner Café's till system");
-    wait.status = "Waiting".into();
-    wait.created = t - 3 * 24 * 3600 * 1000;
-    wait.updated = wait.created;
-    if let Some(theme) = d.records.iter_mut().find(|r| r.kind == crate::resolve::records::Kind::Roadmap && r.title == "Measure true monthly hours") {
-        theme.links.push(wait.id.clone());
-    }
-    d.records.push(wait);
+    // waiting on someone else for three days (B-E5)
+    set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));
     if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {
         c.recommendation.why = "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into();
     }

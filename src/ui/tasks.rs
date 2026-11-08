@@ -18,8 +18,8 @@ enum TAct {
 pub struct ProjectTasks {
     /// (task, its theme) in Now: the project's Now section (or no section)
     pub now: Vec<(Id, String)>,
-    /// (dependency record, title, how long it has waited, theme)
-    pub waiting: Vec<(Id, String, String, String)>,
+    /// (task or dependency record, title, how long it has waited, theme, is it a task?)
+    pub waiting: Vec<(Id, String, String, String, bool)>,
     /// (task, theme, "Next" or "Later")
     pub upcoming: Vec<(Id, String, String)>,
     /// Other sections the person made: (section, tasks)
@@ -37,7 +37,15 @@ pub fn project_tasks_model(d: &WorkspaceData, pid: &str, real_ms: i64, now: Naiv
     let monday = now.date() - chrono::Duration::days(now.date().weekday().num_days_from_monday() as i64);
     let monday_ms = real_ms - (now - monday.and_time(NaiveTime::MIN)).num_milliseconds();
     let mut m = ProjectTasks { now: vec![], waiting: vec![], upcoming: vec![], other: vec![], done_week: tasks.iter().filter(|t| t.completed && t.completed_at.map_or(false, |c| c >= monday_ms)).count(), open: open.len() };
+    let age = |since: i64| {
+        let days = ((real_ms - since).max(0) / (24 * 3600 * 1000)) as usize;
+        if days == 0 { "Waiting · since today".to_string() } else if days == 1 { "Waiting · 1 day".to_string() } else { format!("Waiting · {days} days") }
+    };
     for t in &open {
+        if let Some(since) = t.waiting_since {
+            m.waiting.push((t.id.clone(), t.title.clone(), age(since), theme_of(&t.id), true));
+            continue;
+        }
         match t.section.as_str() {
             "" | "Now" => m.now.push((t.id.clone(), theme_of(&t.id))),
             "Next" | "Later" => m.upcoming.push((t.id.clone(), theme_of(&t.id), t.section.clone())),
@@ -49,10 +57,8 @@ pub fn project_tasks_model(d: &WorkspaceData, pid: &str, real_ms: i64, now: Naiv
     }
     m.upcoming.sort_by_key(|u| if u.2 == "Next" { 0 } else { 1 });
     for r in d.records.iter().filter(|r| r.kind == Kind::Dependency && r.project_id.as_deref() == Some(pid) && r.status == "Waiting") {
-        let days = ((real_ms - r.created).max(0) / (24 * 3600 * 1000)) as usize;
-        let age = if days == 0 { "Waiting · since today".to_string() } else if days == 1 { "Waiting · 1 day".to_string() } else { format!("Waiting · {days} days") };
         let theme = d.records.iter().find(|x| x.kind == Kind::Roadmap && x.project_id.as_deref() == Some(pid) && x.links.contains(&r.id)).map(|x| x.title.clone()).unwrap_or_default();
-        m.waiting.push((r.id.clone(), r.title.clone(), age, theme));
+        m.waiting.push((r.id.clone(), r.title.clone(), age(r.created), theme, false));
     }
     m
 }
@@ -345,10 +351,12 @@ impl App {
                                     list_box(ui, p, |ui| {
                                         for (i, (id, l)) in rows.iter().enumerate() {
                                             let (tog, open) = task_line(ui, p, &l.view(), i == 0);
+                                            // a waiting row is a task, or a project dependency (a record)
+                                            let is_task = !waiting || d.task(id).is_some();
                                             if tog {
-                                                acts.push(if waiting { TAct::WaitDone(id.clone()) } else { TAct::Toggle(id.clone()) });
+                                                acts.push(if is_task { TAct::Toggle(id.clone()) } else { TAct::WaitDone(id.clone()) });
                                             }
-                                            if open && !waiting {
+                                            if open && is_task {
                                                 acts.push(TAct::Open(id.clone()));
                                             }
                                         }
@@ -358,7 +366,7 @@ impl App {
                             };
                             let now_rows: Vec<(Id, TaskLineOwned)> = m.now.iter().filter_map(|(id, th)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ""), t)))).collect();
                             group(ui, tok::AMBER, "Now", &format!("{} active", now_rows.len()), now_rows, acts, false);
-                            let wait_rows: Vec<(Id, TaskLineOwned)> = m.waiting.iter().map(|(id, title, age, th)| (id.clone(), TaskLineOwned { title: title.clone(), notes: String::new(), when: age.clone(), urgent: false, theme: th.clone(), basis: String::new(), done: false })).collect();
+                            let wait_rows: Vec<(Id, TaskLineOwned)> = m.waiting.iter().map(|(id, title, age, th, _)| (id.clone(), TaskLineOwned { title: title.clone(), notes: String::new(), when: age.clone(), urgent: false, theme: th.clone(), basis: String::new(), done: false })).collect();
                             let nw = wait_rows.len();
                             group(ui, p.orange, "Waiting on", &format!("{nw} stalled"), wait_rows, acts, true);
                             let up_rows: Vec<(Id, TaskLineOwned)> = m.upcoming.iter().filter_map(|(id, th, ph)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ph), t)))).collect();
@@ -932,7 +940,7 @@ impl App {
             });
         });
         if let Some(sec) = add_to {
-            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: pid.clone(), section: sec, due: None, parent: None, page: None, focus: true, opened: f64::NAN, error: false });
+            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: pid.clone(), section: sec, due: None, parent: None, page: None, focus: true, opened: f64::NAN, error: false, new_project_off: false });
         }
     }
 
@@ -947,6 +955,7 @@ impl App {
         let mut open_sub: Option<Id> = None;
         let mut toggle_sub: Option<Id> = None;
         let mut add_sub: Option<String> = None;
+        let mut set_waiting: Option<bool> = None;
         // the task editor (B-E9): a 440 push panel from the right; edits save as you type
         egui::SidePanel::right("task-panel").exact_width(space::TASK_PANEL).resizable(false).frame(egui::Frame::none().fill(p.card).inner_margin(egui::Margin::same(space::S18)).stroke(Stroke::new(stroke::HAIR, p.line))).show(ctx, |ui| {
             let d = &self.store.data;
@@ -960,6 +969,11 @@ impl App {
                 ui.label(RichText::new(crumb).size(size::LABEL).color(p.dim));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                     ui.menu_button(RichText::new("⋯").font(fs(size::SECTION)).color(p.dim), |ui| {
+                        let waiting = t.waiting_since.is_some();
+                        if ui.button(if waiting { "No longer waiting" } else { "Waiting on someone else" }).clicked() {
+                            set_waiting = Some(!waiting);
+                            ui.close_menu();
+                        }
                         if ui.button(RichText::new("Delete task").color(p.orange)).clicked() {
                             delete = true;
                             ui.close_menu();
@@ -1206,6 +1220,16 @@ impl App {
         }
         if toggle {
             self.toggle_task(tid);
+        }
+        if let Some(on) = set_waiting {
+            let (id, title) = (tid.to_string(), t.title.clone());
+            let label = if on { format!("Waiting on \"{title}\"") } else { format!("No longer waiting on \"{title}\"") };
+            self.undoable(&label, "edit", move |d| {
+                if let Some(x) = d.task_mut(&id) {
+                    x.waiting_since = if on { Some(now_ms()) } else { None };
+                    x.updated = now_ms();
+                }
+            });
         }
         if let Some(s) = toggle_sub {
             self.toggle_task(&s);

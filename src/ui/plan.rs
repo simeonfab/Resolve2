@@ -127,6 +127,36 @@ pub fn parse_plan(text: &str, d: &WorkspaceData, now: NaiveDateTime) -> Result<P
     Ok(plan)
 }
 
+/// The planned starts a plan gives its tasks on `day`: each task row's start time (B-E22).
+pub fn plan_starts(plan: &Plan, day: NaiveDate) -> Vec<(Id, NaiveDateTime)> {
+    plan.rows
+        .iter()
+        .filter_map(|r| {
+            let t = r.task.clone()?;
+            let start = r.time.split(['–', '-']).next()?.trim();
+            let tm = NaiveTime::parse_from_str(start, "%H:%M").ok()?;
+            Some((t, day.and_time(tm)))
+        })
+        .collect()
+}
+
+/// Use this plan (B-E22): replace every planned start on `day` with the plan's. Only
+/// `planned_start` changes: never the due date or time, never a reminder.
+pub fn apply_plan(d: &mut WorkspaceData, starts: &[(Id, NaiveDateTime)], day: NaiveDate) {
+    for t in d.tasks.iter_mut() {
+        if t.planned_start.map_or(false, |ps| ps.date() == day) {
+            t.planned_start = None;
+            t.updated = now_ms();
+        }
+    }
+    for (id, at) in starts {
+        if let Some(t) = d.task_mut(id) {
+            t.planned_start = Some(*at);
+            t.updated = now_ms();
+        }
+    }
+}
+
 /// The next Monday after `d` (Move to Monday, B-E23).
 pub fn next_monday(d: NaiveDate) -> NaiveDate {
     let n = 7 - d.weekday().num_days_from_monday() as i64;
@@ -345,12 +375,8 @@ impl App {
         });
         // footer: Use this plan, Plan again, the change box
         ui.add_space(space::S12);
-        let decided = false; // B-E22: where a planned start time is kept is Simeon's decision (see the Phase 2 report)
         let full = state == ViewState::Full;
-        let r = button(ui, p, ButtonKind::Primary, "Use this plan", false, full && decided);
-        if !decided {
-            r.on_hover_text("Waiting for a decision on where a planned start time is kept (B-E22). Nothing is written yet.");
-        }
+        let use_plan = wide_button(ui, p, ButtonKind::Primary, "Use this plan", full && self.plan.plan.is_some()).clicked();
         ui.add_space(space::S8);
         ui.horizontal(|ui| {
             if button(ui, p, ButtonKind::Secondary, "Plan again", false, self.plan.job.is_none()).clicked() {
@@ -367,6 +393,15 @@ impl App {
         ui.label(RichText::new("Use this plan gives each task today a start time. Nothing moves in your calendar.").size(size::SMALL).color(p.dim));
         if again && self.plan.job.is_none() {
             self.start_plan();
+        }
+        if use_plan {
+            if let Some(plan) = self.plan.plan.clone() {
+                let day = now.date();
+                let starts = plan_starts(&plan, day);
+                let n = starts.len();
+                self.undoable(&format!("Used today's plan ({n} start times)"), "edit", move |d| apply_plan(d, &starts, day));
+                self.plan.open = false;
+            }
         }
         if let Some(t) = move_monday {
             let to = next_monday(now.date());

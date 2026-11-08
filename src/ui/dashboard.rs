@@ -150,7 +150,16 @@ pub fn home_model(d: &WorkspaceData, now: NaiveDateTime, real_ms: i64, pick: Opt
     wins.sort_by_key(|t| t.completed_at);
     m.wins = wins.iter().map(|t| t.title.clone()).collect();
 
-    // waiting on: dependencies still waiting, with how long
+    // waiting on: tasks marked waiting (days since that date), then project dependencies still waiting
+    let mut waiting_tasks: Vec<&Task> = d.tasks.iter().filter(|t| !t.completed && t.waiting_since.is_some()).collect();
+    waiting_tasks.sort_by_key(|t| t.waiting_since);
+    for t in waiting_tasks {
+        if t.project_id.as_deref().and_then(|p| d.project(p)).map_or(false, |p| p.archived) {
+            continue;
+        }
+        let days = ((real_ms - t.waiting_since.unwrap_or(real_ms)) / (24 * 3600 * 1000)).max(0) as usize;
+        m.waiting.push((t.title.clone(), if days == 0 { "today".to_string() } else { plural(days, "day", "days") }));
+    }
     for r in d.records.iter().filter(|r| r.kind == crate::resolve::records::Kind::Dependency && r.status == "Waiting") {
         if r.project_id.as_deref().and_then(|p| d.project(p)).map_or(false, |p| p.archived) {
             continue;

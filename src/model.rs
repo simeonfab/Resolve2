@@ -357,6 +357,14 @@ pub struct Task {
     pub updated: i64,
     #[serde(default)]
     pub order: i64,
+    /// Waiting on someone else since this time (ms); None = not waiting (B-E5). Old data loads
+    /// unchanged: the field is simply absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub waiting_since: Option<i64>,
+    /// When Plan my day placed this task (B-E22): a planned start, separate from the due date
+    /// and time. It never moves the due date or time and never sets a reminder.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub planned_start: Option<NaiveDateTime>,
 }
 
 impl Task {

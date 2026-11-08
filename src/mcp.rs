@@ -80,7 +80,7 @@ pub fn tools(read_only: bool) -> Value {
             tool("update_task", "Change any task field; set completed true/false. Empty string clears due/time/project/page.", json!({
                 "id": s("Task id"), "title": s(""), "notes": s(""), "project": s("Project name, '' for Inbox"), "section": s(""), "priority": n("1..4"), "due": s("YYYY-MM-DD or words, '' clears"),
                 "time": s("HH:MM, '' clears"), "recurrence": s("'none' to stop repeating"), "labels": {"type": "array", "items": {"type": "string"}}, "page_id": s("'' unlinks"), "completed": b("Done or not"),
-                "reminder_minutes": n("-1 clears"), "duration_minutes": n("")
+                "reminder_minutes": n("-1 clears"), "duration_minutes": n(""), "waiting": b("Waiting on someone else (true marks it from now, false clears)")
             }), &["id"]),
             tool("complete_task", "Complete a task. Recurring tasks move to their next date.", json!({"id": s("Task id")}), &["id"]),
             tool("create_project", "Create a project.", json!({"name": s("Name"), "sections": {"type": "array", "items": {"type": "string"}}}), &["name"]),
@@ -201,6 +201,8 @@ pub fn task_json(d: &WorkspaceData, t: &Task) -> Value {
         "subtasks": subs.iter().map(|s| json!({"id": s.id, "title": s.title, "completed": s.completed})).collect::<Vec<_>>(),
         "reminder_minutes": t.reminder_min,
         "duration_minutes": t.duration_min,
+        "waiting_since": t.waiting_since.and_then(chrono::DateTime::from_timestamp_millis).map(|x| x.with_timezone(&chrono::Local).format("%Y-%m-%d").to_string()),
+        "planned_start": t.planned_start.map(|x| x.format("%Y-%m-%d %H:%M").to_string()),
     })
 }
 
@@ -360,6 +362,14 @@ fn apply_task_fields(d: &mut WorkspaceData, t: &mut Task, a: &Value) {
     }
     if let Some(m) = arg_i64(a, "duration_minutes") {
         t.duration_min = if m <= 0 { None } else { Some(m as u32) };
+    }
+    // waiting on someone else since now; false clears it (B-E5)
+    if let Some(w) = arg_bool(a, "waiting") {
+        if w && t.waiting_since.is_none() {
+            t.waiting_since = Some(now_ms());
+        } else if !w {
+            t.waiting_since = None;
+        }
     }
     t.updated = now_ms();
 }

@@ -108,14 +108,17 @@ pub fn agenda_days(d: &WorkspaceData, from: NaiveDate, days: i64, show_tasks: bo
             }
         }
         if show_tasks {
-            for t in d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && t.due == Some(day)) {
-                let time = match t.due_time {
-                    Some(tm) => fmt_time(tm),
-                    None if day == today => "Due today".to_string(),
-                    None => "Due".to_string(),
+            for t in d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && (t.due == Some(day) || t.planned_start.map_or(false, |ps| ps.date() == day))) {
+                // a planned start (Plan my day) shows the task at that time; the due date is untouched
+                let planned = t.planned_start.filter(|ps| ps.date() == day && t.due_time.is_none()).map(|ps| ps.time());
+                let time = match (t.due_time, planned) {
+                    (Some(tm), _) => fmt_time(tm),
+                    (None, Some(pt)) => format!("Planned {}", fmt_time(pt)),
+                    (None, None) if day == today => "Due today".to_string(),
+                    (None, None) => "Due".to_string(),
                 };
                 let right = t.project_id.as_deref().and_then(|p| d.project(p)).map(|p| p.name.clone()).unwrap_or_else(|| "Captured".into());
-                lines.push((t.due_time.unwrap_or(NaiveTime::from_hms_opt(12, 0, 0).unwrap()), AgendaLine { time, title: t.title.clone(), right, color: crate::ui::theme::PICK_COLOURS[2], event: None, task: Some(t.id.clone()) }));
+                lines.push((t.due_time.or(planned).unwrap_or(NaiveTime::from_hms_opt(12, 0, 0).unwrap()), AgendaLine { time, title: t.title.clone(), right, color: crate::ui::theme::PICK_COLOURS[2], event: None, task: Some(t.id.clone()) }));
             }
         }
         if !lines.is_empty() {
@@ -441,7 +444,7 @@ impl App {
                 }
             }
             if self.cal.show_tasks {
-                for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_none()) {
+                for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_none() && t.planned_start.map_or(true, |ps| ps.date() != *day)) {
                     allday[i].push((t.title.clone(), prio_color(t.priority, p), true, None, Some(t.id.clone())));
                 }
             }
@@ -533,6 +536,12 @@ impl App {
                 if self.cal.show_tasks {
                     for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_some()) {
                         let s = t.due_time.unwrap().num_seconds_from_midnight() as f32 / 60.0;
+                        let e = s + t.duration_min.unwrap_or(30) as f32;
+                        items.push((s, e.max(s + 20.0).min(24.0 * 60.0), CalItem::Task(t.clone())));
+                    }
+                    // tasks Plan my day placed: at their planned start (B-E22)
+                    for t in d.tasks.iter().filter(|t| !t.completed && t.due_time.is_none() && t.planned_start.map_or(false, |ps| ps.date() == *day)) {
+                        let s = t.planned_start.unwrap().time().num_seconds_from_midnight() as f32 / 60.0;
                         let e = s + t.duration_min.unwrap_or(30) as f32;
                         items.push((s, e.max(s + 20.0).min(24.0 * 60.0), CalItem::Task(t.clone())));
                     }
@@ -634,7 +643,11 @@ impl App {
         if let Some((id, is_task, mins, ddays)) = moved {
             if is_task {
                 if let Some(t) = self.store.data.task_mut(&id) {
-                    if let (Some(dd), Some(tm)) = (t.due, t.due_time) {
+                    // a task drawn at its planned start moves its planned start, never its due date or time
+                    if let (Some(ps), None) = (t.planned_start, t.due_time) {
+                        t.planned_start = Some(ps + Duration::minutes(mins) + Duration::days(ddays));
+                        t.updated = now_ms();
+                    } else if let (Some(dd), Some(tm)) = (t.due, t.due_time) {
                         let dt = dd.and_time(tm) + Duration::minutes(mins) + Duration::days(ddays);
                         t.due = Some(dt.date());
                         t.due_time = Some(dt.time());
