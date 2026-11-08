@@ -209,7 +209,8 @@ impl App {
             saved.push("your proposal".into());
         }
         let saved = if saved.len() > 1 { format!("{} and {}", saved[..saved.len() - 1].join(", "), saved[saved.len() - 1]) } else { saved.join("") };
-        let what = it.title();
+        // the project's name once there is one, else the start of what was brought in
+        let what = it.proposal.as_ref().map(|x| x.name.clone()).filter(|n| !n.trim().is_empty()).unwrap_or_else(|| crate::resolve::journey::short_title(&it.title(), 8));
         let mut pick = false;
         egui::Area::new(egui::Id::new(("resume-dim", &it.id))).order(egui::Order::Foreground).fixed_pos(pane.min).show(ui.ctx(), |ui| {
             let _ = backdrop(ui, pane, shadow::BACKDROP_PANEL);

@@ -924,8 +924,11 @@ pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Resul
             let _ = crate::ai::take_trace();
             let r = propose_part(&c, &ii, &uu, None, part);
             // whichever part finishes first ticks the first line, the other the second
-            let ev = if has_progress(&ii.id, "first-part") { "second-part" } else { "first-part" };
-            note_progress(&ii.id, ev);
+            // only work that finished counts (a refused or failed half ticks nothing)
+            if r.is_ok() {
+                let ev = if has_progress(&ii.id, "first-part") { "second-part" } else { "first-part" };
+                note_progress(&ii.id, ev);
+            }
             (r, crate::ai::take_trace())
         })
     };
@@ -1505,7 +1508,9 @@ pub fn run_understanding(cfg: Option<AiConfig>, i: &Intake) -> (Result<Understan
         Some(c) => understand(c, i),
         None => Ok(offline_understanding(i)),
     };
-    note_progress(&i.id, "understood");
+    if r.is_ok() {
+        note_progress(&i.id, "understood");
+    }
     (r, crate::ai::take_trace())
 }
 

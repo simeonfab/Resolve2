@@ -504,7 +504,7 @@ impl App {
                     };
                     // screenshots use the canvases' café intake (in memory only)
                     let sample = if app.shot.is_some() && app.view_state != ViewState::Empty { Some(crate::seed::intake_sample(&mut app.store.data)) } else { None };
-                    let pick = sample.or_else(|| app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone())).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
+                    let pick = sample.clone().or_else(|| app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone())).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
                     if let Some(id) = pick {
                         if let Some(i) = app.store.data.intakes.iter_mut().find(|i| i.id == id) {
                             if !stage.is_empty() {
@@ -516,6 +516,10 @@ impl App {
                             if stage == "questions" {
                                 i.cursor = i.qas.len().saturating_sub(1);
                             }
+                        }
+                        // the reveal shows the project Adopt made (in memory, like the rest)
+                        if stage == "reveal" && sample.is_some() {
+                            let _ = crate::resolve::journey::adopt_all(&mut app.store.data, &id);
                         }
                         app.view = View::Intake(id.clone());
                         app.intake_shot_state(&id, opts.open.as_deref());

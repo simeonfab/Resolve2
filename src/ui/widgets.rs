@@ -2571,9 +2571,12 @@ pub fn lane_head(ui: &mut Ui, p: &Pal, name: &str, now: bool) {
 /// A count card on the reveal (6 / Themes on your roadmap).
 pub fn count_card(ui: &mut Ui, p: &Pal, n: usize, label: &str, w: f32) {
     egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S16, space::S12)).show(ui, |ui| {
-        ui.set_width(w - space::S16 * 2.0);
-        ui.label(RichText::new(n.to_string()).font(fs(size::TITLE)).color(p.text));
-        ui.label(RichText::new(label).size(size::ROW_SMALL).color(p.dim));
+        ui.set_width(w - space::S16 * 2.0 - stroke::HAIR * 2.0);
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new(n.to_string()).font(fs(size::TITLE)).color(p.text));
+            ui.label(RichText::new(label).size(size::ROW_SMALL).color(p.dim));
+        });
     });
 }
 
