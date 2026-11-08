@@ -351,3 +351,178 @@ fn seed_resolve(d: &mut WorkspaceData) {
         }
     }
 }
+
+// ======================================================================================
+// The design canvases' sample (Pack B and C, 7 Nov 2026): the café flat-fee bookkeeping
+// project, Website refresh, two captured tasks and the week's events, copied from the canvas
+// renders in docs/reference/canvases so screens can be compared like for like. Screenshot data
+// only (--state full); never a new user's starter content. Dates are relative to today, which
+// screenshots pin to the canvases' Friday 6 November with --now.
+// ======================================================================================
+
+fn item(title: &str, detail: &str, basis: &str, phase: &str, parent: Option<usize>) -> crate::resolve::journey::Item {
+    crate::resolve::journey::Item { title: title.into(), detail: detail.into(), basis: basis.into(), phase: phase.into(), parent, ..Default::default() }
+}
+
+fn hyp(title: &str, basis: &str, negation: &str) -> crate::resolve::journey::Item {
+    crate::resolve::journey::Item { negation: negation.into(), ..item(title, "", basis, "", None) }
+}
+
+fn exp(title: &str, parent: usize, support_if: &str) -> crate::resolve::journey::Item {
+    crate::resolve::journey::Item { fields: [("support_if".to_string(), support_if.to_string())].into_iter().collect(), ..item(title, "", "", "", Some(parent)) }
+}
+
+/// Adopt a hand-written proposal through the real journey Adopt (the same path as the intake).
+fn adopt_sample(d: &mut WorkspaceData, input: &str, question: Option<&str>, heard: &[(&str, &str)], p: crate::resolve::journey::Proposal) -> Option<Id> {
+    use crate::resolve::intake::{Intake, Understanding};
+    let mut i = Intake::new();
+    i.name = "Simeon".into();
+    i.input = input.into();
+    i.stage = "proposal".into();
+    if let Some(q) = question {
+        i.qas.push(crate::resolve::journey::Qa { id: new_id(), target: "constraints".into(), question: q.into(), source: "sample".into(), ..Default::default() });
+    }
+    for (kind, text) in heard {
+        i.heard.push(crate::resolve::journey::Heard { id: new_id(), text: text.to_string(), kind: kind.to_string(), ..Default::default() });
+    }
+    i.understanding = Some(Understanding { project: p.objective.clone(), outcome: p.outcome.clone(), ..Default::default() });
+    i.outcome_confirmed = true;
+    i.proposal = Some(p);
+    let id = i.id.clone();
+    d.intakes.push(i);
+    crate::resolve::journey::adopt_all(d, &id).ok()
+}
+
+fn set_task(d: &mut WorkspaceData, title: &str, f: impl FnOnce(&mut Task)) {
+    if let Some(x) = d.tasks.iter_mut().find(|x| x.title == title) {
+        f(x);
+    }
+}
+
+pub fn seed_canvas(d: &mut WorkspaceData) {
+    use crate::resolve::journey::Proposal;
+    use crate::ui::theme::PICK_COLOURS;
+    let t = now_ms();
+    let today = today();
+    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+    d.version = 1;
+
+    // ---- calendars: Work (terracotta), Personal (green)
+    let work = Calendar { id: new_id(), name: "Work".into(), color: PICK_COLOURS[0], visible: true, updated: t, ..Default::default() };
+    let personal = Calendar { id: new_id(), name: "Personal".into(), color: PICK_COLOURS[1], visible: true, updated: t, ..Default::default() };
+    let (wc, pc) = (work.id.clone(), personal.id.clone());
+    d.calendars.extend([work, personal]);
+
+    // ---- the café project, through the real Adopt
+    let cafe = Proposal {
+        name: "Café flat-fee bookkeeping".into(),
+        summary: "Prove the flat fee on two cafés before January.".into(),
+        objective: "Turning my hourly café bookkeeping into a fixed-price monthly package.".into(),
+        outcome: "Café owners know their monthly cost up front and stop sending shoeboxes of receipts at year end.".into(),
+        h0: item("A fixed-price package works", "", "assumption", "", None),
+        hypotheses: vec![
+            hyp("Monthly workload is predictable", "assumption", "NH1: hours swing too much month to month to price flat"),
+            hyp("Café clients want a flat fee", "evidence", "NH2: clients prefer hourly once they see a real price"),
+            hyp("The segment is reachable beyond word of mouth", "assumption", "NH3: new café clients only come through referrals"),
+            hyp("The package ends the shoebox rush", "assumption", "NH4: receipts still arrive in January"),
+        ],
+        experiments: vec![
+            exp("Reconstruct 12 months of actual hours per café", 0, "the busiest month is under 2× the quietest"),
+            exp("Offer the fixed fee to the two willing clients", 1, "at least one signs within two weeks"),
+            exp("Run a 3-month flat-fee trial and watch when records arrive", 3, "80% of receipts land within the month"),
+        ],
+        uncertainties: vec![item("What does a café pay you now per year?", "Affects H2.", "uncertain", "", None)],
+        roadmap: vec![
+            item("Measure true monthly hours", "", "evidence", "Now", None),
+            item("Ask the two willing clients what a flat fee is worth", "", "assumption", "Now", None),
+            item("Price to absorb spikes", "", "assumption", "Next", None),
+            item("Convert the two willing clients", "", "evidence", "Next", None),
+            item("Design the no-shoebox rhythm", "", "assumption", "Later", None),
+            item("Reach cafés beyond word of mouth", "", "assumption", "Later", None),
+        ],
+        tasks: vec![
+            item("Reconstruct 12 months of hours per café", "For each of your three cafés, list the hours actually worked in each of the last 12 months.", "evidence", "Now", Some(0)),
+            item("Mark the busiest and quietest months", "For each café, find the highest-hour month and the lowest, and note what drove the peak.", "assumption", "Now", Some(0)),
+            item("Hours export from The Corner Café's till system", "", "evidence", "Now", Some(0)),
+            item("Book a call with each willing client", "", "assumption", "Now", Some(1)),
+            item("Ask what they pay now per year", "", "assumption", "Now", Some(1)),
+            item("Model the flat fee against real hours", "Set an hourly rate you would accept, multiply by average monthly hours, then add a buffer for the spike months.", "assumption", "Next", Some(2)),
+            item("Set the spike buffer", "", "assumption", "Next", Some(2)),
+            item("Draft the fixed-fee offer for two clients", "", "evidence", "Next", Some(3)),
+            item("Define the monthly receipt handover", "", "assumption", "Later", Some(4)),
+            item("List the three cafés and their contacts", "", "evidence", "Now", Some(0)),
+            item("Confirm your roadmap", "", "evidence", "Now", Some(0)),
+            item("Set a target fee of £150", "", "assumption", "Now", Some(2)),
+        ],
+        pages: vec![
+            item("Project brief", "What this is, who it is for, what done looks like.\n\nI spend roughly 5 hours a month on each café, so each café takes roughly 5 hours a month before the year-end spike.", "evidence", "", None),
+            item("Plan", "Prove the flat fee on two cafés before January.", "assumption", "", None),
+        ],
+        next_move: "Pull the actual hours you logged on each café for the last 12 months.".into(),
+        why: "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into(),
+        cut: vec!["Payroll add-on".into(), "Online booking page".into()],
+        ..Default::default()
+    };
+    let input = "Turning my hourly café bookkeeping into a fixed-price monthly package. I want it to achieve: steadier income, and clients who know their cost up front. Hourly billing makes clients nervous about costs. I spend roughly 5 hours a month on each café. Two of my three existing café clients said yes in principle.";
+    let q = "Besides the three cafés you already do, roughly how many more could you take on each month before you simply run out of hours yourself?";
+    let cafe_id = adopt_sample(d, input, Some(q), &[("evidence", "Two clients said yes in principle"), ("assumption", "Hourly billing makes clients nervous about costs")], cafe);
+
+    // dates, done items and the reason, as the canvases show them
+    for x in d.tasks.iter_mut().filter(|x| cafe_id.is_some() && x.project_id == cafe_id) {
+        x.due = None;
+    }
+    set_task(d, "Reconstruct 12 months of hours per café", |x| x.due = Some(today));
+    set_task(d, "Mark the busiest and quietest months", |x| x.due = Some(today + Duration::days(7)));
+    for (title, n) in [("Confirm your roadmap", 0), ("List the three cafés and their contacts", 1), ("Set a target fee of £150", 2)] {
+        // finished on that day at 11:00, counted back from the app's clock (which a screenshot may pin)
+        let when = (monday + Duration::days(n)).and_time(at(11, 0));
+        let at = Some(t - (now_local() - when).num_milliseconds());
+        set_task(d, title, |x| {
+            x.completed = true;
+            x.completed_at = at;
+        });
+    }
+    // waiting on someone else for three days (B-E5)
+    set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));
+    if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {
+        c.recommendation.why = "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into();
+    }
+
+    // ---- Website refresh
+    let web = Proposal {
+        name: "Website refresh".into(),
+        objective: "A website that shows the packages.".into(),
+        outcome: "New clients can see the packages and book a call without emailing first.".into(),
+        h0: item("Clients book once they see the packages", "", "assumption", "", None),
+        roadmap: vec![item("Show the packages", "", "assumption", "Now", None)],
+        tasks: vec![item("Write the three package descriptions", "", "assumption", "Now", Some(0))],
+        pages: vec![item("Project brief", "New clients can see the packages and book a call without emailing first.", "assumption", "", None)],
+        ..Default::default()
+    };
+    let web_id = adopt_sample(d, "Refresh the website so the packages are clear.", None, &[], web);
+    if let Some(pr) = web_id.as_ref().and_then(|w| d.projects.iter_mut().find(|p| &p.id == w)) {
+        pr.color = PICK_COLOURS[0];
+    }
+    set_task(d, "Write the three package descriptions", |x| x.due = Some(today));
+
+    // ---- captured (not in a project)
+    let mut inv = Task::new("Send October invoices");
+    inv.due = Some(today);
+    inv.due_time = Some(at(16, 0));
+    inv.recurrence = Recurrence::Monthly;
+    let mut chase = Task::new("Chase the till export");
+    chase.due = Some(today - Duration::days(3));
+    d.tasks.extend([inv, chase]);
+
+    // ---- events
+    let ev = |cal: &str, title: &str, date: chrono::NaiveDate, h: u32, m: u32, mins: i64, rec: Recurrence, notes: &str| {
+        let start = date.and_time(at(h, m));
+        Event { id: new_id(), calendar_id: cal.to_string(), title: title.into(), start, end: start + Duration::minutes(mins), all_day: false, location: String::new(), notes: notes.into(), recurrence: rec, page_id: None, reminder_min: None, updated: t }
+    };
+    let first = today.with_day(1).unwrap_or(today);
+    d.events.push(ev(&wc, "Call with The Corner Café", today, 10, 30, 30, Recurrence::None, "Bring the till export so we can check the hours"));
+    d.events.push(ev(&pc, "Pay rent", first, 9, 0, 15, Recurrence::Monthly, ""));
+    d.events.push(ev(&pc, "Gym", monday + Duration::days(1), 8, 0, 60, Recurrence::None, ""));
+    d.events.push(ev(&wc, "Accountant check-in", monday + Duration::days(2), 14, 0, 60, Recurrence::None, ""));
+    d.events.push(ev(&wc, "Intro call with Bean & Co.", today + Duration::days(13), 11, 0, 30, Recurrence::None, ""));
+}

@@ -253,6 +253,11 @@ fn shell(t: &mut T) {
     let back = d.task(&tid).map(|t| t.section.clone()).unwrap_or_default();
     t.check("rule 5: a task move is recorded and Undo puts it back", moved == "Now" && undone && back.is_empty(), format!("{moved:?} → undone {undone} → {back:?}"));
 
+    // Inter Medium (500) is bundled, is a real TrueType font, and is not a copy of Regular
+    let med: &[u8] = include_bytes!("../assets/fonts/Inter-Medium.ttf");
+    let reg: &[u8] = include_bytes!("../assets/fonts/Inter-Regular.ttf");
+    t.check("Inter Medium (500) is bundled for the brief's weight 500 (sidebar items)", med.starts_with(&[0, 1, 0, 0]) && med != reg && med.len() > 10_000, format!("{} bytes", med.len()));
+
     // B-E14: search types (Tab steps through them) and grouped results
     let mut q = "payroll".to_string();
     let mut seen = vec![];

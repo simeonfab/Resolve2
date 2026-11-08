@@ -235,7 +235,7 @@ fn gallery_colours(ui: &mut egui::Ui, p: &Pal) {
 
 fn gallery_type(ui: &mut egui::Ui, p: &Pal) {
     section(ui, p, "E18 · Type", "DM Serif Display and Inter");
-    let rows: [(&str, egui::FontId, &str); 11] = [
+    let rows: [(&str, egui::FontId, &str); 12] = [
         ("hero · DM Serif 52 / 1.05", fserif(size::HERO), "Hi Simeon."),
         ("display · DM Serif 44 / 1.1", fserif(size::DISPLAY), "Welcome in"),
         ("title · DM Serif 30 / 1.15", fserif(size::STEP_TITLE), "Here's what Resolve understood."),
@@ -243,6 +243,7 @@ fn gallery_type(ui: &mut egui::Ui, p: &Pal) {
         ("card-serif · DM Serif 24 / 1.25", fserif(size::CARD_SERIF), "Reconstruct 12 months of hours"),
         ("body · Inter 400 14 / 1.5", fp(size::BODY), "Reconstruct the real hours per café across a full year."),
         ("answer · Inter 400 15 / 1.55", fp(size::ANSWER), "I run a small bookkeeping practice for cafés."),
+        ("nav · Inter 500 13.5", fm(size::NAV), "Knowledge base"),
         ("button · Inter 600 14", fs(size::BUTTON), "Use this plan"),
         ("label · Inter 600 13", fs(size::LABEL), "WHAT MATTERS NOW"),
         ("small · Inter 400 12.5", fp(size::SMALL), "Saved on this PC · works offline"),
@@ -255,7 +256,6 @@ fn gallery_type(ui: &mut egui::Ui, p: &Pal) {
         });
         ui.add_space(space::S4);
     }
-    wrap_label(ui, RichText::new("Inter 500 (Medium) isn't bundled yet; 500 falls back to Inter 400.").size(size::SMALL).color(p.orange));
 }
 
 fn gallery_space(ui: &mut egui::Ui, p: &Pal) {
@@ -326,6 +326,7 @@ fn gallery_buttons(ui: &mut egui::Ui, p: &Pal) {
                     ButtonKind::Secondary => "Not quite",
                     ButtonKind::Ghost => "See and edit everything",
                     ButtonKind::Danger => "Delete project",
+                    ButtonKind::OnDark => "Plan my day",
                 };
                 button(ui, p, kind, text, small, true).on_hover_text(name);
                 ui.add_space(space::S8);

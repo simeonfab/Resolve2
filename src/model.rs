@@ -13,11 +13,22 @@ pub fn now_ms() -> i64 {
 }
 
 pub fn today() -> NaiveDate {
-    Local::now().date_naive()
+    now_local().date()
 }
 
 pub fn now_local() -> NaiveDateTime {
-    Local::now().naive_local()
+    Local::now().naive_local() + chrono::Duration::seconds(CLOCK_SHIFT_S.load(Ordering::Relaxed))
+}
+
+/// Screenshots only (--now): the app's clock reads `at` (the canvases are drawn on Friday
+/// 6 November 2026, in the afternoon). Edit times (`now_ms`) stay real.
+static CLOCK_SHIFT_S: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+/// An edit time (ms) read on the app's clock, so "Done Tuesday" agrees with `today()`.
+pub fn local_at(ms: i64) -> Option<NaiveDateTime> {
+    chrono::DateTime::from_timestamp_millis(ms).map(|x| x.with_timezone(&Local).naive_local() + chrono::Duration::seconds(CLOCK_SHIFT_S.load(Ordering::Relaxed)))
+}
+pub fn set_clock(at: NaiveDateTime) {
+    CLOCK_SHIFT_S.store((at - Local::now().naive_local()).num_seconds(), Ordering::Relaxed);
 }
 
 static COUNTER: AtomicU64 = AtomicU64::new(0);
@@ -350,6 +361,14 @@ pub struct Task {
     pub updated: i64,
     #[serde(default)]
     pub order: i64,
+    /// Waiting on someone else since this time (ms); None = not waiting (B-E5). Old data loads
+    /// unchanged: the field is simply absent.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub waiting_since: Option<i64>,
+    /// When Plan my day placed this task (B-E22): a planned start, separate from the due date
+    /// and time. It never moves the due date or time and never sets a reminder.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub planned_start: Option<NaiveDateTime>,
 }
 
 impl Task {

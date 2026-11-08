@@ -67,6 +67,11 @@ pub mod tok {
     /// blends translucent fills brighter than CSS does, so flat fills use these):
     /// rgba(200,160,64,.16) on nav-bg (the sidebar's active item).
     pub const AMBER_16_ON_NAV: Color32 = hex(0x393320);
+    /// From the Pack B canvas (not in the brief's 24): body text on the ink hero, the amber-light
+    /// card's edge, and the dashed edge of an empty card.
+    pub const HERO_BODY: Color32 = hex(0xD8D3C7);
+    pub const AMBER_EDGE: Color32 = hex(0xE9D9A8);
+    pub const DASHED_EDGE: Color32 = hex(0xCFC8BA);
     /// rgba(200,160,64,.10) on pane (callouts on dark).
     pub const AMBER_10_ON_PANE: Color32 = hex(0x312C20);
     /// rgba(139,74,42,.22) on pane (error panels on dark).
@@ -202,6 +207,17 @@ pub mod size {
     pub const GROUP_SPACING: f32 = GROUP * 0.04;
     /// Sidebar items (Inter 500 13.5).
     pub const NAV: f32 = 13.5;
+    /// Home (Pack B canvas): the greeting (DM Serif 32), the hero title (28; 34 above 1600
+    /// wide), the hero's body (14.5), list rows (13.5 to 14), card heads (12, 700).
+    pub const GREETING: f32 = 32.0;
+    pub const HERO_TITLE: f32 = 28.0;
+    pub const HERO_TITLE_WIDE: f32 = 34.0;
+    pub const HERO_BODY: f32 = 14.5;
+    pub const ROW: f32 = 14.0;
+    pub const ROW_SMALL: f32 = 13.5;
+    pub const CARD_HEAD: f32 = 12.0;
+    /// The Add task field's text.
+    pub const QUICK: f32 = 17.0;
     /// Line heights (multipliers), as the brief writes them.
     pub const LH_HERO: f32 = 1.05;
     pub const LH_DISPLAY: f32 = 1.1;
@@ -243,6 +259,13 @@ pub mod space {
     /// 1920 content caps (Rules, item 6).
     pub const CAP_DEFAULT: f32 = 1240.0;
     pub const CAP_TASKS: f32 = 1100.0;
+    /// Calendar (Pack B): side margin, the left column (calendars) and the gap to the grid.
+    pub const CAL_SIDE: f32 = 32.0;
+    pub const CAL_LEFT: f32 = 188.0;
+    pub const CAL_GAP: f32 = 18.0;
+    /// The event editor (Pack B "Calendar: event"): width and the label column.
+    pub const EVENT_W: f32 = 520.0;
+    pub const EVENT_LABEL_W: f32 = 104.0;
     pub const CAP_SETTINGS: f32 = 1100.0;
     pub const CAP_TEAM: f32 = 1320.0;
     /// Sidebar.
@@ -271,6 +294,29 @@ pub mod space {
     pub const DIALOG_TOP: f32 = 80.0;
     pub const SEARCH_W: f32 = 680.0;
     pub const SEARCH_LIST_H: f32 = 440.0;
+    /// Home (Pack B canvas): columns 1.25 : 1 with a 20 gap, the right column at most 440, the
+    /// hero padded 26 / 30, list times 52 wide, 16 px marks, 1600 is where wide sizes start.
+    pub const HOME_GAP: f32 = 20.0;
+    /// Plan my day: a sheet 760 wide, 88% high; times 92 wide.
+    pub const PLAN_SHEET_W: f32 = 760.0;
+    pub const PLAN_SHEET_HEIGHT: f32 = 0.88;
+    pub const PLAN_TIME_W: f32 = 92.0;
+    /// Add task: a 640 dialog, 110 from the top.
+    pub const QUICK_W: f32 = 640.0;
+    pub const QUICK_TOP: f32 = 110.0;
+    /// The task editor: a 440 push panel from the right (B-E9).
+    pub const TASK_PANEL: f32 = 440.0;
+    /// The Board's columns end this far above the window's bottom (header and Ask bar).
+    pub const BOARD_TOP_OFFSET: f32 = 290.0;
+    pub const HOME_ASIDE_MAX: f32 = 440.0;
+    pub const HOME_LEFT_SHARE: f32 = 1.25 / 2.25;
+    pub const HERO_PAD_Y: f32 = 26.0;
+    pub const HERO_PAD_X: f32 = 30.0;
+    pub const AGENDA_TIME_W: f32 = 52.0;
+    pub const MARK: f32 = 16.0;
+    pub const WIDE_FROM: f32 = 1600.0;
+    pub const BAR_H: f32 = 5.0;
+    pub const HOME_SKELETON_HERO: f32 = 300.0;
     /// Ask Resolve bar.
     pub const ASK_W: f32 = 560.0;
     pub const ASK_H: f32 = 48.0;
@@ -492,6 +538,15 @@ pub fn semibold() -> FontFamily {
     FontFamily::Name("semibold".into())
 }
 
+/// Inter Medium (500): the sidebar items, and wherever the brief or canvas says 500.
+pub fn medium() -> FontFamily {
+    FontFamily::Name("medium".into())
+}
+
+pub fn fm(size: f32) -> FontId {
+    FontId::new(size, medium())
+}
+
 pub fn fb(size: f32) -> FontId {
     FontId::new(size, bold())
 }
@@ -553,12 +608,17 @@ pub fn install_fonts(ctx: &egui::Context) {
     // DM Serif Display for the one dominant headline per screen. System fonts stay as fallbacks
     // for characters outside their Latin subset.
     fonts.font_data.insert("inter".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Regular.ttf")));
+    fonts.font_data.insert("inter-medium".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Medium.ttf")));
     fonts.font_data.insert("inter-semi".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-SemiBold.ttf")));
     fonts.font_data.insert("inter-bold".into(), FontData::from_static(include_bytes!("../../assets/fonts/Inter-Bold.ttf")));
     fonts.font_data.insert("dm-serif".into(), FontData::from_static(include_bytes!("../../assets/fonts/DMSerifDisplay-Regular.ttf")));
     prop.insert(0, "inter".into());
     semi.insert(0, "inter-semi".into());
     boldf.insert(0, "inter-bold".into());
+    // medium: Inter Medium first, then the regular chain for anything outside its subset
+    let mut med = prop.clone();
+    med.insert(0, "inter-medium".into());
+    fonts.families.insert(medium(), med);
     fonts.families.insert(FontFamily::Proportional, prop);
     fonts.families.insert(bold(), boldf.clone());
     let mut serif_f = boldf.clone();

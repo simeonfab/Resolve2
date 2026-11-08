@@ -4,7 +4,7 @@ pub mod motion;
 pub mod toast;
 mod gallery;
 pub mod shell;
-mod calendar;
+pub mod calendar;
 mod cockpit;
 pub mod connect;
 mod import_ui;
@@ -15,16 +15,17 @@ mod intake_steps;
 mod knowledge;
 pub mod nav;
 pub mod resolve;
-mod sections;
+pub mod sections;
 mod team;
 pub mod testlab;
-mod dashboard;
+pub mod dashboard;
+pub mod plan;
 mod help;
 mod assistant;
 mod databases;
 mod pages;
 pub(crate) mod settings;
-mod tasks;
+pub mod tasks;
 
 use crate::model::*;
 use crate::store::{Registry, Store};
@@ -80,6 +81,12 @@ pub struct QuickAdd {
     pub parent: Option<Id>,
     pub page: Option<Id>,
     pub focus: bool,
+    /// When the dialog opened (NaN until its first frame), for its entrance.
+    pub opened: f64,
+    /// The last save failed: the text stays and the dialog says so.
+    pub error: bool,
+    /// The "New project: Name" chip was dismissed (×): saving won't create that project.
+    pub new_project_off: bool,
 }
 
 pub struct Palette {
@@ -113,6 +120,8 @@ pub enum CalMode {
     Day,
     Week,
     Month,
+    /// The next three weeks as a list, by day (B-E12).
+    Agenda,
 }
 
 pub struct CalState {
@@ -171,6 +180,8 @@ pub struct SettingsUi {
 pub struct Shot {
     pub path: PathBuf,
     pub requested: bool,
+    /// the frame the picture was asked for (the window waits for it before closing)
+    pub requested_at: u64,
 }
 
 pub struct StartOpts {
@@ -192,6 +203,8 @@ pub struct StartOpts {
     /// --open ask[:question]|search[:query]|setup: open the Ask sheet (optionally asking a real
     /// question first), the search palette, or show an unfinished sample intake (screenshots).
     pub open: Option<String>,
+    /// --project <name>: pick that project in the sidebar (screenshots).
+    pub project: Option<String>,
     /// --provider / --model: the AI for a screenshot run (in memory, never saved).
     pub provider: Option<String>,
     pub model: Option<String>,
@@ -256,6 +269,11 @@ pub struct App {
     pub ask: shell::AskUi,
     /// The search palette while it closes.
     pub search_fx: Option<shell::SearchFx>,
+    /// Plan my day (B-E21).
+    pub plan: plan::PlanUi,
+    /// The screen shown last frame, and when it was entered (for screen entrances).
+    pub view_seen: Option<View>,
+    pub view_since: f64,
 }
 
 /// The four states every view draws (Rules, item 3).
@@ -288,6 +306,7 @@ impl App {
             Some("inbox") => View::Inbox,
             Some("today") => View::Today,
             Some("upcoming") => View::Upcoming,
+            Some("filters") => View::Filters,
             Some("calendar") => View::Calendar,
             Some("settings") => View::Settings,
             Some("help") => View::Help,
@@ -323,7 +342,7 @@ impl App {
             settings_ui: SettingsUi::default(),
             server: None,
             server_error: None,
-            shot: opts.screenshot.map(|path| Shot { path, requested: false }),
+            shot: opts.screenshot.map(|path| Shot { path, requested: false, requested_at: 0 }),
             frame: 0,
             fired: HashSet::new(),
             last_poll: 0.0,
@@ -348,6 +367,9 @@ impl App {
             sidebar_anim: None,
             ask: shell::AskUi::default(),
             search_fx: None,
+            plan: plan::PlanUi::default(),
+            view_seen: None,
+            view_since: 0.0,
         };
         app.page_ui.ai_open = open_ai;
         // reduced motion: the saved setting, or --reduced-motion for a screenshot
@@ -368,11 +390,12 @@ impl App {
         };
         if app.shot.is_some() {
             // sample or empty data for a screenshot must never reach the disk
-            app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty"));
+            app.no_save = matches!(opts.state.as_deref(), Some("full") | Some("empty") | Some("loading") | Some("error"));
             match opts.state.as_deref() {
-                Some("full") => {
+                Some("full") | Some("loading") | Some("error") => {
+                    // the design canvases' sample (café flat-fee bookkeeping), so screens compare like for like
                     let mut d = WorkspaceData::default();
-                    crate::seed::seed(&mut d);
+                    crate::seed::seed_canvas(&mut d);
                     app.store.data = d;
                 }
                 Some("empty") => {
@@ -386,6 +409,16 @@ impl App {
         // --collapsed: in memory only
         if opts.collapsed {
             app.store.settings.sidebar_collapsed = true;
+        }
+        // calendar-agenda | calendar-week | calendar-month: the calendar in that mode
+        if let Some(m) = opts.view.as_deref().and_then(|v| v.strip_prefix("calendar-")) {
+            app.view = View::Calendar;
+            app.cal.mode = match m {
+                "agenda" => CalMode::Agenda,
+                "week" => CalMode::Week,
+                "day" => CalMode::Day,
+                _ => CalMode::Month,
+            };
         }
         if opts.view.as_deref() == Some("gallery") {
             app.view = View::Gallery;
@@ -419,6 +452,10 @@ impl App {
             if pick {
                 app.current_project = app.store.data.contexts.iter().filter(|c| app.store.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
             }
+            // --project <name>: that project (screenshots of a particular one)
+            if let Some(pid) = opts.project.as_deref().and_then(|n| app.store.data.projects.iter().find(|p| p.name.eq_ignore_ascii_case(n))).map(|p| p.id.clone()) {
+                app.current_project = Some(pid);
+            }
             if let Some(s) = sec {
                 app.view = View::Sec(s);
             } else if let Some(n) = name.strip_prefix("help-").and_then(|n| n.parse::<usize>().ok()) {
@@ -429,6 +466,11 @@ impl App {
                 app.view = View::Settings;
             } else if name == "projects" {
                 app.view = View::Projects;
+            } else if name == "tasks-board" {
+                if let Some(pid) = app.current_project.clone() {
+                    app.tasks_ui.board.insert(pid.clone());
+                    app.view = View::Project(pid);
+                }
             } else if name == "tasks" {
                 app.view = app.current_project.clone().map(View::Project).unwrap_or(View::Today);
             }
@@ -488,6 +530,22 @@ impl App {
         }
         match opts.open.as_deref() {
             Some("ask") => app.page_ui.ai_open = true,
+            Some("plan") => app.open_plan_day(),
+            // add:<text>: Add task open with that typed (screenshots)
+            Some(o) if o.starts_with("add:") => {
+                app.open_quick(QuickKind::Task);
+                if let Some(q) = app.quick.as_mut() {
+                    q.text = o["add:".len()..].to_string();
+                }
+            }
+            // task:<title>: the task editor open on that task (screenshots)
+            Some(o) if o.starts_with("task:") => {
+                app.open_task = app.store.data.tasks.iter().find(|t| t.title == o["task:".len()..]).map(|t| t.id.clone());
+            }
+            // event:<title>: the event editor open on that event (screenshots)
+            Some(o) if o.starts_with("event:") => {
+                app.event_edit = app.store.data.events.iter().find(|e| e.title == o["event:".len()..]).map(calendar::draft_from);
+            }
             Some("try") => {
                 app.temp.insert("show_try".into(), "1".into());
             }
@@ -647,11 +705,18 @@ impl App {
             View::Calendar => (None, Some(self.cal.anchor)),
             _ => (None, None),
         };
-        self.quick = Some(QuickAdd { text: String::new(), kind, project, section: String::new(), due, parent: None, page: None, focus: true });
+        self.quick = Some(QuickAdd { text: String::new(), kind, project, section: String::new(), due, parent: None, page: None, focus: true, opened: f64::NAN, error: false, new_project_off: false });
     }
 
     /// Create a task from quick-capture text. Returns the new id.
+    /// A #Name with no matching project goes nowhere new: the task keeps `project` (B-E11).
     pub fn add_task_text(&mut self, text: &str, project: Option<Id>, section: &str, default_due: Option<NaiveDate>, parent: Option<Id>, page: Option<Id>) -> Option<Id> {
+        self.add_task_text_with(text, project, section, default_due, parent, page, false)
+    }
+
+    /// As `add_task_text`; `create_project` makes the #Name project when none matches (only Add
+    /// task does this, when its "New project" chip is still showing at save).
+    pub fn add_task_text_with(&mut self, text: &str, project: Option<Id>, section: &str, default_due: Option<NaiveDate>, parent: Option<Id>, page: Option<Id>, create_project: bool) -> Option<Id> {
         let c = crate::nlp::parse(text, today());
         if c.title.trim().is_empty() {
             return None;
@@ -671,13 +736,14 @@ impl App {
             t.project_id = match self.store.data.project_by_name(pname) {
                 Some(p) => Some(p.id.clone()),
                 None if pname.eq_ignore_ascii_case("inbox") => None,
-                None => {
-                    let palette: [[u8; 3]; 5] = [[219, 76, 63], [41, 171, 135], [20, 170, 245], [175, 56, 235], [255, 153, 51]];
-                    let pr = Project { id: new_id(), name: pname.clone(), color: palette[self.store.data.projects.len() % 5], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
+                // only when asked (Add task's "New project" chip); never quietly
+                None if create_project => {
+                    let pr = Project { id: new_id(), name: pname.clone(), color: PICK_COLOURS[self.store.data.projects.len() % PICK_COLOURS.len()], sections: vec![], page_id: None, archived: false, favorite: false, order: self.store.data.projects.len() as i64 + 1, updated: now_ms() };
                     let id = pr.id.clone();
                     self.store.data.projects.push(pr);
                     Some(id)
                 }
+                None => t.project_id.clone(),
             };
         }
         if let Some(pid) = &parent {
@@ -894,7 +960,9 @@ impl App {
             self.toggle_sidebar();
         }
         if esc {
-            if self.page_ui.ai_open {
+            if self.plan.open {
+                self.plan.open = false;
+            } else if self.page_ui.ai_open {
                 self.page_ui.ai_open = false;
             } else if self.palette.is_some() {
                 self.palette = None;
@@ -953,91 +1021,193 @@ impl App {
         let Some(mut q) = self.quick.take() else { return };
         let mut keep = true;
         let mut submit = false;
-        egui::Window::new("quick-add")
-            .title_bar(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_TOP, [0.0, 110.0])
-            .fixed_size([600.0, 0.0])
-            .show(ctx, |ui| {
-                ui.horizontal(|ui| {
-                    for (k, label) in [(QuickKind::Task, "Task"), (QuickKind::Event, "Event"), (QuickKind::Page, "Page")] {
-                        if pill(ui, p, label, q.kind == k).clicked() {
-                            q.kind = k;
-                            q.focus = true;
-                        }
-                    }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        ui.label(RichText::new("Enter to save · Esc to close").size(11.0).color(p.faint));
+        // Add task (B-E11, Pack B): a 640 dialog over a dimmed screen. Recognised words are
+        // highlighted as you type (dates, times and repeats amber, priority terracotta, #project
+        // green); "Resolve understood" shows them as plain chips; Goes to picks the project.
+        let screen = ctx.screen_rect();
+        if !q.opened.is_finite() {
+            q.opened = self.now;
+        }
+        let el = ((self.now - q.opened) * 1000.0) as f32;
+        let dim = motion::frame_at(el, moves::DIALOG_DIM, motion::reduced());
+        egui::Area::new(egui::Id::new("quick-dim")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
+            if backdrop(ui, screen, shadow::BACKDROP_DIALOG * dim.alpha) {
+                keep = false;
+            }
+        });
+        let f = motion::frame_at(el, moves::DIALOG_IN, motion::reduced());
+        if !f.done {
+            ctx.request_repaint();
+        }
+        let origin = egui::pos2(screen.center().x, screen.top() + space::QUICK_TOP);
+        let area_id = egui::Id::new("quick-add");
+        let (title, hint, action) = match q.kind {
+            QuickKind::Task => ("Add task", "e.g. Call the garage tomorrow 9am", "Add task"),
+            QuickKind::Event => ("Add event", "e.g. Lunch with Sam tomorrow 1pm for 90m", "Add event"),
+            QuickKind::Page => ("New page", "Page title", "Create page"),
+        };
+        let today_ = today();
+        // "Did you mean …?" clicked: (the typed #Name, the existing project)
+        let mut did_mean: Option<(String, String)> = None;
+        egui::Area::new(area_id).order(egui::Order::Foreground).fixed_pos(origin).pivot(Align2::CENTER_TOP).show(ctx, |ui| {
+            ui.multiply_opacity(f.alpha.clamp(0.0, 1.0));
+            dialog_frame(p).show(ui, |ui| {
+                ui.set_width(space::QUICK_W);
+                egui::Frame::none().inner_margin(egui::Margin { left: space::S18 + 2.0, right: space::S18 + 2.0, top: space::S18, bottom: space::S14 }).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(title).font(fs(size::SECTION)).color(p.text));
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            ui.label(RichText::new("Type it the way you'd say it").size(size::LABEL).color(p.dim));
+                        });
                     });
-                });
-                ui.add_space(6.0);
-                let hint = match q.kind {
-                    QuickKind::Task => "e.g. Renew passport next fri 10am p1 #Home remind 1h",
-                    QuickKind::Event => "e.g. Lunch with Sam tomorrow 1pm for 90m",
-                    QuickKind::Page => "Page title",
-                };
-                let mut r = None;
-                ui.horizontal(|ui| {
+                    ui.add_space(space::S10);
+                    // the field, with recognised words tinted
                     let quick_id = egui::Id::new("quick-add-text");
-                    r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).id(quick_id).hint_text(hint).font(fp(17.0)).desired_width(ui.available_width() - 30.0).frame(false).margin(egui::vec2(4.0, 8.0))));
-                    mic_for(ui, p, quick_id, p.dark);
-                });
-                let r = r.unwrap();
-                if q.focus {
-                    r.request_focus();
-                    q.focus = false;
-                }
-                if r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
-                    submit = true;
-                }
-                ui.separator();
-                if q.kind != QuickKind::Page {
-                    let c = crate::nlp::parse(&q.text, today());
-                    ui.horizontal_wrapped(|ui| {
-                        if c.due.is_none() {
-                            if let Some(d) = q.due {
-                                chip(ui, &format!("📅 {}", fmt_date_short(d)), p.green);
-                            }
-                        }
-                        for s in c.chips() {
-                            chip(ui, &s, p.blue);
-                        }
-                        if q.parent.is_some() {
-                            chip(ui, "⑂ subtask", p.purple);
-                        }
+                    let focused = ui.memory(|m| m.has_focus(quick_id));
+                    let mut r = None;
+                    egui::Frame::none().fill(p.field).stroke(Stroke::new(stroke::HAIR, if focused { tok::AMBER } else { p.line })).rounding(egui::Rounding::same(radius::FIELD + 2.0)).inner_margin(egui::Margin { left: space::S16, right: space::S10, top: space::S10, bottom: space::S10 }).show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            let task_kind = q.kind != QuickKind::Page;
+                            let pal = p.clone();
+                            let mut layouter = move |ui: &egui::Ui, text: &str, wrap: f32| {
+                                let mut job = egui::text::LayoutJob::default();
+                                let plain = egui::TextFormat { font_id: fp(size::QUICK), color: pal.text, ..Default::default() };
+                                let mut at = 0;
+                                if task_kind {
+                                    for (rg, k) in crate::nlp::recognised(text, today_) {
+                                        if rg.start > at {
+                                            job.append(&text[at..rg.start], 0.0, plain.clone());
+                                        }
+                                        let bg = match k {
+                                            crate::nlp::Recognised::Priority => pal.orange_tint,
+                                            crate::nlp::Recognised::Project => pal.green_tint,
+                                            _ => pal.accent_soft,
+                                        };
+                                        job.append(&text[rg.clone()], 0.0, egui::TextFormat { background: bg, ..plain.clone() });
+                                        at = rg.end;
+                                    }
+                                }
+                                job.append(&text[at.min(text.len())..], 0.0, plain);
+                                job.wrap.max_width = wrap;
+                                ui.fonts(|fo| fo.layout_job(job))
+                            };
+                            r = Some(ui.add(egui::TextEdit::singleline(&mut q.text).id(quick_id).hint_text(RichText::new(hint).color(p.faint)).frame(false).desired_width(ui.available_width() - space::MIC - space::S10).layouter(&mut layouter)));
+                            mic_for(ui, p, quick_id, p.dark);
+                        });
                     });
-                }
-                ui.add_space(4.0);
-                ui.horizontal(|ui| {
-                    if q.kind == QuickKind::Task {
-                        let label = self.store.data.project_name(&q.project);
-                        egui::ComboBox::from_id_salt("qa-project").selected_text(format!("# {label}")).width(180.0).show_ui(ui, |ui| {
-                            ui.selectable_value(&mut q.project, None, "📥 Inbox");
-                            for pr in &self.store.data.projects {
-                                ui.selectable_value(&mut q.project, Some(pr.id.clone()), format!("# {}", pr.name));
+                    let r = r.unwrap();
+                    if q.focus {
+                        r.request_focus();
+                        q.focus = false;
+                    }
+                    if r.lost_focus() && ui.input(|i| i.key_pressed(Key::Enter)) {
+                        submit = true;
+                    }
+                    if q.kind != QuickKind::Page && !q.text.trim().is_empty() {
+                        let c = crate::nlp::parse(&q.text, today_);
+                        ui.add_space(space::S12);
+                        ui.label(RichText::new("Resolve understood").font(fs(size::LABEL)).color(p.orange));
+                        ui.add_space(space::S6);
+                        ui.horizontal_wrapped(|ui| {
+                            ui.spacing_mut().item_spacing.x = space::S8;
+                            understood_chip(ui, p, if q.kind == QuickKind::Task { "Task" } else { "Event" }, &c.title, None);
+                            if c.due.is_none() {
+                                if let Some(d) = q.due {
+                                    understood_chip(ui, p, "", &fmt_date_short(d), Some(crate::nlp::Recognised::When));
+                                }
+                            }
+                            for (s, k) in c.plain_chips() {
+                                if k != crate::nlp::Recognised::Project {
+                                    understood_chip(ui, p, "", &s, Some(k));
+                                    continue;
+                                }
+                                // #Name: an existing project, or a new one only if the chip stays (B-E11)
+                                let name = c.project.clone().unwrap_or_default();
+                                if self.store.data.project_by_name(&name).is_some() || name.eq_ignore_ascii_case("inbox") {
+                                    understood_chip(ui, p, "", &s, Some(k));
+                                    continue;
+                                }
+                                if !q.new_project_off {
+                                    understood_chip(ui, p, "", &format!("New project: {name}"), Some(crate::nlp::Recognised::When));
+                                    if icon_button(ui, Icon::Close, true, false).on_hover_text("Don't create this project").clicked() {
+                                        q.new_project_off = true;
+                                    }
+                                }
+                                let names: Vec<String> = self.store.data.projects.iter().filter(|x| !x.archived).map(|x| x.name.clone()).collect();
+                                if let Some(close) = crate::nlp::closest_project(&name, &names) {
+                                    if understood_chip(ui, p, "", &format!("Did you mean {close}?"), Some(crate::nlp::Recognised::Project)).on_hover_text("Use this project instead").clicked() {
+                                        did_mean = Some((name.clone(), close.clone()));
+                                    }
+                                }
+                            }
+                            if q.parent.is_some() {
+                                understood_chip(ui, p, "", "Subtask", Some(crate::nlp::Recognised::Label));
                             }
                         });
+                        ui.add_space(space::S8);
+                        ui.label(RichText::new("Click a chip to change it. Backspace on a highlighted word turns it back into plain text.").size(size::LABEL).color(p.dim));
                     }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        let label = match q.kind {
-                            QuickKind::Task => "Add task",
-                            QuickKind::Event => "Add event",
-                            QuickKind::Page => "Create page",
-                        };
-                        if primary_button(ui, p, label).clicked() {
-                            submit = true;
+                    if q.error {
+                        ui.add_space(space::S8);
+                        ui.label(RichText::new("Couldn't save the task. Your text is still here. Press Enter to try again.").size(size::LABEL).color(p.orange));
+                    }
+                });
+                // footer: Goes to, Cancel, Add
+                egui::Frame::none().fill(p.bg).rounding(egui::Rounding { nw: 0.0, ne: 0.0, sw: radius::DIALOG, se: radius::DIALOG }).inner_margin(egui::Margin::symmetric(space::S18 + 2.0, space::S14)).show(ui, |ui| {
+                    ui.set_width(ui.available_width());
+                    ui.horizontal(|ui| {
+                        if q.kind == QuickKind::Task {
+                            ui.label(RichText::new("Goes to").size(size::LABEL).color(p.dim));
+                            let named = crate::nlp::parse(&q.text, today_).project;
+                            let fallback = if q.project.is_some() { self.store.data.project_name(&q.project) } else { "Captured".to_string() };
+                            let label = match named {
+                                Some(n) if self.store.data.project_by_name(&n).is_some() => n,
+                                Some(n) if !q.new_project_off && !n.eq_ignore_ascii_case("inbox") => format!("New project: {n}"),
+                                _ => fallback,
+                            };
+                            egui::ComboBox::from_id_salt("qa-project").selected_text(RichText::new(label).font(fs(size::LABEL))).width(space::S40 * 4.5).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut q.project, None, "Captured");
+                                for pr in self.store.data.projects.iter().filter(|x| !x.archived) {
+                                    ui.selectable_value(&mut q.project, Some(pr.id.clone()), pr.name.clone());
+                                }
+                            });
                         }
-                        if ui.button("Cancel").clicked() {
-                            keep = false;
-                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if button(ui, p, ButtonKind::Dark, &format!("{action}  Enter"), false, !q.text.trim().is_empty()).clicked() {
+                                submit = true;
+                            }
+                            if button(ui, p, ButtonKind::Secondary, "Cancel  Esc", false, true).clicked() {
+                                keep = false;
+                            }
+                        });
                     });
                 });
             });
+        });
+        motion::transform_layer(ctx, egui::LayerId::new(egui::Order::Foreground, area_id), origin, moves::DIALOG_SCALE + (1.0 - moves::DIALOG_SCALE) * f.t, egui::vec2(0.0, -moves::DIALOG_RISE * (1.0 - f.t)));
+        // "Did you mean …?": the task goes to that project and the #Name word leaves the text
+        if let Some((typed, project)) = did_mean {
+            q.text = crate::nlp::without_tag(&q.text, &typed);
+            q.project = self.store.data.project_by_name(&project).map(|x| x.id.clone());
+            q.new_project_off = false;
+            q.focus = true;
+        }
         if submit && !q.text.trim().is_empty() {
             match q.kind {
                 QuickKind::Task => {
-                    if self.add_task_text(&q.text, q.project.clone(), &q.section, q.due, q.parent.clone(), q.page.clone()).is_some() {
-                        self.toast("Task added");
+                    let title = crate::nlp::parse(&q.text, today()).title;
+                    // a #Name with no project is made only if its "New project" chip is still showing
+                    let create = !q.new_project_off;
+                    if self.add_task_text_with(&q.text, q.project.clone(), &q.section, q.due, q.parent.clone(), q.page.clone(), create).is_some() {
+                        q.new_project_off = false;
+                        self.toast(format!("Added: {title}"));
+                        q.error = false;
+                    } else {
+                        // keep the text, say what went wrong
+                        q.error = true;
+                        q.focus = true;
+                        self.quick = Some(q);
+                        return;
                     }
                 }
                 QuickKind::Event => {
@@ -1146,10 +1316,11 @@ impl App {
         let Some(shot) = self.shot.as_mut() else { return };
         ctx.request_repaint();
         // a real question asked for the screenshot: wait for its answer (at most 3 minutes)
-        let waiting = self.resolve_ui.chat_job.is_some() && self.now < 180.0;
+        let waiting = (self.resolve_ui.chat_job.is_some() || self.plan.job.is_some()) && self.now < 180.0;
         let Some(shot) = self.shot.as_mut() else { return };
         if self.frame >= 120 && !shot.requested && !waiting {
             shot.requested = true;
+            shot.requested_at = self.frame as u64;
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot);
         }
         let mut saved = false;
@@ -1174,7 +1345,9 @@ impl App {
                 }
             }
         });
-        if saved || (self.frame > 900 && !waiting) {
+        // asked for the picture: give it time to arrive before closing
+        let gave_up = if shot.requested { self.frame as u64 > shot.requested_at + 600 } else { self.frame > 900 && !waiting };
+        if saved || gave_up {
             if self.dirty {
                 self.save_now();
             }
@@ -1240,6 +1413,10 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         self.frame += 1;
         self.now = ctx.input(|i| i.time);
+        if self.view_seen.as_ref() != Some(&self.view) {
+            self.view_seen = Some(self.view.clone());
+            self.view_since = self.now;
+        }
         let p = self.pal();
         if self.theme_applied != Some(p.dark) {
             apply(ctx, &p);
@@ -1261,6 +1438,7 @@ impl eframe::App for App {
         }
         self.resolve_poll(ctx);
         self.poll_team(ctx);
+        self.poll_plan(ctx);
         self.poll_import(ctx);
         self.check_reminders(ctx);
         self.shortcuts(ctx);
@@ -1324,6 +1502,7 @@ impl eframe::App for App {
         }
         if !full_screen {
             self.ask_sheet(ctx, &p);
+            self.plan_sheet(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);

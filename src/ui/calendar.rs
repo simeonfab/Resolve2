@@ -80,10 +80,104 @@ fn text_on(c: Color32) -> Color32 {
     }
 }
 
+/// One line of the Agenda.
+#[derive(Clone, Debug)]
+pub struct AgendaLine {
+    /// "10:30–11:00", "Due today", "Due", "16:00"
+    pub time: String,
+    pub title: String,
+    /// The calendar, or the task's project (or "Captured").
+    pub right: String,
+    pub color: [u8; 3],
+    pub event: Option<Id>,
+    pub task: Option<Id>,
+}
+
+/// The Agenda's days from `from` for `days` days: events on visible calendars and, if shown,
+/// open tasks with a date (amber). Days with nothing are left out.
+pub fn agenda_days(d: &WorkspaceData, from: NaiveDate, days: i64, show_tasks: bool, today: NaiveDate) -> Vec<(NaiveDate, Vec<AgendaLine>)> {
+    let mut out = vec![];
+    for i in 0..days {
+        let day = from + Duration::days(i);
+        let mut lines: Vec<(NaiveTime, AgendaLine)> = vec![];
+        for e in d.events.iter().filter(|e| d.calendar(&e.calendar_id).map_or(true, |c| c.visible)) {
+            if let Some(s) = e.occurrence_on(day) {
+                let cal = d.calendar(&e.calendar_id);
+                let time = if e.all_day { "All day".to_string() } else { format!("{}–{}", fmt_time(s.time()), fmt_time((s + (e.end - e.start)).time())) };
+                lines.push((if e.all_day { NaiveTime::MIN } else { s.time() }, AgendaLine { time, title: e.title.clone(), right: cal.map(|c| c.name.clone()).unwrap_or_default(), color: cal.map(|c| c.color).unwrap_or(crate::ui::theme::PICK_COLOURS[0]), event: Some(e.id.clone()), task: None }));
+            }
+        }
+        if show_tasks {
+            for t in d.tasks.iter().filter(|t| !t.completed && t.parent_id.is_none() && (t.due == Some(day) || t.planned_start.map_or(false, |ps| ps.date() == day))) {
+                // a planned start (Plan my day) shows the task at that time; the due date is untouched
+                let planned = t.planned_start.filter(|ps| ps.date() == day && t.due_time.is_none()).map(|ps| ps.time());
+                let time = match (t.due_time, planned) {
+                    (Some(tm), _) => fmt_time(tm),
+                    (None, Some(pt)) => format!("Planned {}", fmt_time(pt)),
+                    (None, None) if day == today => "Due today".to_string(),
+                    (None, None) => "Due".to_string(),
+                };
+                let right = t.project_id.as_deref().and_then(|p| d.project(p)).map(|p| p.name.clone()).unwrap_or_else(|| "Captured".into());
+                lines.push((t.due_time.or(planned).unwrap_or(NaiveTime::from_hms_opt(12, 0, 0).unwrap()), AgendaLine { time, title: t.title.clone(), right, color: crate::ui::theme::PICK_COLOURS[2], event: None, task: Some(t.id.clone()) }));
+            }
+        }
+        if !lines.is_empty() {
+            lines.sort_by_key(|l| l.0);
+            out.push((day, lines.into_iter().map(|l| l.1).collect()));
+        }
+    }
+    out
+}
+
 impl App {
+    /// The Agenda view (B-E12): each day with something on it, events and tasks with a date, in
+    /// a white box per day; today's heading in terracotta.
+    fn agenda_list(&mut self, ui: &mut egui::Ui, p: &Pal) {
+        let days = agenda_days(&self.store.data, self.cal.anchor, 21, self.cal.show_tasks, today());
+        let mut open_event: Option<Id> = None;
+        let mut open_task: Option<Id> = None;
+        egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+            capped(ui, space::CAP_DEFAULT, |ui| {
+                if days.is_empty() {
+                    ui.add_space(space::S40);
+                    ui.vertical_centered(|ui| {
+                        ui.add(egui::Label::new(RichText::new("Nothing on your calendar yet. Add an event, or give a task a date and it appears here.").size(size::ROW).color(p.dim)).wrap());
+                    });
+                }
+                for (day, lines) in &days {
+                    let head = if *day == today() { format!("Today · {}", day.format("%A %-d %B")) } else { day.format("%A %-d %B").to_string() };
+                    ui.add_space(space::S10);
+                    ui.label(RichText::new(head).font(fs(size::ROW_SMALL)).color(if *day == today() { p.orange } else { p.text }));
+                    ui.add_space(space::S6);
+                    list_box(ui, p, |ui| {
+                        for (i, l) in lines.iter().enumerate() {
+                            if agenda_line(ui, p, &l.time, rgb(l.color), l.event.is_some(), &l.title, &l.right, i == 0).clicked() {
+                                if let Some(e) = &l.event {
+                                    open_event = Some(e.clone());
+                                } else if let Some(t) = &l.task {
+                                    open_task = Some(t.clone());
+                                }
+                            }
+                        }
+                    });
+                }
+                ui.add_space(space::S24);
+            });
+        });
+        if let Some(id) = open_event {
+            if let Some(e) = self.store.data.events.iter().find(|e| e.id == id).cloned() {
+                self.event_edit = Some(draft_from(&e));
+            }
+        }
+        if open_task.is_some() {
+            self.open_task = open_task;
+        }
+    }
+
     fn visible_days(&self) -> Vec<NaiveDate> {
         match self.cal.mode {
             CalMode::Day => vec![self.cal.anchor],
+            CalMode::Agenda => (0..21).map(|i| self.cal.anchor + Duration::days(i)).collect(),
             CalMode::Week | CalMode::Month => {
                 let mon = self.cal.anchor - Duration::days(self.cal.anchor.weekday().num_days_from_monday() as i64);
                 (0..7).map(|i| mon + Duration::days(i)).collect()
@@ -111,160 +205,197 @@ impl App {
         }
     }
 
+    /// The Calendar (B-E12, Pack B "Calendar"): a serif title with ‹ Today ›, Month / Week /
+    /// Agenda and + Event across the top; on the left the calendars as coloured toggles, Tasks with
+    /// dates, + New calendar and the "Tasks show here too" note; the grid on the right. Empty,
+    /// loading and error as drawn.
     pub fn calendar_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        egui::SidePanel::left("cal-left").exact_width(236.0).resizable(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 14.0, right: 10.0, top: 14.0, bottom: 10.0 })).show_inside(ui, |ui| {
-            let create = ui.add(egui::Button::new(RichText::new("+  Create").font(fs(15.0))).min_size(egui::vec2(120.0, 46.0)).rounding(16.0).fill(p.card).stroke(Stroke::new(1.0, p.line)));
-            if create.clicked() {
-                let start = NaiveTime::from_hms_opt((now_local().hour() + 1).min(22), 0, 0);
-                self.event_edit = Some(self.new_event_draft(self.cal.anchor, start));
-            }
-            ui.add_space(16.0);
-            self.mini_month(ui, p);
-            ui.add_space(14.0);
+        let mut new_event = false;
+        egui::TopBottomPanel::top("cal-head").show_separator_line(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: space::CAL_SIDE, right: space::CAL_SIDE, top: space::S24, bottom: space::S10 })).show_inside(ui, |ui| {
+            let step = |mode: CalMode, d: NaiveDate, dir: i64| -> NaiveDate {
+                match mode {
+                    CalMode::Day => d + Duration::days(dir),
+                    CalMode::Week | CalMode::Agenda => d + Duration::days(7 * dir),
+                    CalMode::Month => {
+                        if dir > 0 {
+                            d.checked_add_months(Months::new(1)).unwrap_or(d)
+                        } else {
+                            d.checked_sub_months(Months::new(1)).unwrap_or(d)
+                        }
+                    }
+                }
+            };
+            let a = self.cal.anchor;
+            let title = match self.cal.mode {
+                CalMode::Day => a.format("%A %-d %B").to_string(),
+                CalMode::Agenda => "Agenda".to_string(),
+                CalMode::Week => {
+                    let mon = a - Duration::days(a.weekday().num_days_from_monday() as i64);
+                    let sun = mon + Duration::days(6);
+                    if mon.month() == sun.month() {
+                        format!("{} – {}", mon.day(), sun.format("%-d %B"))
+                    } else {
+                        format!("{} – {}", mon.format("%-d %b"), sun.format("%-d %b"))
+                    }
+                }
+                CalMode::Month => a.format("%B %Y").to_string(),
+            };
             ui.horizontal(|ui| {
-                ui.label(RichText::new("My calendars").font(fs(14.0)));
+                ui.label(RichText::new(title).font(fserif(size::GREETING)).color(p.text));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("Add calendar").clicked() {
-                        self.cal.new_cal = Some(String::new());
+                    ui.spacing_mut().item_spacing.x = space::S10;
+                    if button(ui, p, ButtonKind::Dark, "+ Event", false, true).clicked() {
+                        new_event = true;
+                    }
+                    let sel = match self.cal.mode {
+                        CalMode::Month => 0,
+                        CalMode::Week => 1,
+                        CalMode::Agenda => 2,
+                        CalMode::Day => usize::MAX,
+                    };
+                    if let Some(i) = segmented(ui, p, egui::Id::new("cal-mode"), &["Month", "Week", "Agenda"], sel) {
+                        self.cal.mode = [CalMode::Month, CalMode::Week, CalMode::Agenda][i];
+                    }
+                    ui.add_space(space::S6);
+                    if button(ui, p, ButtonKind::Secondary, "›", true, true).on_hover_text("Next").clicked() {
+                        self.cal.anchor = step(self.cal.mode, self.cal.anchor, 1);
+                        self.cal.mini = self.cal.anchor;
+                    }
+                    if button(ui, p, ButtonKind::Secondary, "Today", true, true).clicked() {
+                        self.cal.anchor = today();
+                        self.cal.mini = today();
+                        self.temp.remove("cal_scrolled");
+                    }
+                    if button(ui, p, ButtonKind::Secondary, "‹", true, true).on_hover_text("Previous").clicked() {
+                        self.cal.anchor = step(self.cal.mode, self.cal.anchor, -1);
+                        self.cal.mini = self.cal.anchor;
                     }
                 });
             });
+        });
+        egui::SidePanel::left("cal-left").exact_width(space::CAL_SIDE + space::CAL_LEFT + space::CAL_GAP).resizable(false).show_separator_line(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: space::CAL_SIDE, right: space::CAL_GAP, top: space::S4, bottom: space::S10 })).show_inside(ui, |ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new("CALENDARS").font(fs(size::CARD_HEAD)).color(p.dim));
+            ui.add_space(space::S4);
+            let cals = self.store.data.calendars.clone();
+            for c in cals {
+                let resp = cal_check(ui, p, rgb(c.color), c.visible, &c.name).on_hover_text("Show or hide. Right-click to rename, recolour or delete.");
+                if resp.clicked() {
+                    if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                        x.visible = !x.visible;
+                        x.updated = now_ms();
+                    }
+                    self.touch();
+                }
+                // rename, colour and delete stay on the right-click menu (not drawn on the canvas)
+                resp.context_menu(|ui| {
+                    let key = format!("calname-{}", c.id);
+                    let mut nm = self.temp.get(&key).cloned().unwrap_or_else(|| c.name.clone());
+                    if ui.text_edit_singleline(&mut nm).changed() {
+                        self.temp.insert(key.clone(), nm.clone());
+                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                            x.name = nm;
+                            x.updated = now_ms();
+                        }
+                        self.touch();
+                    }
+                    ui.horizontal(|ui| {
+                        for cc in PICK_COLOURS {
+                            let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S18, space::S18), Sense::click());
+                            ui.painter().circle_filled(r.center(), space::S8, rgb(cc));
+                            if resp.clicked() {
+                                if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                                    x.color = cc;
+                                    x.updated = now_ms();
+                                }
+                                self.touch();
+                            }
+                        }
+                    });
+                    if self.store.data.calendars.len() > 1 && ui.button(RichText::new("Delete calendar and its events").color(p.orange)).clicked() {
+                        let cid = c.id.clone();
+                        self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", move |d| d.delete_calendar(&cid));
+                        ui.close_menu();
+                    }
+                });
+            }
+            if cal_check(ui, p, tok::AMBER, self.cal.show_tasks, "Tasks with dates").clicked() {
+                self.cal.show_tasks = !self.cal.show_tasks;
+            }
+            ui.add_space(space::S6);
             if let Some(mut name) = self.cal.new_cal.take() {
                 let mut keep = true;
                 let r = ui.add(egui::TextEdit::singleline(&mut name).hint_text("Calendar name").desired_width(f32::INFINITY));
                 r.request_focus();
                 if r.lost_focus() {
                     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && !name.trim().is_empty() {
-                        let colors: [[u8; 3]; 6] = [[3, 155, 229], [11, 128, 67], [244, 81, 30], [142, 36, 170], [246, 191, 38], [213, 0, 0]];
-                        let c = colors[self.store.data.calendars.len() % 6];
-                        self.store.data.calendars.push(Calendar { id: new_id(), name: name.trim().to_string(), color: c, visible: true, updated: now_ms(), ..Default::default() });
-                        self.touch();
+                        let c = PICK_COLOURS[self.store.data.calendars.len() % PICK_COLOURS.len()];
+                        let cal = Calendar { id: new_id(), name: name.trim().to_string(), color: c, visible: true, updated: now_ms(), ..Default::default() };
+                        self.undoable(&format!("Added calendar \"{}\"", cal.name), "edit", move |d| d.calendars.push(cal));
                     }
                     keep = false;
                 }
                 if keep {
                     self.cal.new_cal = Some(name);
                 }
+            } else if ui.add(egui::Label::new(RichText::new("+ New calendar").font(fs(size::ROW_SMALL)).color(p.orange)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                self.cal.new_cal = Some(String::new());
             }
-            let cals = self.store.data.calendars.clone();
-            for c in cals {
-                ui.horizontal(|ui| {
-                    let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                    let col = rgb(c.color);
-                    if c.visible {
-                        ui.painter().rect_filled(r.shrink(1.0), 3.0, col);
-                        ui.painter().line_segment([r.center() + egui::vec2(-4.0, 0.0), r.center() + egui::vec2(-1.0, 3.0)], Stroke::new(1.8, Color32::WHITE));
-                        ui.painter().line_segment([r.center() + egui::vec2(-1.0, 3.0), r.center() + egui::vec2(4.5, -3.5)], Stroke::new(1.8, Color32::WHITE));
-                    } else {
-                        ui.painter().rect_stroke(r.shrink(1.5), 3.0, Stroke::new(1.6, col));
+            ui.add_space(space::S22);
+            note_card(ui, p, "Tasks show here too", "Tasks with a date appear as amber rows, on the day they're due.");
+        });
+        let state = self.view_state;
+        egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 0.0, right: space::CAL_SIDE, top: space::S4, bottom: space::S6 })).show_inside(ui, |ui| {
+            let area = ui.max_rect();
+            match state {
+                ViewState::Loading => {
+                    ui.add_space(space::S40 * 3.0);
+                    ui.vertical_centered(|ui| {
+                        ui.label(RichText::new("Loading events…").size(size::ROW_SMALL).color(p.dim));
+                    });
+                    ui.ctx().request_repaint();
+                }
+                ViewState::Error => {
+                    ui.add_space(space::S40 * 2.0);
+                    let a = error_center(ui, p, "Resolve couldn't load your events.", "Your calendars are saved on this PC. Tasks with dates still show.", "Open Agenda");
+                    if a.retry {
+                        self.store.reload_if_changed();
                     }
-                    let toggle = resp.clicked() || ui.add(egui::Label::new(RichText::new(&c.name).size(13.5)).sense(Sense::click())).clicked();
-                    if toggle {
-                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                            x.visible = !x.visible;
-                            x.updated = now_ms();
-                        }
-                        self.touch();
+                    if a.manual {
+                        self.cal.mode = CalMode::Agenda;
                     }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        ui.menu_button(RichText::new("⋯").color(p.faint), |ui| {
-                            let key = format!("calname-{}", c.id);
-                            let mut nm = self.temp.get(&key).cloned().unwrap_or_else(|| c.name.clone());
-                            if ui.text_edit_singleline(&mut nm).changed() {
-                                self.temp.insert(key.clone(), nm.clone());
-                                if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                                    x.name = nm;
-                                    x.updated = now_ms();
-                                }
-                                self.touch();
-                            }
-                            ui.horizontal(|ui| {
-                                for cc in PICK_COLOURS {
-                                    let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                                    ui.painter().circle_filled(r.center(), 8.0, rgb(cc));
-                                    if resp.clicked() {
-                                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                                            x.color = cc;
-                                            x.updated = now_ms();
-                                        }
-                                        self.touch();
-                                    }
+                }
+                _ => {
+                    match self.cal.mode {
+                        CalMode::Month => self.month_grid(ui, p),
+                        CalMode::Agenda => self.agenda_list(ui, p),
+                        _ => self.time_grid(ui, p),
+                    }
+                    let d = &self.store.data;
+                    let nothing = state == ViewState::Empty || (d.events.is_empty() && !d.tasks.iter().any(|t| !t.completed && t.due.is_some()));
+                    if nothing && self.cal.mode != CalMode::Agenda {
+                        // the empty card sits over the grid (Pack B "Empty · no events this month")
+                        let w = space::EVENT_W - space::S40 * 2.0;
+                        let r = Rect::from_center_size(area.center() - egui::vec2(0.0, space::S40), egui::vec2(w, space::S40 * 3.0));
+                        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r).layout(Layout::top_down(Align::Center)));
+                        card_lift(&mut child, p, |ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.label(RichText::new("Nothing on your calendar yet.").font(fserif(size::CARD_SERIF)).color(p.text));
+                                ui.add(egui::Label::new(RichText::new("Add an event, or give a task a date and it appears here.").size(size::SMALL).color(p.dim)).wrap());
+                                ui.add_space(space::S6);
+                                if button(ui, p, ButtonKind::Dark, "+ Event", true, true).clicked() {
+                                    new_event = true;
                                 }
                             });
-                            if self.store.data.calendars.len() > 1 && ui.button(RichText::new("🗑 Delete calendar and its events").color(p.accent_text)).clicked() {
-                                { let cid = c.id.clone(); self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", |d| d.delete_calendar(&cid)); }
-                                self.touch();
-                                ui.close_menu();
-                            }
                         });
-                    });
-                });
-            }
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                if self.cal.show_tasks {
-                    ui.painter().rect_filled(r.shrink(1.0), 3.0, p.accent);
-                    ui.painter().line_segment([r.center() + egui::vec2(-4.0, 0.0), r.center() + egui::vec2(-1.0, 3.0)], Stroke::new(1.8, Color32::WHITE));
-                    ui.painter().line_segment([r.center() + egui::vec2(-1.0, 3.0), r.center() + egui::vec2(4.5, -3.5)], Stroke::new(1.8, Color32::WHITE));
-                } else {
-                    ui.painter().rect_stroke(r.shrink(1.5), 3.0, Stroke::new(1.6, p.accent));
-                }
-                if resp.clicked() || ui.add(egui::Label::new(RichText::new("Tasks").size(13.5)).sense(Sense::click())).clicked() {
-                    self.cal.show_tasks = !self.cal.show_tasks;
-                }
-            });
-            ui.add_space(10.0);
-            ui.label(RichText::new("Click an empty slot to add an event. Drag events or timed tasks to move them.").size(11.5).color(p.faint));
-        });
-        egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 4.0, right: 14.0, top: 10.0, bottom: 6.0 })).show_inside(ui, |ui| {
-            // toolbar
-            ui.horizontal(|ui| {
-                if ui.add(egui::Button::new(RichText::new("Today").size(14.0)).rounding(16.0).min_size(egui::vec2(72.0, 34.0)).fill(Color32::TRANSPARENT).stroke(Stroke::new(1.0, p.line))).clicked() {
-                    self.cal.anchor = today();
-                    self.cal.mini = today();
-                    self.temp.remove("cal_scrolled");
-                }
-                let step = |mode: CalMode, d: NaiveDate, dir: i64| -> NaiveDate {
-                    match mode {
-                        CalMode::Day => d + Duration::days(dir),
-                        CalMode::Week => d + Duration::days(7 * dir),
-                        CalMode::Month => {
-                            if dir > 0 {
-                                d.checked_add_months(Months::new(1)).unwrap_or(d)
-                            } else {
-                                d.checked_sub_months(Months::new(1)).unwrap_or(d)
-                            }
-                        }
                     }
-                };
-                if ghost_button(ui, RichText::new("‹").size(22.0)).clicked() {
-                    self.cal.anchor = step(self.cal.mode, self.cal.anchor, -1);
-                    self.cal.mini = self.cal.anchor;
                 }
-                if ghost_button(ui, RichText::new("›").size(22.0)).clicked() {
-                    self.cal.anchor = step(self.cal.mode, self.cal.anchor, 1);
-                    self.cal.mini = self.cal.anchor;
-                }
-                let title = match self.cal.mode {
-                    CalMode::Day => self.cal.anchor.format("%-d %B %Y").to_string(),
-                    _ => self.cal.anchor.format("%B %Y").to_string(),
-                };
-                ui.label(RichText::new(title).font(fp(22.0)));
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    for (m, l) in [(CalMode::Month, "Month"), (CalMode::Week, "Week"), (CalMode::Day, "Day")] {
-                        if pill(ui, p, l, self.cal.mode == m).clicked() {
-                            self.cal.mode = m;
-                        }
-                    }
-                });
-            });
-            ui.add_space(6.0);
-            match self.cal.mode {
-                CalMode::Month => self.month_grid(ui, p),
-                _ => self.time_grid(ui, p),
             }
         });
+        if new_event {
+            let start = NaiveTime::from_hms_opt((now_local().hour() + 1).min(22), 0, 0);
+            self.event_edit = Some(self.new_event_draft(self.cal.anchor, start));
+        }
     }
 
     fn mini_month(&mut self, ui: &mut egui::Ui, p: &Pal) {
@@ -348,7 +479,7 @@ impl App {
                 }
             }
             if self.cal.show_tasks {
-                for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_none()) {
+                for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_none() && t.planned_start.map_or(true, |ps| ps.date() != *day)) {
                     allday[i].push((t.title.clone(), prio_color(t.priority, p), true, None, Some(t.id.clone())));
                 }
             }
@@ -440,6 +571,12 @@ impl App {
                 if self.cal.show_tasks {
                     for t in d.tasks.iter().filter(|t| !t.completed && t.due == Some(*day) && t.due_time.is_some()) {
                         let s = t.due_time.unwrap().num_seconds_from_midnight() as f32 / 60.0;
+                        let e = s + t.duration_min.unwrap_or(30) as f32;
+                        items.push((s, e.max(s + 20.0).min(24.0 * 60.0), CalItem::Task(t.clone())));
+                    }
+                    // tasks Plan my day placed: at their planned start (B-E22)
+                    for t in d.tasks.iter().filter(|t| !t.completed && t.due_time.is_none() && t.planned_start.map_or(false, |ps| ps.date() == *day)) {
+                        let s = t.planned_start.unwrap().time().num_seconds_from_midnight() as f32 / 60.0;
                         let e = s + t.duration_min.unwrap_or(30) as f32;
                         items.push((s, e.max(s + 20.0).min(24.0 * 60.0), CalItem::Task(t.clone())));
                     }
@@ -541,7 +678,11 @@ impl App {
         if let Some((id, is_task, mins, ddays)) = moved {
             if is_task {
                 if let Some(t) = self.store.data.task_mut(&id) {
-                    if let (Some(dd), Some(tm)) = (t.due, t.due_time) {
+                    // a task drawn at its planned start moves its planned start, never its due date or time
+                    if let (Some(ps), None) = (t.planned_start, t.due_time) {
+                        t.planned_start = Some(ps + Duration::minutes(mins) + Duration::days(ddays));
+                        t.updated = now_ms();
+                    } else if let (Some(dd), Some(tm)) = (t.due, t.due_time) {
                         let dt = dd.and_time(tm) + Duration::minutes(mins) + Duration::days(ddays);
                         t.due = Some(dt.date());
                         t.due_time = Some(dt.time());
@@ -673,122 +814,169 @@ impl App {
         let mut delete = false;
         let mut open_page: Option<Id> = None;
         let mut new_doc = false;
-        egui::Window::new(if dr.id.is_some() { "Edit event" } else { "New event" })
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_CENTER, [0.0, -40.0])
-            .fixed_size([460.0, 0.0])
-            .show(ctx, |ui| {
-                let r = ui.add(egui::TextEdit::singleline(&mut dr.title).hint_text("Add title").font(fp(20.0)).desired_width(f32::INFINITY));
-                if dr.focus {
-                    r.request_focus();
-                    dr.focus = false;
-                }
-                if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    save = true;
-                }
-                ui.add_space(8.0);
-                egui::Grid::new("ev-grid").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-                    ui.label(RichText::new("When").color(p.dim));
+        // The event editor (B-E12, Pack B "Calendar: event"): a 520 dialog over a dimmed screen;
+        // the title in serif with an amber rule, then When, All day, Repeats, Calendar and Notes;
+        // Delete, Cancel and Save in the footer. Location, reminder and a linked document stay
+        // under "More" (not drawn on the canvas, kept so nothing is lost).
+        let screen = ctx.screen_rect();
+        egui::Area::new(egui::Id::new("event-dim")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
+            if backdrop(ui, screen, shadow::BACKDROP_DIALOG) {
+                keep = false;
+            }
+        });
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            keep = false;
+        }
+        egui::Area::new(egui::Id::new("event-editor")).order(egui::Order::Foreground).fixed_pos(egui::pos2(screen.center().x, screen.top() + space::S40 * 2.0)).pivot(Align2::CENTER_TOP).show(ctx, |ui| {
+            dialog_frame(p).show(ui, |ui| {
+                ui.set_width(space::EVENT_W);
+                egui::Frame::none().inner_margin(egui::Margin { left: space::S18 + 2.0, right: space::S18 + 2.0, top: space::S22, bottom: space::S18 }).show(ui, |ui| {
+                    let r = ui.add(egui::TextEdit::singleline(&mut dr.title).hint_text(RichText::new("Event title").color(p.faint)).font(fserif(size::CARD_SERIF)).text_color(p.text).frame(false).desired_width(f32::INFINITY));
+                    if dr.focus {
+                        r.request_focus();
+                        dr.focus = false;
+                    }
+                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        save = true;
+                    }
+                    let (lr, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), stroke::ICON), Sense::hover());
+                    ui.painter().rect_filled(lr, 0.0, tok::AMBER);
+                    ui.add_space(space::S12);
+                    let label = |ui: &mut egui::Ui, text: &str| {
+                        ui.allocate_ui_with_layout(egui::vec2(space::EVENT_LABEL_W, space::BUTTON_H), Layout::left_to_right(Align::Center), |ui| {
+                            ui.set_min_size(egui::vec2(space::EVENT_LABEL_W, space::BUTTON_H));
+                            ui.label(RichText::new(text).size(size::ROW).color(p.dim));
+                        });
+                    };
+                    ui.spacing_mut().item_spacing.y = space::S10;
+                    ui.spacing_mut().button_padding = egui::vec2(space::S10, space::S6);
+                    {
+                        // fields read as white boxes with a hairline, as drawn
+                        let v = ui.visuals_mut();
+                        v.extreme_bg_color = p.card;
+                        for w in [&mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
+                            w.weak_bg_fill = p.card;
+                            w.bg_fill = p.card;
+                            w.bg_stroke = Stroke::new(stroke::HAIR, p.line);
+                            w.rounding = egui::Rounding::same(radius::FIELD);
+                        }
+                        v.widgets.hovered.weak_bg_fill = p.surface_raised;
+                    }
                     ui.horizontal(|ui| {
+                        label(ui, "When");
                         let mut date = dr.date;
-                        if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("ev-date").calendar_week(false)).changed() {
+                        if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("ev-date").format("%a %-d %b").show_icon(false).calendar_week(false)).changed() {
                             let shift = date - dr.date;
                             dr.date = date;
                             dr.end_date = dr.end_date + shift;
                         }
                         if !dr.all_day {
-                            time_field(ui, egui::Id::new("ev-start"), &mut dr.start, 52.0);
-                            ui.label("–");
-                            time_field(ui, egui::Id::new("ev-end"), &mut dr.end, 52.0);
-                        }
-                    });
-                    ui.end_row();
-                    ui.label("");
-                    ui.horizontal(|ui| {
-                        if ui.checkbox(&mut dr.all_day, "All day").changed() && !dr.all_day && dr.start.is_none() {
-                            dr.start = NaiveTime::from_hms_opt(9, 0, 0);
-                            dr.end = NaiveTime::from_hms_opt(10, 0, 0);
-                        }
-                        if dr.all_day {
-                            ui.label(RichText::new("until").color(p.dim));
+                            time_field(ui, egui::Id::new("ev-start"), &mut dr.start, space::S40 + space::S12);
+                            ui.label(RichText::new("to").size(size::ROW).color(p.dim));
+                            time_field(ui, egui::Id::new("ev-end"), &mut dr.end, space::S40 + space::S12);
+                        } else {
+                            ui.label(RichText::new("until").size(size::ROW).color(p.dim));
                             let mut ed = dr.end_date.max(dr.date);
-                            if ui.add(egui_extras::DatePickerButton::new(&mut ed).id_salt("ev-enddate").calendar_week(false)).changed() {
+                            if ui.add(egui_extras::DatePickerButton::new(&mut ed).id_salt("ev-enddate").format("%a %-d %b").show_icon(false).calendar_week(false)).changed() {
                                 dr.end_date = ed.max(dr.date);
                             }
                         }
                     });
-                    ui.end_row();
-                    ui.label(RichText::new("Repeat").color(p.dim));
-                    egui::ComboBox::from_id_salt("ev-rec").selected_text(dr.recurrence.label()).width(220.0).show_ui(ui, |ui| {
-                        for r in Recurrence::CHOICES {
-                            ui.selectable_value(&mut dr.recurrence, r, r.label());
-                        }
-                        ui.selectable_value(&mut dr.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Calendar").color(p.dim));
-                    let cname = self.store.data.calendar(&dr.calendar_id).map(|c| c.name.clone()).unwrap_or_default();
-                    egui::ComboBox::from_id_salt("ev-cal").selected_text(format!("● {cname}")).width(220.0).show_ui(ui, |ui| {
-                        for c in &self.store.data.calendars {
-                            ui.selectable_value(&mut dr.calendar_id, c.id.clone(), RichText::new(format!("● {}", c.name)).color(rgb(c.color)));
-                        }
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Location").color(p.dim));
-                    ui.add(egui::TextEdit::singleline(&mut dr.location).hint_text("Add location").desired_width(f32::INFINITY));
-                    ui.end_row();
-                    ui.label(RichText::new("Reminder").color(p.dim));
-                    let rl = |m: Option<i64>| match m {
-                        None => "None".to_string(),
-                        Some(0) => "At start".to_string(),
-                        Some(m) if m < 60 => format!("{m} min before"),
-                        Some(m) => format!("{} h before", m / 60),
-                    };
-                    egui::ComboBox::from_id_salt("ev-rem").selected_text(rl(dr.reminder_min)).width(220.0).show_ui(ui, |ui| {
-                        for m in [None, Some(0), Some(5), Some(10), Some(30), Some(60), Some(120)] {
-                            ui.selectable_value(&mut dr.reminder_min, m, rl(m));
-                        }
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Document").color(p.dim));
                     ui.horizontal(|ui| {
-                        let current = dr.page_id.as_deref().and_then(|x| self.store.data.page(x)).map(|x| format!("{} {}", x.icon, x.title)).unwrap_or_else(|| "None".into());
-                        egui::ComboBox::from_id_salt("ev-page").selected_text(current).width(170.0).show_ui(ui, |ui| {
-                            ui.selectable_value(&mut dr.page_id, None, "None");
-                            for pg in &self.store.data.pages {
-                                ui.selectable_value(&mut dr.page_id, Some(pg.id.clone()), format!("{} {}", pg.icon, pg.title));
+                        label(ui, "All day");
+                        let was = dr.all_day;
+                        switch(ui, p, &mut dr.all_day);
+                        if was && !dr.all_day && dr.start.is_none() {
+                            dr.start = NaiveTime::from_hms_opt(9, 0, 0);
+                            dr.end = NaiveTime::from_hms_opt(10, 0, 0);
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        label(ui, "Repeats");
+                        egui::ComboBox::from_id_salt("ev-rec").selected_text(dr.recurrence.label()).show_ui(ui, |ui| {
+                            for r in Recurrence::CHOICES {
+                                ui.selectable_value(&mut dr.recurrence, r, r.label());
+                            }
+                            ui.selectable_value(&mut dr.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        label(ui, "Calendar");
+                        let (cname, ccol) = self.store.data.calendar(&dr.calendar_id).map(|c| (c.name.clone(), rgb(c.color))).unwrap_or_default();
+                        let (sw, _) = ui.allocate_exact_size(egui::vec2(space::S10, space::S10), Sense::hover());
+                        ui.painter().rect_filled(sw, radius::CHIP / 3.0, ccol);
+                        egui::ComboBox::from_id_salt("ev-cal").selected_text(RichText::new(cname).color(p.text)).show_ui(ui, |ui| {
+                            for c in &self.store.data.calendars {
+                                ui.selectable_value(&mut dr.calendar_id, c.id.clone(), RichText::new(format!("■ {}", c.name)).color(rgb(c.color)));
                             }
                         });
-                        if let Some(pg) = &dr.page_id {
-                            if ui.small_button("Open").clicked() {
-                                open_page = Some(pg.clone());
-                            }
-                        } else if ui.small_button("+ Meeting notes").clicked() {
-                            new_doc = true;
-                        }
                     });
-                    ui.end_row();
-                });
-                ui.add(egui::TextEdit::multiline(&mut dr.notes).hint_text("Add description").desired_rows(3).desired_width(f32::INFINITY));
-                if dr.recurrence.is_some() && dr.id.is_some() {
-                    ui.label(RichText::new("Changes apply to every event in the series.").size(11.5).color(p.faint));
-                }
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    if dr.id.is_some() && ui.button(RichText::new("🗑 Delete").color(p.accent_text)).clicked() {
-                        delete = true;
+                    ui.horizontal_top(|ui| {
+                        label(ui, "Notes");
+                        egui::Frame::none().fill(p.field).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+                            ui.add(egui::TextEdit::multiline(&mut dr.notes).hint_text("Add notes").frame(false).font(fp(size::ROW)).desired_rows(3).desired_width(f32::INFINITY));
+                        });
+                    });
+                    egui::CollapsingHeader::new(RichText::new("More: location, reminder, document").size(size::SMALL).color(p.dim)).id_salt("ev-more").show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            label(ui, "Location");
+                            ui.add(egui::TextEdit::singleline(&mut dr.location).hint_text("Add location").desired_width(f32::INFINITY));
+                        });
+                        ui.horizontal(|ui| {
+                            label(ui, "Reminder");
+                            let rl = |m: Option<i64>| match m {
+                                None => "None".to_string(),
+                                Some(0) => "At start".to_string(),
+                                Some(m) if m < 60 => format!("{m} min before"),
+                                Some(m) => format!("{} h before", m / 60),
+                            };
+                            egui::ComboBox::from_id_salt("ev-rem").selected_text(rl(dr.reminder_min)).show_ui(ui, |ui| {
+                                for m in [None, Some(0), Some(5), Some(10), Some(30), Some(60), Some(120)] {
+                                    ui.selectable_value(&mut dr.reminder_min, m, rl(m));
+                                }
+                            });
+                        });
+                        ui.horizontal(|ui| {
+                            label(ui, "Document");
+                            let current = dr.page_id.as_deref().and_then(|x| self.store.data.page(x)).map(|x| x.title.clone()).unwrap_or_else(|| "None".into());
+                            egui::ComboBox::from_id_salt("ev-page").selected_text(current).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut dr.page_id, None, "None");
+                                for pg in &self.store.data.pages {
+                                    ui.selectable_value(&mut dr.page_id, Some(pg.id.clone()), pg.title.clone());
+                                }
+                            });
+                            if let Some(pg) = &dr.page_id {
+                                if button(ui, p, ButtonKind::Ghost, "Open", true, true).clicked() {
+                                    open_page = Some(pg.clone());
+                                }
+                            } else if button(ui, p, ButtonKind::Ghost, "+ Meeting notes", true, true).clicked() {
+                                new_doc = true;
+                            }
+                        });
+                    });
+                    if dr.recurrence.is_some() && dr.id.is_some() {
+                        ui.label(RichText::new("Changes apply to every event in the series.").size(size::SMALL).color(p.faint));
                     }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if primary_button(ui, p, "Save").clicked() {
-                            save = true;
+                });
+                // footer band
+                egui::Frame::none().fill(p.bg).rounding(egui::Rounding { nw: 0.0, ne: 0.0, sw: radius::DIALOG, se: radius::DIALOG }).inner_margin(egui::Margin::symmetric(space::S18 + 2.0, space::S14)).show(ui, |ui| {
+                    ui.set_width(space::EVENT_W - (space::S18 + 2.0) * 2.0);
+                    ui.horizontal(|ui| {
+                        if dr.id.is_some() && button(ui, p, ButtonKind::Ghost, "Delete", false, true).clicked() {
+                            delete = true;
                         }
-                        if ui.button("Cancel").clicked() {
-                            keep = false;
-                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if button(ui, p, ButtonKind::Dark, "Save", false, true).clicked() {
+                                save = true;
+                            }
+                            if button(ui, p, ButtonKind::Secondary, "Cancel", false, true).clicked() {
+                                keep = false;
+                            }
+                        });
                     });
                 });
             });
+        });
         if new_doc {
             let mut pg = Page::new(if dr.title.is_empty() { "Meeting notes".to_string() } else { format!("Notes: {}", dr.title) });
             pg.icon = "🗒".into();
@@ -856,8 +1044,6 @@ impl App {
         if delete {
             if let Some(id) = &dr.id {
                 { let eid = id.to_string(); let name = self.store.data.events.iter().find(|e| e.id == eid).map(|e| e.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted event \"{name}\""), "delete", |d| d.delete_event(&eid)); }
-                self.touch();
-                self.toast("Event deleted");
             }
             keep = false;
         }

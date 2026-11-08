@@ -35,6 +35,7 @@ mod selftest_journey;
 mod selftest_alpha;
 mod selftest_p0;
 mod selftest_p1;
+mod selftest_p2;
 mod server;
 mod store;
 mod templates;
@@ -318,6 +319,13 @@ fn main() {
         return;
     }
 
+    // --now 2026-11-06T14:00 (screenshots only): the app's clock reads that, so the canvases'
+    // Friday 6 November sample lines up like for like
+    if args.iter().any(|a| a == "--screenshot") {
+        if let Some(at) = arg_value(&args, "--now").and_then(|s| chrono::NaiveDateTime::parse_from_str(&s, "%Y-%m-%dT%H:%M").ok()) {
+            model::set_clock(at);
+        }
+    }
     let opts = ui::StartOpts {
         screenshot: arg_value(&args, "--screenshot").map(PathBuf::from),
         workspace: workspace.clone(),
@@ -331,6 +339,7 @@ fn main() {
         scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
         collapsed: args.iter().any(|a| a == "--collapsed"),
         open: arg_value(&args, "--open"),
+        project: arg_value(&args, "--project"),
         provider: arg_value(&args, "--provider"),
         model: arg_value(&args, "--model"),
     };

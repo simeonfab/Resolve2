@@ -1033,7 +1033,7 @@ impl App {
             self.event_edit = Some(calendar::draft_from(&e));
         }
         if add_task {
-            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: None, section: String::new(), due: None, parent: None, page: Some(pid.to_string()), focus: true });
+            self.quick = Some(QuickAdd { text: String::new(), kind: QuickKind::Task, project: None, section: String::new(), due: None, parent: None, page: Some(pid.to_string()), focus: true, opened: f64::NAN, error: false, new_project_off: false });
         }
     }
 
