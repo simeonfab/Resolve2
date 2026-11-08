@@ -1034,6 +1034,15 @@ impl App {
         let mut toggle_sub: Option<Id> = None;
         let mut add_sub: Option<String> = None;
         let mut set_waiting: Option<bool> = None;
+        let mut set_theme: Option<Option<Id>> = None;
+        // the rest of the screen dims behind the editor; a click there closes it
+        let screen = ctx.screen_rect();
+        let dim = egui::Rect::from_min_max(screen.min, egui::pos2(screen.right() - space::TASK_PANEL, screen.bottom()));
+        egui::Area::new(egui::Id::new("task-dim")).order(egui::Order::Middle).fixed_pos(dim.min).show(ctx, |ui| {
+            if backdrop(ui, dim, shadow::BACKDROP_PANEL) {
+                close = true;
+            }
+        });
         // the task editor (B-E9): a 440 push panel from the right; edits save as you type
         egui::SidePanel::right("task-panel").exact_width(space::TASK_PANEL).resizable(false).frame(egui::Frame::none().fill(p.card).inner_margin(egui::Margin::same(space::S18)).stroke(Stroke::new(stroke::HAIR, p.line))).show(ctx, |ui| {
             let d = &self.store.data;
@@ -1084,177 +1093,226 @@ impl App {
             }
             ui.add_space(6.0);
             egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
+                // the fields as drawn (Pack B "Tasks: editor"): Title; Theme and End date; Priority
+                // and Labels; Notes with the mic. Everything else is under "More".
+                field_visuals(ui, p);
+                ui.spacing_mut().item_spacing.y = space::S6;
+                let w = ui.available_width();
+                field_label(ui, p, "Title");
+                text_field(ui, p, egui::Id::new(("task-title", &t.id)), &mut t.title, "Task title", false, w);
+                ui.add_space(space::S8);
+                let themes: Vec<(Id, String)> = d.records.iter().filter(|r| r.kind == crate::resolve::records::Kind::Roadmap && r.project_id.is_some() && r.project_id == t.project_id).map(|r| (r.id.clone(), r.title.clone())).collect();
+                let cur_theme = d.records.iter().find(|r| r.kind == crate::resolve::records::Kind::Roadmap && r.links.iter().any(|l| l == &t.id)).map(|r| r.id.clone());
+                let half = (w - space::S12) / 2.0;
                 ui.horizontal_top(|ui| {
-                    let (r, resp) = ui.allocate_exact_size(egui::vec2(24.0, 26.0), Sense::click());
-                    paint_circle(ui, r.center(), p, t.priority, t.completed, resp.hovered());
-                    if resp.clicked() {
-                        toggle = true;
-                    }
-                    ui.add(egui::TextEdit::multiline(&mut t.title).font(fs(18.0)).frame(false).desired_rows(1).desired_width(f32::INFINITY));
-                });
-                ui.horizontal_top(|ui| {
-                    ui.add_space(30.0);
-                    // notes, with the mic (B-E16)
-                    let notes_id = egui::Id::new(("task-notes", &t.id));
-                    ui.add(egui::TextEdit::multiline(&mut t.notes).id(notes_id).hint_text("Notes").frame(false).desired_rows(2).desired_width(ui.available_width() - space::MIC - space::S8));
-                    mic_for(ui, p, notes_id, p.dark);
-                });
-                ui.add_space(8.0);
-                // subtasks
-                let subs = d.subtasks(&t.id);
-                ui.label(RichText::new(format!("Sub-tasks {}/{}", subs.iter().filter(|s| s.completed).count(), subs.len())).font(fs(13.0)).color(p.dim));
-                for s in subs {
-                    ui.horizontal(|ui| {
-                        let (r, resp) = ui.allocate_exact_size(egui::vec2(20.0, 20.0), Sense::click());
-                        paint_circle(ui, r.center(), p, s.priority, s.completed, resp.hovered());
-                        if resp.clicked() {
-                            toggle_sub = Some(s.id.clone());
-                        }
-                        let mut rt = RichText::new(&s.title).size(13.5);
-                        if s.completed {
-                            rt = rt.strikethrough().color(p.dim);
-                        }
-                        if ui.add(egui::Label::new(rt).sense(Sense::click())).clicked() {
-                            open_sub = Some(s.id.clone());
-                        }
-                    });
-                }
-                ui.horizontal(|ui| {
-                    ui.label(RichText::new("+").color(p.accent_text));
-                    let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.sub_text).hint_text("Add sub-task (Enter)").frame(false).desired_width(f32::INFINITY));
-                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !self.tasks_ui.sub_text.trim().is_empty() {
-                        add_sub = Some(std::mem::take(&mut self.tasks_ui.sub_text));
-                        r.request_focus();
-                    }
-                });
-                ui.add_space(10.0);
-                ui.separator();
-                ui.add_space(6.0);
-                egui::Grid::new("task-props").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-                    ui.label(RichText::new("Project").color(p.dim));
-                    egui::ComboBox::from_id_salt("tp-project").selected_text(format!("# {}", d.project_name(&t.project_id))).width(200.0).show_ui(ui, |ui| {
-                        ui.selectable_value(&mut t.project_id, None, "📥 Inbox");
-                        for pr in &d.projects {
-                            ui.selectable_value(&mut t.project_id, Some(pr.id.clone()), format!("# {}", pr.name));
-                        }
-                    });
-                    ui.end_row();
-                    let sections: Vec<String> = t.project_id.as_deref().and_then(|x| d.project(x)).map(|x| x.sections.clone()).unwrap_or_default();
-                    if !sections.is_empty() {
-                        ui.label(RichText::new("Section").color(p.dim));
-                        egui::ComboBox::from_id_salt("tp-section").selected_text(if t.section.is_empty() { "(none)".to_string() } else { t.section.clone() }).width(200.0).show_ui(ui, |ui| {
-                            ui.selectable_value(&mut t.section, String::new(), "(none)");
-                            for s in sections {
-                                ui.selectable_value(&mut t.section, s.clone(), s);
-                            }
-                        });
-                        ui.end_row();
-                    }
-                    ui.label(RichText::new("Date").color(p.dim));
-                    ui.horizontal(|ui| match t.due {
-                        Some(mut date) => {
-                            if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("tp-date").calendar_week(false)).changed() {
-                                t.due = Some(date);
-                            }
-                            if ghost_button(ui, RichText::new("✕").color(p.dim)).on_hover_text("Remove date").clicked() {
-                                t.due = None;
-                                t.due_time = None;
-                            }
-                        }
-                        None => {
-                            for (l, n) in [("Today", 0), ("Tomorrow", 1), ("Next week", 7)] {
-                                if ui.small_button(l).clicked() {
-                                    t.due = Some(today() + chrono::Duration::days(n));
+                    ui.spacing_mut().item_spacing.x = space::S12;
+                    ui.allocate_ui_with_layout(egui::vec2(half, space::S40 + space::S24), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(half);
+                        field_label(ui, p, "Theme");
+                        let name = cur_theme.as_ref().and_then(|id| themes.iter().find(|x| &x.0 == id)).map(|x| x.1.clone()).unwrap_or_else(|| if themes.is_empty() { "No themes".into() } else { "No theme".into() });
+                        ui.add_enabled_ui(!themes.is_empty(), |ui| {
+                            egui::ComboBox::from_id_salt("tp-theme").selected_text(name).width(half).wrap().show_ui(ui, |ui| {
+                                if ui.selectable_label(cur_theme.is_none(), "No theme").clicked() {
+                                    set_theme = Some(None);
                                 }
-                            }
-                        }
-                    });
-                    ui.end_row();
-                    if t.due.is_some() {
-                        ui.label(RichText::new("Time").color(p.dim));
-                        ui.horizontal(|ui| {
-                            time_field(ui, egui::Id::new(("tp-time", &t.id)), &mut t.due_time, 60.0);
-                            ui.label(RichText::new("for").color(p.dim));
-                            let mut dur = t.duration_min.unwrap_or(0) as i32;
-                            if ui.add(egui::DragValue::new(&mut dur).range(0..=720).speed(5).suffix(" min")).changed() {
-                                t.duration_min = if dur > 0 { Some(dur as u32) } else { None };
-                            }
-                        });
-                        ui.end_row();
-                        ui.label(RichText::new("Repeat").color(p.dim));
-                        egui::ComboBox::from_id_salt("tp-rec").selected_text(t.recurrence.label()).width(200.0).show_ui(ui, |ui| {
-                            for r in Recurrence::CHOICES {
-                                ui.selectable_value(&mut t.recurrence, r, r.label());
-                            }
-                            ui.selectable_value(&mut t.recurrence, Recurrence::EveryDays(2), "Every 2 days");
-                            ui.selectable_value(&mut t.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
-                        });
-                        ui.end_row();
-                        ui.label(RichText::new("Reminder").color(p.dim));
-                        let rl = |m: Option<i64>| match m {
-                            None => "None".to_string(),
-                            Some(0) => "At due time".to_string(),
-                            Some(m) if m < 60 => format!("{m} min before"),
-                            Some(m) if m < 1440 => format!("{} h before", m / 60),
-                            Some(m) => format!("{} day before", m / 1440),
-                        };
-                        ui.add_enabled_ui(t.due_time.is_some(), |ui| {
-                            egui::ComboBox::from_id_salt("tp-rem").selected_text(if t.due_time.is_some() { rl(t.reminder_min) } else { "Set a time first".into() }).width(200.0).show_ui(ui, |ui| {
-                                for m in [None, Some(0), Some(10), Some(30), Some(60), Some(120), Some(1440)] {
-                                    ui.selectable_value(&mut t.reminder_min, m, rl(m));
+                                for (id, title) in &themes {
+                                    if ui.selectable_label(cur_theme.as_ref() == Some(id), title).clicked() {
+                                        set_theme = Some(Some(id.clone()));
+                                    }
                                 }
                             });
                         });
-                        ui.end_row();
-                    }
-                    ui.label(RichText::new("Priority").color(p.dim));
-                    ui.horizontal(|ui| {
-                        for pr in 1..=4u8 {
-                            let sel = t.priority == pr;
-                            let col = prio_color(pr, p);
-                            if ui.add(egui::Button::new(RichText::new(format!("⚑ P{pr}")).color(col).size(13.0)).fill(if sel { col.linear_multiply(0.2) } else { Color32::TRANSPARENT }).stroke(Stroke::new(1.0, if sel { col } else { p.line }))).on_hover_text(priority_label(pr)).clicked() {
-                                t.priority = pr;
-                            }
-                        }
                     });
-                    ui.end_row();
-                    ui.label(RichText::new("Labels").color(p.dim));
-                    let key = format!("labels-{}", t.id);
-                    let mut lt = self.temp.get(&key).cloned().unwrap_or_else(|| t.labels.join(", "));
-                    let r = ui.add(egui::TextEdit::singleline(&mut lt).hint_text("home, phone").desired_width(200.0));
-                    if r.changed() {
-                        self.temp.insert(key.clone(), lt.clone());
-                    }
-                    if r.lost_focus() {
-                        t.labels = lt.split(',').map(|s| s.trim().trim_start_matches('@').to_string()).filter(|s| !s.is_empty()).collect();
-                        self.temp.remove(&key);
-                    }
-                    ui.end_row();
-                    ui.label(RichText::new("Document").color(p.dim));
-                    ui.horizontal(|ui| {
-                        let current = t.page_id.as_deref().and_then(|x| d.page(x)).map(|x| format!("{} {}", x.icon, x.title)).unwrap_or_else(|| "None".into());
-                        egui::ComboBox::from_id_salt("tp-page").selected_text(current).width(170.0).show_ui(ui, |ui| {
-                            ui.selectable_value(&mut t.page_id, None, "None");
-                            for pg in &d.pages {
-                                ui.selectable_value(&mut t.page_id, Some(pg.id.clone()), format!("{} {}", pg.icon, if pg.title.is_empty() { "Untitled" } else { &pg.title }));
+                    ui.allocate_ui_with_layout(egui::vec2(half, space::S40 + space::S24), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(half);
+                        field_label(ui, p, "End date");
+                        ui.horizontal(|ui| match t.due {
+                            Some(mut date) => {
+                                if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("tp-date").format("%a %-d %b").show_icon(false).calendar_week(false)).changed() {
+                                    t.due = Some(date);
+                                }
+                                if ghost_button(ui, RichText::new("✕").color(p.dim)).on_hover_text("Remove the date").clicked() {
+                                    t.due = None;
+                                    t.due_time = None;
+                                }
+                            }
+                            None => {
+                                for (l, n) in [("Today", 0), ("Tomorrow", 1), ("Next week", 7)] {
+                                    if ui.button(RichText::new(l).size(size::SMALL)).clicked() {
+                                        t.due = Some(today() + chrono::Duration::days(n));
+                                    }
+                                }
                             }
                         });
-                        if let Some(pg) = &t.page_id {
-                            if ui.small_button("Open").clicked() {
-                                open_page = Some(pg.clone());
+                    });
+                });
+                ui.horizontal_top(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S12;
+                    ui.allocate_ui_with_layout(egui::vec2(half, space::S40 + space::S24), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(half);
+                        field_label(ui, p, "Priority");
+                        egui::ComboBox::from_id_salt("tp-prio").selected_text(format!("P{}", t.priority)).width(half).show_ui(ui, |ui| {
+                            for pr in 1..=4u8 {
+                                ui.selectable_value(&mut t.priority, pr, format!("P{pr} · {}", priority_label(pr)));
                             }
-                        } else if ui.small_button("+ New doc").on_hover_text("Create a page linked to this task").clicked() {
-                            new_doc = true;
+                        });
+                    });
+                    ui.allocate_ui_with_layout(egui::vec2(half, space::S40 + space::S24), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(half);
+                        field_label(ui, p, "Labels");
+                        egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S10, space::S6)).show(ui, |ui| {
+                            ui.set_width(half - space::S10 * 2.0);
+                            ui.horizontal_wrapped(|ui| {
+                                ui.spacing_mut().item_spacing.x = space::S4;
+                                let mut remove: Option<usize> = None;
+                                for (i, l) in t.labels.iter().enumerate() {
+                                    if label_chip(ui, p, l).clicked() {
+                                        remove = Some(i);
+                                    }
+                                }
+                                if let Some(i) = remove {
+                                    t.labels.remove(i);
+                                }
+                                let key = format!("labels-{}", t.id);
+                                let mut lt = self.temp.get(&key).cloned().unwrap_or_default();
+                                let r = ui.add(egui::TextEdit::singleline(&mut lt).hint_text("+ label").frame(false).desired_width(space::S40 * 2.0));
+                                if r.changed() {
+                                    self.temp.insert(key.clone(), lt.clone());
+                                }
+                                if r.lost_focus() {
+                                    for s in lt.split(',').map(|s| s.trim().trim_start_matches('@').to_string()).filter(|s| !s.is_empty()) {
+                                        if !t.labels.contains(&s) {
+                                            t.labels.push(s);
+                                        }
+                                    }
+                                    self.temp.remove(&key);
+                                }
+                            });
+                        });
+                    });
+                });
+                ui.add_space(space::S4);
+                field_label(ui, p, "Notes");
+                let notes_id = egui::Id::new(("task-notes", &t.id));
+                egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S12, space::S10)).show(ui, |ui| {
+                    ui.set_width(w - space::S12 * 2.0);
+                    ui.add(egui::TextEdit::multiline(&mut t.notes).id(notes_id).hint_text("Notes").frame(false).font(fp(size::ROW)).desired_rows(6).desired_width(f32::INFINITY));
+                    ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                        mic_for(ui, p, notes_id, p.dark);
+                    });
+                });
+                ui.add_space(space::S10);
+                let subs = d.subtasks(&t.id);
+                egui::CollapsingHeader::new(RichText::new("More: project, time, repeat, reminder, document, sub-tasks").size(size::SMALL).color(p.dim)).id_salt("tp-more").default_open(!subs.is_empty()).show(ui, |ui| {
+                    egui::Grid::new("task-props").num_columns(2).spacing([space::S12, space::S10]).show(ui, |ui| {
+                        ui.label(RichText::new("Project").color(p.dim));
+                        egui::ComboBox::from_id_salt("tp-project").selected_text(if t.project_id.is_some() { d.project_name(&t.project_id) } else { "Captured".to_string() }).width(space::S40 * 5.0).show_ui(ui, |ui| {
+                            ui.selectable_value(&mut t.project_id, None, "Captured");
+                            for pr in &d.projects {
+                                ui.selectable_value(&mut t.project_id, Some(pr.id.clone()), pr.name.clone());
+                            }
+                        });
+                        ui.end_row();
+                        let sections: Vec<String> = t.project_id.as_deref().and_then(|x| d.project(x)).map(|x| x.sections.clone()).unwrap_or_default();
+                        if !sections.is_empty() {
+                            ui.label(RichText::new("Section").color(p.dim));
+                            egui::ComboBox::from_id_salt("tp-section").selected_text(if t.section.is_empty() { "None".to_string() } else { t.section.clone() }).width(space::S40 * 5.0).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut t.section, String::new(), "None");
+                                for s in sections {
+                                    ui.selectable_value(&mut t.section, s.clone(), s);
+                                }
+                            });
+                            ui.end_row();
+                        }
+                        if t.due.is_some() {
+                            ui.label(RichText::new("Time").color(p.dim));
+                            ui.horizontal(|ui| {
+                                time_field(ui, egui::Id::new(("tp-time", &t.id)), &mut t.due_time, space::S40 + space::S18);
+                                ui.label(RichText::new("for").color(p.dim));
+                                let mut dur = t.duration_min.unwrap_or(0) as i32;
+                                if ui.add(egui::DragValue::new(&mut dur).range(0..=720).speed(5).suffix(" min")).changed() {
+                                    t.duration_min = if dur > 0 { Some(dur as u32) } else { None };
+                                }
+                            });
+                            ui.end_row();
+                            ui.label(RichText::new("Repeat").color(p.dim));
+                            egui::ComboBox::from_id_salt("tp-rec").selected_text(t.recurrence.label()).width(space::S40 * 5.0).show_ui(ui, |ui| {
+                                for r in Recurrence::CHOICES {
+                                    ui.selectable_value(&mut t.recurrence, r, r.label());
+                                }
+                                ui.selectable_value(&mut t.recurrence, Recurrence::EveryDays(2), "Every 2 days");
+                                ui.selectable_value(&mut t.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
+                            });
+                            ui.end_row();
+                            ui.label(RichText::new("Reminder").color(p.dim));
+                            let rl = |m: Option<i64>| match m {
+                                None => "None".to_string(),
+                                Some(0) => "At due time".to_string(),
+                                Some(m) if m < 60 => format!("{m} min before"),
+                                Some(m) if m < 1440 => format!("{} h before", m / 60),
+                                Some(m) => format!("{} day before", m / 1440),
+                            };
+                            ui.add_enabled_ui(t.due_time.is_some(), |ui| {
+                                egui::ComboBox::from_id_salt("tp-rem").selected_text(if t.due_time.is_some() { rl(t.reminder_min) } else { "Set a time first".into() }).width(space::S40 * 5.0).show_ui(ui, |ui| {
+                                    for m in [None, Some(0), Some(10), Some(30), Some(60), Some(120), Some(1440)] {
+                                        ui.selectable_value(&mut t.reminder_min, m, rl(m));
+                                    }
+                                });
+                            });
+                            ui.end_row();
+                        }
+                        ui.label(RichText::new("Document").color(p.dim));
+                        ui.horizontal(|ui| {
+                            let current = t.page_id.as_deref().and_then(|x| d.page(x)).map(|x| if x.title.is_empty() { "Untitled".to_string() } else { x.title.clone() }).unwrap_or_else(|| "None".into());
+                            egui::ComboBox::from_id_salt("tp-page").selected_text(current).width(space::S40 * 4.0).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut t.page_id, None, "None");
+                                for pg in &d.pages {
+                                    ui.selectable_value(&mut t.page_id, Some(pg.id.clone()), if pg.title.is_empty() { "Untitled".to_string() } else { pg.title.clone() });
+                                }
+                            });
+                            if let Some(pg) = &t.page_id {
+                                if button(ui, p, ButtonKind::Ghost, "Open", true, true).clicked() {
+                                    open_page = Some(pg.clone());
+                                }
+                            } else if button(ui, p, ButtonKind::Ghost, "+ New doc", true, true).on_hover_text("Create a page linked to this task").clicked() {
+                                new_doc = true;
+                            }
+                        });
+                        ui.end_row();
+                    });
+                    ui.add_space(space::S10);
+                    ui.label(RichText::new(format!("Sub-tasks {}/{}", subs.iter().filter(|s| s.completed).count(), subs.len())).font(fs(size::SMALL)).color(p.dim));
+                    for s in subs {
+                        ui.horizontal(|ui| {
+                            let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S18 + 2.0, space::S18 + 2.0), Sense::click());
+                            paint_circle(ui, r.center(), p, s.priority, s.completed, resp.hovered());
+                            if resp.clicked() {
+                                toggle_sub = Some(s.id.clone());
+                            }
+                            let mut rt = RichText::new(&s.title).size(size::ROW_SMALL);
+                            if s.completed {
+                                rt = rt.strikethrough().color(p.dim);
+                            }
+                            if ui.add(egui::Label::new(rt).sense(Sense::click())).clicked() {
+                                open_sub = Some(s.id.clone());
+                            }
+                        });
+                    }
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new("+").color(p.orange));
+                        let r = ui.add(egui::TextEdit::singleline(&mut self.tasks_ui.sub_text).hint_text("Add sub-task (Enter)").frame(false).desired_width(f32::INFINITY));
+                        if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) && !self.tasks_ui.sub_text.trim().is_empty() {
+                            add_sub = Some(std::mem::take(&mut self.tasks_ui.sub_text));
+                            r.request_focus();
                         }
                     });
-                    ui.end_row();
+                    ui.add_space(space::S10);
+                    if t.due.is_some() {
+                        ui.label(RichText::new("Shows on your calendar on its due date.").size(size::SMALL).color(p.dim));
+                    }
+                    let created = chrono::DateTime::from_timestamp_millis(t.created).map(|x| x.with_timezone(&chrono::Local).format("%-d %b %Y %H:%M").to_string()).unwrap_or_default();
+                    ui.label(RichText::new(format!("Created {created}")).size(size::TINY).color(p.faint));
                 });
-                ui.add_space(12.0);
-                if t.due.is_some() {
-                    ui.label(RichText::new("📆 Shows on your calendar on its due date.").size(12.0).color(p.dim));
-                }
-                let created = chrono::DateTime::from_timestamp_millis(t.created).map(|x| x.with_timezone(&chrono::Local).format("%-d %b %Y %H:%M").to_string()).unwrap_or_default();
-                ui.label(RichText::new(format!("Created {created}")).size(11.0).color(p.faint));
             });
         });
         let after = serde_json::to_string(&t).unwrap_or_default();
@@ -1298,6 +1356,22 @@ impl App {
         }
         if toggle {
             self.toggle_task(tid);
+        }
+        if let Some(theme) = set_theme {
+            let (id, title) = (tid.to_string(), t.title.clone());
+            let name = theme.as_ref().and_then(|x| self.store.data.records.iter().find(|r| &r.id == x)).map(|r| r.title.clone()).unwrap_or_else(|| "no theme".into());
+            self.undoable(&format!("Moved \"{title}\" to {name}"), "move", move |d| {
+                for r in d.records.iter_mut().filter(|r| r.kind == crate::resolve::records::Kind::Roadmap) {
+                    if r.links.iter().any(|l| l == &id) && Some(&r.id) != theme.as_ref() {
+                        r.links.retain(|l| l != &id);
+                        r.updated = now_ms();
+                    }
+                    if Some(&r.id) == theme.as_ref() && !r.links.contains(&id) {
+                        r.links.push(id.clone());
+                        r.updated = now_ms();
+                    }
+                }
+            });
         }
         if let Some(on) = set_waiting {
             let (id, title) = (tid.to_string(), t.title.clone());

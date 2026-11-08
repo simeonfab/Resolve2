@@ -1805,6 +1805,42 @@ pub fn cal_check(ui: &mut Ui, p: &Pal, col: Color32, on: bool, name: &str) -> Re
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+/// Inside an editor (event, task): pickers and drop-downs read as white boxes with a hairline,
+/// radius of a field, as drawn.
+pub fn field_visuals(ui: &mut Ui, p: &Pal) {
+    ui.spacing_mut().button_padding = egui::vec2(space::S10, space::S6);
+    let v = ui.visuals_mut();
+    v.extreme_bg_color = p.card;
+    for w in [&mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
+        w.weak_bg_fill = p.card;
+        w.bg_fill = p.card;
+        w.bg_stroke = Stroke::new(stroke::HAIR, p.line);
+        w.rounding = Rounding::same(radius::FIELD);
+    }
+    v.widgets.hovered.weak_bg_fill = p.surface_raised;
+}
+
+/// A small field label above a field ("Title", "Theme").
+pub fn field_label(ui: &mut Ui, p: &Pal, text: &str) {
+    ui.label(RichText::new(text).font(fs(size::SMALL)).color(p.text));
+}
+
+/// A label chip in the task editor: the basis tags keep their colours, others are neutral.
+/// Returns the click (which removes it).
+pub fn label_chip(ui: &mut Ui, p: &Pal, label: &str) -> Response {
+    let (fg, bg) = match label {
+        "evidence" => (p.green_text, p.green_tint),
+        "uncertain" => (p.orange, p.orange_tint),
+        "assumption" => (p.accent_text, p.accent_soft),
+        _ => (p.text, p.track),
+    };
+    let g = ui.painter().layout_no_wrap(label.to_string(), fs(size::TINY), fg);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S16, space::S4 + 2.0), Sense::click());
+    ui.painter().rect_filled(r, radius::PILL, bg);
+    ui.painter().galley(r.min + egui::vec2(space::S8, space::S4 / 2.0 + 1.0), g, fg);
+    resp.on_hover_text("Remove this label").on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// An on/off switch (All day): a pill track, amber when on, with a white knob that slides.
 pub fn switch(ui: &mut Ui, p: &Pal, on: &mut bool) -> Response {
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(space::S32 + 2.0, space::S18 + 2.0), Sense::click());
