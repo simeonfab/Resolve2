@@ -463,6 +463,11 @@ impl App {
                 app.view = View::Settings;
             } else if name == "projects" {
                 app.view = View::Projects;
+            } else if name == "tasks-board" {
+                if let Some(pid) = app.current_project.clone() {
+                    app.tasks_ui.board.insert(pid.clone());
+                    app.view = View::Project(pid);
+                }
             } else if name == "tasks" {
                 app.view = app.current_project.clone().map(View::Project).unwrap_or(View::Today);
             }

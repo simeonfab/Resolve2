@@ -299,6 +299,8 @@ pub mod space {
     pub const QUICK_TOP: f32 = 110.0;
     /// The task editor: a 440 push panel from the right (B-E9).
     pub const TASK_PANEL: f32 = 440.0;
+    /// The Board's columns end this far above the window's bottom (header and Ask bar).
+    pub const BOARD_TOP_OFFSET: f32 = 290.0;
     pub const HOME_ASIDE_MAX: f32 = 440.0;
     pub const HOME_LEFT_SHARE: f32 = 1.25 / 2.25;
     pub const HERO_PAD_Y: f32 = 26.0;

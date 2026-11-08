@@ -12,6 +12,10 @@ enum TAct {
     WaitDone(Id),
     ShowDone,
     Organise,
+    /// A card dropped on a Board column (a section, or "Done").
+    BoardMove(Id, String),
+    /// "+ Add" under a Board column.
+    AddIn(String),
 }
 
 /// What the one-project task list shows, worked out from the workspace (B-E8). Self-checked.
@@ -61,6 +65,79 @@ pub fn project_tasks_model(d: &WorkspaceData, pid: &str, real_ms: i64, now: Naiv
         m.waiting.push((r.id.clone(), r.title.clone(), age(r.created), theme, false));
     }
     m
+}
+
+/// The Board (B-E8, Pack B "Tasks: one project, board"): Now, Next, Later, any sections of your
+/// own, and Done, on surface-sunk columns; cards drag between columns (a move or a completion,
+/// both undoable); "+ Add" per column.
+fn draw_board(ui: &mut egui::Ui, p: &Pal, d: &WorkspaceData, pid: &str, t0: NaiveDate, monday_ms: i64, acts: &mut Vec<TAct>) {
+    use crate::resolve::records::Kind;
+    let theme_of = |tid: &str| d.records.iter().find(|r| r.kind == Kind::Roadmap && r.project_id.as_deref() == Some(pid) && r.links.iter().any(|l| l == tid)).map(|r| r.title.clone()).unwrap_or_default();
+    let mut tasks: Vec<&Task> = d.tasks.iter().filter(|t| t.project_id.as_deref() == Some(pid) && t.parent_id.is_none()).collect();
+    tasks.sort_by_key(|t| t.order);
+    let mut cols: Vec<(String, Vec<&Task>)> = vec![("Now".into(), vec![]), ("Next".into(), vec![]), ("Later".into(), vec![])];
+    let mut done: Vec<&Task> = vec![];
+    for t in tasks {
+        if t.completed {
+            if t.completed_at.map_or(false, |c| c >= monday_ms) {
+                done.push(t);
+            }
+            continue;
+        }
+        let sec = if t.section.is_empty() { "Now" } else { t.section.as_str() };
+        match cols.iter_mut().find(|c| c.0 == sec) {
+            Some(c) => c.1.push(t),
+            None => cols.push((sec.to_string(), vec![t])),
+        }
+    }
+    cols.push(("Done".into(), done));
+    let gap = space::S12;
+    let n = cols.len() as f32;
+    let w = ((ui.available_width().min(space::CAP_TASKS) - gap * (n - 1.0)) / n).max(space::S40 * 5.0);
+    // finite sizes: inside the page's scroll area the available height is unlimited
+    let h = (ui.ctx().screen_rect().height() - space::BOARD_TOP_OFFSET).max(space::S40 * 8.0);
+    egui::ScrollArea::horizontal().id_salt(("board", pid)).auto_shrink([false, true]).show(ui, |ui| {
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = gap;
+            for (name, items) in &cols {
+                let frame = egui::Frame::none().fill(p.surface_sunk).rounding(egui::Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S10, space::S12));
+                let (_, dropped) = ui.allocate_ui_with_layout(egui::vec2(w, h), Layout::top_down(Align::Min), |ui| {
+                    ui.set_width(w);
+                    ui.dnd_drop_zone::<String, ()>(frame, |ui| {
+                        ui.set_width(w - space::S10 * 2.0);
+                        ui.set_min_height(h - space::S12 * 2.0);
+                        ui.spacing_mut().item_spacing.y = space::S8;
+                        ui.horizontal(|ui| {
+                            ui.add_space(space::S4);
+                            ui.label(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text));
+                            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                ui.add_space(space::S4);
+                                ui.label(RichText::new(items.len().to_string()).size(size::LABEL).color(p.dim));
+                            });
+                        });
+                        for t in items {
+                            let when = if t.completed {
+                                t.completed_at.and_then(chrono::DateTime::from_timestamp_millis).map(|x| format!("Done {}", x.with_timezone(&chrono::Local).format("%A"))).unwrap_or_else(|| "Done".into())
+                            } else {
+                                when_label(t, t0).0
+                            };
+                            let (clicked, _) = board_card(ui, p, &t.id, &t.title, &theme_of(&t.id), &when, t.completed);
+                            if clicked {
+                                acts.push(TAct::Open(t.id.clone()));
+                            }
+                        }
+                        if name != "Done" && ui.add(egui::Label::new(RichText::new("+ Add").font(fs(size::LABEL)).color(p.dim)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                            acts.push(TAct::AddIn(name.clone()));
+                        }
+                    })
+                })
+                .inner;
+                if let Some(id) = dropped {
+                    acts.push(TAct::BoardMove((*id).clone(), name.clone()));
+                }
+            }
+        });
+    });
 }
 
 /// A task row's text, owned (the drawing borrows it as a `TaskLine`).
@@ -239,7 +316,8 @@ impl App {
             s => s,
         };
         let show_done = self.tasks_ui.show_completed;
-        let mut board = false;
+        let board_on = self.tasks_ui.board.contains(pid);
+        let mut board: Option<bool> = None;
         let mut add = false;
         let mut project_act: Option<&str> = None;
         let mut colour: Option<[u8; 3]> = None;
@@ -284,8 +362,8 @@ impl App {
                         if button(ui, p, ButtonKind::Secondary, "✦ Organise", false, true).on_hover_text("Moves the to-dos in your pages into tasks, with dates").clicked() {
                             acts.push(TAct::Organise);
                         }
-                        if segmented(ui, p, egui::Id::new(("tasks-layout", pid)), &["List", "Board"], 0) == Some(1) {
-                            board = true;
+                        if let Some(i) = segmented(ui, p, egui::Id::new(("tasks-layout", pid)), &["List", "Board"], board_on as usize) {
+                            board = Some(i == 1);
                         }
                     });
                     ui.add_space(space::S10);
@@ -327,6 +405,12 @@ impl App {
                                     open_roadmap = true;
                                 }
                             });
+                        }
+                        ViewState::Full if board_on => {
+                            let now = now_local();
+                            let monday = t0 - chrono::Duration::days(t0.weekday().num_days_from_monday() as i64);
+                            let monday_ms = now_ms() - (now - monday.and_time(NaiveTime::MIN)).num_milliseconds();
+                            draw_board(ui, p, &self.store.data, pid, t0, monday_ms, acts);
                         }
                         ViewState::Full => {
                             let d = &self.store.data;
@@ -392,8 +476,14 @@ impl App {
         if el < moves::CARDS.stagger(4, moves::CARDS_STAGGER).end() {
             ui.ctx().request_repaint();
         }
-        if board {
-            self.tasks_ui.board.insert(pid.to_string());
+        match board {
+            Some(true) => {
+                self.tasks_ui.board.insert(pid.to_string());
+            }
+            Some(false) => {
+                self.tasks_ui.board.remove(pid);
+            }
+            None => {}
         }
         if let Some(c) = colour {
             let id = pid.to_string();
@@ -455,7 +545,7 @@ impl App {
             _ => String::new(),
         };
         let is_board = !board_key.is_empty() && self.tasks_ui.board.contains(&board_key);
-        if let (View::Project(pid), false) = (&view, is_board) {
+        if let View::Project(pid) = &view {
             let mut acts: Vec<TAct> = vec![];
             self.project_tasks(ui, p, &pid.clone(), &mut acts);
             self.apply_task_acts(acts);
@@ -807,6 +897,34 @@ impl App {
                     });
                 }
                 TAct::ShowDone => self.tasks_ui.show_completed = !self.tasks_ui.show_completed,
+                TAct::BoardMove(id, col) => {
+                    let Some(t) = self.store.data.task(&id).cloned() else { continue };
+                    if col == "Done" {
+                        if !t.completed {
+                            self.toggle_task(&id);
+                        }
+                    } else {
+                        let sec = col.clone();
+                        if t.completed || t.section != sec {
+                            let label = if t.completed { format!("Reopened \"{}\" in {sec}", t.title) } else { format!("Moved \"{}\" to {sec}", t.title) };
+                            self.undoable(&label, "move", move |d| {
+                                if let Some(x) = d.task_mut(&id) {
+                                    x.completed = false;
+                                    x.completed_at = None;
+                                    x.section = sec;
+                                    x.updated = now_ms();
+                                    x.order = now_ms();
+                                }
+                            });
+                        }
+                    }
+                }
+                TAct::AddIn(sec) => {
+                    self.open_quick(QuickKind::Task);
+                    if let Some(q) = self.quick.as_mut() {
+                        q.section = sec;
+                    }
+                }
                 TAct::Organise => {
                     self.page_ui.ai_open = true;
                     self.ask_send(crate::ai::ORGANISE_PROMPT);

@@ -1794,6 +1794,46 @@ pub fn understood_chip(ui: &mut Ui, p: &Pal, lead: &str, text: &str, kind: Optio
     resp
 }
 
+/// One Board card (B-E8): the title (14, 500), its theme (12, terracotta) and when. Done cards
+/// fade to .6. It can be clicked (opens it) and dragged (carries `drag_id` to another column).
+/// Returns (clicked, being dragged).
+pub fn board_card(ui: &mut Ui, p: &Pal, drag_id: &str, title: &str, theme: &str, when: &str, done: bool) -> (bool, bool) {
+    let w = ui.available_width();
+    let id = ui.make_persistent_id(("board-card", drag_id));
+    let dragging = ui.ctx().is_being_dragged(id);
+    let inner = egui::Frame::none().fill(if done { p.surface_raised } else { p.card }).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S12 + 1.0, space::S12)).show(ui, |ui| {
+        ui.set_width((w - (space::S12 + 1.0) * 2.0).max(0.0));
+        ui.spacing_mut().item_spacing.y = space::S4;
+        if done || dragging {
+            ui.multiply_opacity(0.6);
+        }
+        ui.add(egui::Label::new(RichText::new(title).font(fm(size::ROW)).color(if done { p.dim } else { p.text })).wrap());
+        if !theme.is_empty() {
+            ui.add(egui::Label::new(RichText::new(theme).font(fs(size::SMALL - 0.5)).color(p.orange)).wrap());
+        }
+        if !when.is_empty() {
+            ui.label(RichText::new(when).size(size::SMALL - 0.5).color(p.dim));
+        }
+    });
+    let resp = ui.interact(inner.response.rect, id, Sense::click_and_drag());
+    if resp.drag_started() {
+        egui::DragAndDrop::set_payload(ui.ctx(), drag_id.to_string());
+    }
+    if dragging {
+        // a ghost under the pointer while it moves
+        if let Some(pos) = ui.ctx().pointer_interact_pos() {
+            let r = Rect::from_center_size(pos, inner.response.rect.size());
+            egui::Area::new(id.with("ghost")).order(egui::Order::Tooltip).fixed_pos(r.min).interactable(false).show(ui.ctx(), |ui| {
+                let painter = ui.painter();
+                painter.add(Shape::Rect(shadow::CARD_LIFT[1].as_shape(r, Rounding::same(radius::BUTTON))));
+                painter.rect(r, radius::BUTTON, p.card, Stroke::new(stroke::HAIR, tok::AMBER));
+                painter.text(r.left_top() + egui::vec2(space::S12, space::S12), Align2::LEFT_TOP, fit_text(painter, title, fm(size::ROW), r.width() - space::S24), fm(size::ROW), p.text);
+            });
+        }
+    }
+    (resp.on_hover_cursor(egui::CursorIcon::Grab).clicked(), dragging)
+}
+
 /// A button the full width of its column (Plan my day's "Use this plan").
 pub fn wide_button(ui: &mut Ui, p: &Pal, kind: ButtonKind, text: &str, enabled: bool) -> Response {
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::BUTTON_H + space::S8), if enabled { Sense::click() } else { Sense::hover() });
