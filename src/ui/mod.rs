@@ -180,6 +180,8 @@ pub struct SettingsUi {
 pub struct Shot {
     pub path: PathBuf,
     pub requested: bool,
+    /// the frame the picture was asked for (the window waits for it before closing)
+    pub requested_at: u64,
 }
 
 pub struct StartOpts {
@@ -340,7 +342,7 @@ impl App {
             settings_ui: SettingsUi::default(),
             server: None,
             server_error: None,
-            shot: opts.screenshot.map(|path| Shot { path, requested: false }),
+            shot: opts.screenshot.map(|path| Shot { path, requested: false, requested_at: 0 }),
             frame: 0,
             fired: HashSet::new(),
             last_poll: 0.0,
@@ -1318,6 +1320,7 @@ impl App {
         let Some(shot) = self.shot.as_mut() else { return };
         if self.frame >= 120 && !shot.requested && !waiting {
             shot.requested = true;
+            shot.requested_at = self.frame as u64;
             ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot);
         }
         let mut saved = false;
@@ -1342,7 +1345,9 @@ impl App {
                 }
             }
         });
-        if saved || (self.frame > 900 && !waiting) {
+        // asked for the picture: give it time to arrive before closing
+        let gave_up = if shot.requested { self.frame as u64 > shot.requested_at + 600 } else { self.frame > 900 && !waiting };
+        if saved || gave_up {
             if self.dirty {
                 self.save_now();
             }

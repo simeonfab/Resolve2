@@ -97,7 +97,12 @@ pub fn plan_prompt(d: &WorkspaceData, now: NaiveDateTime, change: &str) -> Strin
     s
 }
 
-pub const PLAN_SYSTEM: &str = "You plan one person's day from their own calendar and task list. Use only the items given, with their exact titles. Never invent tasks, events or times outside the day. Answer with JSON only.";
+pub const PLAN_SYSTEM: &str = "You plan one person's day from their own calendar and task list. Use only the items given, with their exact titles. Never invent tasks, events or times outside the day. Write each reason as one plain sentence without dashes. Answer with JSON only.";
+
+/// No em dashes reach the screen (a rule for every UI string), even from the AI.
+fn no_em_dash(s: &str) -> String {
+    s.replace(" \u{2014} ", ", ").replace('\u{2014}', ", ").trim().to_string()
+}
 
 /// Read the AI's reply and match each item back to a real task or event. Items not in today's
 /// list are dropped (never shown as if they were the person's).
@@ -112,12 +117,12 @@ pub fn parse_plan(text: &str, d: &WorkspaceData, now: NaiveDateTime) -> Result<P
         let start = r.get("start").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
         let end = r.get("end").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
         let time = if end.is_empty() || end == start { start.clone() } else { format!("{start} – {end}") };
-        plan.rows.push(PlanRow { time, item: known.1.clone(), why: r.get("why").and_then(|x| x.as_str()).unwrap_or("").trim().to_string(), tag: known.2.clone(), task: known.3.clone() });
+        plan.rows.push(PlanRow { time, item: known.1.clone(), why: no_em_dash(r.get("why").and_then(|x| x.as_str()).unwrap_or("")), tag: known.2.clone(), task: known.3.clone() });
     }
     for r in v.get("wont_fit").and_then(|x| x.as_array()).cloned().unwrap_or_default() {
         let item = r.get("item").and_then(|x| x.as_str()).unwrap_or("").to_string();
         if let Some(known) = find(&item) {
-            plan.wont_fit.push((known.1.clone(), r.get("why").and_then(|x| x.as_str()).unwrap_or("").trim().to_string(), known.3.clone()));
+            plan.wont_fit.push((known.1.clone(), no_em_dash(r.get("why").and_then(|x| x.as_str()).unwrap_or("")), known.3.clone()));
         }
     }
     plan.clashes = v.get("clashes").and_then(|x| x.as_u64()).unwrap_or(0) as usize;
@@ -175,7 +180,7 @@ impl App {
     fn start_plan(&mut self) {
         let cfg = self.ai_config();
         let prompt = plan_prompt(&self.store.data, now_local(), &self.plan.change);
-        self.plan.job = Some(crate::ai::ask(&cfg.provider, &cfg.url, &cfg.model, PLAN_SYSTEM, &prompt, "Plan my day"));
+        self.plan.job = Some(crate::ai::ask_cfg(&cfg, PLAN_SYSTEM, &prompt, "Plan my day"));
         self.plan.started = self.now;
         self.plan.error = None;
     }
@@ -195,6 +200,7 @@ impl App {
                     self.plan.plan = None;
                     self.plan.error = Some("The AI didn't answer.".into());
                     crate::ai::set_last_error(&format!("Plan my day: {e}"));
+                    eprintln!("Plan my day: {e}");
                 }
             }
         }
@@ -356,7 +362,10 @@ impl App {
                         egui::Frame::none().fill(p.orange_tint).rounding(egui::Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S16, space::S12)).show(ui, |ui| {
                             ui.set_width(ui.available_width());
                             ui.horizontal(|ui| {
+                                // the reason wraps before the button, never under it
+                                let text_w = ui.available_width() - if task.is_some() { space::S40 * 3.5 } else { 0.0 };
                                 ui.vertical(|ui| {
+                                    ui.set_max_width(text_w);
                                     ui.label(RichText::new("Won't fit today.").font(fs(size::ROW_SMALL)).color(p.orange));
                                     ui.add(egui::Label::new(RichText::new(format!("{item}. {why}")).size(size::LABEL).color(p.text)).wrap());
                                 });

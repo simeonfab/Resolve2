@@ -97,6 +97,27 @@ pub fn ask(provider: &str, url: &str, model: &str, system: &str, prompt: &str, l
     AiJob { rx, label: label.to_string() }
 }
 
+/// One answer from whichever AI is chosen (Claude Code, Codex, the Claude or OpenAI API, or a
+/// local model), on a thread. `ask` above only reaches local servers.
+pub fn ask_cfg(cfg: &AiConfig, system: &str, prompt: &str, label: &str) -> AiJob {
+    let (tx, rx) = channel();
+    let (cfg, s, q) = (cfg.clone(), system.to_string(), prompt.to_string());
+    std::thread::spawn(move || {
+        let r = match cfg.provider.as_str() {
+            "claude-code" => run_cli_plain_model("claude-code", &s, &q, &cfg.model),
+            "codex-cli" => {
+                // a local model name left in settings means nothing to Codex: use its default
+                let m = if cfg.model.starts_with("gpt") || cfg.model.starts_with('o') { cfg.model.clone() } else { String::new() };
+                run_cli_plain_model("codex-cli", &s, &q, &m)
+            }
+            "anthropic" | "openai-cloud" => complete_text_once(&cfg, &format!("{s}\n\n{q}"), None),
+            _ => chat(&cfg.provider, &cfg.url, &cfg.model, &s, &q),
+        };
+        let _ = tx.send(r);
+    });
+    AiJob { rx, label: label.to_string() }
+}
+
 pub fn list_models(provider: &str, url: &str) -> Result<Vec<String>, String> {
     let agent = ureq::AgentBuilder::new().timeout(Duration::from_secs(5)).build();
     if provider == "openai" {
@@ -468,6 +489,12 @@ pub fn confirmed_report(text: &str, actions: &[String]) -> String {
     }
     s
 }
+/// Is this a model name Claude Code understands ("sonnet", "opus", "claude-…")?
+pub fn claude_model_name(model: &str) -> bool {
+    let m = model.to_lowercase();
+    ["claude", "sonnet", "opus", "haiku", "fable"].iter().any(|k| m.contains(k))
+}
+
 pub fn claude_code_installed() -> bool {
     find_cli("claude").is_some()
 }
@@ -780,7 +807,9 @@ fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) 
         std::fs::write(&sys, system).map_err(|e| e.to_string())?;
         let mut cmd = crate::ai::cmd(claude);
         cmd.current_dir(&work).args(["-p", "--strict-mcp-config", "--output-format", "text"]);
-        if !model.is_empty() {
+        // only a Claude model name goes to Claude Code; a local model left in settings (qwen3)
+        // would make every call fail, so the CLI's own default is used instead
+        if claude_model_name(model) {
             cmd.arg("--model").arg(model);
         }
         let mut child = cmd

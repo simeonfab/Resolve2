@@ -60,6 +60,9 @@ pub fn run(t: &mut T) {
         format!("{plan:?}"),
     );
     t.check("B-E21: a reply naming none of today's items is an error (the rest of Home still loads)", crate::ui::plan::parse_plan(r#"{"rows":[{"item":"Something else"}]}"#, &d, at).is_err(), "");
+    let dashed = crate::ui::plan::parse_plan(r#"{"rows":[{"item":"Send October invoices","start":"16:00","end":"16:30","why":"Due at 16:00 — sent on time."}]}"#, &d, at);
+    t.check("B-E21: an em dash in the AI's reason never reaches the screen", dashed.as_ref().map_or(false, |p| p.rows.first().map_or(false, |r| !r.why.contains('—') && r.why == "Due at 16:00, sent on time.")), format!("{:?}", dashed.as_ref().map(|p| p.rows.first().map(|r| r.why.clone()))));
+    t.check("B-E21: Claude Code only gets a Claude model name (a local one in settings is left out)", crate::ai::claude_model_name("sonnet") && crate::ai::claude_model_name("claude-opus-5-5") && !crate::ai::claude_model_name("qwen3") && !crate::ai::claude_model_name("llama3.2"), "");
     t.check("B-E23: Move to Monday goes to the next Monday", crate::ui::plan::next_monday(at.date()) == chrono::NaiveDate::from_ymd_opt(2026, 11, 9).unwrap(), "");
 
     // B-E12: the Agenda lists each day with something on it: events with their calendar, dated
