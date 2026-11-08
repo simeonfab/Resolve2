@@ -259,6 +259,13 @@ pub mod space {
     /// 1920 content caps (Rules, item 6).
     pub const CAP_DEFAULT: f32 = 1240.0;
     pub const CAP_TASKS: f32 = 1100.0;
+    /// Calendar (Pack B): side margin, the left column (calendars) and the gap to the grid.
+    pub const CAL_SIDE: f32 = 32.0;
+    pub const CAL_LEFT: f32 = 188.0;
+    pub const CAL_GAP: f32 = 18.0;
+    /// The event editor (Pack B "Calendar: event"): width and the label column.
+    pub const EVENT_W: f32 = 520.0;
+    pub const EVENT_LABEL_W: f32 = 104.0;
     pub const CAP_SETTINGS: f32 = 1100.0;
     pub const CAP_TEAM: f32 = 1320.0;
     /// Sidebar.

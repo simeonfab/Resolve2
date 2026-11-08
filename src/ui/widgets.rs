@@ -620,7 +620,10 @@ pub fn segmented(ui: &mut Ui, p: &Pal, id: egui::Id, options: &[&str], selected:
     let tl = motion::tween(ui.ctx(), id.with("thumb-x"), lefts.get(selected).copied().unwrap_or(rect.left() + 3.0) - rect.left(), timing(320.0, 0.0, E_SPRING));
     let tw = motion::tween(ui.ctx(), id.with("thumb-w"), widths.get(selected).copied().unwrap_or(40.0), timing(320.0, 0.0, E_SPRING));
     let thumb = Rect::from_min_size(egui::pos2(rect.left() + tl, rect.top() + 3.0), egui::vec2(tw, rect.height() - 6.0));
-    ui.painter().rect(thumb, radius::SMALL_BUTTON - 1.0, p.card, Stroke::NONE);
+    // nothing chosen (an index past the end): no thumb
+    if selected < options.len() {
+        ui.painter().rect(thumb, radius::SMALL_BUTTON - 1.0, p.card, Stroke::NONE);
+    }
     let mut picked = None;
     for (i, o) in options.iter().enumerate() {
         let r = Rect::from_min_size(egui::pos2(lefts[i], rect.top()), egui::vec2(widths[i], rect.height()));
@@ -1782,6 +1785,34 @@ pub fn tab_chip(ui: &mut Ui, p: &Pal, label: &str, count: Option<usize>, selecte
         ui.painter().galley(egui::pos2(rect.left() + space::S14 + lw + space::S4, y), g, soft);
     }
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A calendar toggle (Pack B): a square in the calendar's colour with a white tick when shown,
+/// an outline when hidden, and the name. Returns the click (on the square or the name).
+pub fn cal_check(ui: &mut Ui, p: &Pal, col: Color32, on: bool, name: &str) -> Response {
+    let g = ui.painter().layout_no_wrap(name.to_string(), fp(size::ROW_SMALL), p.text);
+    let box_w = space::MARK;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(box_w + space::S10 + g.size().x, space::S24), Sense::click());
+    let b = Rect::from_center_size(egui::pos2(rect.left() + box_w / 2.0, rect.center().y), egui::vec2(box_w, box_w));
+    if on {
+        ui.painter().rect_filled(b, radius::CHIP / 2.0, col);
+        let c = b.center();
+        ui.painter().add(Shape::line(vec![c + egui::vec2(-3.6, 0.2), c + egui::vec2(-1.0, 2.8), c + egui::vec2(3.8, -2.6)], Stroke::new(stroke::ICON, Color32::WHITE)));
+    } else {
+        ui.painter().rect_stroke(b.shrink(stroke::HAIR), radius::CHIP / 2.0, Stroke::new(stroke::ICON, col));
+    }
+    ui.painter().galley(egui::pos2(b.right() + space::S10, rect.center().y - g.size().y / 2.0), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A small white card with a bold title and a line under it ("Tasks show here too").
+pub fn note_card(ui: &mut Ui, p: &Pal, title: &str, body: &str) {
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::same(space::S12 + 1.0)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S6;
+        ui.label(RichText::new(title).font(fs(size::ROW_SMALL - 0.5)).color(p.text));
+        ui.add(egui::Label::new(RichText::new(body).size(size::SMALL).color(p.dim)).wrap());
+    });
 }
 
 /// A thin progress bar with its label to the right.

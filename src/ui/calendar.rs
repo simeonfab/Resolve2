@@ -205,162 +205,197 @@ impl App {
         }
     }
 
+    /// The Calendar (B-E12, Pack B "Calendar"): a serif title with ‹ Today ›, Month / Week /
+    /// Agenda and + Event across the top; on the left the calendars as coloured toggles, Tasks with
+    /// dates, + New calendar and the "Tasks show here too" note; the grid on the right. Empty,
+    /// loading and error as drawn.
     pub fn calendar_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        egui::SidePanel::left("cal-left").exact_width(236.0).resizable(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 14.0, right: 10.0, top: 14.0, bottom: 10.0 })).show_inside(ui, |ui| {
-            let create = ui.add(egui::Button::new(RichText::new("+  Create").font(fs(15.0))).min_size(egui::vec2(120.0, 46.0)).rounding(16.0).fill(p.card).stroke(Stroke::new(1.0, p.line)));
-            if create.clicked() {
-                let start = NaiveTime::from_hms_opt((now_local().hour() + 1).min(22), 0, 0);
-                self.event_edit = Some(self.new_event_draft(self.cal.anchor, start));
-            }
-            ui.add_space(16.0);
-            self.mini_month(ui, p);
-            ui.add_space(14.0);
+        let mut new_event = false;
+        egui::TopBottomPanel::top("cal-head").show_separator_line(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: space::CAL_SIDE, right: space::CAL_SIDE, top: space::S24, bottom: space::S10 })).show_inside(ui, |ui| {
+            let step = |mode: CalMode, d: NaiveDate, dir: i64| -> NaiveDate {
+                match mode {
+                    CalMode::Day => d + Duration::days(dir),
+                    CalMode::Week | CalMode::Agenda => d + Duration::days(7 * dir),
+                    CalMode::Month => {
+                        if dir > 0 {
+                            d.checked_add_months(Months::new(1)).unwrap_or(d)
+                        } else {
+                            d.checked_sub_months(Months::new(1)).unwrap_or(d)
+                        }
+                    }
+                }
+            };
+            let a = self.cal.anchor;
+            let title = match self.cal.mode {
+                CalMode::Day => a.format("%A %-d %B").to_string(),
+                CalMode::Agenda => "Agenda".to_string(),
+                CalMode::Week => {
+                    let mon = a - Duration::days(a.weekday().num_days_from_monday() as i64);
+                    let sun = mon + Duration::days(6);
+                    if mon.month() == sun.month() {
+                        format!("{} – {}", mon.day(), sun.format("%-d %B"))
+                    } else {
+                        format!("{} – {}", mon.format("%-d %b"), sun.format("%-d %b"))
+                    }
+                }
+                CalMode::Month => a.format("%B %Y").to_string(),
+            };
             ui.horizontal(|ui| {
-                ui.label(RichText::new("My calendars").font(fs(14.0)));
+                ui.label(RichText::new(title).font(fserif(size::GREETING)).color(p.text));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if ghost_button(ui, RichText::new("+").size(17.0).color(p.dim)).on_hover_text("Add calendar").clicked() {
-                        self.cal.new_cal = Some(String::new());
+                    ui.spacing_mut().item_spacing.x = space::S10;
+                    if button(ui, p, ButtonKind::Dark, "+ Event", false, true).clicked() {
+                        new_event = true;
+                    }
+                    let sel = match self.cal.mode {
+                        CalMode::Month => 0,
+                        CalMode::Week => 1,
+                        CalMode::Agenda => 2,
+                        CalMode::Day => usize::MAX,
+                    };
+                    if let Some(i) = segmented(ui, p, egui::Id::new("cal-mode"), &["Month", "Week", "Agenda"], sel) {
+                        self.cal.mode = [CalMode::Month, CalMode::Week, CalMode::Agenda][i];
+                    }
+                    ui.add_space(space::S6);
+                    if button(ui, p, ButtonKind::Secondary, "›", true, true).on_hover_text("Next").clicked() {
+                        self.cal.anchor = step(self.cal.mode, self.cal.anchor, 1);
+                        self.cal.mini = self.cal.anchor;
+                    }
+                    if button(ui, p, ButtonKind::Secondary, "Today", true, true).clicked() {
+                        self.cal.anchor = today();
+                        self.cal.mini = today();
+                        self.temp.remove("cal_scrolled");
+                    }
+                    if button(ui, p, ButtonKind::Secondary, "‹", true, true).on_hover_text("Previous").clicked() {
+                        self.cal.anchor = step(self.cal.mode, self.cal.anchor, -1);
+                        self.cal.mini = self.cal.anchor;
                     }
                 });
             });
+        });
+        egui::SidePanel::left("cal-left").exact_width(space::CAL_SIDE + space::CAL_LEFT + space::CAL_GAP).resizable(false).show_separator_line(false).frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: space::CAL_SIDE, right: space::CAL_GAP, top: space::S4, bottom: space::S10 })).show_inside(ui, |ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new("CALENDARS").font(fs(size::CARD_HEAD)).color(p.dim));
+            ui.add_space(space::S4);
+            let cals = self.store.data.calendars.clone();
+            for c in cals {
+                let resp = cal_check(ui, p, rgb(c.color), c.visible, &c.name).on_hover_text("Show or hide. Right-click to rename, recolour or delete.");
+                if resp.clicked() {
+                    if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                        x.visible = !x.visible;
+                        x.updated = now_ms();
+                    }
+                    self.touch();
+                }
+                // rename, colour and delete stay on the right-click menu (not drawn on the canvas)
+                resp.context_menu(|ui| {
+                    let key = format!("calname-{}", c.id);
+                    let mut nm = self.temp.get(&key).cloned().unwrap_or_else(|| c.name.clone());
+                    if ui.text_edit_singleline(&mut nm).changed() {
+                        self.temp.insert(key.clone(), nm.clone());
+                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                            x.name = nm;
+                            x.updated = now_ms();
+                        }
+                        self.touch();
+                    }
+                    ui.horizontal(|ui| {
+                        for cc in PICK_COLOURS {
+                            let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S18, space::S18), Sense::click());
+                            ui.painter().circle_filled(r.center(), space::S8, rgb(cc));
+                            if resp.clicked() {
+                                if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
+                                    x.color = cc;
+                                    x.updated = now_ms();
+                                }
+                                self.touch();
+                            }
+                        }
+                    });
+                    if self.store.data.calendars.len() > 1 && ui.button(RichText::new("Delete calendar and its events").color(p.orange)).clicked() {
+                        let cid = c.id.clone();
+                        self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", move |d| d.delete_calendar(&cid));
+                        ui.close_menu();
+                    }
+                });
+            }
+            if cal_check(ui, p, tok::AMBER, self.cal.show_tasks, "Tasks with dates").clicked() {
+                self.cal.show_tasks = !self.cal.show_tasks;
+            }
+            ui.add_space(space::S6);
             if let Some(mut name) = self.cal.new_cal.take() {
                 let mut keep = true;
                 let r = ui.add(egui::TextEdit::singleline(&mut name).hint_text("Calendar name").desired_width(f32::INFINITY));
                 r.request_focus();
                 if r.lost_focus() {
                     if ui.input(|i| i.key_pressed(egui::Key::Enter)) && !name.trim().is_empty() {
-                        let colors = PICK_COLOURS;
-                        let c = colors[self.store.data.calendars.len() % 6];
-                        self.store.data.calendars.push(Calendar { id: new_id(), name: name.trim().to_string(), color: c, visible: true, updated: now_ms(), ..Default::default() });
-                        self.touch();
+                        let c = PICK_COLOURS[self.store.data.calendars.len() % PICK_COLOURS.len()];
+                        let cal = Calendar { id: new_id(), name: name.trim().to_string(), color: c, visible: true, updated: now_ms(), ..Default::default() };
+                        self.undoable(&format!("Added calendar \"{}\"", cal.name), "edit", move |d| d.calendars.push(cal));
                     }
                     keep = false;
                 }
                 if keep {
                     self.cal.new_cal = Some(name);
                 }
+            } else if ui.add(egui::Label::new(RichText::new("+ New calendar").font(fs(size::ROW_SMALL)).color(p.orange)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                self.cal.new_cal = Some(String::new());
             }
-            let cals = self.store.data.calendars.clone();
-            for c in cals {
-                ui.horizontal(|ui| {
-                    let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                    let col = rgb(c.color);
-                    if c.visible {
-                        ui.painter().rect_filled(r.shrink(1.0), 3.0, col);
-                        ui.painter().line_segment([r.center() + egui::vec2(-4.0, 0.0), r.center() + egui::vec2(-1.0, 3.0)], Stroke::new(1.8, Color32::WHITE));
-                        ui.painter().line_segment([r.center() + egui::vec2(-1.0, 3.0), r.center() + egui::vec2(4.5, -3.5)], Stroke::new(1.8, Color32::WHITE));
-                    } else {
-                        ui.painter().rect_stroke(r.shrink(1.5), 3.0, Stroke::new(1.6, col));
+            ui.add_space(space::S22);
+            note_card(ui, p, "Tasks show here too", "Tasks with a date appear as amber rows, on the day they're due.");
+        });
+        let state = self.view_state;
+        egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 0.0, right: space::CAL_SIDE, top: space::S4, bottom: space::S6 })).show_inside(ui, |ui| {
+            let area = ui.max_rect();
+            match state {
+                ViewState::Loading => {
+                    ui.add_space(space::S40 * 3.0);
+                    ui.vertical_centered(|ui| {
+                        ui.label(RichText::new("Loading events…").size(size::ROW_SMALL).color(p.dim));
+                    });
+                    ui.ctx().request_repaint();
+                }
+                ViewState::Error => {
+                    ui.add_space(space::S40 * 2.0);
+                    let a = error_center(ui, p, "Resolve couldn't load your events.", "Your calendars are saved on this PC. Tasks with dates still show.", "Open Agenda");
+                    if a.retry {
+                        self.store.reload_if_changed();
                     }
-                    let toggle = resp.clicked() || ui.add(egui::Label::new(RichText::new(&c.name).size(13.5)).sense(Sense::click())).clicked();
-                    if toggle {
-                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                            x.visible = !x.visible;
-                            x.updated = now_ms();
-                        }
-                        self.touch();
+                    if a.manual {
+                        self.cal.mode = CalMode::Agenda;
                     }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        ui.menu_button(RichText::new("⋯").color(p.faint), |ui| {
-                            let key = format!("calname-{}", c.id);
-                            let mut nm = self.temp.get(&key).cloned().unwrap_or_else(|| c.name.clone());
-                            if ui.text_edit_singleline(&mut nm).changed() {
-                                self.temp.insert(key.clone(), nm.clone());
-                                if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                                    x.name = nm;
-                                    x.updated = now_ms();
-                                }
-                                self.touch();
-                            }
-                            ui.horizontal(|ui| {
-                                for cc in PICK_COLOURS {
-                                    let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                                    ui.painter().circle_filled(r.center(), 8.0, rgb(cc));
-                                    if resp.clicked() {
-                                        if let Some(x) = self.store.data.calendars.iter_mut().find(|x| x.id == c.id) {
-                                            x.color = cc;
-                                            x.updated = now_ms();
-                                        }
-                                        self.touch();
-                                    }
+                }
+                _ => {
+                    match self.cal.mode {
+                        CalMode::Month => self.month_grid(ui, p),
+                        CalMode::Agenda => self.agenda_list(ui, p),
+                        _ => self.time_grid(ui, p),
+                    }
+                    let d = &self.store.data;
+                    let nothing = state == ViewState::Empty || (d.events.is_empty() && !d.tasks.iter().any(|t| !t.completed && t.due.is_some()));
+                    if nothing && self.cal.mode != CalMode::Agenda {
+                        // the empty card sits over the grid (Pack B "Empty · no events this month")
+                        let w = space::EVENT_W - space::S40 * 2.0;
+                        let r = Rect::from_center_size(area.center() - egui::vec2(0.0, space::S40), egui::vec2(w, space::S40 * 3.0));
+                        let mut child = ui.new_child(egui::UiBuilder::new().max_rect(r).layout(Layout::top_down(Align::Center)));
+                        card_lift(&mut child, p, |ui| {
+                            ui.vertical_centered(|ui| {
+                                ui.label(RichText::new("Nothing on your calendar yet.").font(fserif(size::CARD_SERIF)).color(p.text));
+                                ui.add(egui::Label::new(RichText::new("Add an event, or give a task a date and it appears here.").size(size::SMALL).color(p.dim)).wrap());
+                                ui.add_space(space::S6);
+                                if button(ui, p, ButtonKind::Dark, "+ Event", true, true).clicked() {
+                                    new_event = true;
                                 }
                             });
-                            if self.store.data.calendars.len() > 1 && ui.button(RichText::new("🗑 Delete calendar and its events").color(p.accent_text)).clicked() {
-                                { let cid = c.id.clone(); self.undoable(&format!("Deleted calendar \"{}\"", c.name), "delete", |d| d.delete_calendar(&cid)); }
-                                self.touch();
-                                ui.close_menu();
-                            }
                         });
-                    });
-                });
-            }
-            ui.add_space(6.0);
-            ui.horizontal(|ui| {
-                let (r, resp) = ui.allocate_exact_size(egui::vec2(18.0, 18.0), Sense::click());
-                if self.cal.show_tasks {
-                    ui.painter().rect_filled(r.shrink(1.0), 3.0, p.accent);
-                    ui.painter().line_segment([r.center() + egui::vec2(-4.0, 0.0), r.center() + egui::vec2(-1.0, 3.0)], Stroke::new(1.8, Color32::WHITE));
-                    ui.painter().line_segment([r.center() + egui::vec2(-1.0, 3.0), r.center() + egui::vec2(4.5, -3.5)], Stroke::new(1.8, Color32::WHITE));
-                } else {
-                    ui.painter().rect_stroke(r.shrink(1.5), 3.0, Stroke::new(1.6, p.accent));
-                }
-                if resp.clicked() || ui.add(egui::Label::new(RichText::new("Tasks").size(13.5)).sense(Sense::click())).clicked() {
-                    self.cal.show_tasks = !self.cal.show_tasks;
-                }
-            });
-            ui.add_space(10.0);
-            ui.label(RichText::new("Click an empty slot to add an event. Drag events or timed tasks to move them.").size(11.5).color(p.faint));
-        });
-        egui::CentralPanel::default().frame(egui::Frame::none().fill(p.bg).inner_margin(egui::Margin { left: 4.0, right: 14.0, top: 10.0, bottom: 6.0 })).show_inside(ui, |ui| {
-            // toolbar
-            ui.horizontal(|ui| {
-                if ui.add(egui::Button::new(RichText::new("Today").size(14.0)).rounding(16.0).min_size(egui::vec2(72.0, 34.0)).fill(Color32::TRANSPARENT).stroke(Stroke::new(1.0, p.line))).clicked() {
-                    self.cal.anchor = today();
-                    self.cal.mini = today();
-                    self.temp.remove("cal_scrolled");
-                }
-                let step = |mode: CalMode, d: NaiveDate, dir: i64| -> NaiveDate {
-                    match mode {
-                        CalMode::Day => d + Duration::days(dir),
-                        CalMode::Week | CalMode::Agenda => d + Duration::days(7 * dir),
-                        CalMode::Month => {
-                            if dir > 0 {
-                                d.checked_add_months(Months::new(1)).unwrap_or(d)
-                            } else {
-                                d.checked_sub_months(Months::new(1)).unwrap_or(d)
-                            }
-                        }
                     }
-                };
-                if ghost_button(ui, RichText::new("‹").size(22.0)).clicked() {
-                    self.cal.anchor = step(self.cal.mode, self.cal.anchor, -1);
-                    self.cal.mini = self.cal.anchor;
                 }
-                if ghost_button(ui, RichText::new("›").size(22.0)).clicked() {
-                    self.cal.anchor = step(self.cal.mode, self.cal.anchor, 1);
-                    self.cal.mini = self.cal.anchor;
-                }
-                let title = match self.cal.mode {
-                    CalMode::Day => self.cal.anchor.format("%-d %B %Y").to_string(),
-                    CalMode::Agenda => "Agenda".to_string(),
-                    _ => self.cal.anchor.format("%B %Y").to_string(),
-                };
-                ui.label(RichText::new(title).font(fp(22.0)));
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    for (m, l) in [(CalMode::Day, "Day"), (CalMode::Agenda, "Agenda"), (CalMode::Week, "Week"), (CalMode::Month, "Month")] {
-                        if pill(ui, p, l, self.cal.mode == m).clicked() {
-                            self.cal.mode = m;
-                        }
-                    }
-                });
-            });
-            ui.add_space(6.0);
-            match self.cal.mode {
-                CalMode::Month => self.month_grid(ui, p),
-                CalMode::Agenda => self.agenda_list(ui, p),
-                _ => self.time_grid(ui, p),
             }
         });
+        if new_event {
+            let start = NaiveTime::from_hms_opt((now_local().hour() + 1).min(22), 0, 0);
+            self.event_edit = Some(self.new_event_draft(self.cal.anchor, start));
+        }
     }
 
     fn mini_month(&mut self, ui: &mut egui::Ui, p: &Pal) {
