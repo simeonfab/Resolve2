@@ -896,6 +896,17 @@ pub enum Icon {
     Close,
     Down,
     Resume,
+    Folder,
+    Bulb,
+    Compass,
+    Pencil,
+    Trophy,
+    Pause,
+    Doc,
+    Copy,
+    Info,
+    Alert,
+    Check,
 }
 
 /// Draw one line icon centred on `c`.
@@ -1015,6 +1026,57 @@ pub fn paint_icon(painter: &egui::Painter, c: Pos2, icon: Icon, col: Color32) {
         Icon::Resume => {
             painter.circle_stroke(c, 6.8, st);
             painter.add(Shape::closed_line(vec![v(-1.8, -3.5), v(3.6, 0.0), v(-1.8, 3.5)], st));
+        }
+        Icon::Folder => {
+            painter.add(Shape::closed_line(vec![v(-7.0, -5.0), v(-2.5, -5.0), v(-1.0, -3.0), v(7.0, -3.0), v(7.0, 5.5), v(-7.0, 5.5)], st));
+        }
+        Icon::Bulb => {
+            painter.circle_stroke(v(0.0, -1.8), 4.6, st);
+            painter.line_segment([v(-2.2, 4.2), v(2.2, 4.2)], st);
+            painter.line_segment([v(-1.6, 6.4), v(1.6, 6.4)], st);
+        }
+        Icon::Compass => {
+            painter.circle_stroke(c, 6.8, st);
+            painter.add(Shape::closed_line(vec![v(2.8, -2.8), v(1.0, 1.0), v(-2.8, 2.8), v(-1.0, -1.0)], st));
+        }
+        Icon::Pencil => {
+            painter.add(Shape::closed_line(vec![v(-5.5, 5.5), v(-5.5, 2.8), v(3.2, -5.9), v(5.9, -3.2), v(-2.8, 5.5)], st));
+            painter.line_segment([v(1.3, -4.0), v(4.0, -1.3)], st);
+        }
+        Icon::Trophy => {
+            painter.add(Shape::line(vec![v(-4.5, -6.0), v(-4.5, -1.5), v(-2.5, 1.5), v(0.0, 2.2), v(2.5, 1.5), v(4.5, -1.5), v(4.5, -6.0)], st));
+            painter.line_segment([v(-4.5, -6.0), v(4.5, -6.0)], st);
+            painter.add(Shape::line(vec![v(-4.5, -4.5), v(-7.0, -4.5), v(-7.0, -2.5), v(-4.6, -0.8)], st));
+            painter.add(Shape::line(vec![v(4.5, -4.5), v(7.0, -4.5), v(7.0, -2.5), v(4.6, -0.8)], st));
+            painter.line_segment([v(0.0, 2.2), v(0.0, 4.8)], st);
+            painter.add(Shape::closed_line(vec![v(-3.0, 4.8), v(3.0, 4.8), v(3.0, 6.8), v(-3.0, 6.8)], st));
+        }
+        Icon::Pause => {
+            painter.line_segment([v(-2.0, -4.0), v(-2.0, 4.0)], Stroke::new(stroke::ICON * 1.6, col));
+            painter.line_segment([v(2.0, -4.0), v(2.0, 4.0)], Stroke::new(stroke::ICON * 1.6, col));
+        }
+        Icon::Doc => {
+            painter.add(Shape::closed_line(vec![v(-5.0, -6.5), v(2.5, -6.5), v(5.0, -4.0), v(5.0, 6.5), v(-5.0, 6.5)], st));
+            painter.line_segment([v(-2.5, -1.5), v(2.5, -1.5)], st);
+            painter.line_segment([v(-2.5, 1.5), v(2.5, 1.5)], st);
+            painter.line_segment([v(-2.5, 4.0), v(1.0, 4.0)], st);
+        }
+        Icon::Copy => {
+            painter.rect_stroke(Rect::from_min_max(v(-2.5, -2.5), v(6.0, 6.0)), 1.5, st);
+            painter.add(Shape::line(vec![v(-6.0, 3.0), v(-6.0, -6.0), v(3.0, -6.0)], st));
+        }
+        Icon::Info => {
+            painter.circle_stroke(c, 6.8, st);
+            painter.line_segment([v(0.0, -0.5), v(0.0, 3.8)], st);
+            painter.circle_filled(v(0.0, -3.2), 0.9, col);
+        }
+        Icon::Alert => {
+            painter.circle_stroke(c, 6.8, st);
+            painter.line_segment([v(0.0, -3.8), v(0.0, 0.8)], st);
+            painter.circle_filled(v(0.0, 3.4), 0.9, col);
+        }
+        Icon::Check => {
+            painter.add(Shape::line(vec![v(-4.0, 0.3), v(-1.2, 3.0), v(4.2, -2.6)], st));
         }
     }
 }
@@ -2022,4 +2084,527 @@ pub fn dot_line(ui: &mut Ui, text: &str, dot: Color32, col: Color32) {
         ui.painter().circle_filled(r.center(), 3.5, dot);
         ui.label(RichText::new(text).size(size::SMALL).color(col));
     });
+}
+// ======================================================================================
+// The intake (Pack A, Phase 3): the dark top bar and rail, path cards, the answer box, the
+// waiting card and its checklist, the heard panel's labels, lanes and count cards.
+// ======================================================================================
+
+/// What the intake's top bar asks for.
+#[derive(Default)]
+pub struct IntakeBarOut {
+    pub exit: bool,
+    pub restart: bool,
+}
+
+/// The brand mark: an amber tile with a serif "R", then "Resolve".
+pub fn brand_mark(ui: &mut Ui, on_dark: bool) {
+    let (r, _) = ui.allocate_exact_size(egui::vec2(space::S26, space::S26), Sense::hover());
+    ui.painter().rect_filled(r, radius::CHIP, tok::AMBER);
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, "R", fserif(size::SECTION + 1.0), tok::INK);
+    ui.add_space(space::S8);
+    ui.label(RichText::new("Resolve").font(fs(size::SECTION + 1.5)).color(if on_dark { tok::TEXT_ON_DARK } else { tok::INK }));
+}
+
+/// The intake's top bar (64, nav-bg): the mark, a thin progress bar, "Save and exit" and, from
+/// Welcome on, a ⋯ menu with "Start this intake again (keeps your name)".
+pub fn intake_topbar(ui: &mut Ui, progress: f32, menu: bool, actions: bool) -> IntakeBarOut {
+    let mut out = IntakeBarOut::default();
+    let w = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::INTAKE_BAR), Sense::hover());
+    ui.painter().rect_filled(rect, 0.0, tok::NAV_BG);
+    ui.painter().line_segment([rect.left_bottom(), rect.right_bottom()], Stroke::new(stroke::HAIR, tok::white_a(0.06)));
+    let inner = rect.shrink2(egui::vec2(space::RAIL_PAD, 0.0));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)));
+    brand_mark(&mut child, true);
+    child.add_space(space::S18 + 2.0);
+    let (bar, _) = child.allocate_exact_size(egui::vec2(space::INTAKE_PROGRESS_W, space::INTAKE_PROGRESS_H), Sense::hover());
+    let shown = motion::tween(child.ctx(), egui::Id::new("intake-progress"), progress.clamp(0.0, 1.0), timing(520.0, 0.0, E_OUT));
+    child.painter().rect_filled(bar, radius::PILL, tok::white_a(0.12));
+    child.painter().rect_filled(Rect::from_min_size(bar.min, egui::vec2(bar.width() * shown, bar.height())), radius::PILL, tok::AMBER);
+    if actions {
+        child.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            if menu {
+                let r = button(ui, &pal(true), ButtonKind::OnDark, "⋯", true, true);
+                egui::popup_below_widget(ui, egui::Id::new("intake-menu"), &r, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                    ui.set_min_width(space::S40 * 7.0);
+                    if ui.button("Start this intake again (keeps your name)").clicked() {
+                        out.restart = true;
+                    }
+                });
+                if r.clicked() {
+                    ui.memory_mut(|m| m.toggle_popup(egui::Id::new("intake-menu")));
+                }
+            }
+            if button(ui, &pal(true), ButtonKind::OnDark, "Save and exit", true, true).on_hover_text("Your answers are saved. Resolve opens on this same step when you come back").clicked() {
+                out.exit = true;
+            }
+        });
+    }
+    out
+}
+
+/// The four steps of the intake rail.
+pub const INTAKE_STEPS: [(&str, &str); 4] = [
+    ("Get started", "Tell Resolve your name and what you need help with"),
+    ("Bring it in", "Share your project context: rough notes, imports, anything you have"),
+    ("Confirm understanding", "Check what Resolve understood and fill any gaps"),
+    ("Your next move", "One clear recommended action and a roadmap built from your project"),
+];
+
+/// One step's dot: done (✓ in an amber ring), current (number, amber ring; filled when the rail
+/// is narrow) or to come (muted ring).
+fn rail_dot(painter: &egui::Painter, c: Pos2, n: usize, state: u8, narrow: bool) {
+    let r = space::RAIL_DOT / 2.0;
+    match state {
+        2 => {
+            painter.circle_stroke(c, r - 0.5, Stroke::new(stroke::HAIR * 1.2, tok::AMBER));
+            paint_icon(painter, c, Icon::Check, tok::AMBER);
+        }
+        1 if narrow => {
+            painter.circle_filled(c, r, tok::AMBER);
+            painter.text(c, Align2::CENTER_CENTER, n.to_string(), fs(size::SMALL), tok::INK);
+        }
+        1 => {
+            painter.circle_stroke(c, r - 0.5, Stroke::new(stroke::HAIR * 1.2, tok::AMBER));
+            painter.text(c, Align2::CENTER_CENTER, n.to_string(), fs(size::SMALL), tok::AMBER);
+        }
+        _ => {
+            painter.circle_stroke(c, r - 0.5, Stroke::new(stroke::HAIR, tok::white_a(0.18)));
+            painter.text(c, Align2::CENTER_CENTER, n.to_string(), fs(size::SMALL), tok::TEXT_ON_DARK_MUTED);
+        }
+    }
+}
+
+/// The stepper rail (E4): 308 wide with each step's name and line, or 72 with dots only on the
+/// wide steps; done steps show ✓; the "Saved as you go" card at the foot. `current` is 1..=4.
+pub fn intake_rail(ui: &mut Ui, rect: Rect, current: usize, narrow: bool) {
+    let painter = ui.painter_at(rect);
+    painter.rect_filled(rect, 0.0, tok::NAV_BG);
+    let x = rect.left() + space::RAIL_PAD;
+    let mut y = rect.top() + space::RAIL_PAD + space::S18;
+    let wrap_w = rect.width() - space::RAIL_PAD * 2.0 - space::RAIL_DOT - space::S12;
+    for (k, (title, line)) in INTAKE_STEPS.iter().enumerate() {
+        let n = k + 1;
+        let state = if n < current { 2 } else if n == current { 1 } else { 0 };
+        let c = egui::pos2(x + space::RAIL_DOT / 2.0, y);
+        rail_dot(&painter, c, n, state, narrow);
+        if narrow {
+            y += space::S40 + space::S8;
+            continue;
+        }
+        let tx = x + space::RAIL_DOT + space::S12;
+        let tcol = if state == 1 { tok::TEXT_ON_DARK } else { tok::TEXT_ON_DARK_SOFT };
+        let t = painter.layout_no_wrap(title.to_string(), fs(size::ROW_SMALL), tcol);
+        let th = t.size().y;
+        painter.galley(egui::pos2(tx, y - th / 2.0), t, tcol);
+        let lcol = if state == 1 { tok::TEXT_ON_DARK_SOFT } else { tok::TEXT_ON_DARK_MUTED };
+        let l = painter.layout(line.to_string(), fp(size::SMALL), lcol, wrap_w);
+        let lh = l.size().y;
+        painter.galley(egui::pos2(tx, y + th / 2.0 + space::S4 / 2.0), l, lcol);
+        y += th / 2.0 + lh + space::S22 + space::S4;
+    }
+    if !narrow {
+        // the footer card
+        let w = rect.width() - space::RAIL_PAD * 2.0;
+        let body = painter.layout("Leave any time. Resolve opens on this same step when you come back.".to_string(), fp(size::SMALL), tok::TEXT_ON_DARK_SOFT, w - space::S14 * 2.0);
+        let h = body.size().y + space::S14 * 2.0 + space::S22;
+        let card = Rect::from_min_size(egui::pos2(x, rect.bottom() - space::RAIL_PAD - h), egui::vec2(w, h));
+        painter.rect(card, radius::CARD, Color32::TRANSPARENT, Stroke::new(stroke::HAIR, tok::white_a(0.14)));
+        painter.text(card.min + egui::vec2(space::S14, space::S14), Align2::LEFT_TOP, "Saved as you go", fs(size::TAG + 0.5), tok::AMBER);
+        painter.galley(card.min + egui::vec2(space::S14, space::S14 + space::S22), body, tok::TEXT_ON_DARK_SOFT);
+    }
+}
+
+/// A large button (the intake's Continue →, Next →): 44 high, Inter 600 15.
+pub fn big_button(ui: &mut Ui, p: &Pal, kind: ButtonKind, text: &str, enabled: bool) -> Response {
+    let font = fs(size::BUTTON + 1.0);
+    let galley = ui.painter().layout_no_wrap(text.to_string(), font.clone(), p.text);
+    let size = egui::vec2(galley.size().x + space::BUTTON_PAD_LARGE * 2.0, space::BUTTON_H_LARGE);
+    let (rect, resp) = ui.allocate_exact_size(size, if enabled { Sense::click() } else { Sense::hover() });
+    let down = enabled && resp.is_pointer_button_down_on();
+    let s = motion::tween(ui.ctx(), resp.id.with("press"), if down { 0.975 } else { 1.0 }, timing(240.0, 0.0, E_STD));
+    let r = motion::scale_about(rect, rect.center(), s);
+    let (fill, fg, st) = button_colours(p, kind, enabled, resp.hovered());
+    ui.painter().rect(r, radius::BUTTON + 1.0, fill, st);
+    if resp.has_focus() {
+        focus_ring(ui.painter(), r, radius::BUTTON + 1.0, 1.0);
+    }
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, text, font, fg);
+    if enabled {
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    } else {
+        resp
+    }
+}
+
+/// A link in terracotta (Skip to the whole picture →, Leave and come back later).
+pub fn link(ui: &mut Ui, p: &Pal, text: &str) -> Response {
+    ui.add(egui::Label::new(RichText::new(text).font(fs(size::LABEL)).color(p.orange)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The action bar at the foot of an intake step: a divider, then the buttons.
+pub fn action_bar<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    let w = ui.available_width();
+    let (r, _) = ui.allocate_exact_size(egui::vec2(w, stroke::HAIR), Sense::hover());
+    ui.painter().rect_filled(r, 0.0, p.line);
+    ui.add_space(space::S16);
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S10;
+        add(ui)
+    })
+    .inner
+}
+
+/// An intake step's eyebrow (terracotta, Inter 600 13) and title (DM Serif 30).
+pub fn step_head(ui: &mut Ui, p: &Pal, eyebrow: &str, title: &str, sub: &str) {
+    if !eyebrow.is_empty() {
+        ui.label(RichText::new(eyebrow).font(fs(size::LABEL)).color(p.orange));
+    }
+    ui.add(egui::Label::new(RichText::new(title).font(fserif(size::STEP_TITLE + 2.0)).color(p.text)).wrap());
+    if !sub.is_empty() {
+        ui.add(egui::Label::new(RichText::new(sub).size(size::ROW + 0.5).color(p.dim)).wrap());
+    }
+}
+
+/// A path card on Welcome: an icon tile, a title and a line; greyed with "Coming soon" when the
+/// path isn't open yet. Returns the click (only when it is open).
+pub fn path_card(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, line: &str, open: bool, chosen: bool) -> Response {
+    let w = ui.available_width();
+    let h = space::S40 * 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), if open { Sense::click() } else { Sense::hover() });
+    let hover = open && resp.hovered();
+    let (fill, edge) = if !open { (p.surface_sunk.gamma_multiply(0.7), p.line) } else if chosen || hover { (p.card, tok::AMBER) } else { (p.card, p.line) };
+    if open && (chosen || hover) && !p.dark {
+        paint_shadows(ui.painter(), rect, radius::CARD, &shadow::CARD_LIFT);
+    }
+    ui.painter().rect(rect, radius::CARD, fill, Stroke::new(stroke::HAIR, edge));
+    let tile = Rect::from_min_size(egui::pos2(rect.left() + space::S18 + 2.0, rect.center().y - space::PATH_TILE / 2.0), egui::vec2(space::PATH_TILE, space::PATH_TILE));
+    ui.painter().rect_filled(tile, radius::CHIP + 2.0, if open { tok::AMBER_LIGHT } else { p.track });
+    paint_icon(ui.painter(), tile.center(), icon, if open { p.orange } else { p.dim });
+    let tx = tile.right() + space::S16;
+    let tcol = if open { p.text } else { p.dim };
+    ui.painter().text(egui::pos2(tx, rect.center().y - space::S12), Align2::LEFT_CENTER, title, fs(size::SECTION), tcol);
+    ui.painter().text(egui::pos2(tx, rect.center().y + space::S10), Align2::LEFT_CENTER, line, fp(size::ROW_SMALL + 0.5), p.dim);
+    if !open {
+        let g = ui.painter().layout_no_wrap("Coming soon".to_string(), fs(size::TAG + 0.5), p.text);
+        let tr = Rect::from_min_size(egui::pos2(rect.right() - space::S22 - g.size().x - space::S16, rect.center().y - g.size().y / 2.0 - space::S4), g.size() + egui::vec2(space::S16, space::S8));
+        ui.painter().rect(tr, radius::PILL, p.card, Stroke::new(stroke::HAIR, p.line));
+        ui.painter().galley(tr.min + egui::vec2(space::S8, space::S4), g, p.text);
+    }
+    if open {
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    } else {
+        resp
+    }
+}
+
+/// The big answer box with the mic inside its bottom-right corner (02b, 03, 04b, 05): white,
+/// hairline edge, amber edge and ring when focused. `rich` draws template headings in bold.
+pub fn answer_box(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &str, min_h: f32, dashed: bool) -> Response {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let pad = egui::vec2(space::S18, space::S16);
+    let headings = |s: &str| -> egui::text::LayoutJob {
+        // template headings ("What I'm working on:") in 600, the rest in 400
+        let mut job = egui::text::LayoutJob::default();
+        let fmt = |f: egui::FontId| egui::text::TextFormat { font_id: f, color: p.text, ..Default::default() };
+        for line in s.split_inclusive('\n') {
+            match line.find(':').filter(|&i| INTAKE_TEMPLATE.iter().any(|h| line[..i].trim() == *h)) {
+                Some(i) => {
+                    job.append(&line[..=i], 0.0, fmt(fs(size::ANSWER)));
+                    job.append(&line[i + 1..], 0.0, fmt(fp(size::ANSWER)));
+                }
+                None => job.append(line, 0.0, fmt(fp(size::ANSWER))),
+            }
+        }
+        job
+    };
+    let mut layouter = |ui: &Ui, s: &str, wrap: f32| {
+        let mut job = headings(s);
+        job.wrap.max_width = wrap;
+        ui.fonts(|f| f.layout_job(job))
+    };
+    let rows = ((min_h - pad.y * 2.0) / (size::ANSWER * 1.55)).max(2.0) as usize;
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(pad.x, pad.y)).show(ui, |ui| {
+        ui.set_min_height(min_h - pad.y * 2.0);
+        ui.add(egui::TextEdit::multiline(text).id(id).frame(false).hint_text(RichText::new(hint).color(p.faint).size(size::ANSWER)).desired_rows(rows).desired_width(w - pad.x * 2.0 - space::MIC - space::S8).layouter(&mut layouter))
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let focused = inner.inner.has_focus();
+    let f = motion::tween(ui.ctx(), id.with("focus"), if focused { 1.0 } else { 0.0 }, timing(160.0, 0.0, E_STD));
+    let mut shapes = vec![Shape::rect_filled(rect, radius::CARD, p.field)];
+    if dashed && f == 0.0 {
+        shapes.extend(Shape::dashed_line(&[rect.left_top() + egui::vec2(radius::CARD, 0.0), rect.right_top() - egui::vec2(radius::CARD, 0.0)], Stroke::new(stroke::HAIR, tok::AMBER), 4.0, 3.0));
+        shapes.extend(Shape::dashed_line(&[rect.left_bottom() + egui::vec2(radius::CARD, 0.0), rect.right_bottom() - egui::vec2(radius::CARD, 0.0)], Stroke::new(stroke::HAIR, tok::AMBER), 4.0, 3.0));
+        shapes.extend(Shape::dashed_line(&[rect.left_top() + egui::vec2(0.0, radius::CARD), rect.left_bottom() - egui::vec2(0.0, radius::CARD)], Stroke::new(stroke::HAIR, tok::AMBER), 4.0, 3.0));
+        shapes.extend(Shape::dashed_line(&[rect.right_top() + egui::vec2(0.0, radius::CARD), rect.right_bottom() - egui::vec2(0.0, radius::CARD)], Stroke::new(stroke::HAIR, tok::AMBER), 4.0, 3.0));
+    } else {
+        shapes.push(Shape::rect_stroke(rect, radius::CARD, Stroke::new(stroke::HAIR, p.line)));
+    }
+    if f > 0.0 {
+        shapes.push(Shape::rect_stroke(rect.expand(space::FOCUS_RING / 2.0 + 0.5), radius::CARD + space::FOCUS_RING / 2.0, Stroke::new(space::FOCUS_RING * f, tok::amber_a(shadow::FOCUS_ALPHA * f))));
+        shapes.push(Shape::rect_stroke(rect, radius::CARD, Stroke::new(stroke::HAIR, tok::AMBER.gamma_multiply(f))));
+    }
+    ui.painter().set(bg_at, Shape::Vec(shapes));
+    let mic_rect = Rect::from_min_size(rect.right_bottom() - egui::vec2(space::MIC + space::S14, space::MIC + space::S12), egui::vec2(space::MIC, space::MIC));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(mic_rect));
+    mic_for(&mut child, p, id, false);
+    inner.inner
+}
+
+/// The eight template headings (E21), inserted under what is typed.
+pub const INTAKE_TEMPLATE: [&str; 8] = [
+    "What I'm working on",
+    "What I want it to achieve",
+    "Who it's for",
+    "Where it's at now (what's done, what exists, what's decided)",
+    "What's getting in the way",
+    "What I'm working within (time, money, people)",
+    "What I'm least sure about",
+    "How I'll know it worked",
+];
+
+/// A small outlined button with an icon (Use a template, Try an example). `lit` gives it the
+/// amber-light fill.
+pub fn icon_chip_button(ui: &mut Ui, p: &Pal, icon: Icon, text: &str, lit: bool) -> Response {
+    let g = ui.painter().layout_no_wrap(text.to_string(), fs(size::LABEL), p.text);
+    let size = egui::vec2(g.size().x + space::S16 * 2.0 + space::S18, space::S32 + 4.0);
+    let (rect, resp) = ui.allocate_exact_size(size, Sense::click());
+    let (fill, edge) = if lit { (tok::AMBER_LIGHT, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.line) } else { (p.card, p.line) };
+    ui.painter().rect(rect, radius::SMALL_BUTTON, fill, Stroke::new(stroke::HAIR, edge));
+    paint_icon(ui.painter(), egui::pos2(rect.left() + space::S16 + space::S4, rect.center().y), icon, if lit { p.text } else { p.orange });
+    ui.painter().galley(egui::pos2(rect.left() + space::S16 + space::S18, rect.center().y - g.size().y / 2.0), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A numbered step marker (the pull-in panel's 1 and 2): an ink disc with a white number.
+pub fn step_number(ui: &mut Ui, n: usize) {
+    let (r, _) = ui.allocate_exact_size(egui::vec2(space::S22, space::S22), Sense::hover());
+    ui.painter().circle_filled(r.center(), space::S22 / 2.0, tok::INK);
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, n.to_string(), fs(size::TAG), tok::TEXT_ON_DARK);
+}
+
+/// The question dots (1 2 3 … current filled amber). Returns the dot clicked.
+pub fn question_dots(ui: &mut Ui, p: &Pal, n: usize, current: usize, flagged: &[bool]) -> Option<usize> {
+    let mut picked = None;
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S8;
+        for k in 0..n {
+            let d = space::S26 + 2.0;
+            let (r, resp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+            let on = k == current;
+            if on {
+                ui.painter().circle_filled(r.center(), d / 2.0, tok::AMBER);
+            } else {
+                ui.painter().circle(r.center(), d / 2.0 - 0.5, if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, p.line));
+            }
+            let label = format!("{}{}", k + 1, if flagged.get(k).copied().unwrap_or(false) { "!" } else { "" });
+            ui.painter().text(r.center(), Align2::CENTER_CENTER, label, fs(size::SMALL), if on { tok::INK } else { p.text });
+            if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                picked = Some(k);
+            }
+        }
+    });
+    picked
+}
+
+/// A heard item's label as a menu button ("Evidence ▾"). Returns the click.
+pub fn heard_label(ui: &mut Ui, p: &Pal, kind: &str, open: bool) -> Response {
+    let (fg, bg, name) = match kind {
+        "evidence" => (p.green_text, p.green_tint, "Evidence"),
+        "assumption" => (p.accent_text, p.accent_soft, "Assumption"),
+        _ => (p.orange, p.orange_tint, "Question"),
+    };
+    let text = format!("{name} {}", if open { "▴" } else { "▾" });
+    let g = ui.painter().layout_no_wrap(text, fs(size::TAG + 0.5), fg);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S10 * 2.0, space::S8), Sense::click());
+    ui.painter().rect(r, radius::PILL, bg, if open { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::NONE });
+    ui.painter().galley(r.min + egui::vec2(space::S10, space::S4), g, fg);
+    resp.on_hover_text("Change the label").on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A checklist line: done (amber disc with a tick), doing (spinning ring), to do (empty ring).
+/// `frozen` draws the to-do lines dashed (the AI limit screen's "Saved here, exactly as it is").
+pub fn check_line(ui: &mut Ui, p: &Pal, text: &str, state: u8) {
+    ui.horizontal(|ui| {
+        let d = space::S22;
+        let (r, _) = ui.allocate_exact_size(egui::vec2(d, d), Sense::hover());
+        let c = r.center();
+        match state {
+            2 => {
+                ui.painter().circle_filled(c, d / 2.0 - 1.0, tok::AMBER);
+                paint_icon(ui.painter(), c, Icon::Check, tok::INK);
+            }
+            1 => {
+                spinner_ring(ui, c, d / 2.0 - 2.0);
+            }
+            _ => {
+                ui.painter().circle_stroke(c, d / 2.0 - 1.5, Stroke::new(stroke::HAIR, p.line));
+            }
+        }
+        ui.add_space(space::S8);
+        ui.label(RichText::new(text).size(size::ROW + 0.5).color(if state == 0 { p.dim } else { p.text }));
+    });
+}
+
+/// The waiting ring: a 270° amber arc turning on a 900 ms loop over a faint track (still with
+/// reduced motion).
+pub fn spinner_ring(ui: &Ui, c: Pos2, r: f32) {
+    let ph = motion::loop_phase(ui.ctx(), 900.0);
+    ui.painter().circle_stroke(c, r, Stroke::new(stroke::ICON * 1.6, tok::amber_a(0.22)));
+    let a0 = ph * std::f32::consts::TAU;
+    let pts: Vec<Pos2> = (0..=28).map(|i| a0 + i as f32 / 28.0 * std::f32::consts::PI * 0.7).map(|a| c + egui::vec2(a.cos(), a.sin()) * r).collect();
+    ui.painter().add(Shape::line(pts, Stroke::new(stroke::ICON * 1.6, tok::AMBER)));
+    ui.ctx().request_repaint();
+}
+
+/// The waiting card (ST1): ring, serif title, a line, a seconds counter, the checklist and, if
+/// given, the bar filling to 15 s.
+pub fn wait_card(ui: &mut Ui, p: &Pal, title: &str, sub: &str, secs: f64, lines: &[(&str, u8)], bar: Option<f32>) {
+    card_lift(ui, p, |ui| {
+        ui.add_space(space::S10);
+        ui.horizontal_top(|ui| {
+            let d = space::WAIT_RING;
+            let (r, _) = ui.allocate_exact_size(egui::vec2(d, d), Sense::hover());
+            spinner_ring(ui, r.center(), d / 2.0 - 2.0);
+            ui.add_space(space::S14);
+            ui.vertical(|ui| {
+                ui.horizontal(|ui| {
+                    ui.label(RichText::new(title).font(fserif(size::CARD_SERIF)).color(p.text));
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        let g = ui.painter().layout_no_wrap(format!("{secs:.0} s"), fs(size::SMALL), p.text);
+                        let (cr, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S16, space::S8), Sense::hover());
+                        ui.painter().rect_filled(cr, radius::PILL, p.track);
+                        ui.painter().galley(cr.min + egui::vec2(space::S8, space::S4), g, p.text);
+                    });
+                });
+                if !sub.is_empty() {
+                    ui.label(RichText::new(sub).size(size::ROW_SMALL).color(p.dim));
+                }
+                ui.add_space(space::S12);
+                for (text, state) in lines {
+                    check_line(ui, p, text, *state);
+                    ui.add_space(space::S4);
+                }
+            });
+        });
+        if let Some(frac) = bar {
+            ui.add_space(space::S12);
+            let w = ui.available_width();
+            let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::INTAKE_PROGRESS_H), Sense::hover());
+            ui.painter().rect_filled(r, radius::PILL, tok::amber_a(0.22));
+            ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(w * frac.clamp(0.0, 1.0), r.height())), radius::PILL, tok::AMBER);
+        }
+        ui.add_space(space::S8);
+    });
+}
+
+/// A note in amber-light with an info mark (ST2's hand-off note).
+pub fn info_note(ui: &mut Ui, p: &Pal, text: &str) {
+    egui::Frame::none().fill(tok::AMBER_LIGHT).stroke(Stroke::new(stroke::HAIR, tok::AMBER_EDGE)).rounding(Rounding::same(radius::PILL)).inner_margin(egui::Margin::symmetric(space::S10, space::S6)).show(ui, |ui| {
+        ui.horizontal(|ui| {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S18, space::S18), Sense::hover());
+            ui.painter().circle_filled(r.center(), space::S18 / 2.0, tok::AMBER);
+            ui.painter().text(r.center(), Align2::CENTER_CENTER, "i", fs(size::TAG), tok::INK);
+            ui.label(RichText::new(text).size(size::ROW_SMALL).color(p.text));
+        });
+    });
+}
+
+/// The error panel (ST4): white, a terracotta bar on the left, an alert mark, what failed in
+/// terracotta 600 and what to do next.
+pub fn error_panel(ui: &mut Ui, p: &Pal, what: &str, next: &str) {
+    let top = ui.cursor().min;
+    let inner = egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin { left: space::S18 + 2.0, right: space::S18, top: space::S16, bottom: space::S16 }).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal_top(|ui| {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S18, space::S18), Sense::hover());
+            paint_icon(ui.painter(), r.center(), Icon::Alert, p.orange);
+            ui.add_space(space::S10);
+            ui.vertical(|ui| {
+                ui.add(egui::Label::new(RichText::new(what).font(fs(size::ROW_SMALL)).color(p.orange)).wrap());
+                ui.add(egui::Label::new(RichText::new(next).size(size::ROW_SMALL).color(p.text)).wrap());
+            });
+        });
+    });
+    let r = inner.response.rect;
+    ui.painter().rect_filled(Rect::from_min_size(top, egui::vec2(space::S4 - 1.0, r.height())), Rounding { nw: radius::CARD, sw: radius::CARD, ne: 0.0, se: 0.0 }, p.orange);
+}
+
+/// A theme's segment bar (Theme 1 of 6): one segment per theme, done and current in ink.
+pub fn segment_bar(ui: &mut Ui, p: &Pal, n: usize, current: usize, width: f32) {
+    let gap = space::S6;
+    let seg = ((width - gap * (n.max(1) as f32 - 1.0)) / n.max(1) as f32).max(space::S8);
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = gap;
+        for k in 0..n {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(seg, space::S4 - 1.0), Sense::hover());
+            let target = if k <= current { 1.0 } else { 0.0 };
+            let f = motion::tween(ui.ctx(), egui::Id::new(("segment", k)), target, timing(520.0, 0.0, E_OUT));
+            ui.painter().rect_filled(r, radius::PILL, p.track);
+            ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(r.width() * f, r.height())), radius::PILL, tok::INK);
+        }
+    });
+}
+
+/// A phase tag on a dark pill (Now) or outlined (Next, Later).
+pub fn phase_tag(ui: &mut Ui, p: &Pal, phase: &str) {
+    let dark = phase == "Now";
+    let g = ui.painter().layout_no_wrap(phase.to_string(), fs(size::TAG + 0.5), if dark { tok::TEXT_ON_DARK } else { p.text });
+    let (r, _) = ui.allocate_exact_size(g.size() + egui::vec2(space::S16, space::S6), Sense::hover());
+    ui.painter().rect(r, radius::PILL, if dark { tok::INK } else { p.card }, if dark { Stroke::NONE } else { Stroke::new(stroke::HAIR, p.line) });
+    ui.painter().galley(r.min + egui::vec2(space::S8, space::S6 / 2.0), g, if dark { tok::TEXT_ON_DARK } else { p.text });
+}
+
+/// A lane heading on the whole picture: the phase name over a rule (terracotta and amber for Now).
+pub fn lane_head(ui: &mut Ui, p: &Pal, name: &str, now: bool) {
+    ui.label(RichText::new(name).font(fs(size::ROW_SMALL)).color(if now { p.orange } else { p.text }));
+    let w = ui.available_width();
+    let (r, _) = ui.allocate_exact_size(egui::vec2(w, stroke::HAIR * 2.0), Sense::hover());
+    ui.painter().rect_filled(r, 0.0, if now { tok::AMBER } else { p.line });
+    ui.add_space(space::S10);
+}
+
+/// A count card on the reveal (6 / Themes on your roadmap).
+pub fn count_card(ui: &mut Ui, p: &Pal, n: usize, label: &str, w: f32) {
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S16, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S16 * 2.0);
+        ui.label(RichText::new(n.to_string()).font(fs(size::TITLE)).color(p.text));
+        ui.label(RichText::new(label).size(size::ROW_SMALL).color(p.dim));
+    });
+}
+
+/// A frozen checklist row on the AI limit screen: white with a tick when done, dashed and
+/// empty when not reached.
+pub fn frozen_row(ui: &mut Ui, p: &Pal, text: &str, done: bool) {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(space::S14, space::S10)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.horizontal(|ui| {
+            let d = space::S22;
+            let (r, _) = ui.allocate_exact_size(egui::vec2(d, d), Sense::hover());
+            if done {
+                ui.painter().circle_filled(r.center(), d / 2.0 - 1.0, tok::AMBER);
+                paint_icon(ui.painter(), r.center(), Icon::Check, tok::INK);
+            } else {
+                let pts: Vec<Pos2> = (0..=32).map(|i| r.center() + egui::vec2((i as f32 / 32.0 * std::f32::consts::TAU).cos(), (i as f32 / 32.0 * std::f32::consts::TAU).sin()) * (d / 2.0 - 1.5)).collect();
+                ui.painter().extend(Shape::dashed_line(&pts, Stroke::new(stroke::HAIR, p.faint), 2.0, 2.0));
+            }
+            ui.add_space(space::S8);
+            ui.add(egui::Label::new(RichText::new(text).size(size::ROW + 0.5).color(if done { p.text } else { p.dim })).wrap());
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let shape = if done {
+        Shape::Vec(vec![Shape::rect_filled(rect, radius::CARD - 3.0, p.card), Shape::rect_stroke(rect, radius::CARD - 3.0, Stroke::new(stroke::HAIR, p.line))])
+    } else {
+        let c = [rect.left_top(), rect.right_top(), rect.right_bottom(), rect.left_bottom(), rect.left_top()];
+        Shape::Vec(Shape::dashed_line(&c, Stroke::new(stroke::HAIR, p.line), 4.0, 3.0))
+    };
+    ui.painter().set(bg_at, shape);
 }

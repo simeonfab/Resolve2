@@ -26,4 +26,29 @@ pub fn run(t: &mut T) {
     let a = has_progress("selftest-a", "sorted") && !has_progress("selftest-b", "sorted") && !has_progress("selftest-a", "chosen");
     clear_progress("selftest-a", &["sorted"]);
     t.check("E5: progress events belong to one intake and clear for the next wait", a && !has_progress("selftest-a", "sorted"), "");
+
+    // E27: the first move is task 1 of week 1, and it sits in the first Now theme
+    use crate::resolve::journey::{adopt_all, first_week_ix};
+    let mut d = crate::model::WorkspaceData::default();
+    let iid = crate::seed::intake_sample(&mut d);
+    let p = d.intakes.iter().find(|i| i.id == iid).and_then(|i| i.proposal.clone()).unwrap_or_default();
+    let week = first_week_ix(&p);
+    let first_now = p.roadmap.iter().position(|r| r.phase == "Now");
+    let pid = adopt_all(&mut d, &iid).unwrap_or_default();
+    let pinned = d.contexts.iter().find(|c| c.project_id == pid).and_then(|c| c.win_task_id.clone()).and_then(|t| d.task(&t).map(|x| x.title.clone())).unwrap_or_default();
+    let task1 = week.first().and_then(|&k| p.tasks.get(k)).map(|t| t.title.clone()).unwrap_or_default();
+    t.check(
+        "E27: the first move Adopt pins is task 1 of the first week, in the first Now theme",
+        !pinned.is_empty() && pinned == task1 && week.first().and_then(|&k| p.tasks[k].parent) == first_now,
+        format!("pinned {pinned:?}, week 1 task 1 {task1:?}"),
+    );
+    // listed out of order, a Next task first: week 1 still starts in the first Now theme
+    let mut q = p.clone();
+    let first_next = q.tasks.iter().position(|t| t.phase == "Next").unwrap_or(0);
+    q.tasks.rotate_left(first_next);
+    let k = first_week_ix(&q).first().copied();
+    t.check("E27: a Next task listed first doesn't become the first move", k.and_then(|k| q.tasks[k].parent) == first_now && k.map_or(false, |k| q.tasks[k].phase == "Now"), format!("{:?}", k.map(|k| q.tasks[k].title.clone())));
+    // E22: the pull-in prompt asks 11 questions, the last six covering the remaining targets
+    let prompt = crate::resolve::intake::IMPORT_PROMPT;
+    t.check("E22: the pull-in prompt has 11 numbered questions and says \"Not covered\" instead of guessing", (1..=11).all(|n| prompt.contains(&format!("\n{n}. "))) && prompt.contains("\"Not covered\"") && !prompt.contains('—'), "");
 }

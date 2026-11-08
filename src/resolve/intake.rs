@@ -43,7 +43,31 @@ pub const STARTERS: [(&str, &str); 3] = [
     ("Deciding between options", "I'm trying to decide between a few options and I'm stuck.\n\nThe decision I'm facing:\nThe options on the table:\nWhat matters most in the choice:\nWhat's making it hard to decide:\nAny deadline for deciding:"),
 ];
 
-pub const IMPORT_PROMPT: &str = "I am moving this project into Resolve. Summarise everything important from this conversation: project goal, current state, key decisions, open questions, and anything that should not be lost.";
+/// The pull-in prompt (E22): copied into another AI chat; its answer is pasted into Bring it in.
+/// Questions 6 to 11 are the remaining `journey::TARGETS` (problem, outcome, evidence,
+/// assumptions, constraints, uncertainties), in the first person.
+pub const IMPORT_PROMPT: &str = "I'm moving this project into a planning tool called Resolve. Using only what's in this conversation, answer the questions below. Write as me, in the first person. Keep each answer to a few sentences. If the conversation doesn't cover a question, write \"Not covered\" instead of guessing. Put \"(assumption)\" after anything I believe but haven't checked.
+1. What am I working on?
+2. What do I want it to achieve?
+3. Who is it for, and who else is affected?
+4. Why does it matter, and why now?
+5. Where is it now: what's done, what exists, what's been decided?
+6. What problem or opportunity is behind this?
+7. If this works, who is better off, and how would I know?
+8. What evidence do I already have (things I've seen, measured or been told)?
+9. What am I assuming that I haven't checked yet?
+10. What am I working within: time, money, people, rules?
+11. What am I least sure about?";
+
+/// "Try an example" on Bring it in (E21): the template filled with a sample project.
+pub const EXAMPLE_INPUT: &str = "What I'm working on: Turning my hourly café bookkeeping into a fixed-price monthly package.
+What I want it to achieve: Steadier income, and clients who know their cost up front.
+Who it's for: Small independent cafés, starting with my three current clients.
+Where it's at now (what's done, what exists, what's decided): Three café clients billed hourly. Two said they'd prefer a fixed fee. Each takes roughly 5 hours a month.
+What's getting in the way: I don't know if the hours are steady enough to price flat.
+What I'm working within (time, money, people): Just me, evenings and weekends. No budget for marketing.
+What I'm least sure about: Whether £150 a month survives the year-end rush.
+How I'll know it worked: Two cafés on the fixed fee by January, and no shoebox of receipts at year end.";
 
 pub const DEFAULT_OUTCOME_Q: &str = "If this works, who is better off, and how would you know?";
 
@@ -270,6 +294,15 @@ pub struct Intake {
     /// typed text, and are filed in Knowledge on Adopt.
     #[serde(default)]
     pub attachments: Vec<Attachment>,
+    /// No clear outcome (05): the answer to the one question, while it is being checked.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub outcome_reply: String,
+    /// An AI limit stopped this step (screen 12): which step ("understanding" or "proposal") and
+    /// the progress events done when it stopped, so its checklist stays frozen.
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub limit_at: String,
+    #[serde(default, skip_serializing_if = "Vec::is_empty")]
+    pub limit_done: Vec<String>,
     pub created: i64,
     pub updated: i64,
 }

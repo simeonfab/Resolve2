@@ -399,22 +399,11 @@ fn set_task(d: &mut WorkspaceData, title: &str, f: impl FnOnce(&mut Task)) {
     }
 }
 
-pub fn seed_canvas(d: &mut WorkspaceData) {
+/// The café proposal from the canvases (Pack A to C), shared by the sample project and the
+/// intake screenshots.
+fn cafe_proposal() -> crate::resolve::journey::Proposal {
     use crate::resolve::journey::Proposal;
-    use crate::ui::theme::PICK_COLOURS;
-    let t = now_ms();
-    let today = today();
-    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
-    d.version = 1;
-
-    // ---- calendars: Work (terracotta), Personal (green)
-    let work = Calendar { id: new_id(), name: "Work".into(), color: PICK_COLOURS[0], visible: true, updated: t, ..Default::default() };
-    let personal = Calendar { id: new_id(), name: "Personal".into(), color: PICK_COLOURS[1], visible: true, updated: t, ..Default::default() };
-    let (wc, pc) = (work.id.clone(), personal.id.clone());
-    d.calendars.extend([work, personal]);
-
-    // ---- the café project, through the real Adopt
-    let cafe = Proposal {
+    Proposal {
         name: "Café flat-fee bookkeeping".into(),
         summary: "Prove the flat fee on two cafés before January.".into(),
         objective: "Turning my hourly café bookkeeping into a fixed-price monthly package.".into(),
@@ -462,7 +451,25 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
         why: "Whether a flat £150 survives the year-end spike is the one thing that makes or breaks this package. The numbers are already in your records.".into(),
         cut: vec!["Payroll add-on".into(), "Online booking page".into()],
         ..Default::default()
-    };
+    }
+}
+
+pub fn seed_canvas(d: &mut WorkspaceData) {
+    use crate::resolve::journey::Proposal;
+    use crate::ui::theme::PICK_COLOURS;
+    let t = now_ms();
+    let today = today();
+    let monday = today - Duration::days(today.weekday().num_days_from_monday() as i64);
+    d.version = 1;
+
+    // ---- calendars: Work (terracotta), Personal (green)
+    let work = Calendar { id: new_id(), name: "Work".into(), color: PICK_COLOURS[0], visible: true, updated: t, ..Default::default() };
+    let personal = Calendar { id: new_id(), name: "Personal".into(), color: PICK_COLOURS[1], visible: true, updated: t, ..Default::default() };
+    let (wc, pc) = (work.id.clone(), personal.id.clone());
+    d.calendars.extend([work, personal]);
+
+    // ---- the café project, through the real Adopt
+    let cafe = cafe_proposal();
     let input = "Turning my hourly café bookkeeping into a fixed-price monthly package. I want it to achieve: steadier income, and clients who know their cost up front. Hourly billing makes clients nervous about costs. I spend roughly 5 hours a month on each café. Two of my three existing café clients said yes in principle.";
     let q = "Besides the three cafés you already do, roughly how many more could you take on each month before you simply run out of hours yourself?";
     let cafe_id = adopt_sample(d, input, Some(q), &[("evidence", "Two clients said yes in principle"), ("assumption", "Hourly billing makes clients nervous about costs")], cafe);
@@ -525,4 +532,57 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
     d.events.push(ev(&pc, "Gym", monday + Duration::days(1), 8, 0, 60, Recurrence::None, ""));
     d.events.push(ev(&wc, "Accountant check-in", monday + Duration::days(2), 14, 0, 60, Recurrence::None, ""));
     d.events.push(ev(&wc, "Intro call with Bean & Co.", today + Duration::days(13), 11, 0, 30, Recurrence::None, ""));
+}
+
+/// The café intake part-way through, as the Pack A canvases draw it: seven questions (the last
+/// one open), what Resolve heard, the understanding cards and the proposal. Screenshot data only
+/// (`--view intake-<step>` with `--state full`); in memory, never saved.
+pub fn intake_sample(d: &mut WorkspaceData) -> Id {
+    use crate::resolve::intake::{Intake, Understanding};
+    use crate::resolve::journey::{Heard, Qa};
+    let mut i = Intake::new();
+    i.name = "Simeon".into();
+    i.greeted = true;
+    i.input = crate::resolve::intake::EXAMPLE_INPUT.into();
+    i.stage = "questions".into();
+    let qa = |target: &str, q: &str, a: &str, why: &str| Qa { id: new_id(), target: target.into(), question: q.into(), answer: a.into(), classified: a.into(), why: why.into(), source: "sample".into(), ..Default::default() };
+    i.qas = vec![
+        qa("goal", "What would a fixed monthly fee change for you, beyond steadier income?", "Clients would know their cost up front and I'd stop chasing hours.", ""),
+        qa("problem", "What makes hourly billing hard for your café clients today?", "Hourly billing makes clients nervous about costs.", ""),
+        qa("who", "Which of your cafés would try a flat fee first?", "Two of my three existing café clients said they'd prefer a fixed fee.", ""),
+        qa("evidence", "How many hours does each café take you in a normal month?", "I spend roughly 5 hours a month on each café.", ""),
+        qa("assumptions", "What price per month do you have in mind?", "About £150 a month. I think cafés will pay that.", ""),
+        qa("uncertainties", "Does the work stay the same month to month?", "I think the work per café is predictable, but year end is a rush.", ""),
+        qa("constraints", "Besides the three cafés you already do, roughly how many more could you take on each month before you simply run out of hours yourself?", "", "This tests whether a flat fee scales with the hours you actually have."),
+    ];
+    i.cursor = 6;
+    let heard = |kind: &str, text: &str| Heard { id: new_id(), kind: kind.into(), text: text.into(), ..Default::default() };
+    i.heard = vec![
+        heard("evidence", "Two of my three existing café clients said they'd prefer a fixed fee"),
+        heard("evidence", "I spend roughly 5 hours a month on each café"),
+        heard("assumption", "Hourly billing makes clients nervous about costs"),
+        heard("assumption", "Cafés will pay about £150 a month"),
+        heard("assumption", "The work per café is predictable"),
+    ];
+    i.understanding = Some(Understanding {
+        project: "You are a freelance bookkeeper turning your hourly café bookkeeping work into a fixed-price monthly package (around £150 a month) aimed at small independent cafés.".into(),
+        goal: "To move your café clients from hourly billing to a flat monthly fee so your income is steadier and clients have cost certainty, then grow that packaged service beyond your current three clients.".into(),
+        state: "You have three café clients billed hourly, two of whom said they'd prefer a fixed fee. Each café takes roughly 5 hours a month. Price (about £150) and how the work varies month to month are not yet confirmed.".into(),
+        uncertainty: "Whether the per-café workload is predictable enough to price as a flat fee. The year-end \"shoebox\" rush suggests the hours may spike in ways a fixed £150 can't absorb.".into(),
+        outcome: "Café owners know their monthly cost up front and stop sending me shoeboxes of receipts at year end. I'd see it in on-time monthly records.".into(),
+        ..Default::default()
+    });
+    i.outcome_confirmed = true;
+    i.understood_n = i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + 1;
+    let mut p = cafe_proposal();
+    // the first week as the canvas draws it
+    p.tasks.retain(|t| !["Hours export from The Corner Café's till system", "Book a call with each willing client", "Ask what they pay now per year", "List the three cafés and their contacts", "Confirm your roadmap", "Set a target fee of £150", "Set the spike buffer"].contains(&t.title.as_str()));
+    for r in p.roadmap.iter_mut() {
+        r.confirmed = false;
+    }
+    i.proposal = Some(p);
+    i.proposed_from = crate::ui::intake_key(&i);
+    let id = i.id.clone();
+    d.intakes.push(i);
+    id
 }

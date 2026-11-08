@@ -232,7 +232,7 @@ impl App {
                         self.resolve_ui.fg = None;
                         self.resolve_ui.timings.push(("next question (timed out)".into(), 15.0));
                         if let Some(i) = self.intake_mut(&iid) {
-                            let out = crate::resolve::journey::AnswerOut { next: crate::resolve::journey::offline_next(i), note: "The AI took longer than 15 seconds, so Resolve asked this from its fixed question set.".into(), ..Default::default() };
+                            let out = crate::resolve::journey::AnswerOut { next: crate::resolve::journey::offline_next(i), note: "The AI took longer than 15 s, so this question comes from Resolve's own list.".into(), ..Default::default() };
                             let none_left = out.next.is_none();
                             crate::resolve::journey::apply_answer(i, out);
                             if none_left {
@@ -287,8 +287,17 @@ impl App {
                                 i.understanding = Some(u);
                                 i.understood_n = n;
                                 i.last_error.clear();
+                                i.limit_at.clear();
+                                crate::resolve::journey::note_progress(&id, "cards");
                             }
-                            Err(e) => i.last_error = e,
+                            Err(e) => {
+                                // an AI limit freezes where it stopped (screen 12)
+                                if crate::ai::is_limit(&e) {
+                                    i.limit_at = "understanding".into();
+                                    i.limit_done = crate::resolve::journey::WAIT_UNDERSTAND.iter().filter(|(_, ev)| crate::resolve::journey::has_progress(&id, ev)).map(|(_, ev)| ev.to_string()).collect();
+                                }
+                                i.last_error = e;
+                            }
                         }
                     }
                     i.touch();
@@ -318,8 +327,15 @@ impl App {
                                 crate::resolve::journey::sanitise(p, &snapshot);
                             }
                             i.last_error.clear();
+                            i.limit_at.clear();
                         }
-                        Err(e) => i.last_error = e,
+                        Err(e) => {
+                            if crate::ai::is_limit(&e) {
+                                i.limit_at = "proposal".into();
+                                i.limit_done = crate::resolve::journey::WAIT_PROPOSAL.iter().filter(|(_, ev)| crate::resolve::journey::has_progress(&id, ev)).map(|(_, ev)| ev.to_string()).collect();
+                            }
+                            i.last_error = e;
+                        }
                     }
                     i.touch();
                 }

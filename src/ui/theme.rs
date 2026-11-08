@@ -363,6 +363,9 @@ pub mod space {
     pub const WAIT_CUTOFF_S: f32 = 15.0;
     /// The resume card.
     pub const RESUME_W: f32 = 580.0;
+    /// The intake's large buttons (Continue →, Next →): 44 high.
+    pub const BUTTON_H_LARGE: f32 = 44.0;
+    pub const BUTTON_PAD_LARGE: f32 = 22.0;
 }
 
 /// Stroke widths.

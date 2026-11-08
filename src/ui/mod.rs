@@ -274,6 +274,8 @@ pub struct App {
     /// The screen shown last frame, and when it was entered (for screen entrances).
     pub view_seen: Option<View>,
     pub view_since: f64,
+    /// The intake pane's height this frame (steps pin their action bar to its foot).
+    pub intake_pane_h: f32,
 }
 
 /// The four states every view draws (Rules, item 3).
@@ -370,6 +372,7 @@ impl App {
             plan: plan::PlanUi::default(),
             view_seen: None,
             view_since: 0.0,
+            intake_pane_h: 0.0,
         };
         app.page_ui.ai_open = open_ai;
         // reduced motion: the saved setting, or --reduced-motion for a screenshot
@@ -499,7 +502,9 @@ impl App {
                         Some((s, n)) if n.parse::<u8>().is_ok() => (s.to_string(), n.parse::<u8>().ok()),
                         _ => (rest.to_string(), None),
                     };
-                    let pick = app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone()).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
+                    // screenshots use the canvases' café intake (in memory only)
+                    let sample = if app.shot.is_some() && app.view_state != ViewState::Empty { Some(crate::seed::intake_sample(&mut app.store.data)) } else { None };
+                    let pick = sample.or_else(|| app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone())).or_else(|| app.store.data.intakes.iter().max_by_key(|i| i.updated).map(|i| i.id.clone()));
                     if let Some(id) = pick {
                         if let Some(i) = app.store.data.intakes.iter_mut().find(|i| i.id == id) {
                             if !stage.is_empty() {
@@ -512,7 +517,8 @@ impl App {
                                 i.cursor = i.qas.len().saturating_sub(1);
                             }
                         }
-                        app.view = View::Intake(id);
+                        app.view = View::Intake(id.clone());
+                        app.intake_shot_state(&id, opts.open.as_deref());
                     }
                 }
                 _ => {}
@@ -1554,4 +1560,88 @@ pub fn hline(ui: &mut egui::Ui, p: &Pal) {
 #[allow(dead_code)]
 pub fn dt_label(dt: NaiveDateTime) -> String {
     dt.format("%a %-d %b %H:%M").to_string()
+}
+
+/// The proposal's freshness key (the confirmed cards), for sample data.
+pub fn intake_key(i: &crate::resolve::intake::Intake) -> String {
+    intake_steps::und_key(i)
+}
+
+impl App {
+    /// Screenshots of the intake's states (`--view intake-<step> --open …`), on the sample in
+    /// memory: wait (ST1), wait:<seconds> (ST3), handoff (ST2), error (ST4), resume (ST5),
+    /// edit (04b), pull (02c), template (02b), limit (12: the real budget stop runs).
+    fn intake_shot_state(&mut self, id: &str, open: Option<&str>) {
+        use crate::resolve::journey;
+        let Some(open) = open else { return };
+        let id = id.to_string();
+        let now = self.now;
+        let Some(i) = self.store.data.intakes.iter_mut().find(|i| i.id == id) else { return };
+        match open {
+            "wait" => {
+                // the next question being chosen: the answer noted, coverage checked
+                i.qas.truncate(6);
+                journey::note_progress(&id, "sorted");
+                journey::note_progress(&id, "asked");
+                let i2 = id.clone();
+                self.spawn_job_kind("Thinking about what to ask next…", &id, "next", move || {
+                    std::thread::sleep(std::time::Duration::from_secs(600));
+                    resolve::JobOut::Answer(i2, journey::AnswerOut::default())
+                });
+                self.resolve_ui.busy_since = now - 4.0;
+            }
+            o if o.starts_with("wait:") => {
+                let secs: f64 = o[5..].parse().unwrap_or(38.0);
+                i.proposal = None;
+                i.proposed_from = String::new();
+                journey::note_progress(&id, "first-part");
+                journey::note_progress(&id, "second-part");
+                let i2 = id.clone();
+                self.spawn_job("Writing your plan and your validation side by side…", move || {
+                    std::thread::sleep(std::time::Duration::from_secs(600));
+                    resolve::JobOut::Proposed(i2, None, String::new(), Err(String::new()), vec![])
+                });
+                self.resolve_ui.busy_since = now - secs;
+            }
+            "handoff" => {
+                // the 15 s hand-off: the next question from Resolve's own list
+                i.qas[6].answer = "I could take on about four more cafés before I run out of hours".into();
+                let mut q = journey::offline_next(i).unwrap_or_default();
+                q.why = format!("Fixed question set: covers \"{}\".", journey::target_label(&q.target));
+                i.qas.push(q);
+                i.cursor = i.qas.len() - 1;
+                i.last_error = "The AI took longer than 15 s, so this question comes from Resolve's own list.".into();
+                self.resolve_ui.show_why = true;
+            }
+            "error" => {
+                i.understanding = None;
+                i.last_error = "The AI's answer didn't come back in the right shape, even after one retry (The model didn't return JSON). Try again, or pick a stronger model.".into();
+            }
+            "resume" => {
+                self.temp.insert("force_resume".into(), "1".into());
+            }
+            "edit" => i.editing = true,
+            "pull" => {
+                i.input = String::new();
+                self.resolve_ui.show_import = true;
+            }
+            "template" => {
+                let filled: Vec<&str> = crate::resolve::intake::EXAMPLE_INPUT.lines().take(2).collect();
+                let mut s = filled.join("\n");
+                for h in &widgets::INTAKE_TEMPLATE[2..] {
+                    s.push_str(&format!("\n{h}: "));
+                }
+                i.input = s;
+            }
+            "blank" => {
+                i.input = String::new();
+            }
+            "limit" => {
+                // no proposal yet: the app asks for one, and the budget stop answers
+                i.proposal = None;
+                i.proposed_from = String::new();
+            }
+            _ => {}
+        }
+    }
 }

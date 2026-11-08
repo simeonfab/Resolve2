@@ -86,6 +86,9 @@ pub struct AppSettings {
     /// "Connect your AI" has been passed (a test succeeded) or skipped.
     #[serde(default)]
     pub ai_setup_done: bool,
+    /// The intake's heard panel hint ("Click any line to edit it…") was dismissed with Got it.
+    #[serde(default)]
+    pub heard_hint_done: bool,
     /// Reduced motion for the whole app: every move becomes a short fade, loops hold still.
     #[serde(default)]
     pub reduced_motion: bool,
@@ -122,6 +125,7 @@ impl Default for AppSettings {
             price_out_per_m: 0.0,
             monthly_budget: 0.0,
             ai_setup_done: false,
+            heard_hint_done: false,
             reduced_motion: false,
         }
     }

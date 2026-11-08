@@ -1055,6 +1055,22 @@ fn offline_brief(i: &Intake, u: &Understanding) -> String {
 
 // ---------------------------------------------------------------- adopt (bridge steps)
 
+/// The first week (Pack A 08, E27): the proposal's first five tasks in the order they matter:
+/// Now before Next before Later, theme by theme in roadmap order. Task 1 is the first move that
+/// Adopt pins, and it sits in the first Now theme that has tasks.
+pub fn first_week_ix(p: &Proposal) -> Vec<usize> {
+    let rank = |ph: &str| match ph {
+        "Now" | "" => 0,
+        "Next" => 1,
+        _ => 2,
+    };
+    let theme_rank = |t: &Item| t.parent.and_then(|x| p.roadmap.get(x)).map(|r| rank(&r.phase)).unwrap_or(rank(&t.phase));
+    let mut v: Vec<usize> = (0..p.tasks.len()).collect();
+    v.sort_by_key(|&k| (theme_rank(&p.tasks[k]), p.tasks[k].parent.unwrap_or(usize::MAX), k));
+    v.truncate(5);
+    v
+}
+
 pub const ADOPT_STEPS: [&str; 6] = ["Creating the project", "Laying out the roadmap", "Adding tasks", "Setting up validation", "Writing the knowledge pages", "Saving the intake transcript"];
 
 #[derive(Default, Clone, Debug)]
@@ -1129,6 +1145,7 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
         2 => {
             if on("tasks") {
                 let today = today();
+                let first = first_week_ix(&p).first().copied();
                 for (n, tk) in p.tasks.iter().enumerate() {
                     let mut task = Task::new(tk.title.clone());
                     task.project_id = Some(st.project_id.clone());
@@ -1144,7 +1161,8 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
                     task.priority = prio;
                     task.due = days.and_then(|x| today.checked_add_days(chrono::Days::new(x)));
                     task.order = t + n as i64;
-                    if st.first_task.is_none() && tk.phase == "Now" {
+                    // the first move is task 1 of the first week (E27)
+                    if first == Some(n) {
                         st.first_task = Some(task.id.clone());
                     }
                     if let Some(ri) = tk.parent.and_then(|x| st.roadmap_ids.get(x)).cloned() {
@@ -1467,7 +1485,8 @@ pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
     }
     if let Some(mut q) = out_next {
         if !out.note.is_empty() && q.source == "fixed question set" {
-            q.why = format!("{} {}", out.note, q.why);
+            // the note itself shows above the question (ST2); "Why" names the target
+            q.why = format!("Fixed question set: covers \"{}\".", target_label(&q.target));
         }
         q.calls.extend(out.calls.iter().filter(|c| c.purpose == "intake:next-question").cloned());
         i.qas.push(q);
