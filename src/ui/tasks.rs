@@ -186,7 +186,7 @@ fn draw_board(ui: &mut egui::Ui, p: &Pal, d: &WorkspaceData, pid: &str, t0: Naiv
                         });
                         for t in items {
                             let when = if t.completed {
-                                t.completed_at.and_then(chrono::DateTime::from_timestamp_millis).map(|x| format!("Done {}", x.with_timezone(&chrono::Local).format("%A"))).unwrap_or_else(|| "Done".into())
+                                t.completed_at.and_then(crate::model::local_at).map(|x| format!("Done {}", x.format("%A"))).unwrap_or_else(|| "Done".into())
                             } else {
                                 when_label(t, t0).0
                             };

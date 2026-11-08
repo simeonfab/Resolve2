@@ -23,6 +23,10 @@ pub fn now_local() -> NaiveDateTime {
 /// Screenshots only (--now): the app's clock reads `at` (the canvases are drawn on Friday
 /// 6 November 2026, in the afternoon). Edit times (`now_ms`) stay real.
 static CLOCK_SHIFT_S: std::sync::atomic::AtomicI64 = std::sync::atomic::AtomicI64::new(0);
+/// An edit time (ms) read on the app's clock, so "Done Tuesday" agrees with `today()`.
+pub fn local_at(ms: i64) -> Option<NaiveDateTime> {
+    chrono::DateTime::from_timestamp_millis(ms).map(|x| x.with_timezone(&Local).naive_local() + chrono::Duration::seconds(CLOCK_SHIFT_S.load(Ordering::Relaxed)))
+}
 pub fn set_clock(at: NaiveDateTime) {
     CLOCK_SHIFT_S.store((at - Local::now().naive_local()).num_seconds(), Ordering::Relaxed);
 }
