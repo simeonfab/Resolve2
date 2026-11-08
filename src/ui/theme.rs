@@ -332,6 +332,37 @@ pub mod space {
     pub const BUTTON_H_SMALL: f32 = 28.0;
     /// Focus ring width.
     pub const FOCUS_RING: f32 = 3.0;
+    /// The intake frame (Pack A): top bar 64, rail 308 (72 on wide steps), pane padding 40 top
+    /// and 56 sides, column 760 (800 on Confirm, 960 at 1600 and wider), heard panel 380 (440).
+    pub const INTAKE_BAR: f32 = 64.0;
+    pub const INTAKE_PROGRESS_W: f32 = 360.0;
+    pub const INTAKE_PROGRESS_H: f32 = 3.0;
+    pub const RAIL: f32 = 308.0;
+    pub const RAIL_NARROW: f32 = 72.0;
+    pub const RAIL_PAD: f32 = 24.0;
+    pub const RAIL_DOT: f32 = 26.0;
+    pub const PANE_TOP: f32 = 40.0;
+    pub const PANE_SIDE: f32 = 56.0;
+    pub const INTAKE_COL: f32 = 760.0;
+    pub const INTAKE_COL_CONFIRM: f32 = 800.0;
+    pub const INTAKE_COL_WIDE: f32 = 960.0;
+    pub const HEARD_W: f32 = 380.0;
+    pub const HEARD_W_WIDE: f32 = 440.0;
+    pub const INTAKE_GAP: f32 = 40.0;
+    /// Front door and bridge: the centred column.
+    pub const FRONT_COL: f32 = 460.0;
+    pub const BRIDGE_CARD_W: f32 = 640.0;
+    pub const REVEAL_COL: f32 = 620.0;
+    /// Path cards on Welcome; the icon tile inside them.
+    pub const PATH_TILE: f32 = 40.0;
+    /// The answer box and the Bring it in box (minimum heights).
+    pub const ANSWER_MIN_H: f32 = 108.0;
+    pub const BRING_MIN_H: f32 = 290.0;
+    /// The waiting card's ring and the 15 s bar.
+    pub const WAIT_RING: f32 = 40.0;
+    pub const WAIT_CUTOFF_S: f32 = 15.0;
+    /// The resume card.
+    pub const RESUME_W: f32 = 580.0;
 }
 
 /// Stroke widths.

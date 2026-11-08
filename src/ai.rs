@@ -110,7 +110,8 @@ pub fn ask_cfg(cfg: &AiConfig, system: &str, prompt: &str, label: &str) -> AiJob
                 let m = if cfg.model.starts_with("gpt") || cfg.model.starts_with('o') { cfg.model.clone() } else { String::new() };
                 run_cli_plain_model("codex-cli", &s, &q, &m)
             }
-            "anthropic" | "openai-cloud" => complete_text_once(&cfg, &format!("{s}\n\n{q}"), None),
+            // paid APIs stop at the monthly budget, like every other call
+            "anthropic" | "openai-cloud" => check_budget().and_then(|_| complete_text_once(&cfg, &format!("{s}\n\n{q}"), None)),
             _ => chat(&cfg.provider, &cfg.url, &cfg.model, &s, &q),
         };
         let _ = tx.send(r);
@@ -240,7 +241,9 @@ fn post_https(url: &str, headers: &[(&str, String)], body: &Value) -> Result<Val
     let v: Value = serde_json::from_slice(&out.stdout).map_err(|e| format!("Unexpected reply from the AI service: {e}"))?;
     if let Some(err) = v.get("error") {
         let msg = err.get("message").and_then(|m| m.as_str()).map(|s| s.to_string()).unwrap_or_else(|| err.to_string());
-        return Err(format!("The AI service said: {msg}"));
+        // keep the error's type (rate_limit_error, insufficient_quota…): it tells a limit apart
+        let kind = err.get("type").or_else(|| err.get("code")).and_then(|m| m.as_str()).unwrap_or("");
+        return Err(if kind.is_empty() { format!("The AI service said: {msg}") } else { format!("The AI service said ({kind}): {msg}") });
     }
     Ok(v)
 }
@@ -739,13 +742,43 @@ pub fn complete_json<T>(cfg: &AiConfig, temperature: Option<f64>, build: impl Fn
     let first = complete_json_once(cfg, &build(false), temperature).and_then(|v| validate(&v));
     let r = match first {
         Ok(x) => Ok(x),
-        Err(e) if e.starts_with("Add your") || e.contains("Couldn't reach") || e.contains("No local AI") || e.contains("isn't installed") || e.contains("budget") => Err(e),
+        // a limit is passed on as it is (a retry would hit the same limit, and its wording matters)
+        Err(e) if e.starts_with("Add your") || e.contains("Couldn't reach") || e.contains("No local AI") || e.contains("isn't installed") || is_limit(&e) => Err(e),
         Err(_) => complete_json_once(cfg, &build(true), temperature).and_then(|v| validate(&v)).map_err(|e| format!("The AI's answer didn't come back in the right shape, even after one retry ({e}). Try again, or pick a stronger model.")),
     };
     if let Err(e) = &r {
         set_last_error(&format!("{} ({}): {e}", PURPOSE.with(|x| x.borrow().clone()), cfg.provider));
     }
     r
+}
+
+/// Is this error an AI limit (the monthly budget, a provider's rate limit or quota, or Claude
+/// Code's usage cap) rather than a broken answer? The intake shows its AI limit screen for these.
+/// The Claude Code strings are the CLI's own ("You've hit your…", "You've reached your…").
+pub fn is_limit(e: &str) -> bool {
+    let l = e.to_lowercase();
+    is_budget(e)
+        || [
+            "rate_limit_error",
+            "rate limit",
+            "too many requests",
+            "answered 429",
+            "insufficient_quota",
+            "exceeded your current quota",
+            "credit balance is too low",
+            "usage limit",
+            "you've hit your",
+            "you've reached your",
+            "out of usage credits",
+            "is out of usage",
+        ]
+        .iter()
+        .any(|k| l.contains(k))
+}
+
+/// The monthly budget stop (check_budget below).
+pub fn is_budget(e: &str) -> bool {
+    e.contains("This month's AI budget")
 }
 
 /// Stop AI calls once this month's estimated spend reaches the user's budget (if set).
@@ -825,6 +858,14 @@ fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) 
     };
     let _ = std::fs::remove_dir_all(&work);
     let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    // the CLI's usage cap arrives as its answer text (or on stderr): pass it on as a limit
+    let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
+    for said in [&text, &err] {
+        let first: String = said.lines().next().unwrap_or("").chars().take(300).collect();
+        if !first.is_empty() && is_limit(&first) && first.len() < 300 && !first.trim_start().starts_with('{') {
+            return Err(format!("{}: {first}", if provider == "codex-cli" { "Codex" } else { "Claude Code" }));
+        }
+    }
     if text.is_empty() {
         return Err(format!("The CLI returned nothing: {}", String::from_utf8_lossy(&output.stderr).chars().take(300).collect::<String>()));
     }

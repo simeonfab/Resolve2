@@ -13,6 +13,8 @@ pub fn run(t: &mut T) {
     // back to the real clock for every later check
     crate::model::set_clock(chrono::Local::now().naive_local());
 
+    // found timing the proposal (Phase 3, D5): a short word with an accent crashed the check
+    t.check("a heard item with \"café\" in it is checked against the answer without crashing", crate::resolve::journey::grounded("cafés pay", "small cafés pay a fixed price"), "");
     // B-E8 All projects: Today by project in sidebar order, then not in a project; overdue apart
     let all = crate::ui::tasks::all_tasks_model(&d, at.date());
     let groups: Vec<String> = all.today.iter().map(|(p, ids)| format!("{}:{}", p.as_ref().and_then(|x| d.project(x)).map_or("none".to_string(), |x| x.name.clone()), ids.len())).collect();

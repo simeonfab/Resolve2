@@ -535,7 +535,12 @@ pub fn grounded(item: &str, source: &str) -> bool {
     if words.is_empty() {
         return true;
     }
-    let hit = words.iter().filter(|w| src.contains(w.as_str()) || src.contains(&w[..w.len().saturating_sub(2).max(4)])).count();
+    // the word without its last two letters (counted in characters, so "café" never splits)
+    let stem = |w: &str| -> String {
+        let n = w.chars().count();
+        w.chars().take(n.saturating_sub(2).max(4)).collect()
+    };
+    let hit = words.iter().filter(|w| src.contains(w.as_str()) || src.contains(stem(w).as_str())).count();
     hit as f32 / words.len() as f32 >= 0.6
 }
 
@@ -918,6 +923,9 @@ pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Resul
         std::thread::spawn(move || {
             let _ = crate::ai::take_trace();
             let r = propose_part(&c, &ii, &uu, None, part);
+            // whichever part finishes first ticks the first line, the other the second
+            let ev = if has_progress(&ii.id, "first-part") { "second-part" } else { "first-part" };
+            note_progress(&ii.id, ev);
             (r, crate::ai::take_trace())
         })
     };
@@ -933,7 +941,9 @@ pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Resul
             pa.uncertainties = pb.uncertainties;
             pa.experiments = pb.experiments;
             pa.pages = pb.pages;
+            note_progress(&i.id, "merged");
             sanitise(&mut pa, i);
+            note_progress(&i.id, "proposed");
             Ok(pa)
         }
         (Err(e), _) | (_, Err(e)) => Err(e),
@@ -1386,6 +1396,9 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             out.heard = Some((qa.id.clone(), items));
         }
     }
+    if qa_id.is_some() {
+        note_progress(&i.id, "sorted");
+    }
     // the cap: after the 8th question, no more questions
     let want_next = want_next && i.qas.len() < MAX_QUESTIONS;
     if i.qas.len() >= MAX_QUESTIONS {
@@ -1398,6 +1411,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             view.heard.retain(|h| &h.from != qid || h.corrected);
             view.heard.extend(items.iter().cloned());
         }
+        note_progress(&i.id, "asked");
         match &cfg {
             Some(c) => match next_question(c, &view) {
                 Ok(n) => {
@@ -1416,6 +1430,9 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
                 out.done = out.next.is_none();
             }
         }
+    }
+    if want_next {
+        note_progress(&i.id, "chosen");
     }
     out.calls = crate::ai::take_trace();
     out
@@ -1463,13 +1480,49 @@ pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
 
 pub fn run_understanding(cfg: Option<AiConfig>, i: &Intake) -> (Result<Understanding, String>, Vec<Trace>) {
     let _ = crate::ai::take_trace();
+    note_progress(&i.id, "reading");
     let r = match &cfg {
-        // if the model fails, fall back to the user's own words (never invent)
-        Some(c) => Ok(understand(c, i).unwrap_or_else(|_| offline_understanding(i))),
+        // a failure is shown (Try again, or fill the cards yourself); nothing is invented
+        Some(c) => understand(c, i),
         None => Ok(offline_understanding(i)),
     };
+    note_progress(&i.id, "understood");
     (r, crate::ai::take_trace())
 }
+
+// ---------------------------------------------------------------- progress events
+//
+// Real progress from the intake's AI work, read by the waiting cards (E5) and the AI limit
+// screen's frozen checklist (E10, E11). Each event is noted when that piece of work finishes.
+
+static PROGRESS: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
+
+/// Note that `event` has happened for this intake.
+pub fn note_progress(intake: &str, event: &str) {
+    if let Ok(mut v) = PROGRESS.lock() {
+        if !v.iter().any(|(i, e)| i == intake && e == event) {
+            v.push((intake.to_string(), event.to_string()));
+        }
+    }
+}
+
+/// Has `event` happened for this intake (since its progress was last cleared)?
+pub fn has_progress(intake: &str, event: &str) -> bool {
+    PROGRESS.lock().map_or(false, |v| v.iter().any(|(i, e)| i == intake && e == event))
+}
+
+/// Start counting again (a new wait begins).
+pub fn clear_progress(intake: &str, events: &[&str]) {
+    if let Ok(mut v) = PROGRESS.lock() {
+        v.retain(|(i, e)| i != intake || !events.contains(&e.as_str()));
+    }
+}
+
+/// The waiting checklists, each line ticked by a real event (E5). The AI limit screen shows the
+/// same strings, frozen where the work stopped (E11).
+pub const WAIT_NEXT: [(&str, &str); 3] = [("Noting that answer", "sorted"), ("Checking what's still not covered", "asked"), ("Choosing the next question", "chosen")];
+pub const WAIT_UNDERSTAND: [(&str, &str); 3] = [("Reading everything you said", "reading"), ("Separating what's decided from what's open", "understood"), ("Writing the cards", "cards")];
+pub const WAIT_PROPOSAL: [(&str, &str); 4] = [("Weighing what matters most", "first-part"), ("Checking against what you confirmed", "second-part"), ("Sequencing the work", "merged"), ("Choosing your first move", "proposed")];
 
 pub fn run_proposal(cfg: Option<AiConfig>, i: &Intake, section: Option<&str>) -> (Result<Proposal, String>, Vec<Trace>) {
     let _ = crate::ai::take_trace();
