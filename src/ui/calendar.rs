@@ -814,122 +814,169 @@ impl App {
         let mut delete = false;
         let mut open_page: Option<Id> = None;
         let mut new_doc = false;
-        egui::Window::new(if dr.id.is_some() { "Edit event" } else { "New event" })
-            .collapsible(false)
-            .resizable(false)
-            .anchor(Align2::CENTER_CENTER, [0.0, -40.0])
-            .fixed_size([460.0, 0.0])
-            .show(ctx, |ui| {
-                let r = ui.add(egui::TextEdit::singleline(&mut dr.title).hint_text("Add title").font(fp(20.0)).desired_width(f32::INFINITY));
-                if dr.focus {
-                    r.request_focus();
-                    dr.focus = false;
-                }
-                if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
-                    save = true;
-                }
-                ui.add_space(8.0);
-                egui::Grid::new("ev-grid").num_columns(2).spacing([12.0, 10.0]).show(ui, |ui| {
-                    ui.label(RichText::new("When").color(p.dim));
+        // The event editor (B-E12, Pack B "Calendar: event"): a 520 dialog over a dimmed screen;
+        // the title in serif with an amber rule, then When, All day, Repeats, Calendar and Notes;
+        // Delete, Cancel and Save in the footer. Location, reminder and a linked document stay
+        // under "More" (not drawn on the canvas, kept so nothing is lost).
+        let screen = ctx.screen_rect();
+        egui::Area::new(egui::Id::new("event-dim")).order(egui::Order::Foreground).fixed_pos(screen.min).show(ctx, |ui| {
+            if backdrop(ui, screen, shadow::BACKDROP_DIALOG) {
+                keep = false;
+            }
+        });
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            keep = false;
+        }
+        egui::Area::new(egui::Id::new("event-editor")).order(egui::Order::Foreground).fixed_pos(egui::pos2(screen.center().x, screen.top() + space::S40 * 2.0)).pivot(Align2::CENTER_TOP).show(ctx, |ui| {
+            dialog_frame(p).show(ui, |ui| {
+                ui.set_width(space::EVENT_W);
+                egui::Frame::none().inner_margin(egui::Margin { left: space::S18 + 2.0, right: space::S18 + 2.0, top: space::S22, bottom: space::S18 }).show(ui, |ui| {
+                    let r = ui.add(egui::TextEdit::singleline(&mut dr.title).hint_text(RichText::new("Event title").color(p.faint)).font(fserif(size::CARD_SERIF)).text_color(p.text).frame(false).desired_width(f32::INFINITY));
+                    if dr.focus {
+                        r.request_focus();
+                        dr.focus = false;
+                    }
+                    if r.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter)) {
+                        save = true;
+                    }
+                    let (lr, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), stroke::ICON), Sense::hover());
+                    ui.painter().rect_filled(lr, 0.0, tok::AMBER);
+                    ui.add_space(space::S12);
+                    let label = |ui: &mut egui::Ui, text: &str| {
+                        ui.allocate_ui_with_layout(egui::vec2(space::EVENT_LABEL_W, space::BUTTON_H), Layout::left_to_right(Align::Center), |ui| {
+                            ui.set_min_size(egui::vec2(space::EVENT_LABEL_W, space::BUTTON_H));
+                            ui.label(RichText::new(text).size(size::ROW).color(p.dim));
+                        });
+                    };
+                    ui.spacing_mut().item_spacing.y = space::S10;
+                    ui.spacing_mut().button_padding = egui::vec2(space::S10, space::S6);
+                    {
+                        // fields read as white boxes with a hairline, as drawn
+                        let v = ui.visuals_mut();
+                        v.extreme_bg_color = p.card;
+                        for w in [&mut v.widgets.inactive, &mut v.widgets.hovered, &mut v.widgets.active, &mut v.widgets.open] {
+                            w.weak_bg_fill = p.card;
+                            w.bg_fill = p.card;
+                            w.bg_stroke = Stroke::new(stroke::HAIR, p.line);
+                            w.rounding = egui::Rounding::same(radius::FIELD);
+                        }
+                        v.widgets.hovered.weak_bg_fill = p.surface_raised;
+                    }
                     ui.horizontal(|ui| {
+                        label(ui, "When");
                         let mut date = dr.date;
-                        if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("ev-date").calendar_week(false)).changed() {
+                        if ui.add(egui_extras::DatePickerButton::new(&mut date).id_salt("ev-date").format("%a %-d %b").show_icon(false).calendar_week(false)).changed() {
                             let shift = date - dr.date;
                             dr.date = date;
                             dr.end_date = dr.end_date + shift;
                         }
                         if !dr.all_day {
-                            time_field(ui, egui::Id::new("ev-start"), &mut dr.start, 52.0);
-                            ui.label("–");
-                            time_field(ui, egui::Id::new("ev-end"), &mut dr.end, 52.0);
-                        }
-                    });
-                    ui.end_row();
-                    ui.label("");
-                    ui.horizontal(|ui| {
-                        if ui.checkbox(&mut dr.all_day, "All day").changed() && !dr.all_day && dr.start.is_none() {
-                            dr.start = NaiveTime::from_hms_opt(9, 0, 0);
-                            dr.end = NaiveTime::from_hms_opt(10, 0, 0);
-                        }
-                        if dr.all_day {
-                            ui.label(RichText::new("until").color(p.dim));
+                            time_field(ui, egui::Id::new("ev-start"), &mut dr.start, space::S40 + space::S12);
+                            ui.label(RichText::new("to").size(size::ROW).color(p.dim));
+                            time_field(ui, egui::Id::new("ev-end"), &mut dr.end, space::S40 + space::S12);
+                        } else {
+                            ui.label(RichText::new("until").size(size::ROW).color(p.dim));
                             let mut ed = dr.end_date.max(dr.date);
-                            if ui.add(egui_extras::DatePickerButton::new(&mut ed).id_salt("ev-enddate").calendar_week(false)).changed() {
+                            if ui.add(egui_extras::DatePickerButton::new(&mut ed).id_salt("ev-enddate").format("%a %-d %b").show_icon(false).calendar_week(false)).changed() {
                                 dr.end_date = ed.max(dr.date);
                             }
                         }
                     });
-                    ui.end_row();
-                    ui.label(RichText::new("Repeat").color(p.dim));
-                    egui::ComboBox::from_id_salt("ev-rec").selected_text(dr.recurrence.label()).width(220.0).show_ui(ui, |ui| {
-                        for r in Recurrence::CHOICES {
-                            ui.selectable_value(&mut dr.recurrence, r, r.label());
-                        }
-                        ui.selectable_value(&mut dr.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Calendar").color(p.dim));
-                    let cname = self.store.data.calendar(&dr.calendar_id).map(|c| c.name.clone()).unwrap_or_default();
-                    egui::ComboBox::from_id_salt("ev-cal").selected_text(format!("● {cname}")).width(220.0).show_ui(ui, |ui| {
-                        for c in &self.store.data.calendars {
-                            ui.selectable_value(&mut dr.calendar_id, c.id.clone(), RichText::new(format!("● {}", c.name)).color(rgb(c.color)));
-                        }
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Location").color(p.dim));
-                    ui.add(egui::TextEdit::singleline(&mut dr.location).hint_text("Add location").desired_width(f32::INFINITY));
-                    ui.end_row();
-                    ui.label(RichText::new("Reminder").color(p.dim));
-                    let rl = |m: Option<i64>| match m {
-                        None => "None".to_string(),
-                        Some(0) => "At start".to_string(),
-                        Some(m) if m < 60 => format!("{m} min before"),
-                        Some(m) => format!("{} h before", m / 60),
-                    };
-                    egui::ComboBox::from_id_salt("ev-rem").selected_text(rl(dr.reminder_min)).width(220.0).show_ui(ui, |ui| {
-                        for m in [None, Some(0), Some(5), Some(10), Some(30), Some(60), Some(120)] {
-                            ui.selectable_value(&mut dr.reminder_min, m, rl(m));
-                        }
-                    });
-                    ui.end_row();
-                    ui.label(RichText::new("Document").color(p.dim));
                     ui.horizontal(|ui| {
-                        let current = dr.page_id.as_deref().and_then(|x| self.store.data.page(x)).map(|x| format!("{} {}", x.icon, x.title)).unwrap_or_else(|| "None".into());
-                        egui::ComboBox::from_id_salt("ev-page").selected_text(current).width(170.0).show_ui(ui, |ui| {
-                            ui.selectable_value(&mut dr.page_id, None, "None");
-                            for pg in &self.store.data.pages {
-                                ui.selectable_value(&mut dr.page_id, Some(pg.id.clone()), format!("{} {}", pg.icon, pg.title));
+                        label(ui, "All day");
+                        let was = dr.all_day;
+                        switch(ui, p, &mut dr.all_day);
+                        if was && !dr.all_day && dr.start.is_none() {
+                            dr.start = NaiveTime::from_hms_opt(9, 0, 0);
+                            dr.end = NaiveTime::from_hms_opt(10, 0, 0);
+                        }
+                    });
+                    ui.horizontal(|ui| {
+                        label(ui, "Repeats");
+                        egui::ComboBox::from_id_salt("ev-rec").selected_text(dr.recurrence.label()).show_ui(ui, |ui| {
+                            for r in Recurrence::CHOICES {
+                                ui.selectable_value(&mut dr.recurrence, r, r.label());
+                            }
+                            ui.selectable_value(&mut dr.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
+                        });
+                    });
+                    ui.horizontal(|ui| {
+                        label(ui, "Calendar");
+                        let (cname, ccol) = self.store.data.calendar(&dr.calendar_id).map(|c| (c.name.clone(), rgb(c.color))).unwrap_or_default();
+                        let (sw, _) = ui.allocate_exact_size(egui::vec2(space::S10, space::S10), Sense::hover());
+                        ui.painter().rect_filled(sw, radius::CHIP / 3.0, ccol);
+                        egui::ComboBox::from_id_salt("ev-cal").selected_text(RichText::new(cname).color(p.text)).show_ui(ui, |ui| {
+                            for c in &self.store.data.calendars {
+                                ui.selectable_value(&mut dr.calendar_id, c.id.clone(), RichText::new(format!("■ {}", c.name)).color(rgb(c.color)));
                             }
                         });
-                        if let Some(pg) = &dr.page_id {
-                            if ui.small_button("Open").clicked() {
-                                open_page = Some(pg.clone());
-                            }
-                        } else if ui.small_button("+ Meeting notes").clicked() {
-                            new_doc = true;
-                        }
                     });
-                    ui.end_row();
-                });
-                ui.add(egui::TextEdit::multiline(&mut dr.notes).hint_text("Add description").desired_rows(3).desired_width(f32::INFINITY));
-                if dr.recurrence.is_some() && dr.id.is_some() {
-                    ui.label(RichText::new("Changes apply to every event in the series.").size(11.5).color(p.faint));
-                }
-                ui.add_space(8.0);
-                ui.horizontal(|ui| {
-                    if dr.id.is_some() && ui.button(RichText::new("🗑 Delete").color(p.accent_text)).clicked() {
-                        delete = true;
+                    ui.horizontal_top(|ui| {
+                        label(ui, "Notes");
+                        egui::Frame::none().fill(p.field).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+                            ui.add(egui::TextEdit::multiline(&mut dr.notes).hint_text("Add notes").frame(false).font(fp(size::ROW)).desired_rows(3).desired_width(f32::INFINITY));
+                        });
+                    });
+                    egui::CollapsingHeader::new(RichText::new("More: location, reminder, document").size(size::SMALL).color(p.dim)).id_salt("ev-more").show(ui, |ui| {
+                        ui.horizontal(|ui| {
+                            label(ui, "Location");
+                            ui.add(egui::TextEdit::singleline(&mut dr.location).hint_text("Add location").desired_width(f32::INFINITY));
+                        });
+                        ui.horizontal(|ui| {
+                            label(ui, "Reminder");
+                            let rl = |m: Option<i64>| match m {
+                                None => "None".to_string(),
+                                Some(0) => "At start".to_string(),
+                                Some(m) if m < 60 => format!("{m} min before"),
+                                Some(m) => format!("{} h before", m / 60),
+                            };
+                            egui::ComboBox::from_id_salt("ev-rem").selected_text(rl(dr.reminder_min)).show_ui(ui, |ui| {
+                                for m in [None, Some(0), Some(5), Some(10), Some(30), Some(60), Some(120)] {
+                                    ui.selectable_value(&mut dr.reminder_min, m, rl(m));
+                                }
+                            });
+                        });
+                        ui.horizontal(|ui| {
+                            label(ui, "Document");
+                            let current = dr.page_id.as_deref().and_then(|x| self.store.data.page(x)).map(|x| x.title.clone()).unwrap_or_else(|| "None".into());
+                            egui::ComboBox::from_id_salt("ev-page").selected_text(current).show_ui(ui, |ui| {
+                                ui.selectable_value(&mut dr.page_id, None, "None");
+                                for pg in &self.store.data.pages {
+                                    ui.selectable_value(&mut dr.page_id, Some(pg.id.clone()), pg.title.clone());
+                                }
+                            });
+                            if let Some(pg) = &dr.page_id {
+                                if button(ui, p, ButtonKind::Ghost, "Open", true, true).clicked() {
+                                    open_page = Some(pg.clone());
+                                }
+                            } else if button(ui, p, ButtonKind::Ghost, "+ Meeting notes", true, true).clicked() {
+                                new_doc = true;
+                            }
+                        });
+                    });
+                    if dr.recurrence.is_some() && dr.id.is_some() {
+                        ui.label(RichText::new("Changes apply to every event in the series.").size(size::SMALL).color(p.faint));
                     }
-                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                        if primary_button(ui, p, "Save").clicked() {
-                            save = true;
+                });
+                // footer band
+                egui::Frame::none().fill(p.bg).rounding(egui::Rounding { nw: 0.0, ne: 0.0, sw: radius::DIALOG, se: radius::DIALOG }).inner_margin(egui::Margin::symmetric(space::S18 + 2.0, space::S14)).show(ui, |ui| {
+                    ui.set_width(space::EVENT_W - (space::S18 + 2.0) * 2.0);
+                    ui.horizontal(|ui| {
+                        if dr.id.is_some() && button(ui, p, ButtonKind::Ghost, "Delete", false, true).clicked() {
+                            delete = true;
                         }
-                        if ui.button("Cancel").clicked() {
-                            keep = false;
-                        }
+                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                            if button(ui, p, ButtonKind::Dark, "Save", false, true).clicked() {
+                                save = true;
+                            }
+                            if button(ui, p, ButtonKind::Secondary, "Cancel", false, true).clicked() {
+                                keep = false;
+                            }
+                        });
                     });
                 });
             });
+        });
         if new_doc {
             let mut pg = Page::new(if dr.title.is_empty() { "Meeting notes".to_string() } else { format!("Notes: {}", dr.title) });
             pg.icon = "🗒".into();
@@ -997,8 +1044,6 @@ impl App {
         if delete {
             if let Some(id) = &dr.id {
                 { let eid = id.to_string(); let name = self.store.data.events.iter().find(|e| e.id == eid).map(|e| e.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted event \"{name}\""), "delete", |d| d.delete_event(&eid)); }
-                self.touch();
-                self.toast("Event deleted");
             }
             keep = false;
         }

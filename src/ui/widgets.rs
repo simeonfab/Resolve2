@@ -1805,6 +1805,20 @@ pub fn cal_check(ui: &mut Ui, p: &Pal, col: Color32, on: bool, name: &str) -> Re
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+/// An on/off switch (All day): a pill track, amber when on, with a white knob that slides.
+pub fn switch(ui: &mut Ui, p: &Pal, on: &mut bool) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(space::S32 + 2.0, space::S18 + 2.0), Sense::click());
+    if resp.clicked() {
+        *on = !*on;
+    }
+    let t = motion::tween(ui.ctx(), resp.id.with("knob"), if *on { 1.0 } else { 0.0 }, timing(160.0, 0.0, E_STD));
+    ui.painter().rect(rect, radius::PILL, if *on { tok::AMBER } else { p.track }, Stroke::new(stroke::HAIR, p.line));
+    let r = rect.height() / 2.0 - 2.0;
+    let x = egui::lerp(rect.left() + r + 2.0..=rect.right() - r - 2.0, t);
+    ui.painter().circle_filled(egui::pos2(x, rect.center().y), r, Color32::WHITE);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// A small white card with a bold title and a line under it ("Tasks show here too").
 pub fn note_card(ui: &mut Ui, p: &Pal, title: &str, body: &str) {
     egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::same(space::S12 + 1.0)).show(ui, |ui| {

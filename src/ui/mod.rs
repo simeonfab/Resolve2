@@ -540,6 +540,10 @@ impl App {
             Some(o) if o.starts_with("task:") => {
                 app.open_task = app.store.data.tasks.iter().find(|t| t.title == o["task:".len()..]).map(|t| t.id.clone());
             }
+            // event:<title>: the event editor open on that event (screenshots)
+            Some(o) if o.starts_with("event:") => {
+                app.event_edit = app.store.data.events.iter().find(|e| e.title == o["event:".len()..]).map(calendar::draft_from);
+            }
             Some("try") => {
                 app.temp.insert("show_try".into(), "1".into());
             }
