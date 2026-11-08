@@ -13,6 +13,12 @@ pub fn run(t: &mut T) {
     // back to the real clock for every later check
     crate::model::set_clock(chrono::Local::now().naive_local());
 
+    // B-E8 All projects: Today by project in sidebar order, then not in a project; overdue apart
+    let all = crate::ui::tasks::all_tasks_model(&d, at.date());
+    let groups: Vec<String> = all.today.iter().map(|(p, ids)| format!("{}:{}", p.as_ref().and_then(|x| d.project(x)).map_or("none".to_string(), |x| x.name.clone()), ids.len())).collect();
+    t.check("B-E8: All projects counts Captured 2 and Today 3, Today grouped Café, Website, then not in a project", all.captured.len() == 2 && all.today_count() == 3 && groups == ["Café flat-fee bookkeeping:1", "Website refresh:1", "none:1"] && all.overdue.len() == 1, format!("{groups:?} overdue {}", all.overdue.len()));
+    let inv = d.tasks.iter().find(|x| x.title == "Send October invoices").cloned().unwrap_or_else(|| crate::model::Task::new(""));
+    t.check("B-E8: a timed, repeating task due today reads \"Today 16:00 · every month\"", crate::ui::tasks::all_when(&inv, at.date(), true).0 == "Today 16:00 · every month", crate::ui::tasks::all_when(&inv, at.date(), true).0);
     t.check("sample data: the canvases' café project and Website refresh, adopted through the real Adopt", d.projects.iter().any(|p| p.name == "Café flat-fee bookkeeping") && d.projects.iter().any(|p| p.name == "Website refresh") && d.contexts.len() == 2, format!("{} projects", d.projects.len()));
     t.check("Home: greeting by time of day with the person's name", m.greeting == "Good afternoon, Simeon", &m.greeting);
     t.check("Home: subline with the date, tasks due today and events", m.subline == "Friday 6 November · 3 due today · 1 event", &m.subline);

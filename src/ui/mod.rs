@@ -304,6 +304,7 @@ impl App {
             Some("inbox") => View::Inbox,
             Some("today") => View::Today,
             Some("upcoming") => View::Upcoming,
+            Some("filters") => View::Filters,
             Some("calendar") => View::Calendar,
             Some("settings") => View::Settings,
             Some("help") => View::Help,

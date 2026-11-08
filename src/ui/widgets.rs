@@ -1765,6 +1765,25 @@ pub fn task_line(ui: &mut Ui, p: &Pal, t: &TaskLine, first: bool) -> (bool, bool
     (toggled, resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !toggled)
 }
 
+/// A tab chip on All projects ("Captured 2", "Today 3"): white with a hairline, dark when chosen,
+/// the count in a softer tone.
+pub fn tab_chip(ui: &mut Ui, p: &Pal, label: &str, count: Option<usize>, selected: bool) -> Response {
+    let (fg, soft) = if selected { (tok::TEXT_ON_DARK, tok::TEXT_ON_DARK_SOFT) } else { (p.text, p.dim) };
+    let lg = ui.painter().layout_no_wrap(label.to_string(), fs(size::ROW_SMALL), fg);
+    let cg = count.map(|n| ui.painter().layout_no_wrap(n.to_string(), fp(size::ROW_SMALL), soft));
+    let w = lg.size().x + cg.as_ref().map_or(0.0, |g| g.size().x + space::S4) + space::S14 * 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::S32), Sense::click());
+    let (bg, edge) = if selected { (tok::INK, Stroke::NONE) } else { (if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, p.line)) };
+    ui.painter().rect(rect, radius::PILL, bg, edge);
+    let y = rect.center().y - lg.size().y / 2.0;
+    let lw = lg.size().x;
+    ui.painter().galley(egui::pos2(rect.left() + space::S14, y), lg, fg);
+    if let Some(g) = cg {
+        ui.painter().galley(egui::pos2(rect.left() + space::S14 + lw + space::S4, y), g, soft);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// A thin progress bar with its label to the right.
 pub fn progress_line(ui: &mut Ui, p: &Pal, frac: f32, width: f32) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(width, space::BAR_H), Sense::hover());
