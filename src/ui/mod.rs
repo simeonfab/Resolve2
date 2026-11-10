@@ -25,6 +25,7 @@ mod assistant;
 mod databases;
 mod pages;
 pub mod overview;
+pub mod roadmap;
 pub(crate) mod settings;
 pub mod tasks;
 
@@ -595,6 +596,16 @@ impl App {
             }
             Some("try") => {
                 app.temp.insert("show_try".into(), "1".into());
+            }
+            // the Roadmap's whole picture, its By theme list, or one theme open (screenshots)
+            Some("whole") => {
+                app.temp.insert("rm_whole".into(), "1".into());
+            }
+            Some("by-theme") => app.resolve_ui.roadmap_by_theme = true,
+            Some(o) if o.starts_with("theme:") => {
+                if let Some(r) = app.store.data.records.iter().find(|r| r.kind == crate::resolve::Kind::Roadmap && r.title == o["theme:".len()..]) {
+                    app.temp.insert("rm_open".into(), r.id.clone());
+                }
             }
             // ask:<question>: a real question to the AI, read-only, answered before the screenshot
             Some(o) if o.starts_with("ask:") => {

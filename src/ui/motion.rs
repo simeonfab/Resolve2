@@ -317,6 +317,33 @@ pub fn end_move(ui: &mut egui::Ui, child: &egui::Ui, start: Pos2, keep: f32) {
 /// A finished move (nothing to animate).
 pub const SETTLED: Frame = Frame { t: 1.0, alpha: 1.0, done: true };
 
+/// The height spring (C-E26): a block that grows to its natural height with `grow` while `open`,
+/// and shrinks away with `shrink` when not, clipped as it moves; what sits below it follows on
+/// the same clock. Nothing is drawn once it has closed. Returns the block's result when drawn.
+pub fn height_spring<R>(ui: &mut egui::Ui, id: Id, open: bool, grow: Timing, shrink: Timing, add: impl FnOnce(&mut egui::Ui) -> R) -> Option<R> {
+    let t = tween(ui.ctx(), id.with("spring"), if open { 1.0 } else { 0.0 }, if open { grow } else { shrink });
+    if !open && t <= 0.001 {
+        return None;
+    }
+    let nat: f32 = ui.ctx().data(|d| d.get_temp(id.with("natural"))).unwrap_or(0.0);
+    let h = (nat * t).max(0.0);
+    let start = ui.cursor().min;
+    let w = ui.available_width();
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(Rect::from_min_size(start, Vec2::new(w, f32::INFINITY))).layout(*ui.layout()));
+    // a little room either side for focus rings
+    let edge = 4.0;
+    let clip = child.clip_rect().intersect(Rect::from_min_size(start - Vec2::new(edge, 0.0), Vec2::new(w + edge * 2.0, h)));
+    child.set_clip_rect(clip);
+    let r = add(&mut child);
+    let natural = child.min_rect().height();
+    if (natural - nat).abs() > 0.5 {
+        ui.ctx().data_mut(|d| d.insert_temp(id.with("natural"), natural));
+        ui.ctx().request_repaint();
+    }
+    ui.advance_cursor_after_rect(Rect::from_min_size(start, Vec2::new(w, h)));
+    Some(r)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

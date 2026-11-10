@@ -273,6 +273,19 @@ pub mod space {
     pub const EVENT_LABEL_W: f32 = 104.0;
     pub const CAP_SETTINGS: f32 = 1100.0;
     pub const CAP_TEAM: f32 = 1320.0;
+    /// Roadmap (Pack C): lanes 12 apart, the right rail 270 (it stays 270 at 1920 while the lanes
+    /// widen), 16 between them; the whole picture is 944 wide, 40 from the top, its hypothesis
+    /// column 190.
+    pub const CAP_ROADMAP: f32 = 1600.0;
+    pub const RM_LANE_GAP: f32 = 12.0;
+    pub const RM_RAIL: f32 = 270.0;
+    pub const RM_RAIL_GAP: f32 = 16.0;
+    pub const RM_TOGGLE: f32 = 24.0;
+    pub const RM_CARD_PAD: f32 = 12.0;
+    pub const WHOLE_W: f32 = 944.0;
+    pub const WHOLE_TOP: f32 = 40.0;
+    pub const WHOLE_LABEL_W: f32 = 190.0;
+    pub const WHOLE_CELL_H: f32 = 54.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

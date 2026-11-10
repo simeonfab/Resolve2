@@ -838,8 +838,18 @@ pub mod moves {
     pub const DIM: Timing = timing(240.0, 0.0, E_STD);
     /// Sidebar collapse: labels fade 120 e-std, then width 248 ↔ 64 in 320 e-out.
     pub const SIDEBAR_WIDTH: Timing = timing(320.0, 120.0, E_OUT);
-    /// Theme expands: height 360 e-spring.
+    /// Theme expands: height 360 e-spring (F3); collapses 240 e-in (F4).
     pub const EXPAND: Timing = timing(360.0, 0.0, E_SPRING);
+    pub const COLLAPSE: Timing = timing(240.0, 0.0, E_IN);
+    /// A theme lands in a new phase (F6): 520 e-out, sliding down into place.
+    pub const LAND: Timing = timing(520.0, 0.0, E_OUT);
+    pub const LAND_DROP: f32 = 24.0;
+    /// The whole picture (F5): dim 220 e-std; panel 380 e-spring at 40; cells 300 e-out at 200,
+    /// stagger 40 in reading order.
+    pub const WHOLE_DIM: Timing = timing(220.0, 0.0, E_STD);
+    pub const WHOLE_IN: Timing = timing(380.0, 40.0, E_SPRING);
+    pub const WHOLE_CELLS: Timing = timing(300.0, 200.0, E_OUT);
+    pub const WHOLE_CELLS_STAGGER: f32 = 40.0;
     /// Sidebar labels fade 120 e-std (before the width when collapsing, after it when expanding).
     pub const SIDEBAR_LABELS: Timing = timing(120.0, 0.0, E_STD);
     /// Ask bar rises 480 e-spring (y 30), at 460 on Home and 760 on Tasks.
@@ -1693,6 +1703,33 @@ pub fn empty_center(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &str, a
     clicked
 }
 
+/// The empty state with two actions side by side (the main one, then a secondary). Returns
+/// which was pressed.
+pub fn empty_center_two(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &str, main: &str, other: &str) -> (bool, bool) {
+    let mut out = (false, false);
+    ui.vertical_centered(|ui| {
+        ui.set_max_width(space::SEARCH_W - space::S40 * 5.5);
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S40 + space::S16, space::S40 + space::S16), Sense::hover());
+        ui.painter().rect(r, radius::HERO, if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, if p.dark { p.line } else { tok::AMBER_EDGE }));
+        paint_icon(ui.painter(), r.center(), icon, p.orange);
+        ui.add_space(space::S8);
+        ui.label(RichText::new(title).font(fserif(size::HERO_TITLE)).color(p.text));
+        ui.add(egui::Label::new(RichText::new(body).size(size::HERO_BODY).color(p.dim)).wrap());
+        ui.add_space(space::S8);
+        // centre the pair: measure, then pad
+        let font = fs(size::BUTTON);
+        let bw = |t: &str| ui.painter().layout_no_wrap(t.to_string(), font.clone(), p.text).size().x + 32.0;
+        let total = bw(main) + bw(other) + space::S10;
+        ui.horizontal(|ui| {
+            ui.add_space(((ui.available_width() - total) / 2.0).max(0.0));
+            ui.spacing_mut().item_spacing.x = space::S10;
+            out.0 = button(ui, p, ButtonKind::Primary, main, false, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, other, false, true).clicked();
+        });
+    });
+    out
+}
+
 /// A centred error card: what failed (serif 24), that nothing else was lost, Try again and a
 /// manual path.
 pub fn error_center(ui: &mut Ui, p: &Pal, title: &str, body: &str, manual: &str) -> ErrorAction {
@@ -1723,6 +1760,19 @@ pub fn screen_head(ui: &mut Ui, p: &Pal, title: &str, sub: &str, add_right: impl
             }
         });
         ui.with_layout(Layout::right_to_left(Align::Max), add_right);
+    });
+}
+
+/// A project section's head (Pack C): the project in terracotta over the section's title (DM
+/// Serif 32), with the buttons centred on the pair at the right.
+pub fn eyebrow_head(ui: &mut Ui, p: &Pal, eyebrow: &str, title: &str, add_right: impl FnOnce(&mut Ui)) {
+    ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new(eyebrow).font(fs(size::ROW_SMALL)).color(p.orange));
+            ui.label(RichText::new(title).font(fserif(size::GREETING)).color(p.text));
+        });
+        ui.with_layout(Layout::right_to_left(Align::Center), add_right);
     });
 }
 
@@ -2656,4 +2706,216 @@ pub fn frozen_row(ui: &mut Ui, p: &Pal, text: &str, done: bool) {
         Shape::Vec(Shape::dashed_line(&c, Stroke::new(stroke::HAIR, p.line), 4.0, 3.0))
     };
     ui.painter().set(bg_at, shape);
+}
+
+// ======================================================================================
+// Roadmap components (Phase 4, Pack C "Roadmap"): lanes, theme cards, the right rail and the
+// whole picture.
+// ======================================================================================
+
+/// A roadmap lane: a sunk box (radius 13, padding 10) headed by the phase (600 13.5) and its
+/// note (12.5), at least `min_h` high.
+pub fn lane_box<R>(ui: &mut Ui, p: &Pal, w: f32, min_h: f32, name: &str, note: &str, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none()
+        .fill(p.surface_sunk)
+        .rounding(Rounding::same(radius::CARD))
+        .inner_margin(egui::Margin::same(space::S10))
+        .show(ui, |ui| {
+            ui.set_width(w - space::S10 * 2.0);
+            ui.set_min_height((min_h - space::S10 * 2.0).max(0.0));
+            ui.spacing_mut().item_spacing.y = space::S10;
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S6;
+                ui.add_space(space::S4);
+                ui.label(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text));
+                ui.label(RichText::new(note).size(size::SMALL).color(p.dim));
+            });
+            add(ui)
+        })
+        .inner
+}
+
+/// A theme card: white, radius 10, padding 12, a hairline that turns amber while it is open.
+pub fn theme_frame<R>(ui: &mut Ui, p: &Pal, open: bool, add: impl FnOnce(&mut Ui) -> R) -> egui::InnerResponse<R> {
+    let edge = if open { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::new(stroke::HAIR, p.line) };
+    egui::Frame::none().fill(p.card).stroke(edge).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::same(space::RM_CARD_PAD)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        add(ui)
+    })
+}
+
+/// The small square that opens and closes a theme card (▾ / ▴).
+pub fn chevron_button(ui: &mut Ui, p: &Pal, open: bool) -> Response {
+    let d = space::RM_TOGGLE;
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+    ui.painter().rect_filled(r, radius::GATE, if resp.hovered() { p.track } else { p.surface_sunk });
+    let c = r.center();
+    let s = 3.5;
+    let pts = if open { vec![c + egui::vec2(-s, s * 0.6), c + egui::vec2(s, s * 0.6), c + egui::vec2(0.0, -s * 0.7)] } else { vec![c + egui::vec2(-s, -s * 0.6), c + egui::vec2(s, -s * 0.6), c + egui::vec2(0.0, s * 0.7)] };
+    ui.painter().add(Shape::convex_polygon(pts, p.text, Stroke::NONE));
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A basis tag with a capital ("Evidence", "Assumption", "Uncertain"), radius 6, 600 11.
+pub fn basis_chip(ui: &mut Ui, p: &Pal, basis: &str) -> Response {
+    let (fg, bg) = match basis {
+        "evidence" => (p.green_text, p.green_tint),
+        "uncertain" => (p.orange, p.orange_tint),
+        _ => (p.accent_text, p.accent_soft),
+    };
+    let mut c = basis.chars();
+    let label = c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default();
+    let g = ui.painter().layout_no_wrap(label, fs(size::TAG), fg);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(14.0, 6.0), Sense::hover());
+    ui.painter().rect_filled(r, radius::GATE, bg);
+    ui.painter().galley(r.min + egui::vec2(7.0, 3.0), g, fg);
+    resp
+}
+
+/// A terracotta box for what a theme is waiting on (600 12.5 on the terracotta tint).
+pub fn wait_box(ui: &mut Ui, p: &Pal, text: &str) {
+    egui::Frame::none().fill(p.orange_tint).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S8 + 1.0, space::S6 + 1.0)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.add(egui::Label::new(RichText::new(text).font(fs(size::SMALL)).color(p.orange)).wrap());
+    });
+}
+
+/// A task inside an open theme: a square check and its title (struck through when done).
+/// Returns the click on the check.
+pub fn theme_task(ui: &mut Ui, p: &Pal, title: &str, done: bool) -> Response {
+    let w = ui.available_width();
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S10;
+        let b = space::MARK - 2.0;
+        let (r, resp) = ui.allocate_exact_size(egui::vec2(b, size::ROW_SMALL * 1.3), Sense::click());
+        let bx = Rect::from_center_size(egui::pos2(r.center().x, r.top() + size::ROW_SMALL * 0.68), egui::vec2(b - 2.0, b - 2.0));
+        if done {
+            ui.painter().rect_filled(bx, radius::CHIP / 3.0, p.green);
+            let c = bx.center();
+            ui.painter().add(Shape::line(vec![c + egui::vec2(-3.2, 0.2), c + egui::vec2(-0.9, 2.5), c + egui::vec2(3.4, -2.3)], Stroke::new(stroke::ICON, Color32::WHITE)));
+        } else {
+            ui.painter().rect(bx, radius::CHIP / 3.0, p.card, Stroke::new(stroke::HAIR, if resp.hovered() { tok::AMBER } else { p.faint }));
+        }
+        let mut rt = RichText::new(title).size(size::ROW_SMALL - 0.5).color(if done { p.dim } else { p.text });
+        if done {
+            rt = rt.strikethrough();
+        }
+        ui.allocate_ui_with_layout(egui::vec2(w - b - space::S10, 0.0), Layout::top_down(Align::Min), |ui| {
+            ui.add(egui::Label::new(rt).wrap());
+        });
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    })
+    .inner
+}
+
+/// A rail card's title (600 14).
+pub fn rail_title(ui: &mut Ui, p: &Pal, title: &str) {
+    ui.label(RichText::new(title).font(fs(size::ROW)).color(p.text));
+    ui.add_space(space::S6);
+}
+
+/// A milestone: an amber diamond (filled when reached), the title and its date on the right.
+pub fn milestone_row(ui: &mut Ui, p: &Pal, title: &str, date: &str, reached: bool) {
+    let w = ui.available_width();
+    let dg = ui.painter().layout_no_wrap(date.to_string(), fp(size::SMALL + 0.5), p.dim);
+    let dw = dg.size().x;
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S8;
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S12, size::ROW_SMALL * 1.3), Sense::hover());
+        let c = egui::pos2(r.center().x, r.top() + size::ROW_SMALL * 0.62);
+        let s = 5.0;
+        let pts = vec![c + egui::vec2(0.0, -s), c + egui::vec2(s, 0.0), c + egui::vec2(0.0, s), c + egui::vec2(-s, 0.0)];
+        if reached {
+            ui.painter().add(Shape::convex_polygon(pts, tok::AMBER, Stroke::NONE));
+        } else {
+            ui.painter().add(Shape::closed_line(pts, Stroke::new(stroke::ICON, tok::AMBER)));
+        }
+        let tw = (w - space::S12 - dw - space::S8 * 2.0).max(space::S40);
+        ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+            ui.set_width(tw);
+            ui.add(egui::Label::new(RichText::new(title).size(size::ROW_SMALL - 0.5).color(p.text)).wrap());
+        });
+        ui.label(RichText::new(date).size(size::SMALL + 0.5).color(p.dim));
+    });
+}
+
+/// One line of the rail with an optional bold end ("Mark the busiest months · **Fri 13 Nov**").
+pub fn rail_line(ui: &mut Ui, p: &Pal, text: &str, bold: &str) -> Response {
+    let mut job = egui::text::LayoutJob::default();
+    let f = |font: egui::FontId| egui::text::TextFormat { font_id: font, color: p.text, ..Default::default() };
+    job.append(text, 0.0, f(fp(size::ROW_SMALL - 0.5)));
+    if !bold.is_empty() {
+        job.append(" · ", 0.0, f(fp(size::ROW_SMALL - 0.5)));
+        job.append(bold, 0.0, f(fs(size::ROW_SMALL - 0.5)));
+    }
+    job.wrap.max_width = ui.available_width();
+    ui.add(egui::Label::new(job).sense(Sense::click()))
+}
+
+/// A theme in the "By theme" list: the phase tag, the title with its tags, the tasks under it
+/// and the count on the right. Returns the click on the row.
+pub fn theme_row(ui: &mut Ui, p: &Pal, id: egui::Id, phase: &str, title: &str, basis: &str, gate: Option<(&str, bool)>, sub: &str, count: &str, first: bool) -> Response {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let inner = egui::Frame::none().inner_margin(egui::Margin { left: space::S16, right: space::S16, top: space::S12 + 1.0, bottom: space::S12 + 1.0 }).show(ui, |ui| {
+        ui.set_width(w - space::S16 * 2.0);
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S14;
+            ui.allocate_ui_with_layout(egui::vec2(space::S40 + space::S16, 0.0), Layout::top_down(Align::Center), |ui| {
+                ui.set_width(space::S40 + space::S16);
+                phase_tag(ui, p, phase);
+            });
+            let cg = ui.painter().layout_no_wrap(count.to_string(), fp(size::SMALL + 0.5), p.dim);
+            let mid = ui.available_width() - cg.size().x - space::S24;
+            ui.allocate_ui_with_layout(egui::vec2(mid, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(mid);
+                ui.spacing_mut().item_spacing.y = space::S4;
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S8;
+                    ui.label(RichText::new(title).font(fs(size::ROW + 0.5)).color(p.text));
+                    if !basis.is_empty() {
+                        basis_chip(ui, p, basis);
+                    }
+                    if let Some((g, open)) = gate {
+                        gate_chip(ui, g, open);
+                    }
+                });
+                ui.add(egui::Label::new(RichText::new(sub).size(size::ROW_SMALL - 0.5).color(p.dim)).wrap());
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                ui.label(RichText::new(count).size(size::SMALL + 0.5).color(p.dim));
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    if !first {
+        ui.painter().hline(rect.x_range(), rect.top(), Stroke::new(stroke::HAIR, p.divider));
+    }
+    let resp = ui.interact(rect, id, Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect.shrink(1.0), 0.0, p.hover.gamma_multiply(0.5));
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A column head on the whole picture: dark for Now, sunk for the others.
+pub fn whole_head(ui: &mut Ui, p: &Pal, w: f32, name: &str, now: bool) {
+    let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::S26), Sense::hover());
+    ui.painter().rect_filled(r, radius::GATE, if now { tok::INK } else { p.surface_sunk });
+    ui.painter().text(r.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, name, fs(size::SMALL + 0.5), if now { tok::TEXT_ON_DARK } else { p.text });
+}
+
+/// A cell of the whole picture: a theme in its phase, "◇" when it waits on that hypothesis.
+/// Amber-light in Now, raised in the others. Returns the click.
+pub fn whole_cell(ui: &mut Ui, p: &Pal, w: f32, min_h: f32, text: &str, gated: bool, now: bool) -> Response {
+    let label = if gated { format!("◇ {text}") } else { text.to_string() };
+    let g = ui.painter().layout(label, fp(size::SMALL + 0.5), p.text, w - space::S10 * 2.0);
+    let h = (g.size().y + space::S10 * 2.0).max(min_h);
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let fill = if p.dark { p.surface_raised } else if now { tok::AMBER_LIGHT } else { p.surface_raised };
+    let edge = if resp.hovered() { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::NONE };
+    ui.painter().rect(r, radius::GATE, fill, edge);
+    ui.painter().galley(r.min + egui::vec2(space::S10, space::S10), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

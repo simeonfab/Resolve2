@@ -510,6 +510,30 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
         if let (Some(h), Some(g)) = (h1, d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == "Price to absorb spikes")) {
             g.fields.insert("gate".into(), h);
         }
+        // Pack C Roadmap: H2 and H3 gate their themes; E1 and E2 test the willing-client call and
+        // the receipt handover; three milestones with dates
+        let hyp = |d: &WorkspaceData, n: &str| d.records.iter().find(|r| r.kind == Kind::Hypothesis && r.title.starts_with(n) && r.project_id == cafe_id).map(|r| r.id.clone());
+        for (theme, h) in [("Convert the two willing clients", "H2:"), ("Reach cafés beyond word of mouth", "H3:")] {
+            if let Some(hid) = hyp(d, h) {
+                if let Some(g) = d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == theme && r.project_id == cafe_id) {
+                    g.fields.insert("gate".into(), hid);
+                }
+            }
+        }
+        for (exp, task) in [("Offer the fixed fee", "Book a call with each willing client"), ("Run a 3-month flat-fee trial", "Define the monthly receipt handover")] {
+            let tid = d.tasks.iter().find(|x| x.title == task && x.project_id == cafe_id).map(|x| x.id.clone());
+            if let (Some(t), Some(e)) = (tid, d.records.iter_mut().find(|r| r.kind == Kind::Experiment && r.title.starts_with(exp) && r.project_id == cafe_id)) {
+                e.links.push(t);
+            }
+        }
+        if let Some(g) = d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == "Measure true monthly hours" && r.project_id == cafe_id) {
+            g.body = "Count the hours you actually worked for each café, month by month. If the busiest month is under twice the quietest, H1 holds.".into();
+        }
+        for (title, days) in [("12 months of hours in hand", 14), ("First flat-fee client signed", 40), ("Trial review", 140)] {
+            let mut r = crate::resolve::Record::new(Kind::Milestone, cafe_id.clone(), title);
+            r.fields.insert("date".into(), (today + Duration::days(days)).format("%Y-%m-%d").to_string());
+            d.records.push(r);
+        }
     }
     // waiting on someone else for three days (B-E5)
     set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));
