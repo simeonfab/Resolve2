@@ -3327,9 +3327,16 @@ pub fn pr_card(ui: &mut Ui, p: &Pal, pr: &crate::resolve::team::Proposed, w: f32
         };
         ui.label(RichText::new(head).font(fs(size::SMALL)).color(p.accent_text));
         let mut job = egui::text::LayoutJob::default();
-        let lead = if pr.on.is_empty() { format!("Add {what}: ") } else { format!("Add {what} to {}: ", pr.on) };
+        let (lead, body) = if pr.kind == "page" {
+            let preview: String = pr.text.replace(" / ", " ").chars().take(160).collect();
+            (format!("Save a page, {}: ", if pr.on.is_empty() { "Untitled" } else { &pr.on }), if preview.len() < pr.text.len() { format!("{preview}…") } else { preview })
+        } else if pr.on.is_empty() {
+            (format!("Add {what}: "), pr.text.clone())
+        } else {
+            (format!("Add {what} to {}: ", pr.on), pr.text.clone())
+        };
         job.append(&lead, 0.0, egui::text::TextFormat { font_id: fp(size::ROW + 0.5), color: p.text, ..Default::default() });
-        job.append(&pr.text, 0.0, egui::text::TextFormat { font_id: fs(size::ROW + 0.5), color: p.text, ..Default::default() });
+        job.append(&body, 0.0, egui::text::TextFormat { font_id: if pr.kind == "page" { fp(size::ROW + 0.5) } else { fs(size::ROW + 0.5) }, color: p.text, ..Default::default() });
         job.wrap.max_width = ui.available_width();
         ui.label(job);
         if pr.decided.is_empty() {

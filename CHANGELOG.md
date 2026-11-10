@@ -2,7 +2,7 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
-## 0.5.0 (10 November 2026, waiting for your review, not merged yet)
+## 0.5.0 (10 November 2026)
 
 Redesign Phase 4: project sections, rebuilt to the Pack C canvases (branch `nav/p4-project`). Each section below is the redesigned page when a project is picked; with no project picked, the earlier all-projects view stays.
 
@@ -16,6 +16,9 @@ Redesign Phase 4: project sections, rebuilt to the Pack C canvases (branch `nav/
 - Pages: a breadcrumb, a toolbar (H1, H2, bold, italic, lists, to-do), Saved / Not saved, the To-dos and Linked cards beside the text, and a New page dialog with the built-in templates and your own (C-E16, C-E17).
 - Databases: the list of databases beside the table, + Row, + Column, Import CSV, Group and Sort. The CSV import dialog shows each column's type to check, and lists any rows that didn't import, with why, so you can bring them in as text (C-E18).
 - AI Team: role cards, earlier chats, suggestions, and a Proposed change card you accept or not; reaching your AI budget shows in the chat with Open Settings and Copy my question (C-E19).
+- No AI changes your workspace from a chat any more, whatever the provider. Every role, and Ask AI, proposes; you add each change with a click, and Undo stays. Ask AI's "Let AI make changes" box is gone. Weekly review proposes a page; Continue writing and Improve writing put their text in the reply; Turn into tasks and Organise my to-dos propose tasks.
+- What matters now on Overview says "E0 hasn't started yet: ..." where it said "Run: ...".
+- Removing an item from the cut list can be undone.
 - Handoffs: For and Who, a brief in five parts (The job, What already exists, Why it matters, Off limits, Done when), Sent and Done with Mark done and Reopen, and a plain brief when the AI doesn't reply (C-E20).
 - A mic on Handoffs and AI Team uses Windows voice typing (C-E24). Each page keeps its width on a wide screen (C-E25).
 
@@ -25,8 +28,9 @@ Redesign Phase 4: project sections, rebuilt to the Pack C canvases (branch `nav/
 - Error cards said "Try again" even where the action was "Save again" or "Choose another file".
 
 **Known differences and open items**
-- A CSV row "fails" by a rule I chose (more cells than columns, or an unreadable date or number). Tell me if you want a different one.
-- The Proposed change card appears when a role can't change your workspace itself (Ollama and OpenAI-compatible models). With Anthropic, OpenAI cloud or a CLI, roles still make changes directly, with Undo, as before.
+- A CSV row fails when it has more cells than columns, or a date or number that can't be read (accepted as built).
+- Organise my to-dos no longer links the new tasks back to the to-dos in your pages, because the AI only proposes now.
+- Edits to cells and rows inside a database still have no Undo; that waits for the polish pass.
 - The table, filter and search controls inside a database are the earlier ones; only the frame and toolbar are new.
 - Frameworks' one-line description is parked for a brainstorm; its slot stays empty.
 - The .98 and .97 scale effects (press and lift) are left for the polish pass.

@@ -166,7 +166,7 @@ impl App {
                 ui.label(RichText::new("·").size(size::SMALL).color(p.faint));
                 ui.label(RichText::new(self.provider_label()).size(size::SMALL).color(p.faint));
             });
-            ui.checkbox(&mut self.page_ui.ai_can_act, RichText::new("Let AI make changes (create tasks, edit pages, add rows…)").size(size::SMALL));
+            ui.label(RichText::new("Resolve proposes changes here; you add each one with a click.").size(size::SMALL).color(p.dim));
         });
         ui.add_space(space::S8);
         // suggestions for this screen, the page actions, and the workspace actions
@@ -180,20 +180,20 @@ impl App {
                 if page.is_some() {
                     for (label, kind, req) in [
                         ("Summarise", "Summary", "Summarise the current page in 3-6 bullet points."),
-                        ("Continue writing", "Continue", "Continue writing the current page in the same style, and add what you write to the end of the page."),
-                        ("Improve writing", "Rewrite", "Rewrite the current page to be clearer and more concise, keeping its structure, and save the result to the page."),
-                        ("Turn into tasks", "Actions", "Find the concrete action items in the current page and create a task for each one, linked to the page, with dates where the page implies them. Then list what you created."),
+                        ("Continue writing", "Continue", "Continue writing the current page in the same style. Put what you would add in your reply."),
+                        ("Improve writing", "Rewrite", "Rewrite the current page to be clearer and more concise, keeping its structure. Put the rewrite in your reply."),
+                        ("Turn into tasks", "Actions", "Find the concrete action items in the current page and propose a task for each one."),
                     ] {
                         if filter_chip(ui, p, label, None, false).clicked() && !busy {
                             ask = Some((kind.into(), req.into()));
                         }
                     }
                 }
-                if filter_chip(ui, p, "Organise my to-dos", None, false).on_hover_text("Moves the to-dos written in your pages into projects as tasks with dates, linked back to the pages").clicked() && !busy {
-                    ask = Some(("Organise".into(), crate::ai::ORGANISE_PROMPT.into()));
+                if filter_chip(ui, p, "Organise my to-dos", None, false).on_hover_text("Proposes a task for each to-do written in your pages").clicked() && !busy {
+                    ask = Some(("Organise".into(), format!("{}\n\nYou can't change anything from this chat: propose a task for each to-do instead.", crate::ai::ORGANISE_PROMPT)));
                 }
                 if filter_chip(ui, p, "Weekly review", None, false).clicked() && !busy {
-                    ask = Some(("Review".into(), "Write a short weekly review from what I completed this week, what's overdue and what's coming up, and save it as a new page called 'Weekly review' with today's date.".into()));
+                    ask = Some(("Review".into(), "Write a short weekly review from what I completed this week, what's overdue and what's coming up, and propose saving it as a page called 'Weekly review' with today's date.".into()));
                 }
             });
         });

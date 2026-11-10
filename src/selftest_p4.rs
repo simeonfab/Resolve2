@@ -157,12 +157,22 @@ pub fn run(t: &mut T) {
         let mut d9 = d.clone();
         let parent = find_parent(&d9, &pid, "H2");
         let before = d9.records.len();
-        let cs = d9.record_change("Added", "add", |dd| apply_proposal(dd, &pid, &props[0], parent.as_deref()));
+        let cs = d9.record_change("Added", "add", |dd| apply_proposal(dd, Some(&pid), &props[0], parent.as_deref()));
         let added = d9.records.iter().find(|r| r.title == "What does each café pay you now per year?").cloned();
         t.check("C-E19: Add it puts the question under H2, as one undoable change", parent.is_some() && added.as_ref().map_or(false, |r| r.kind == crate::resolve::Kind::Question && r.parent_id == parent) && cs.as_ref().map_or(false, |c| d9.undo_change(c).is_ok()) && d9.records.len() == before, "");
         let marked = mark_proposal(msg, 0, "ADDED");
         let (_, p2) = split_proposals(&marked);
         t.check("C-E19: the message remembers that it was added", p2.len() == 1 && p2[0].decided == "ADDED", &marked);
+        // a page proposal (Weekly review) saves a page under the project's brief
+        let (_, pp) = split_proposals("Here it is.\nPROPOSED: page | Weekly review 6 Nov | Done: three tasks. / Next: the price call.");
+        let mut d10 = d.clone();
+        if let Some(x) = pp.first() {
+            apply_proposal(&mut d10, Some(&pid), x, None);
+        }
+        let saved = d10.pages.iter().find(|x| x.title == "Weekly review 6 Nov").cloned();
+        let brief = crate::ui::kb::brief_of(&d10, &pid);
+        t.check("C-E19: a proposed page is saved under the project brief, one paragraph per line", saved.as_ref().map_or(false, |x| x.blocks.len() == 2 && x.parent == brief), format!("{:?}", saved.map(|x| x.blocks.len())));
+        t.check("C-E19: every role is told to propose, and no role's instructions say it can change things", crate::resolve::team::PROPOSE_RULE.contains("you propose") && !crate::resolve::team::role_system(&d, "tech-lead", Some(&pid)).contains("read and change"), "");
         t.check("C-E19: the budget message is recognised in the chat", crate::ai::is_limit("This month's AI budget ($10) is used up. Raise it in Settings, AI and MCP, or carry on by hand."), "");
     }
     // ---- Handoffs (C-E20)
@@ -172,6 +182,19 @@ pub fn run(t: &mut T) {
         let parts: Vec<String> = crate::resolve::roles::brief_sections(&b).into_iter().map(|x| x.0).collect();
         t.check("C-E20: the brief has five parts: The job, What already exists, Why it matters, Off limits, Done when", parts == vec!["The job", "What already exists", "Why it matters", "Off limits", "Done when"], format!("{parts:?}"));
         t.check("C-E20: the cut list is in Off limits", b.contains("Not yet: Payroll add-on"), "");
+    }
+
+    // ---- approval follow-ups (10 Nov): cut list Undo, Overview wording
+    {
+        let mut d11 = d.clone();
+        let cid = d11.context_for(&pid).map(|c| c.id.clone()).unwrap_or_default();
+        let n = d11.context_for(&pid).map(|c| c.recommendation.do_not_yet.len()).unwrap_or(0);
+        let cs = d11.record_change("Removed", "delete", |dd| crate::ui::kb::cut_remove(dd, &cid, 0));
+        let gone = d11.context_for(&pid).map(|c| c.recommendation.do_not_yet.len()).unwrap_or(0) == n.saturating_sub(1);
+        let back = cs.as_ref().map_or(false, |c| d11.undo_change(c).is_ok()) && d11.context_for(&pid).map(|c| c.recommendation.do_not_yet.len()).unwrap_or(0) == n;
+        t.check("removing an item from the cut list can be undone", n > 0 && gone && back, format!("{n} {gone} {back}"));
+        let lines: Vec<String> = m.matters.iter().map(|x| x.0.clone()).collect();
+        t.check("What matters now has no \"Run:\" prefix; a planned experiment says it hasn't started", !lines.iter().any(|l| l.starts_with("Run:")) && lines.iter().any(|l| l.starts_with("E0 hasn't started yet: reconstruct 12 months")), format!("{lines:?}"));
     }
 
     // ---- Proposal editor (C-E11)

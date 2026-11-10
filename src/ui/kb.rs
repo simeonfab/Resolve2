@@ -168,6 +168,16 @@ pub fn kb_items(d: &WorkspaceData, pid: &str, tab: usize, today: chrono::NaiveDa
     }
 }
 
+/// Take item `i` off a project context's cut list (the caller wraps it in history).
+pub fn cut_remove(d: &mut WorkspaceData, context_id: &str, i: usize) {
+    if let Some(c) = d.contexts.iter_mut().find(|c| c.id == context_id) {
+        if i < c.recommendation.do_not_yet.len() {
+            c.recommendation.do_not_yet.remove(i);
+            c.updated = now_ms();
+        }
+    }
+}
+
 /// (pages and files, records) Resolve can search for this project.
 pub fn kb_counts(d: &WorkspaceData, pid: &str) -> (usize, usize) {
     let pages = project_pages(d, pid).len();
@@ -871,12 +881,23 @@ impl App {
             let enter = text_field(ui, p, egui::Id::new("kb-cut-new"), &mut self.resolve_ui.new_cut, "Something you're choosing not to do yet", false, w - space::S40 * 2.5).lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
             add = (button(ui, p, ButtonKind::Secondary, "Add", false, !self.resolve_ui.new_cut.trim().is_empty()).clicked() || enter) && !self.resolve_ui.new_cut.trim().is_empty();
         });
-        if let Some(i) = remove {
-            ctx.recommendation.do_not_yet.remove(i);
-        }
         if add {
             ctx.recommendation.do_not_yet.push(crate::resolve::intake::NotYet { item: self.resolve_ui.new_cut.trim().to_string(), reason: String::new() });
             self.resolve_ui.new_cut.clear();
+        }
+        if let Some(i) = remove {
+            // removing from the cut list goes through history, with an Undo toast; the edits typed
+            // this frame go in first
+            if ctx.recommendation.do_not_yet != before {
+                ctx.updated = now_ms();
+                if let Some(x) = self.store.data.contexts.iter_mut().find(|x| x.id == ctx.id) {
+                    *x = ctx.clone();
+                }
+            }
+            let item = ctx.recommendation.do_not_yet.get(i).map(|n| n.item.clone()).unwrap_or_default();
+            let cid = ctx.id.clone();
+            self.undoable(&format!("Removed \"{item}\" from the cut list"), "delete", move |d| cut_remove(d, &cid, i));
+            return;
         }
         if ctx.recommendation.do_not_yet != before {
             ctx.updated = now_ms();

@@ -24,14 +24,11 @@ impl App {
         id
     }
 
-    /// Who may change the workspace: Ask AI's checkbox for the General assistant, the safe
-    /// default for the provider for the specialists.
-    pub(super) fn role_can_change(&self, agent: &str) -> bool {
-        if agent == GENERAL {
-            self.page_ui.ai_can_act
-        } else {
-            team::may_change(&self.ai_config().provider)
-        }
+    /// No role changes the workspace from a chat (Simeon, 10 Nov 2026): every role, whatever
+    /// the provider, reads with the tools and proposes; you add each change with a click, and
+    /// Undo stays.
+    pub(super) fn role_can_change(&self, _agent: &str) -> bool {
+        false
     }
 
     /// Send a message to a role (Ask AI sends to the General assistant). `extra` is added to the
@@ -75,8 +72,8 @@ impl App {
         prompt.push_str(&format!("\nConversation so far:\n{history}\n\nUser: {}", msg.trim()));
         let cfg = self.ai_config();
         let can_change = self.role_can_change(agent);
-        // a role that may not change the workspace proposes, and you confirm (C-E19)
-        let system = if can_change { system } else { format!("{system}\n\n{}", team::PROPOSE_RULE) };
+        // every role proposes, and you confirm (C-E19)
+        let system = format!("{system}\n\n{}", team::PROPOSE_RULE);
         let tool_capable = matches!(cfg.provider.as_str(), "anthropic" | "openai-cloud" | "claude-code" | "codex-cli") || can_change;
         self.resolve_ui.chat_started_ms = now_ms();
         let job = if tool_capable { crate::ai::ask_agent(cfg, &system, &prompt, self.store.meta.clone(), can_change, label) } else { crate::ai::ask(&cfg.provider, &cfg.url, &cfg.model, &system, &prompt, label) };
@@ -125,13 +122,17 @@ impl App {
         let conv = self.store.data.conversations.iter().find(|c| c.id == cid).cloned().unwrap_or_default();
         let busy_here = self.resolve_ui.chat_job.as_ref().map_or(false, |(c, _)| c == cid);
         let mut stop = false;
+        let mut decide: Option<(usize, usize, bool)> = None;
         egui::ScrollArea::vertical().id_salt(("chat", cid)).max_height(max_h).stick_to_bottom(true).show(ui, |ui| {
             if conv.messages.is_empty() {
                 wrap_label(ui, RichText::new(format!("Ask a question or give an instruction. The {} sees this project's context, roadmap, tasks, hypotheses, evidence and decisions.", team::specialist(&conv.agent).name)).size(size::SMALL).color(p.faint));
             }
-            for m in &conv.messages {
+            for (k, m) in conv.messages.iter().enumerate() {
                 let mine = m.role == "user";
                 let err = m.error;
+                // a role's proposals become cards under its answer
+                let (shown, props) = team::split_proposals(&m.text);
+                let m = &ChatMessage { text: shown, ..m.clone() };
                 let fill = if err { p.accent_soft } else if mine { p.hover } else { p.bg };
                 egui::Frame::none().fill(fill).stroke(if err { Stroke::new(1.0, p.orange) } else { Stroke::NONE }).rounding(space::RADIUS_SMALL).inner_margin(egui::Margin::same(8.0)).show(ui, |ui| {
                     ui.set_width(ui.available_width());
@@ -144,6 +145,13 @@ impl App {
                         }
                     });
                 });
+                let w = ui.available_width();
+                for (j, pr) in props.iter().enumerate() {
+                    ui.add_space(4.0);
+                    if let Some(add) = pr_card(ui, p, pr, w) {
+                        decide = Some((k, j, add));
+                    }
+                }
                 ui.add_space(4.0);
             }
             if busy_here {
@@ -157,9 +165,12 @@ impl App {
                 });
             }
         });
+        if let Some((k, j, add)) = decide {
+            self.decide_proposal(cid, k, j, add);
+        }
         if stop {
             if let Some(c) = self.store.data.conversations.iter_mut().find(|c| c.id == cid) {
-                c.messages.push(ChatMessage { role: c.agent.clone(), text: "Stopped waiting for this answer. If it finishes, changes it made will still appear.".into(), at: now_ms(), via: String::new(), error: true });
+                c.messages.push(ChatMessage { role: c.agent.clone(), text: "Stopped waiting for this answer.".into(), at: now_ms(), via: String::new(), error: true });
                 c.updated = now_ms();
             }
             self.resolve_ui.chat_job = None;
@@ -358,22 +369,24 @@ impl App {
             self.toast("Copied your question");
         }
         if let Some((key, add)) = decide {
-            self.decide_proposal(&cid, &pid, key / 100, key % 100, add);
+            self.decide_proposal(&cid, key / 100, key % 100, add);
         }
         true
     }
 
     /// Add it / Not now on a proposed change: the change goes through history (Add it), and the
     /// message remembers the choice either way.
-    fn decide_proposal(&mut self, cid: &str, pid: &str, msg: usize, j: usize, add: bool) {
-        let Some(text) = self.store.data.conversations.iter().find(|c| c.id == cid).and_then(|c| c.messages.get(msg)).map(|m| m.text.clone()) else { return };
+    pub(super) fn decide_proposal(&mut self, cid: &str, msg: usize, j: usize, add: bool) {
+        let Some(conv) = self.store.data.conversations.iter().find(|c| c.id == cid).cloned() else { return };
+        let Some(text) = conv.messages.get(msg).map(|m| m.text.clone()) else { return };
         let (_, props) = team::split_proposals(&text);
         let Some(pr) = props.get(j).cloned() else { return };
         if add {
-            let pid = pid.to_string();
+            let pid = conv.project_id.clone();
             let what = pr.clone();
-            let parent = team::find_parent(&self.store.data, &pid, &pr.on);
-            self.undoable(&format!("Added: {}", pr.text), "add", move |d| team::apply_proposal(d, &pid, &what, parent.as_deref()));
+            let parent = if pr.kind == "page" { None } else { pid.as_deref().and_then(|p| team::find_parent(&self.store.data, p, &pr.on)) };
+            let label = if pr.kind == "page" { format!("Saved the page \"{}\"", pr.on) } else { format!("Added: {}", pr.text) };
+            self.undoable(&label, "add", move |d| team::apply_proposal(d, pid.as_deref(), &what, parent.as_deref()));
         }
         if let Some(c) = self.store.data.conversations.iter_mut().find(|c| c.id == cid) {
             if let Some(m) = c.messages.get_mut(msg) {

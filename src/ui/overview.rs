@@ -64,6 +64,12 @@ fn hyp_parts(title: &str) -> (String, String) {
     }
 }
 
+fn lower_first(s: &str) -> String {
+    let s = s.trim().trim_end_matches('.');
+    let mut c = s.chars();
+    c.next().map(|f| f.to_lowercase().collect::<String>() + c.as_str()).unwrap_or_default()
+}
+
 pub fn overview_model(d: &WorkspaceData, pid: &str) -> OverviewModel {
     let mut m = OverviewModel::default();
     let Some(pr) = d.project(pid) else { return m };
@@ -117,7 +123,13 @@ pub fn overview_model(d: &WorkspaceData, pid: &str) -> OverviewModel {
             continue;
         }
         let urgent = reason.starts_with("Unblock") || reason.starts_with("Overdue");
-        m.matters.push((format!("{reason}."), urgent, target.clone()));
+        // "Run: <experiment>" means a planned experiment that hasn't started: say so in words
+        let line = match (reason.strip_prefix("Run: "), reason.strip_prefix("Record what you observed: "), target) {
+            (Some(title), _, Some(id)) => format!("{} hasn't started yet: {}.", super::frameworks::exp_label(d, pid, id), lower_first(title)),
+            (_, Some(title), Some(id)) => format!("{} is running: write down what you observed in {}.", super::frameworks::exp_label(d, pid, id), lower_first(title)),
+            _ => format!("{reason}."),
+        };
+        m.matters.push((line, urgent, target.clone()));
     }
     m.matters.truncate(3);
     // Resolve suggests: each row opens an action, worked out from the project
@@ -478,7 +490,7 @@ impl App {
         }
         if review {
             self.page_ui.ai_open = true;
-            self.ask_send("Write a short weekly review from what I completed this week, what's overdue and what's coming up, and save it as a new page called 'Weekly review' with today's date.");
+            self.ask_send("Write a short weekly review from what I completed this week, what's overdue and what's coming up, and propose saving it as a page called 'Weekly review' with today's date.");
         }
         if let Some(t) = open_task {
             self.open_task = Some(t);
