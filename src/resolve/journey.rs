@@ -901,6 +901,11 @@ pub fn propose(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str>
     propose_part(cfg, i, u, only, part)
 }
 
+/// One half of the proposal on its own (the speed comparison runs the validation half alone).
+pub fn propose_half(cfg: &AiConfig, i: &Intake, u: &Understanding, part: &str) -> Result<Proposal, String> {
+    propose_part(cfg, i, u, None, part)
+}
+
 fn propose_part(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str>, part: &str) -> Result<Proposal, String> {
     crate::ai::set_purpose(&format!("intake:proposal:{part}"));
     // first answer: strict quality rules (a retry is cheap); second answer: fix deterministically
@@ -918,8 +923,15 @@ fn propose_part(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str
 /// The proposal in two calls run side by side (plan / validation): about half the wait.
 /// Returns the merged proposal and the traces from both threads.
 pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Result<Proposal, String>, Vec<Trace>) {
+    let fast = crate::store::Registry::load().settings.fast_validation;
+    propose_parallel_with(cfg, i, u, fast)
+}
+
+/// The proposal, with the validation half on the faster model when `fast` is on (and the AI has one).
+pub fn propose_parallel_with(cfg: &AiConfig, i: &Intake, u: &Understanding, fast: bool) -> (Result<Proposal, String>, Vec<Trace>) {
     let run = |part: &'static str| {
-        let (c, ii, uu) = (cfg.clone(), i.clone(), u.clone());
+        let c = if part == "validation" && fast { crate::ai::fast_cfg(cfg).unwrap_or_else(|| cfg.clone()) } else { cfg.clone() };
+        let (ii, uu) = (i.clone(), u.clone());
         std::thread::spawn(move || {
             let _ = crate::ai::take_trace();
             let r = propose_part(&c, &ii, &uu, None, part);

@@ -89,6 +89,10 @@ pub struct AppSettings {
     /// The intake's heard panel hint ("Click any line to edit it…") was dismissed with Got it.
     #[serde(default)]
     pub heard_hint_done: bool,
+    /// Speed fix (Phase 3, D5): the proposal's validation half runs on a faster model (Sonnet).
+    /// Off by default; Simeon decides from the side-by-side comparison.
+    #[serde(default)]
+    pub fast_validation: bool,
     /// Reduced motion for the whole app: every move becomes a short fade, loops hold still.
     #[serde(default)]
     pub reduced_motion: bool,
@@ -126,6 +130,7 @@ impl Default for AppSettings {
             monthly_budget: 0.0,
             ai_setup_done: false,
             heard_hint_done: false,
+            fast_validation: false,
             reduced_motion: false,
         }
     }

@@ -2145,6 +2145,14 @@ pub fn intake_topbar(ui: &mut Ui, progress: f32, menu: bool, actions: bool) -> I
     out
 }
 
+/// Serif text that wraps with its own line height (the intake question: 29 / 1.22).
+pub fn serif_text(ui: &mut Ui, text: &str, size: f32, line_height: f32, col: Color32) -> Response {
+    let mut job = egui::text::LayoutJob::default();
+    job.append(text, 0.0, egui::text::TextFormat { font_id: fserif(size), color: col, line_height: Some(size * line_height), extra_letter_spacing: size::QUESTION_TRACKING, ..Default::default() });
+    job.wrap.max_width = ui.available_width();
+    ui.label(job)
+}
+
 /// The four steps of the intake rail.
 pub const INTAKE_STEPS: [(&str, &str); 4] = [
     ("Get started", "Tell Resolve your name and what you need help with"),

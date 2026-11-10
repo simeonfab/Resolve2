@@ -43,6 +43,10 @@ impl App {
     /// After an answer: sorting it ("heard") runs in the background and never blocks; choosing
     /// the next question is the only wait, run side by side with the sorting, cut off at 15 s.
     pub(super) fn ij_spawn_answer(&mut self, it: &Intake, qa: Option<String>, want_next: bool, label: &str) {
+        // the page sliding out (M02.1) is a picture of the old step: it never starts work
+        if self.intake_ghosting {
+            return;
+        }
         self.put_intake(it);
         let cfg = journey::cfg_for(it);
         let id = it.id.clone();
@@ -78,6 +82,9 @@ impl App {
 
     /// Understanding: in the foreground (the person is waiting) or in the background (precompute).
     pub(super) fn ij_spawn_understand(&mut self, it: &Intake, foreground: bool) {
+        if self.intake_ghosting {
+            return;
+        }
         self.put_intake(it);
         let snapshot = it.clone();
         let cfg = journey::cfg_for(it);
@@ -97,6 +104,9 @@ impl App {
     }
 
     pub(super) fn ij_spawn_proposal(&mut self, it: &Intake, section: Option<&str>, foreground: bool) {
+        if self.intake_ghosting {
+            return;
+        }
         self.put_intake(it);
         let snapshot = it.clone();
         let cfg = journey::cfg_for(it);
@@ -403,16 +413,51 @@ impl App {
         }
         ui.add_space(space::S16);
         let cur = it.cursor;
+        // M04.5: a new question on screen arrives (and the waiting card it replaces leaves first)
+        let shown_key = format!("q_shown:{}", it.id);
+        let (q_t, q_out, was) = (format!("q_t:{}", it.id), format!("q_out:{}", it.id), format!("was_waiting:{}", it.id));
+        if !self.intake_ghosting && self.temp.get(&shown_key).map(|s| s.as_str()) != Some(it.qas[cur].id.as_str()) {
+            let waited = self.temp.remove(&was);
+            if self.temp.contains_key(&shown_key) {
+                self.temp.insert(q_t.clone(), self.now.to_string());
+                match waited {
+                    Some(secs) => self.temp.insert(q_out.clone(), secs),
+                    None => self.temp.remove(&q_out),
+                };
+            }
+            self.temp.insert(shown_key, it.qas[cur].id.clone());
+        }
+        let reduced = super::motion::reduced();
+        let e_q = self.intake_clock(&q_t);
+        let out_secs: Option<f64> = self.temp.get(&q_out).and_then(|s| s.parse().ok());
+        let f_q = e_q.map(|e| super::motion::frame_at(e, super::motion::timing(460.0, if out_secs.is_some() { 240.0 } else { 0.0 }, super::motion::E_SPRING), reduced)).unwrap_or(super::motion::SETTLED);
+        if let (Some(e), Some(secs)) = (e_q, out_secs) {
+            // the waiting card leaves: 240 ms e-in, every line ticked
+            let fo = super::motion::frame_at(e, super::motion::timing(240.0, 0.0, super::motion::E_IN), reduced);
+            if !fo.done {
+                let top = ui.cursor().min;
+                let mut gc = ui.new_child(egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(top + egui::vec2(0.0, space::S8 * fo.t), ui.available_size_before_wrap())).layout(Layout::top_down(Align::Min)));
+                gc.multiply_opacity(1.0 - fo.alpha);
+                let lines: Vec<(&str, u8)> = journey::WAIT_NEXT.iter().map(|(t, _)| (*t, 2u8)).collect();
+                wait_card(&mut gc, p, "Thinking about what to ask next…", "Resolve is reading your last answer.", secs, &lines, Some(1.0));
+            }
+        }
+        if !f_q.done {
+            ui.ctx().request_repaint();
+        }
+        let (mut mv, mv_start) = super::motion::begin_move(ui, f_q, egui::vec2(0.0, space::S18));
+        let (mut next, mut back, mut skip, mut propose) = (false, false, false, false);
+        {
+        let ui = &mut mv;
         // ST2: this question came from Resolve's own list because the AI took over 15 s
         if cur + 1 == n && it.qas[cur].source == "fixed question set" && !it.last_error.is_empty() {
             info_note(ui, p, &it.last_error);
             ui.add_space(space::S12);
         }
-        let (mut next, mut back, mut skip, mut propose) = (false, false, false, false);
         {
             let qa = &mut it.qas[cur];
             ui.label(RichText::new(format!("{} · question {}", journey::target_label(&qa.target), cur + 1)).font(fs(size::LABEL)).color(p.orange));
-            ui.add(egui::Label::new(RichText::new(&qa.question).font(fserif(size::QUESTION)).color(p.text)).wrap());
+            serif_text(ui, &qa.question, size::QUESTION, size::LH_QUESTION, p.text);
             if qa.needs_review {
                 ui.add_space(space::S4);
                 tag(ui, "An earlier answer changed. Does this still hold?", p.orange, p.orange_tint);
@@ -468,6 +513,8 @@ impl App {
             progress_line(ui, p, cov, space::S40 * 2.0);
             ui.label(RichText::new(format!("Covered {:.0}%. More answers make a sharper proposal.", cov * 100.0)).size(size::ROW_SMALL).color(p.dim));
         });
+        }
+        super::motion::end_move(ui, &mv, mv_start, 1.0);
         if skip {
             it.qas[cur].answer.clear();
             next = true;
@@ -514,6 +561,10 @@ impl App {
     /// ST1: the wait for the next question, with its checklist and the 15 s bar.
     fn ij_wait_next(&mut self, ui: &mut egui::Ui, p: &Pal, it: &Intake) {
         let secs = self.wait_secs();
+        // when the question arrives, this card leaves first (M04.5)
+        if !self.intake_ghosting {
+            self.temp.insert(format!("was_waiting:{}", it.id), format!("{secs:.0}"));
+        }
         ui.label(RichText::new(format!("Question {}", it.qas.len() + 1)).font(fs(size::LABEL)).color(p.orange));
         ui.add_space(space::S10);
         let id = it.id.clone();
@@ -541,6 +592,13 @@ impl App {
         let mut commit: Option<(usize, String)> = None;
         let mut cancel = false;
         let mut relabel: Option<(usize, &'static str)> = None;
+        // M04.7: items already there when the panel first shows don't move; later ones land
+        let open_key = format!("heard_open:{}", it.id);
+        let first_draw = !self.temp.contains_key(&open_key);
+        let reduced = super::motion::reduced();
+        let mut new_k = 0usize;
+        let mut gone: Vec<String> = vec![];
+        let mut animating = false;
         egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::CARD + 3.0)).inner_margin(egui::Margin::same(space::S18 + 2.0)).show(ui, |ui| {
             ui.set_width(ui.available_width());
             ui.set_min_height(min_h);
@@ -588,6 +646,44 @@ impl App {
                     let h = it.heard[i].clone();
                     let menu_id = egui::Id::new(("heard-menu", &h.id));
                     let is_edit = editing.as_deref() == Some(h.id.as_str());
+                    let seen_key = format!("heard_seen:{}", h.id);
+                    if !self.temp.contains_key(&seen_key) && !self.intake_ghosting {
+                        let v = if first_draw {
+                            "0|0".to_string()
+                        } else {
+                            new_k += 1;
+                            format!("{}|{}", self.now, new_k - 1)
+                        };
+                        self.temp.insert(seen_key.clone(), v);
+                    }
+                    let (t0, k): (f64, usize) = self.temp.get(&seen_key).and_then(|s| s.split_once('|').map(|(a, b)| (a.parse().unwrap_or(0.0), b.parse().unwrap_or(0)))).unwrap_or((0.0, 0));
+                    let delay = 55.0 * k as f32;
+                    let e_land = (t0 > 0.0).then(|| self.motion_at.unwrap_or(((self.now - t0) * 1000.0) as f32));
+                    let f_land = e_land.map(|e| super::motion::frame_at(e, super::motion::timing(300.0, delay, super::motion::E_OUT), reduced)).unwrap_or(super::motion::SETTLED);
+                    // the amber tint holds while it lands, then fades over 1.2 s
+                    let tint = e_land.map(|e| (1.0 - (e - delay - 300.0).max(0.0) / 1200.0).max(0.0)).unwrap_or(0.0);
+                    let rm_at: Option<f64> = self.temp.get(&format!("heard_rm:{}", h.id)).and_then(|s| s.parse().ok());
+                    let f_rm = rm_at.map(|t| super::motion::frame_at(((self.now - t) * 1000.0) as f32, super::motion::timing(340.0, 0.0, super::motion::E_IN), reduced));
+                    if !f_land.done || tint > 0.0 || f_rm.map_or(false, |f| !f.done) {
+                        animating = true;
+                    }
+                    if f_rm.map_or(false, |f| f.done) {
+                        gone.push(h.id.clone());
+                        continue;
+                    }
+                    // removed: the row closes, height to 0 (with reduced motion it fades in place)
+                    let keep = f_rm.map(|f| if reduced { 1.0 } else { 1.0 - f.t }).unwrap_or(1.0);
+                    let h_key = format!("heard_h:{}", h.id);
+                    let (mut mv, mv_start) = super::motion::begin_move(ui, f_land, egui::vec2(0.0, space::S8));
+                    if let Some(f) = f_rm {
+                        mv.multiply_opacity(1.0 - f.alpha);
+                        let prev_h: f32 = self.temp.get(&h_key).and_then(|s| s.parse().ok()).unwrap_or(space::S40 * 2.0);
+                        let clip = egui::Rect::from_min_size(mv_start, egui::vec2(mv.available_width() + space::S8, prev_h * keep));
+                        let c = mv.clip_rect().intersect(clip);
+                        mv.set_clip_rect(c);
+                    }
+                    {
+                    let ui = &mut mv;
                     let top = ui.cursor().min;
                     let bg_at = ui.painter().add(egui::Shape::Noop);
                     let row = egui::Frame::none().inner_margin(egui::Margin::symmetric(0.0, space::S6)).show(ui, |ui| {
@@ -651,12 +747,31 @@ impl App {
                         if x.on_hover_text("Remove").clicked() {
                             remove = Some(i);
                         }
+                    } else if tint > 0.0 {
+                        ui.painter().set(bg_at, egui::Shape::rect_filled(rect.expand2(egui::vec2(space::S8, 0.0)), radius::CHIP, tok::AMBER_LIGHT.gamma_multiply(tint)));
                     }
                     let (r, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), stroke::HAIR), Sense::hover());
                     ui.painter().rect_filled(r, 0.0, p.divider);
+                    }
+                    if f_rm.is_none() {
+                        self.temp.insert(h_key, mv.min_rect().height().to_string());
+                    }
+                    super::motion::end_move(ui, &mv, mv_start, keep);
                 }
             }
         });
+        if !self.intake_ghosting {
+            self.temp.insert(open_key, "1".into());
+        }
+        if animating {
+            ui.ctx().request_repaint();
+        }
+        if !gone.is_empty() {
+            it.heard.retain(|h| !gone.contains(&h.id));
+            for g in &gone {
+                self.temp.remove(&format!("heard_rm:{g}"));
+            }
+        }
         if hint_done {
             self.reg.settings.heard_hint_done = true;
             self.reg.save();
@@ -687,7 +802,10 @@ impl App {
             self.temp.remove("heard_buf");
         }
         if let Some(i) = remove {
-            it.heard.remove(i);
+            // the row closes first (M04.7), then it is taken out
+            if let Some(h) = it.heard.get(i) {
+                self.temp.insert(format!("heard_rm:{}", h.id), self.now.to_string());
+            }
         }
     }
 
@@ -695,6 +813,13 @@ impl App {
 
     pub(super) fn ij_confirm(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let n = answered(it);
+        // the cards' clock (M05.1) starts when they first show; until then it isn't running
+        if !self.intake_ghosting {
+            let waiting = it.limit_at == "understanding" || (self.resolve_ui.rx.is_some() && self.resolve_ui.busy.starts_with("Reading everything")) || it.understanding.is_none() || (it.understood_n != n && !it.editing && self.shot.is_none());
+            if waiting {
+                self.temp.remove(&format!("cards_t:{}", it.id));
+            }
+        }
         if it.limit_at == "understanding" {
             self.ij_limit(ui, p, it);
             return;
@@ -734,6 +859,19 @@ impl App {
         let editing = it.editing;
         step_head(ui, p, "", "Here's what Resolve understood.", if editing { "Change anything that's wrong. The outcome is best in your own words." } else { "Check it. It shapes everything that follows." });
         ui.add_space(space::S14);
+        // M05.1: the cards come in once they exist: 460 ms e-spring at 120, 70 apart, from 18 px
+        // down, in reading order; M05.2: the action bar rises last, 480 ms at 460, from 30 px
+        let ck = format!("cards_t:{}", it.id);
+        if !self.temp.contains_key(&ck) && !self.intake_ghosting {
+            self.temp.insert(ck.clone(), self.now.to_string());
+        }
+        let reduced = super::motion::reduced();
+        let e_cards = self.intake_clock(&ck);
+        let fc = |n: usize| e_cards.map(|e| super::motion::frame_at(e, super::motion::timing(460.0, 120.0, super::motion::E_SPRING).stagger(n, 70.0), reduced)).unwrap_or(super::motion::SETTLED);
+        let f_bar = e_cards.map(|e| super::motion::frame_at(e, super::motion::timing(480.0, 460.0, super::motion::E_SPRING), reduced)).unwrap_or(super::motion::SETTLED);
+        if !f_bar.done {
+            ui.ctx().request_repaint();
+        }
         let mut u = u0;
         let card = |ui: &mut egui::Ui, label: &str, v: &mut String, key: &str, min_h: f32| -> f32 {
             let fid = egui::Id::new(("confirm-field", key));
@@ -753,7 +891,7 @@ impl App {
             inner.response.rect.height()
         };
         // each pair of cards shares the taller one's height (remembered from the last frame)
-        let pair = |ui: &mut egui::Ui, row: &str, a: (&str, &mut String), b: (&str, &mut String)| {
+        let pair = |ui: &mut egui::Ui, row: &str, base: usize, a: (&str, &mut String), b: (&str, &mut String)| {
             let key = egui::Id::new(("confirm-row", row, editing));
             let h: f32 = ui.data(|d| d.get_temp(key)).unwrap_or(0.0);
             let w = (ui.available_width() - space::S10) / 2.0;
@@ -762,11 +900,11 @@ impl App {
                 ui.spacing_mut().item_spacing.x = space::S10;
                 ui.vertical(|ui| {
                     ui.set_width(w);
-                    hs.0 = card(ui, a.0, a.1, &format!("{row}-a"), (h - space::S16 * 2.0).max(0.0));
+                    hs.0 = super::motion::fade_in(ui, fc(base), egui::vec2(0.0, space::S18), |ui| card(ui, a.0, a.1, &format!("{row}-a"), (h - space::S16 * 2.0).max(0.0)));
                 });
                 ui.vertical(|ui| {
                     ui.set_width(w);
-                    hs.1 = card(ui, b.0, b.1, &format!("{row}-b"), (h - space::S16 * 2.0).max(0.0));
+                    hs.1 = super::motion::fade_in(ui, fc(base + 1), egui::vec2(0.0, space::S18), |ui| card(ui, b.0, b.1, &format!("{row}-b"), (h - space::S16 * 2.0).max(0.0)));
                 });
             });
             let natural = hs.0.max(hs.1);
@@ -775,12 +913,12 @@ impl App {
                 ui.ctx().request_repaint();
             }
         };
-        pair(ui, "1", ("Project", &mut u.project), ("What you want", &mut u.goal));
+        pair(ui, "1", 0, ("Project", &mut u.project), ("What you want", &mut u.goal));
         ui.add_space(space::S10);
-        pair(ui, "2", ("Where it is", &mut u.state), ("Biggest uncertainty", &mut u.uncertainty));
+        pair(ui, "2", 2, ("Where it is", &mut u.state), ("Biggest uncertainty", &mut u.uncertainty));
         ui.add_space(space::S10);
         let before_outcome = u.outcome.clone();
-        card(ui, "The outcome: who is better off, and how you'd know", &mut u.outcome, "outcome", 0.0);
+        super::motion::fade_in(ui, fc(4), egui::vec2(0.0, space::S18), |ui| card(ui, "The outcome: who is better off, and how you'd know", &mut u.outcome, "outcome", 0.0));
         if u.outcome != before_outcome {
             // editing the outcome is writing it in your own words: that confirms it
             it.outcome_confirmed = true;
@@ -789,15 +927,17 @@ impl App {
         let ok = !u.outcome.trim().is_empty() && !u.project.trim().is_empty();
         self.pin_to_foot(ui, space::BUTTON_H_LARGE + space::S40);
         let (mut go, mut change, mut cancel) = (false, false, false);
-        action_bar(ui, p, |ui| {
-            if editing {
-                go = big_button(ui, p, ButtonKind::Dark, "Save and continue  →", ok).clicked();
-                cancel = big_button(ui, p, ButtonKind::Secondary, "Cancel", true).clicked();
-                ui.label(RichText::new("Editing the outcome counts as confirming it.").size(size::ROW_SMALL).color(p.dim));
-            } else {
-                go = big_button(ui, p, ButtonKind::Dark, "This looks right, show me the proposal  →", ok).clicked();
-                change = big_button(ui, p, ButtonKind::Secondary, "Something's wrong, let me change it", true).clicked();
-            }
+        super::motion::fade_in(ui, f_bar, egui::vec2(0.0, space::S30), |ui| {
+            action_bar(ui, p, |ui| {
+                if editing {
+                    go = big_button(ui, p, ButtonKind::Dark, "Save and continue  →", ok).clicked();
+                    cancel = big_button(ui, p, ButtonKind::Secondary, "Cancel", true).clicked();
+                    ui.label(RichText::new("Editing the outcome counts as confirming it.").size(size::ROW_SMALL).color(p.dim));
+                } else {
+                    go = big_button(ui, p, ButtonKind::Dark, "This looks right, show me the proposal  →", ok).clicked();
+                    change = big_button(ui, p, ButtonKind::Secondary, "Something's wrong, let me change it", true).clicked();
+                }
+            })
         });
         if !ok {
             ui.label(RichText::new("Add the project and the outcome to continue").size(size::SMALL).color(p.dim));
@@ -1021,7 +1161,7 @@ impl App {
                 let sentence = if budget {
                     "This month's AI budget has been reached. Carry on without AI from here, or change the AI in Settings and pick up from this line, not from the start.".to_string()
                 } else {
-                    "Your AI's usage limit has been reached. Carry on without AI from here, or change the AI in Settings and pick up from this line, not from the start.".to_string()
+                    "You've reached your AI's usage limit. Carry on without AI from here, or change the AI in Settings and pick up from this line, not from the start.".to_string()
                 };
                 ui.add(egui::Label::new(RichText::new(sentence).size(size::ROW + 0.5).color(p.dim)).wrap());
                 ui.add_space(space::S4);

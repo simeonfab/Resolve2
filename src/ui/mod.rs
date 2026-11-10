@@ -200,6 +200,9 @@ pub struct StartOpts {
     pub scroll: Option<f32>,
     /// --collapsed: the sidebar collapsed (screenshots; not saved).
     pub collapsed: bool,
+    /// --motion-at <ms>: the intake's step, card, heard and question motions held at that moment
+    /// (screenshots of a frame mid-motion).
+    pub motion_at: Option<f32>,
     /// --open ask[:question]|search[:query]|setup: open the Ask sheet (optionally asking a real
     /// question first), the search palette, or show an unfinished sample intake (screenshots).
     pub open: Option<String>,
@@ -276,6 +279,12 @@ pub struct App {
     pub view_since: f64,
     /// The intake pane's height this frame (steps pin their action bar to its foot).
     pub intake_pane_h: f32,
+    /// The intake step that is leaving (M02.1), with the direction: drawn fading out for 240 ms.
+    pub intake_ghost: Option<(crate::resolve::intake::Intake, f32)>,
+    /// True while the leaving step is drawn (it must not start AI work or take focus).
+    pub intake_ghosting: bool,
+    /// --motion-at (see Opts).
+    pub motion_at: Option<f32>,
 }
 
 /// The four states every view draws (Rules, item 3).
@@ -373,6 +382,9 @@ impl App {
             view_seen: None,
             view_since: 0.0,
             intake_pane_h: 0.0,
+            intake_ghost: None,
+            intake_ghosting: false,
+            motion_at: opts.motion_at,
         };
         app.page_ui.ai_open = open_ai;
         // reduced motion: the saved setting, or --reduced-motion for a screenshot
@@ -1634,6 +1646,31 @@ impl App {
             }
             "resume" => {
                 self.temp.insert("force_resume".into(), "1".into());
+            }
+            // mid-motion frames (with --motion-at): M02 the page change Confirm → Next move
+            "step" => {
+                let mut old = i.clone();
+                old.stage = "confirm".into();
+                self.temp.insert(format!("step_key:{id}"), "proposal:0".into());
+                self.temp.insert(format!("step_t:{id}"), "1".into());
+                self.temp.insert(format!("step_dir:{id}"), "1".into());
+                self.intake_ghost = Some((old, 1.0));
+            }
+            // M04.7: the last two heard items have just landed
+            "land" => {
+                self.temp.insert(format!("heard_open:{id}"), "1".into());
+                let n = i.heard.len();
+                for (k, h) in i.heard.iter().enumerate() {
+                    let v = if k + 2 >= n { format!("1|{}", k + 2 - n) } else { "0|0".into() };
+                    self.temp.insert(format!("heard_seen:{}", h.id), v);
+                }
+            }
+            // M04.5: the AI's question arrives after a 6 s wait
+            "arrive" => {
+                let cur = i.qas.len().saturating_sub(1);
+                self.temp.insert(format!("q_shown:{id}"), i.qas[cur].id.clone());
+                self.temp.insert(format!("q_t:{id}"), "1".into());
+                self.temp.insert(format!("q_out:{id}"), "6".into());
             }
             "edit" => i.editing = true,
             "pull" => {

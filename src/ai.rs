@@ -151,6 +151,18 @@ pub struct AiConfig {
 }
 
 pub const CLAUDE_MODEL: &str = "claude-opus-5-5";
+/// The faster model for the proposal's validation half (the fast validation setting).
+pub const FAST_CLAUDE_MODEL: &str = "claude-sonnet-5-5";
+
+/// The same AI on its faster model, for Claude Code and the Claude API; None for others
+/// (a local model has nothing faster to switch to).
+pub fn fast_cfg(cfg: &AiConfig) -> Option<AiConfig> {
+    match cfg.provider.as_str() {
+        "claude-code" => Some(AiConfig { model: "sonnet".into(), ..cfg.clone() }),
+        "anthropic" => Some(AiConfig { model: FAST_CLAUDE_MODEL.into(), ..cfg.clone() }),
+        _ => None,
+    }
+}
 
 // ---------------------------------------------------------------- usage & cost tracking
 //
@@ -430,7 +442,8 @@ fn run_cli(provider: &str, system: &str, prompt: &str, meta: crate::store::Works
         child.wait_with_output().map_err(|e| e.to_string())?
     };
     let _ = std::fs::remove_dir_all(&work);
-    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    // the CLI's "·" arrives encoded twice on Windows ("Â·"); put it back
+    let text = String::from_utf8_lossy(&output.stdout).trim().replace("Â·", "·");
     if !output.status.success() && text.is_empty() {
         let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
         let hint = if err.to_lowercase().contains("login") || err.to_lowercase().contains("auth") || err.to_lowercase().contains("sign") {
@@ -857,7 +870,8 @@ fn run_cli_plain_model(provider: &str, system: &str, prompt: &str, model: &str) 
         child.wait_with_output().map_err(|e| e.to_string())?
     };
     let _ = std::fs::remove_dir_all(&work);
-    let text = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    // the CLI's "·" arrives encoded twice on Windows ("Â·"); put it back
+    let text = String::from_utf8_lossy(&output.stdout).trim().replace("Â·", "·");
     // the CLI's usage cap arrives as its answer text (or on stderr): pass it on as a limit
     let err = String::from_utf8_lossy(&output.stderr).trim().to_string();
     for said in [&text, &err] {
