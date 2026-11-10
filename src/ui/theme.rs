@@ -286,6 +286,13 @@ pub mod space {
     pub const WHOLE_TOP: f32 = 40.0;
     pub const WHOLE_LABEL_W: f32 = 190.0;
     pub const WHOLE_CELL_H: f32 = 54.0;
+    /// Frameworks (Pack C): registry cards 330 and 270, the node editor 436 beside the tree,
+    /// tree levels 32 apart, the node label column 40.
+    pub const FW_REGISTRY_W: f32 = 330.0;
+    pub const FW_REGISTRY_MORE_W: f32 = 270.0;
+    pub const FW_EDITOR: f32 = 436.0;
+    pub const FW_INDENT: f32 = 32.0;
+    pub const FW_LABEL_W: f32 = 40.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

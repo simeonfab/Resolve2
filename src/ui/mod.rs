@@ -26,6 +26,7 @@ mod databases;
 mod pages;
 pub mod overview;
 pub mod roadmap;
+pub mod frameworks;
 pub(crate) mod settings;
 pub mod tasks;
 
@@ -602,6 +603,11 @@ impl App {
                 app.temp.insert("rm_whole".into(), "1".into());
             }
             Some("by-theme") => app.resolve_ui.roadmap_by_theme = true,
+            // node:<title start>: that hypothesis or experiment open in Frameworks (screenshots)
+            Some(o) if o.starts_with("node:") => {
+                let pid = app.current_project.clone();
+                app.resolve_ui.sel_record = app.store.data.records.iter().find(|r| r.project_id == pid && r.title.starts_with(&o["node:".len()..])).map(|r| r.id.clone());
+            }
             Some(o) if o.starts_with("theme:") => {
                 if let Some(r) = app.store.data.records.iter().find(|r| r.kind == crate::resolve::Kind::Roadmap && r.title == o["theme:".len()..]) {
                     app.temp.insert("rm_open".into(), r.id.clone());

@@ -496,7 +496,7 @@ impl App {
 
     /// Run a ResolveOS action from Overview: What matters now is worked out here; the others ask
     /// the AI for proposals you accept or not.
-    fn run_overview_action(&mut self, pid: &str, ctx: &crate::resolve::ProjectContext, id: &'static str) {
+    pub(super) fn run_overview_action(&mut self, pid: &str, ctx: &crate::resolve::ProjectContext, id: &'static str) {
         match id {
             "what-matters" => {
                 let text = assess::summary_text(&self.store.data, ctx);

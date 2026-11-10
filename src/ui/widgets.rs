@@ -2899,6 +2899,124 @@ pub fn theme_row(ui: &mut Ui, p: &Pal, id: egui::Id, phase: &str, title: &str, b
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+// ======================================================================================
+// Frameworks components (Phase 4, Pack C "Frameworks"): the registry strip, the tree's rows
+// and the node editor's pieces.
+// ======================================================================================
+
+/// A registry card: the method's name (600 14.5) and a line under it. Selected: amber border;
+/// dashed: a slot for later.
+pub fn registry_card(ui: &mut Ui, p: &Pal, w: f32, title: &str, sub: &str, selected: bool, dashed: bool) -> Response {
+    let edge = if dashed { Stroke::NONE } else if selected { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::new(stroke::HAIR, p.line) };
+    let inner = egui::Frame::none().fill(if dashed { Color32::TRANSPARENT } else { p.card }).stroke(edge).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new(title).font(fs(size::HERO_BODY)).color(if dashed { p.dim } else { p.text }));
+            ui.label(RichText::new(sub).size(size::SMALL).color(p.dim));
+        });
+    });
+    let r = inner.response.rect;
+    if dashed {
+        let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+        let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+        for w2 in pts.windows(2) {
+            ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+        }
+    }
+    ui.interact(r, ui.id().with(("registry", title)), Sense::click())
+}
+
+/// How a row of the hypothesis tree is drawn.
+#[derive(Clone, Copy, PartialEq)]
+pub enum NodeStyle {
+    /// H0: a dark bar.
+    Root,
+    /// Hx: a white card with a hairline.
+    Hypothesis,
+    /// Ex and evidence: a raised fill.
+    Experiment,
+}
+
+/// One row of the hypothesis tree: the node's label (H1, E0), its statement, the line under it
+/// (the negation, or what the test holds on) and its status. Selected rows take the amber tint.
+pub fn tree_row(ui: &mut Ui, p: &Pal, id: egui::Id, style: NodeStyle, label: &str, title: &str, sub: &str, status: &str, selected: bool) -> Response {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let dark = style == NodeStyle::Root;
+    let (pill_fg, pill_bg) = if dark { (tok::TEXT_ON_DARK, tok::white_a(0.14)) } else { status_pair(status) };
+    let pg = ui.painter().layout_no_wrap(status.to_string(), fs(size::TAG), pill_fg);
+    let pill = pg.size() + egui::vec2(16.0, 6.0);
+    let pad = egui::vec2(space::S14, if dark { space::S10 + 1.0 } else { space::S10 });
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(pad.x, pad.y)).show(ui, |ui| {
+        ui.set_width(w - pad.x * 2.0);
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            let lc = match style {
+                NodeStyle::Root => tok::AMBER,
+                NodeStyle::Hypothesis => p.orange,
+                NodeStyle::Experiment => p.dim,
+            };
+            ui.allocate_ui_with_layout(egui::vec2(space::FW_LABEL_W - space::S8, size::ROW * 1.4), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(space::FW_LABEL_W - space::S8);
+                ui.add_space(space::S4 / 2.0);
+                ui.label(RichText::new(label).font(fs(size::SMALL)).color(lc));
+            });
+            let tw = (ui.available_width() - pill.x - space::S8 * 2.0).max(space::S40);
+            ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(tw);
+                ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+                ui.add(egui::Label::new(RichText::new(title).font(fs(size::ROW_SMALL)).color(if dark { tok::TEXT_ON_DARK } else { p.text })).wrap());
+                if !sub.is_empty() {
+                    ui.add(egui::Label::new(RichText::new(sub).size(size::SMALL).color(if dark { tok::TEXT_ON_DARK_SOFT } else { p.dim })).wrap());
+                }
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                let (r, _) = ui.allocate_exact_size(pill, Sense::hover());
+                let r = Rect::from_min_size(egui::pos2(r.min.x, r.min.y + space::S4 / 2.0), r.size());
+                ui.painter().rect_filled(r, radius::PILL, pill_bg);
+                ui.painter().galley(r.min + egui::vec2(8.0, 3.0), pg, pill_fg);
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let resp = ui.interact(rect, id, Sense::click());
+    let (fill, edge) = match style {
+        NodeStyle::Root => (tok::INK, Stroke::NONE),
+        NodeStyle::Hypothesis if selected => (if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, tok::AMBER)),
+        NodeStyle::Hypothesis => (p.card, Stroke::new(stroke::HAIR, if resp.hovered() { p.faint } else { p.line })),
+        NodeStyle::Experiment if selected => (if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, tok::AMBER)),
+        NodeStyle::Experiment => (p.surface_raised, Stroke::new(stroke::HAIR, if resp.hovered() { p.line } else { p.surface_raised })),
+    };
+    let edge = if dark && selected { Stroke::new(stroke::HAIR * 2.0, tok::AMBER) } else { edge };
+    ui.painter().set(bg_at, Shape::rect_filled(rect, radius::BUTTON, fill));
+    if edge.width > 0.0 {
+        ui.painter().rect_stroke(rect, radius::BUTTON, edge);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A line with a bold lead ("**Prediction:** both accept…"), wrapping.
+pub fn lead_line(ui: &mut Ui, p: &Pal, lead: &str, text: &str) {
+    let mut job = egui::text::LayoutJob::default();
+    let f = |font: egui::FontId| egui::text::TextFormat { font_id: font, color: p.text, ..Default::default() };
+    job.append(lead, 0.0, f(fs(size::SMALL + 0.5)));
+    job.append(" ", 0.0, f(fp(size::SMALL + 0.5)));
+    job.append(text, 0.0, f(fp(size::SMALL + 0.5)));
+    job.wrap.max_width = ui.available_width();
+    ui.label(job);
+}
+
+/// A soft raised note in an editor ("Opens the gate on …").
+pub fn soft_note<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().fill(p.surface_raised).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        add(ui)
+    })
+    .inner
+}
+
 /// A column head on the whole picture: dark for Now, sunk for the others.
 pub fn whole_head(ui: &mut Ui, p: &Pal, w: f32, name: &str, now: bool) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::S26), Sense::hover());

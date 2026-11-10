@@ -60,4 +60,38 @@ pub fn run(t: &mut T) {
     t.check("C-E8: milestones are listed by date with their dates", r.milestones.len() == 3 && r.milestones[0].0 == "12 months of hours in hand" && !r.milestones[0].1.is_empty(), format!("{:?}", r.milestones));
     t.check("C-E8: the rail shows the waiting task against its theme, and what waits on a result", r.blocked.iter().any(|b| b.starts_with("Hours export") && b.ends_with("Measure true monthly hours")) && r.waits.iter().any(|w| w == "Price to absorb spikes waits on the E0 result."), format!("{:?} {:?}", r.blocked, r.waits));
     t.check("C-E8: coming up lists dated tasks in the next two weeks, then work behind a closed gate", r.coming.first().map_or(false, |c| c.0 == "Mark the busiest and quietest months") && r.coming.iter().any(|c| c.1 == "after the gate"), format!("{:?}", r.coming));
+
+    // ---- Frameworks (C-E9, C-E10)
+    use crate::ui::frameworks::{apply_result, draft_of, frameworks_model, save_node};
+    let f = frameworks_model(&d, &pid);
+    let labels: Vec<&str> = f.nodes.iter().map(|n| n.label.as_str()).collect();
+    t.check("C-E9: the tree reads H0, H1, E0, H2, E1, H3, H4, E2 with H0 as its root", labels == vec!["H0", "H1", "E0", "H2", "E1", "H3", "H4", "E2"] && f.nodes[0].root && (f.hyps, f.exps, f.resolved) == (4, 3, 0), format!("{labels:?} {} {} {}", f.hyps, f.exps, f.resolved));
+    let h2 = f.nodes.iter().find(|n| n.label == "H2");
+    let e1 = f.nodes.iter().find(|n| n.label == "E1");
+    t.check("C-E9: each hypothesis shows its negation and each experiment what it holds on", h2.map_or(false, |n| n.sub.starts_with("NH2:")) && e1.map_or(false, |n| n.sub == "Holds if at least one signs within two weeks"), format!("{:?} / {:?}", h2.map(|n| &n.sub), e1.map(|n| &n.sub)));
+    // C-E10: result → status → gate → toast
+    let mut d6 = d.clone();
+    let e1_id = e1.map(|n| n.id.clone()).unwrap_or_default();
+    let h2_id = h2.map(|n| n.id.clone()).unwrap_or_default();
+    let mut toast = String::new();
+    let cs = d6.record_change("result", "edit", |dd| toast = apply_result(dd, &e1_id, "supports").unwrap_or_default());
+    let st = d6.record(&h2_id).map(|x| x.status.clone()).unwrap_or_default();
+    let gate_open = roadmap_model(&d6, &pid, today, crate::model::now_ms()).themes.iter().find(|x| x.title == "Convert the two willing clients").and_then(|x| x.gate.as_ref()).map_or(false, |g| g.2);
+    t.check("C-E10: a supporting result sets the experiment Done, H2 Supported, opens its gate, and the toast says so in that order", d6.record(&e1_id).map_or(false, |x| x.status == "Done" && x.field("result") == "supports") && st == "Supported" && gate_open && toast == "E1 result recorded: supports. H2 is now Supported. The gate on Convert the two willing clients is open.", &toast);
+    let undone = cs.as_ref().map_or(false, |c| d6.undo_change(c).is_ok()) && d6.record(&h2_id).map_or(false, |x| x.status == "Unresolved");
+    t.check("C-E10: the whole result is one undoable change", undone, "");
+    let mut d7 = d.clone();
+    let msg = apply_result(&mut d7, &e1_id, "inconclusive").unwrap_or_default();
+    t.check("C-E10: an inconclusive result leaves the hypothesis and its gate as they were", d7.record(&h2_id).map_or(false, |x| x.status == "Unresolved") && msg.ends_with("The gate on Convert the two willing clients stays closed."), &msg);
+    // a save that can't be made writes nothing
+    let mut d8 = d.clone();
+    let mut dr = d8.record(&h2_id).map(draft_of).unwrap_or_default();
+    dr.status = "Maybe".into();
+    let before = serde_json::to_string(&d8.records).unwrap_or_default();
+    let bad = save_node(&mut d8, &dr);
+    t.check("C-E9: a node save that can't be made writes nothing and says why", bad.is_err() && serde_json::to_string(&d8.records).unwrap_or_default() == before, format!("{bad:?}"));
+    dr.status = "Supported".into();
+    dr.statement = "Café clients want a flat monthly fee over hourly billing".into();
+    let ok = save_node(&mut d8, &dr).unwrap_or_default();
+    t.check("C-E9: saving a node keeps its label and reports the gate it opens", d8.record(&h2_id).map_or(false, |x| x.title == "H2: Café clients want a flat monthly fee over hourly billing") && ok == "H2 is now Supported. The gate on Convert the two willing clients is open.", &ok);
 }
