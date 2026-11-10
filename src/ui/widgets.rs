@@ -3177,6 +3177,18 @@ pub fn template_tile(ui: &mut Ui, p: &Pal, w: f32, name: &str, about: &str, pick
 // Proposal editor components (Phase 4, Pack C "ProposalEditor").
 // ======================================================================================
 
+/// A toolbar button in the page editor (H1, H2, B, I, •, ☐): 30 square, no box until pointed at.
+pub fn tool_button(ui: &mut Ui, p: &Pal, glyph: &str) -> Response {
+    let d = space::S30;
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(r, radius::SMALL_BUTTON, p.hover);
+    }
+    let font = if glyph == "I" { fserif(size::ROW + 1.0) } else { fs(size::ROW_SMALL) };
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, glyph, font, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// The editor's top bar: white, 60 high, a hairline under it.
 pub fn editor_bar(ui: &mut Ui, p: &Pal, rect: Rect, add: impl FnOnce(&mut Ui)) {
     ui.painter().rect_filled(rect, 0.0, p.card);

@@ -497,6 +497,16 @@ impl App {
             } else if let Some(n) = name.strip_prefix("settings-").and_then(|n| n.parse::<usize>().ok()) {
                 app.settings_ui.tab = n;
                 app.view = View::Settings;
+            } else if let Some(t) = name.strip_prefix("page:") {
+                // page:<title>: that page in the editor; page:new a new blank page (screenshots)
+                if t == "new" {
+                    let mut pg = Page::new("");
+                    pg.parent = app.current_project.as_deref().and_then(|p| crate::ui::kb::brief_of(&app.store.data, p));
+                    app.view = View::Page(pg.id.clone());
+                    app.store.data.pages.push(pg);
+                } else if let Some(pg) = app.store.data.pages.iter().find(|x| x.title == t) {
+                    app.view = View::Page(pg.id.clone());
+                }
             } else if name == "projects" {
                 app.view = View::Projects;
             } else if name == "tasks-board" {

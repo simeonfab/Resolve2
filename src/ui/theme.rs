@@ -307,6 +307,14 @@ pub mod space {
     pub const ADD_SHEET_W: f32 = 620.0;
     pub const PREVIEW_W: f32 = 520.0;
     pub const NEW_PAGE_W: f32 = 684.0;
+    /// The page editor (Pack C): a 52 top bar, text 680 to 720 wide for reading, the rail 250
+    /// with 30 before it.
+    pub const PAGE_BAR: f32 = 52.0;
+    pub const PAGE_COL: f32 = 720.0;
+    pub const PAGE_RAIL: f32 = 250.0;
+    pub const PAGE_GAP: f32 = 30.0;
+    /// The blocks' left gutter (their + and drag handle, 52, and the gap after it).
+    pub const PAGE_GUTTER: f32 = 60.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;
