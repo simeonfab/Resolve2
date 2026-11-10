@@ -898,7 +898,7 @@ Rules:
 - "hypotheses": 1-4 first-level Hx, each with "negation" and the heard ids it rests on in "sources".
 - "uncertainties": the open questions that matter most.
 - "experiments": start with E0. Each has "title", "parent" (index into hypotheses, or null for H0) and "fields": decision, prediction (separates Hx from NHx), test_type, method, baseline, support_if, refute_if, inconclusive_if, limits. Thresholds are set now, before running.
-- "roadmap": 3-7 items specific to THIS project across Now, Next, Later. Titles under 6 words. Every item's "detail" is one or two sentences: what it involves, and why it matters for this project now (the reason it is on the roadmap, in the person's own terms). Never leave "detail" empty. Never generic filler like "Validate", "Refine", "Iterate".
+- "roadmap": 3-7 items specific to THIS project across Now, Next, Later. Titles under 6 words; the title says what the work is. Every item's "detail" is ONE sentence saying why this theme belongs on the roadmap for this project, in the person's own terms (what it settles, or what depends on it). Don't describe the work or list its steps in "detail". Never leave "detail" empty. Never generic filler like "Validate", "Refine", "Iterate".
 - "tasks": 3-8 concrete first tasks, titles under 8 words stating what gets done, detail in "detail", "phase" and "parent" (roadmap index).
 - "pages": knowledge pages; the first is "Project brief" with markdown in "detail".
 - Every roadmap item, task and hypothesis has "basis": "evidence" ONLY if it rests on heard evidence (cite the ids in "sources"); "assumption" if it rests on an assumption; "uncertain" otherwise. Never present an assumption as evidence. Never invent facts.
@@ -1012,7 +1012,7 @@ pub(crate) fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
     }
     // every theme card on screen 07 shows its reason: a theme without one is asked for again
     if let Some(r) = p.roadmap.iter().find(|r| r.detail.split_whitespace().count() < 4) {
-        return Err(format!("roadmap item \"{}\" needs a \"detail\": what it involves and why it matters for this project", r.title));
+        return Err(format!("roadmap item \"{}\" needs a \"detail\": one sentence on why it belongs on the roadmap", r.title));
     }
     let rm: Vec<String> = p.roadmap.iter().map(|r| norm(&r.title)).collect();
     if p.tasks.iter().filter(|t| rm.contains(&norm(&t.title))).count() >= 2 {

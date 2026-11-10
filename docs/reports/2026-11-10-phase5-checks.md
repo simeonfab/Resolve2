@@ -22,3 +22,9 @@ Branch `nav/p5-settings-help`, from main at 0.5.1 (Phase 4 and the Phase 3 fixes
 - Or no crate: show the link and the token as text with Copy buttons, and no QR code.
 
 I'll build the rest of Phase 5 (Settings in four tabs with the spending card, Help with the Report dialog and voice, About with the changelog) and leave the QR code until you choose.
+
+## Your decisions (10 Nov 2026)
+
+- **No QR code, no new crate.** Settings shows the phone link as text.
+- **Mobile is out of scope for all of Resolve.** The phone page and pairing stay exactly as they are; no further work on them. Phase 6 (the phone page) is dropped.
+- **Spending card:** month-to-date cost as an estimate from the prices you enter, labelled "Estimated".

@@ -2,6 +2,17 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.6.0 (in progress, not merged yet)
+
+Redesign Phase 5: Settings and Help (branch `nav/p5-settings-help`).
+
+**What changed so far**
+- The line under each theme on Does this belong on your roadmap? now says why the theme belongs on your roadmap, in one sentence, instead of describing the work. One real run on Claude Code gave a reason for all six themes.
+
+**Known differences and open items**
+- The rest of Phase 5 is still being built; this entry grows as it lands.
+- Mobile is out of scope: the phone page and pairing stay as they are.
+
 ## 0.5.1 (10 November 2026)
 
 Phase 3 fixes that didn't make the 0.4.0 merge (branch `intake/p3-fixes`).
