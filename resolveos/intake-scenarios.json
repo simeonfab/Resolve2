@@ -78,5 +78,22 @@
       "uncertainties": "The right price, and whether it works for groups bigger than 12.",
       "followup": "One of the HR contacts can host a pilot next month."
     }
+  },
+  {
+    "name": "Job search (Careers)",
+    "mode": "careers",
+    "opening": "The job I want: Head of Product, in identity or platform products\nThe level I'm at and aiming for: Senior Product Manager now, aiming for Head of Product\nWhere (location, office days, travel): Birmingham, hybrid, two office days a week at most, London now and then is fine\nThe least I'll accept in pay: \nCompanies I want and don't want: scale-ups and larger companies, no agencies\nWhat I'm best at: platforms, partner programmes, identity journeys\nWhat's gone wrong so far: lots of applications, very few first interviews\nWhen I need it by: March\n",
+    "cv": "TEST CV (fictional, for the Careers lab run)\nAlex Morgan, Birmingham\nSenior Product Manager, Northfield Software (2022 to now): owned the managed services platform end to end; ran the partner programme, growing partner-sourced revenue by 40% in two years; led a team of 6.\nSenior Product Owner, Brightway Consulting (2019 to 2022): shipped a sign-in journey for a national identity service used by 3 million people; cut account recovery calls by 25%.\nLinkedIn headline: Senior Product Owner | Agile | Platforms\n",
+    "answers": {
+      "pay": "At least 95,000 base salary.",
+      "contract": "Permanent only. I won't take contract or interim roles.",
+      "travel": "London once a fortnight is fine, more than that is not.",
+      "disciplines": "I'd also look at Director of Product Operations, but not pure delivery roles.",
+      "timeline": "Start by March. I can give the search about 10 hours a week.",
+      "role": "Head of Product first, Director of Product if the company is smaller.",
+      "location": "Two office days a week at most, Birmingham or London.",
+      "company": "Scale-ups of 200 or more people, or enterprise. No agencies.",
+      "followup": "Head of Product first."
+    }
   }
 ]

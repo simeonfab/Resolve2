@@ -19,6 +19,12 @@ pub struct Scenario {
     pub answers: BTreeMap<String, String>,
     #[serde(default)]
     pub saved: bool,
+    /// Careers scenarios run the Careers intake.
+    #[serde(default)]
+    pub mode: Mode,
+    /// A test CV attached on 02b (Careers).
+    #[serde(default)]
+    pub cv: String,
 }
 
 pub fn default_root() -> PathBuf {
@@ -50,7 +56,7 @@ pub fn save_answers(i: &Intake, name: &str) -> Result<(), String> {
     }
     let mut saved: Vec<Scenario> = std::fs::read_to_string(saved_path()).ok().and_then(|s| serde_json::from_str(&s).ok()).unwrap_or_default();
     saved.retain(|s| s.name != name);
-    saved.push(Scenario { name: name.to_string(), opening: i.input.clone(), answers, saved: true });
+    saved.push(Scenario { name: name.to_string(), opening: i.input.clone(), answers, saved: true, mode: i.mode, cv: i.attachments.first().map(|a| a.text.clone()).unwrap_or_default() });
     crate::store::write_json_atomic(&saved_path(), &saved).map_err(|e| e.to_string())
 }
 
@@ -63,6 +69,14 @@ pub fn new_run(scn: Option<&Scenario>, provider: &str) -> Intake {
     if let Some(s) = scn {
         i.scenario = s.name.clone();
         i.input = s.opening.clone();
+        if s.mode == Mode::Careers {
+            i.mode = Mode::Careers;
+            i.situation = "job_search".into();
+            if !s.cv.trim().is_empty() {
+                i.attachments.push(super::intake::Attachment { name: "test-cv.md".into(), text: s.cv.clone(), place: "cv".into(), how: "you".into(), why: String::new() });
+            }
+            i.ai_covered = super::careers::covered_by_bring(&i.input);
+        }
     }
     i
 }
@@ -137,6 +151,9 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
     for h in &i.heard {
         log(&format!("heard ({}) {}", h.kind, h.text));
     }
+    if i.mode == Mode::Careers {
+        return careers_rest(i, cfg, log);
+    }
     if std::env::args().any(|a| a == "questions") {
         // --stop-at questions: leave the run on its last question
         i.stage = "questions".into();
@@ -178,6 +195,96 @@ pub fn headless_run(scn: &Scenario, provider: &str, max_q: usize, adopt: bool, l
         }
     }
     let _ = adopt;
+    i.touch();
+    i
+}
+
+/// The Careers run after the questions: the 04 cards, the kit, Rebuild my CV (the same calls the
+/// screens make).
+fn careers_rest(mut i: Intake, cfg: Option<crate::ai::AiConfig>, log: &mut dyn FnMut(&str)) -> Intake {
+    use super::{careers, journey};
+    log(&format!("skipped (02b answered them): {}", careers::skipped(&i)));
+    i.stage = "confirm".into();
+    let (t0, n0) = (std::time::Instant::now(), i.trace.len());
+    let (c, calls) = careers::run_cards(cfg.clone(), &i);
+    journey::keep_trace(&mut i, calls);
+    log_calls(log, &i, n0, t0);
+    let c = match c {
+        Ok(c) => c,
+        Err(e) => {
+            log(&format!("cards failed: {e}"));
+            i.last_error = e;
+            return i;
+        }
+    };
+    log(&format!("04 The job you want: {}
+04 Your hard gates: {}
+04 Your preferences: {}
+04 What a win looks like: {}
+04 Strengths: {}
+04 Gaps: {}
+04 What to fix: {}
+04 broad: {}", c.job, c.hard_gates, c.preferences, c.win, c.strengths, c.gaps, c.fix, c.broad));
+    let mut car = careers::Career { cards: Some(c), ..Default::default() };
+    car.cards_n = i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + 1;
+    i.career = Some(car);
+    i.stage = "proposal".into();
+    let (t0, n0) = (std::time::Instant::now(), i.trace.len());
+    let (k, calls) = careers::run_kit(cfg.clone(), &i);
+    journey::keep_trace(&mut i, calls);
+    log_calls(log, &i, n0, t0);
+    match k {
+        Ok(k) => {
+            log(&format!("06 Do this first: {} (why: {})", k.do_first, k.why));
+            for g in &k.gates {
+                log(&format!("07 {}: {} (why: {})", if g.hard { "Hard gate" } else { "Preference" }, g.rule, g.why));
+            }
+            for w in &k.week {
+                log(&format!("08 {} · {}", w.title, w.day));
+            }
+            log(&format!("09 Search name: {}", k.search_name));
+            for (t, l) in careers::kit_lines(&k) {
+                log(&format!("09 {t}: {l}"));
+            }
+            for t in &k.templates {
+                log(&format!("   template {}{}: suits {} | headline {}", t.name, if t.default { " (default)" } else { "" }, t.suits, t.headline));
+            }
+            for e in &k.evidence {
+                log(&format!("   proof: {} [{}] {} | {}", e.point, e.theme, if e.number.is_empty() { "needs a number".to_string() } else { e.number.clone() }, e.role));
+            }
+            for l in &k.linkedin {
+                log(&format!("   LinkedIn {}: {}", l.area, l.fix));
+            }
+            let key = i.career.as_ref().map(|c| c.cards_key()).unwrap_or_default();
+            if let Some(c) = i.career.as_mut() {
+                c.kit = Some(k);
+                c.kit_from = key;
+            }
+        }
+        Err(e) => {
+            log(&format!("kit failed: {e}"));
+            i.last_error = e;
+            return i;
+        }
+    }
+    if let Some(c) = cfg.as_ref() {
+        let t0 = std::time::Instant::now();
+        let n0 = i.trace.len();
+        let _ = crate::ai::take_trace();
+        let r = careers::rebuild_cv(c, &i);
+        journey::keep_trace(&mut i, crate::ai::take_trace());
+        log_calls(log, &i, n0, t0);
+        match r {
+            Ok(cv) => {
+                log(&format!("Rebuild my CV:\n{cv}"));
+                if let Some(car) = i.career.as_mut() {
+                    car.cv = cv;
+                }
+            }
+            Err(e) => log(&format!("Rebuild my CV failed: {e}")),
+        }
+    }
+    i.ending = 3;
     i.touch();
     i
 }

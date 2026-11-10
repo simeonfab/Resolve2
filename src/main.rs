@@ -241,17 +241,27 @@ fn main() {
         let max_q = arg_value(&args, "--max-q").and_then(|n| n.parse().ok()).unwrap_or(9);
         let t0 = std::time::Instant::now();
         let mut run = resolve::testlab::headless_run(&scn, &provider, max_q, false, &mut |s| println!("{s}"));
-        let reg = store::Registry::load();
-        let meta = reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone());
-        let mut st = store::Store::open(meta);
-        let rid = run.id.clone();
+        let mut reg = store::Registry::load();
         let adopt = args.iter().any(|a| a == "--adopt");
-        if adopt && run.proposal.is_some() {
+        // a Careers run adopts into a new workspace in Careers mode, as the app does
+        let careers_new = adopt && run.mode == model::Mode::Careers && run.career.as_ref().map_or(false, |c| c.kit.is_some());
+        let meta = if careers_new { reg.create("Job search", [94, 125, 79]) } else { reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone()) };
+        let mut st = store::Store::open(meta);
+        if careers_new {
+            st.data.mode = model::Mode::Careers;
+        }
+        let rid = run.id.clone();
+        if adopt && (run.proposal.is_some() || careers_new) {
             run.stage = "bridge".into();
         }
         st.data.intakes.push(run);
         if adopt {
             match resolve::journey::adopt_all(&mut st.data, &rid) {
+                Ok(pid) if careers_new => {
+                    let (g, t, p) = resolve::careers::reveal_counts(&st.data, &pid);
+                    let tasks = st.data.tasks.iter().filter(|x| x.project_id.as_deref() == Some(pid.as_str())).count();
+                    println!("adopted → workspace \"{}\" (mode {}), search \"{}\": {g} gates, {t} templates, {p} proof points, {tasks} tasks", st.meta.name, st.data.mode.label(), st.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default());
+                }
                 Ok(pid) => println!("adopted → project {pid}"),
                 Err(e) => println!("adopt failed: {e}"),
             }
