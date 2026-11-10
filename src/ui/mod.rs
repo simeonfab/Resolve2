@@ -24,6 +24,7 @@ mod help;
 mod assistant;
 mod databases;
 mod pages;
+pub mod overview;
 pub(crate) mod settings;
 pub mod tasks;
 
@@ -466,6 +467,19 @@ impl App {
             };
             if pick {
                 app.current_project = app.store.data.contexts.iter().filter(|c| app.store.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
+            }
+            // --state empty --project <name>: the canvases' empty state is a project made but not
+            // set up (no tasks, no roadmap), so add a bare one, in memory only
+            if let (ViewState::Empty, Some(name)) = (app.view_state, opts.project.as_deref()) {
+                if app.shot.is_some() && !app.store.data.projects.iter().any(|p| p.name.eq_ignore_ascii_case(name)) {
+                    let pr = Project { id: new_id(), name: name.to_string(), color: crate::ui::theme::PICK_COLOURS[2], sections: vec![], page_id: None, archived: false, favorite: false, order: 1, updated: now_ms() };
+                    let pid = pr.id.clone();
+                    app.store.data.projects.push(pr);
+                    if let Some(mut ctx) = crate::resolve::ProjectContext::adopt(&app.store.data, &pid) {
+                        ctx.outcome = crate::seed::canvas_outcome(name);
+                        app.store.data.contexts.push(ctx);
+                    }
+                }
             }
             // --project <name>: that project (screenshots of a particular one)
             if let Some(pid) = opts.project.as_deref().and_then(|n| app.store.data.projects.iter().find(|p| p.name.eq_ignore_ascii_case(n))).map(|p| p.id.clone()) {

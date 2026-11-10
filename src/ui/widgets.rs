@@ -1917,6 +1917,44 @@ pub fn switch(ui: &mut Ui, p: &Pal, on: &mut bool) -> Response {
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+/// A Resolve suggests row (Overview): ✦, the suggestion and →, on a light amber tint.
+pub fn suggest_row(ui: &mut Ui, p: &Pal, text: &str) -> Response {
+    let w = ui.available_width();
+    let pad = egui::vec2(space::S10, space::S8);
+    let text_w = w - pad.x * 2.0 - space::S18 * 2.0;
+    let g = ui.painter().layout(text.to_string(), fp(size::ROW_SMALL), p.text, text_w);
+    let h = g.size().y + pad.y * 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let fill = if p.dark { p.surface_raised } else if resp.hovered() { tok::AMBER_LIGHT } else { p.bg };
+    ui.painter().rect_filled(rect, radius::CHIP, fill);
+    ui.painter().text(egui::pos2(rect.left() + pad.x + space::S4, rect.top() + pad.y + space::S8), Align2::CENTER_CENTER, "✦", fp(size::ROW_SMALL), tok::AMBER);
+    ui.painter().galley(egui::pos2(rect.left() + pad.x + space::S18, rect.top() + pad.y), g, p.text);
+    ui.painter().text(egui::pos2(rect.right() - pad.x - space::S4, rect.center().y), Align2::CENTER_CENTER, "→", fp(size::ROW_SMALL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A column of the Overview's small Tasks board: a sunk box with "Now · 2" and white cards.
+/// A clicked card's task id goes into `open`.
+pub fn mini_column(ui: &mut Ui, p: &Pal, w: f32, head: &str, cards: &[(Id, String)], open: &mut Option<Id>) {
+    egui::Frame::none().fill(p.surface_sunk).rounding(Rounding::same(radius::CARD - 3.0)).inner_margin(egui::Margin::same(space::S10)).show(ui, |ui| {
+        ui.set_width(w - space::S10 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        ui.label(RichText::new(head).font(fs(size::SMALL)).color(p.text));
+        if cards.is_empty() {
+            ui.label(RichText::new("Nothing here.").size(size::SMALL).color(p.dim));
+        }
+        for (id, title) in cards {
+            let r = egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.add(egui::Label::new(RichText::new(title).size(size::ROW_SMALL).color(p.text)).truncate());
+            });
+            if ui.interact(r.response.rect, ui.id().with(("mini-card", id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                *open = Some(id.clone());
+            }
+        }
+    });
+}
+
 /// A small white card with a bold title and a line under it ("Tasks show here too").
 pub fn note_card(ui: &mut Ui, p: &Pal, title: &str, body: &str) {
     egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::same(space::S12 + 1.0)).show(ui, |ui| {

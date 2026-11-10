@@ -454,6 +454,15 @@ fn cafe_proposal() -> crate::resolve::journey::Proposal {
     }
 }
 
+/// The outcome line the canvases draw for a sample project (empty for any other name).
+pub fn canvas_outcome(name: &str) -> String {
+    if name == "Café flat-fee bookkeeping" {
+        "Café owners know their monthly cost up front and stop sending shoeboxes of receipts at year end.".into()
+    } else {
+        String::new()
+    }
+}
+
 pub fn seed_canvas(d: &mut WorkspaceData) {
     use crate::resolve::journey::Proposal;
     use crate::ui::theme::PICK_COLOURS;
@@ -488,6 +497,19 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
             x.completed = true;
             x.completed_at = at;
         });
+    }
+    // the canvas's links (Pack C Overview, Roadmap): E0 tests the hours task, and H1's result
+    // opens the gate on "Price to absorb spikes"
+    {
+        use crate::resolve::Kind;
+        let task = d.tasks.iter().find(|x| x.title == "Reconstruct 12 months of hours per café" && x.project_id == cafe_id).map(|x| x.id.clone());
+        let h1 = d.records.iter().find(|r| r.kind == Kind::Hypothesis && r.title.starts_with("H1:") && r.project_id == cafe_id).map(|r| r.id.clone());
+        if let (Some(t), Some(e)) = (task, d.records.iter_mut().find(|r| r.kind == Kind::Experiment && r.title.starts_with("Reconstruct 12 months"))) {
+            e.links.push(t);
+        }
+        if let (Some(h), Some(g)) = (h1, d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == "Price to absorb spikes")) {
+            g.fields.insert("gate".into(), h);
+        }
     }
     // waiting on someone else for three days (B-E5)
     set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));

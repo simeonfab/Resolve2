@@ -121,6 +121,10 @@ impl App {
     }
 
     pub(super) fn section_view(&mut self, ui: &mut egui::Ui, p: &Pal, s: Section) {
+        // the redesigned sections (Phase 4) draw their own header, no top bar
+        if s == Section::Overview && self.current_project.is_some() && self.overview_page(ui, p) {
+            return;
+        }
         self.top_bar(ui, p, |_, _| {});
         let wide = matches!(s, Section::Roadmap);
         egui::ScrollArea::vertical().id_salt(("sec", s as u8)).auto_shrink([false, false]).show(ui, |ui| {
