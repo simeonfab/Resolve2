@@ -342,7 +342,9 @@ impl App {
         painter.rect(card, radius::DIALOG + 4.0, tok::PANE.gamma_multiply(a), Stroke::new(stroke::HAIR, tok::amber_a(0.30 * a)));
         paint_icon(&painter, card.center_top() + egui::vec2(0.0, space::S40 * 1.6), Icon::Trophy, tok::AMBER.gamma_multiply(a));
         painter.text(card.center() + egui::vec2(0.0, -space::S4), Align2::CENTER_CENTER, format!("You just cleared the fog, {}.", it.name), fserif(size::STEP_TITLE + 4.0), tok::TEXT_ON_DARK.gamma_multiply(a));
-        let line = painter.layout("A messy project, turned into a focused path forward. That's the hard part done.".to_string(), fp(size::ROW + 1.0), tok::TEXT_ON_DARK_SOFT.gamma_multiply(a), card.width() - space::S40 * 2.0);
+        // the project's own name where the canvas says "A messy project"
+        let pname = it.proposal.as_ref().map(|x| x.name.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "Your project".into());
+        let line = painter.layout(format!("{pname}, turned into a focused path forward. That's the hard part done."), fp(size::ROW + 1.0), tok::TEXT_ON_DARK_SOFT.gamma_multiply(a), card.width() - space::S40 * 2.0);
         let lw = line.size();
         painter.galley(egui::pos2(card.center().x - lw.x / 2.0, card.center().y + space::S30), line, tok::TEXT_ON_DARK_SOFT.gamma_multiply(a));
         // B2: the first move pins under the card (2.4 to 4.8 s)
@@ -473,7 +475,8 @@ impl App {
             ui.horizontal(|ui| {
                 let r = big_button(ui, p, ButtonKind::Primary, "Open my project  →", true);
                 if !p.dark {
-                    ui.painter().rect_stroke(r.rect.expand(space::S4), radius::BUTTON + 4.0, Stroke::new(space::S4, tok::amber_a(0.22)));
+                    // the canvas: box-shadow 0 0 0 6px rgba(200,160,64,.14), a solid ring 6 px out
+                    ui.painter().rect_stroke(r.rect.expand(space::S6 / 2.0), radius::BUTTON + space::S6 / 2.0, Stroke::new(space::S6, mix(p.bg, tok::AMBER, shadow::HALO_ALPHA)));
                 }
                 open = r.clicked();
                 if self.testlab {

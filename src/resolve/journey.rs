@@ -898,7 +898,7 @@ Rules:
 - "hypotheses": 1-4 first-level Hx, each with "negation" and the heard ids it rests on in "sources".
 - "uncertainties": the open questions that matter most.
 - "experiments": start with E0. Each has "title", "parent" (index into hypotheses, or null for H0) and "fields": decision, prediction (separates Hx from NHx), test_type, method, baseline, support_if, refute_if, inconclusive_if, limits. Thresholds are set now, before running.
-- "roadmap": 3-7 items specific to THIS project across Now, Next, Later. Titles under 6 words; detail in "detail". Never generic filler like "Validate", "Refine", "Iterate".
+- "roadmap": 3-7 items specific to THIS project across Now, Next, Later. Titles under 6 words. Every item's "detail" is one or two sentences: what it involves, and why it matters for this project now (the reason it is on the roadmap, in the person's own terms). Never leave "detail" empty. Never generic filler like "Validate", "Refine", "Iterate".
 - "tasks": 3-8 concrete first tasks, titles under 8 words stating what gets done, detail in "detail", "phase" and "parent" (roadmap index).
 - "pages": knowledge pages; the first is "Project brief" with markdown in "detail".
 - Every roadmap item, task and hypothesis has "basis": "evidence" ONLY if it rests on heard evidence (cite the ids in "sources"); "assumption" if it rests on an assumption; "uncertain" otherwise. Never present an assumption as evidence. Never invent facts.
@@ -990,7 +990,7 @@ pub fn propose_parallel_with(cfg: &AiConfig, i: &Intake, u: &Understanding, fast
 const WEAK_STARTS: [&str; 11] = ["conduct experiments", "analyze results", "analyse results", "gather feedback", "refine the", "refine ", "iterate ", "test the", "validate the", "design and run experiments", "develop the app"];
 
 /// Strict rules for the model's first answer (retried once with the reason).
-fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
+pub(crate) fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
     let raw_name = v.get("name").and_then(|x| x.as_str()).unwrap_or("");
     if raw_name.split_whitespace().count() > 5 {
         return Err(format!("\"name\" must be 2-5 words naming the real thing, not \"{raw_name}\""));
@@ -1009,6 +1009,10 @@ fn quality_check(v: &Value, p: &Proposal) -> Result<(), String> {
         if WEAK_STARTS.iter().any(|w| l.starts_with(w)) {
             return Err(format!("\"{}\" is generic — say what concretely happens in this project", it.title));
         }
+    }
+    // every theme card on screen 07 shows its reason: a theme without one is asked for again
+    if let Some(r) = p.roadmap.iter().find(|r| r.detail.split_whitespace().count() < 4) {
+        return Err(format!("roadmap item \"{}\" needs a \"detail\": what it involves and why it matters for this project", r.title));
     }
     let rm: Vec<String> = p.roadmap.iter().map(|r| norm(&r.title)).collect();
     if p.tasks.iter().filter(|t| rm.contains(&norm(&t.title))).count() >= 2 {

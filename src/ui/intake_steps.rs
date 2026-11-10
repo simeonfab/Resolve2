@@ -1165,7 +1165,11 @@ impl App {
                 };
                 ui.add(egui::Label::new(RichText::new(sentence).size(size::ROW + 0.5).color(p.dim)).wrap());
                 ui.add_space(space::S4);
-                ui.add(egui::Label::new(RichText::new(format!("It said: {}", it.last_error)).size(size::SMALL).color(p.dim)).wrap());
+                // "It said:" quotes a provider's own message only; Resolve's budget stop is already
+                // said in the sentence above
+                if !budget && !crate::ai::is_budget(&it.last_error) && !it.last_error.trim().is_empty() {
+                    ui.add(egui::Label::new(RichText::new(format!("It said: {}", it.last_error)).size(size::SMALL).color(p.dim)).wrap());
+                }
                 ui.add_space(space::S18);
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = space::S10;
