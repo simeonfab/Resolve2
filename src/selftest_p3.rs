@@ -48,6 +48,13 @@ pub fn run(t: &mut T) {
     q.tasks.rotate_left(first_next);
     let k = first_week_ix(&q).first().copied();
     t.check("E27: a Next task listed first doesn't become the first move", k.and_then(|k| q.tasks[k].parent) == first_now && k.map_or(false, |k| q.tasks[k].phase == "Now"), format!("{:?}", k.map(|k| q.tasks[k].title.clone())));
+    // found in the D5 runs: the AI's validation text carried em dashes
+    let mut q2 = p.clone();
+    q2.uncertainties[0].title = "What drives the peaks \u{2014} VAT or year end?".into();
+    q2.h0.negation = "It won't work\u{2014}the hours swing".into();
+    let si = d.intakes.iter().find(|i| i.id == iid).cloned().unwrap_or_default();
+    crate::resolve::journey::sanitise(&mut q2, &si);
+    t.check("an em dash in the AI's proposal never reaches the screen", !q2.uncertainties[0].title.contains('\u{2014}') && !q2.h0.negation.contains('\u{2014}') && q2.uncertainties[0].title == "What drives the peaks, VAT or year end?", &q2.uncertainties[0].title);
     // E22: the pull-in prompt asks 11 questions, the last six covering the remaining targets
     let prompt = crate::resolve::intake::IMPORT_PROMPT;
     t.check("E22: the pull-in prompt has 11 numbered questions and says \"Not covered\" instead of guessing", (1..=11).all(|n| prompt.contains(&format!("\n{n}. "))) && prompt.contains("\"Not covered\"") && !prompt.contains('—'), "");

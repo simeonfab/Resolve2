@@ -13,7 +13,7 @@ Branch `intake/p3-redesign`. These are the brief's "check and report first" item
 | **Overloaded** (529) | n/a | A temporary failure, not a limit. | Still treated as an error (Try again). |
 | Local models (Ollama) | n/a | No limits. | |
 
-**D7, the "Daily limit" copy.** There is no daily limit anywhere in the code: the only budget is monthly (`monthly_budget`, counted from the 1st of the month). The canvas's sentence on screen 12, "This month's AI budget has been reached. Carry on without AI from here, or change the AI in Settings and pick up from this line, not from the start.", fits `check_budget`, so I use it for the budget. A provider's cap (Claude Code, an API rate limit) is not your budget, so for those screen 12 says "Your AI's usage limit has been reached." with the same second sentence, followed by the provider's own message. That second wording is mine: **please confirm**.
+**D7, the "Daily limit" copy.** There is no daily limit anywhere in the code: the only budget is monthly (`monthly_budget`, counted from the 1st of the month). The canvas's sentence on screen 12, "This month's AI budget has been reached. Carry on without AI from here, or change the AI in Settings and pick up from this line, not from the start.", fits `check_budget`, so I use it for the budget. A provider's cap (Claude Code, an API rate limit) is not your budget, so for those screen 12 says "You've reached your AI's usage limit." (your wording, 10 Nov) with the same second sentence, followed by the provider's own message.
 
 ## D5: how long the proposal takes today
 

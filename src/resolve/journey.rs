@@ -746,8 +746,29 @@ pub fn validate_part(v: &Value, i: &Intake, u: &Understanding, part: &str) -> Re
 }
 
 /// Deterministic clean-up applied to every proposal (also after the user edits/regenerates).
+/// No em dash reaches the screen, even from the AI: " — " becomes ", " (found in the D5 runs).
+pub fn no_em_dash(s: &str) -> String {
+    s.replace(" \u{2014} ", ", ").replace('\u{2014}', ", ")
+}
+
 pub fn sanitise(p: &mut Proposal, i: &Intake) {
     let evidence = heard_ids(i, "evidence");
+    {
+        let clean = |it: &mut Item| {
+            for s in [&mut it.title, &mut it.detail, &mut it.negation] {
+                *s = no_em_dash(s);
+            }
+            for v in it.fields.values_mut() {
+                *v = no_em_dash(v);
+            }
+        };
+        for it in std::iter::once(&mut p.h0).chain(p.hypotheses.iter_mut()).chain(p.experiments.iter_mut()).chain(p.uncertainties.iter_mut()).chain(p.roadmap.iter_mut()).chain(p.tasks.iter_mut()).chain(p.pages.iter_mut()) {
+            clean(it);
+        }
+        for s in [&mut p.name, &mut p.summary, &mut p.objective, &mut p.outcome, &mut p.next_move, &mut p.why] {
+            *s = no_em_dash(s);
+        }
+    }
     let fix = |it: &mut Item, max: usize| {
         if words(&it.title) > max {
             if it.detail.is_empty() {
