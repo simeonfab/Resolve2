@@ -2,6 +2,13 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.7.1 (10 November 2026)
+
+A fix to the sandbox rule from 0.7.0 (branch `careers/s1-shot-sandbox`).
+
+**What was fixed**
+- A screenshot started without its own data folder used to be refused. Craft Anything's build check starts it that way, so the check failed. Now such a screenshot gets a fresh sandbox folder of its own, and still never opens your real data. A screenshot pointed at your real data folder is still refused.
+
 ## 0.7.0 (10 November 2026)
 
 Careers Step 1: modes, the foundation for Resolve Careers (branch `careers/s1-modes`). Nothing you can see changes yet.
@@ -12,7 +19,7 @@ Careers Step 1: modes, the foundation for Resolve Careers (branch `careers/s1-mo
 - The sidebar, the Ask Resolve wording, Frameworks, the Knowledge base tabs, the Help guide, the intake's questions and steps, and the AI Team now come from tables picked by the open workspace's mode. PM's tables are the ones you have today. Careers has its own, taken from the Careers brief.
 - My CV is the one home for your master CV, CV templates, the cover letter template and LinkedIn fixes, so Careers Frameworks no longer lists CV templates or the cover letter. The Knowledge base's CVs and cover letters tab holds the copies you sent with each application.
 - There are no Careers screens yet, and no way to make a Careers workspace from the app yet. Those come in the next steps.
-- Screenshots and the self-test now run only in a sandbox folder. A screenshot without its own data folder, or pointed at your real one, is refused, and so is a self-test outside its own folder. Nothing a test runs can open your workspaces.
+- Screenshots and the self-test now run only in a sandbox folder. A screenshot pointed at your real data folder is refused, and so is a self-test outside its own folder. Nothing a test runs can open your workspaces.
 
 ## 0.6.0 (10 November 2026)
 

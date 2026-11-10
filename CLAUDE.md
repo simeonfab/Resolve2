@@ -57,7 +57,7 @@ hard-coded values still exist in views — see docs/RECONCILIATION.md §2.6 Part
 5. Prove, don't claim: every "done" needs a screenshot, test output or commit. Mark unchecked things "unverified".
 6. Cosmetic bugs are out of scope unless they block use, navigation, understanding or testing.
 7. Unclear requirement → ask the owner. Don't guess.
-8. **Scripts and tests never open the app on the real data folder** (`%APPDATA%\Resolve2`). Screenshots and tests use a sandbox folder only, and a script stops if it can't confirm that. The app enforces it too: `--screenshot` without `--data-dir` (or pointed at the real folder) and `--selftest` outside its own temp folder refuse and exit 2. `scripts/pm-compare.ps1` is the sandboxed PM comparison.
+8. **Scripts and tests never open the app on the real data folder** (`%APPDATA%\Resolve2`). Screenshots and tests use a sandbox folder only, and a script stops if it can't confirm that. The app enforces it too: `--screenshot` with no `--data-dir` gets a fresh sandbox folder under `%TEMP%`; pointed at the real folder it refuses and exits 2, and so does `--selftest` outside its own temp folder. `scripts/pm-compare.ps1` is the sandboxed PM comparison.
 Also: one model call = one job (generation and judgement never share a call); no fake AI output
 (tests use the labelled stand-in server); roles propose, people confirm; data changes are additive
 (`#[serde(default)]`); never commit data, keys or tokens.
