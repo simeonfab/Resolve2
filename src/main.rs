@@ -69,6 +69,16 @@ fn main() {
     if args.iter().any(|a| a == "--screenshot") {
         if arg_value(&args, "--data-dir").is_none() && !testlab {
             store::set_root(std::env::temp_dir().join(format!("resolve2-shot-{}", std::process::id())).join("data"));
+            // the sandbox holds the café sample workspace, set up and past Connect your AI, so
+            // the build check's picture is a workspace, not the first-run screen
+            let mut reg = store::Registry::load();
+            reg.settings.ai_setup_done = true;
+            reg.save();
+            let mut st = store::Store::open(reg.workspaces[0].clone());
+            let mut d = model::WorkspaceData::default();
+            seed::seed_canvas(&mut d);
+            st.data = d;
+            let _ = st.save();
         }
         if store::is_real_root(&store::root()) {
             eprintln!("Refused: a screenshot runs only in a sandbox folder, never the real data folder ({}).", store::root().display());
