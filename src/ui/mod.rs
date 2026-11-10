@@ -9,6 +9,7 @@ mod cockpit;
 pub mod connect;
 mod import_ui;
 mod intake;
+mod intake_careers;
 mod intake_ending;
 mod intake_review;
 mod intake_steps;

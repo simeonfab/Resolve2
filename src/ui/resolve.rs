@@ -23,6 +23,13 @@ pub enum JobOut {
     Understood(Id, usize, Result<Understanding, String>, Vec<crate::ai::Trace>),
     /// (intake, section, understanding key it was computed from, result, calls)
     Proposed(Id, Option<String>, String, Result<crate::resolve::journey::Proposal, String>, Vec<crate::ai::Trace>),
+    // ---- the Careers intake
+    /// (intake, answers they were made from, the 04 cards, calls)
+    CareerCards(Id, usize, Result<crate::resolve::careers::Cards, String>, Vec<crate::ai::Trace>),
+    /// (intake, cards key it was made from, the kit, calls)
+    CareerKit(Id, String, Result<crate::resolve::careers::Kit, String>, Vec<crate::ai::Trace>),
+    /// (intake, the rebuilt CV, calls)
+    CareerCv(Id, Result<String, String>, Vec<crate::ai::Trace>),
     /// A background job's result with how long it took.
     Timed(String, f64, Box<JobOut>),
 }
@@ -159,6 +166,12 @@ impl App {
         if let Some(last) = self.store.data.intakes.iter().filter(|x| !x.name.is_empty()).max_by_key(|x| x.updated) {
             i.name = last.name.clone();
             i.stage = "bring".into();
+        }
+        // inside a Careers workspace, + New project is a second search, with its own gates
+        if self.store.data.mode == Mode::Careers {
+            i.mode = Mode::Careers;
+            i.situation = "job_search".into();
+            i.career = Some(crate::resolve::careers::Career { here: true, ..Default::default() });
         }
         let id = i.id.clone();
         self.store.data.intakes.push(i);
@@ -338,6 +351,85 @@ impl App {
                         }
                     }
                     i.touch();
+                }
+                self.touch();
+            }
+            JobOut::CareerCards(id, n, r, calls) => {
+                self.temp.remove("wait:understanding");
+                if self.resolve_ui.bg_understand.as_ref().map_or(false, |(x, _)| x == &id) {
+                    self.resolve_ui.bg_understand = None;
+                }
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::keep_trace(i, calls);
+                    if !i.editing {
+                        match r {
+                            Ok(c) => {
+                                let car = i.career.get_or_insert_with(Default::default);
+                                car.cards = Some(c);
+                                car.cards_n = n;
+                                i.last_error.clear();
+                                i.limit_at.clear();
+                                crate::resolve::journey::note_progress(&id, "cards");
+                            }
+                            Err(e) => {
+                                if crate::ai::is_limit(&e) {
+                                    i.limit_at = "understanding".into();
+                                    i.limit_done = crate::resolve::careers::WAIT_CARDS.iter().filter(|(_, ev)| crate::resolve::journey::has_progress(&id, ev)).map(|(_, ev)| ev.to_string()).collect();
+                                }
+                                i.last_error = e;
+                            }
+                        }
+                    }
+                    i.touch();
+                }
+                self.touch();
+            }
+            JobOut::CareerKit(id, key, r, calls) => {
+                self.temp.remove("wait:proposal");
+                if self.resolve_ui.bg_propose.as_ref().map_or(false, |(x, _)| x == &id) {
+                    self.resolve_ui.bg_propose = None;
+                }
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::keep_trace(i, calls);
+                    match r {
+                        Ok(k) => {
+                            let car = i.career.get_or_insert_with(Default::default);
+                            car.kit = Some(k);
+                            car.kit_from = key;
+                            i.ending = if i.editor { i.ending } else { 0 };
+                            i.theme_ix = 0;
+                            i.last_error.clear();
+                            i.limit_at.clear();
+                        }
+                        Err(e) => {
+                            if crate::ai::is_limit(&e) {
+                                i.limit_at = "proposal".into();
+                                i.limit_done = crate::resolve::careers::WAIT_KIT.iter().filter(|(_, ev)| crate::resolve::journey::has_progress(&id, ev)).map(|(_, ev)| ev.to_string()).collect();
+                            }
+                            i.last_error = e;
+                        }
+                    }
+                    i.touch();
+                }
+                self.touch();
+            }
+            JobOut::CareerCv(id, r, calls) => {
+                let mut failed = None;
+                if let Some(i) = self.intake_mut(&id) {
+                    crate::resolve::journey::keep_trace(i, calls);
+                    match r {
+                        Ok(cv) => i.career.get_or_insert_with(Default::default).cv = cv,
+                        Err(e) => failed = Some(e),
+                    }
+                    i.touch();
+                }
+                match failed {
+                    Some(e) => {
+                        self.temp.insert(format!("cv_error:{id}"), e);
+                    }
+                    None => {
+                        self.temp.remove(&format!("cv_error:{id}"));
+                    }
                 }
                 self.touch();
             }

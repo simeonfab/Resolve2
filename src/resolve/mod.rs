@@ -12,6 +12,7 @@
 //! * `roles`    — ResolveOS roles and runtime actions; prompts built from the context.
 
 pub mod assess;
+pub mod careers;
 pub mod context;
 pub mod files;
 pub mod intake;

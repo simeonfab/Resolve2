@@ -238,11 +238,19 @@ impl App {
             ui.label(RichText::new("What do you need help with?").font(fs(size::TITLE + 2.0)).color(p.text));
         });
         ui.add_space(space::S16);
-        let paths = [(Icon::Folder, "I have a messy project", "Notes everywhere, old AI chats, no clear next step. Help me make sense of it.", true), (Icon::Bulb, "I have a new idea", "I want to shape it into something real.", false), (Icon::Compass, "I'm stuck, not sure where to start", "Help me figure out what the actual problem is.", false)];
+        let paths = [(Icon::Folder, "I have a messy project", "Notes everywhere, old AI chats, no clear next step. Help me make sense of it.", true), (Icon::Bulb, "I have a new idea", "I want to shape it into something real.", false), (Icon::Compass, "I'm stuck, not sure where to start", "Help me figure out what the actual problem is.", false), (Icon::Doc, "I'm looking for a job", "Set your gates, fix your CV and start applying", true)];
+        let mut job = false;
+        let chosen_job = it.mode == Mode::Careers;
         for (k, (icon, title, line, open)) in paths.iter().enumerate() {
             super::motion::fade_in(ui, f(560.0, 2800.0 + 420.0 * k as f32), egui::vec2(0.0, space::S14), |ui| {
-                if path_card(ui, p, *icon, title, line, *open, k == 0).clicked() {
-                    go = true;
+                let is_job = k == 3;
+                let chosen = if chosen_job { is_job } else { k == 0 };
+                if path_card_tagged(ui, p, *icon, title, line, *open, chosen, is_job.then_some("New")).clicked() {
+                    if is_job {
+                        job = true;
+                    } else {
+                        go = true;
+                    }
                 }
             });
             ui.add_space(space::S12);
@@ -253,7 +261,15 @@ impl App {
         if el < 4300.0 && !reduced {
             ui.ctx().request_repaint();
         }
-        if go || ui.input(|i| i.key_pressed(Key::Enter)) {
+        let enter = ui.input(|i| i.key_pressed(Key::Enter));
+        if job || (enter && chosen_job) {
+            // the Careers intake: same frame, Careers content; Adopt makes a Careers workspace
+            it.mode = Mode::Careers;
+            it.situation = "job_search".into();
+            it.stage = "bring".into();
+            self.resolve_ui.focus_qa = None;
+        } else if go || enter {
+            it.mode = Mode::Pm;
             it.situation = "messy_project".into();
             it.stage = "bring".into();
             self.resolve_ui.focus_qa = None;
@@ -447,6 +463,8 @@ impl App {
         }
         let (mut mv, mv_start) = super::motion::begin_move(ui, f_q, egui::vec2(0.0, space::S18));
         let (mut next, mut back, mut skip, mut propose) = (false, false, false, false);
+        let careers = it.mode == Mode::Careers;
+        let snap = it.clone();
         {
         let ui = &mut mv;
         // ST2: this question came from Resolve's own list because the AI took over 15 s
@@ -456,7 +474,13 @@ impl App {
         }
         {
             let qa = &mut it.qas[cur];
-            ui.label(RichText::new(format!("{} · question {}", journey::target_label(&qa.target), cur + 1)).font(fs(size::LABEL)).color(p.orange));
+            if careers {
+                let skipped = crate::resolve::careers::skipped(&snap);
+                let line = if skipped > 0 { format!("Question {} of {} · Skipped {skipped} your CVs and notes already answered", cur + 1, journey::MAX_QUESTIONS) } else { format!("Question {} of {}", cur + 1, journey::MAX_QUESTIONS) };
+                ui.label(RichText::new(line).font(fs(size::LABEL)).color(p.orange));
+            } else {
+                ui.label(RichText::new(format!("{} · question {}", journey::target_label(&qa.target), cur + 1)).font(fs(size::LABEL)).color(p.orange));
+            }
             serif_text(ui, &qa.question, size::QUESTION, size::LH_QUESTION, p.text);
             if qa.needs_review {
                 ui.add_space(space::S4);
@@ -491,7 +515,7 @@ impl App {
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 ui.spacing_mut().item_spacing.x = space::S10;
                 next |= big_button(ui, p, ButtonKind::Dark, "Next  →", true).clicked();
-                skip = big_button(ui, p, ButtonKind::Secondary, "Skip this question", true).clicked();
+                skip = big_button(ui, p, ButtonKind::Secondary, if careers { "Skip this one" } else { "Skip this question" }, true).clicked();
             });
         });
         ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
@@ -503,15 +527,15 @@ impl App {
         ui.painter().rect_filled(r, 0.0, p.line);
         ui.add_space(space::S16);
         if it.suggest_stop {
-            info_note(ui, p, "Resolve has heard enough for a grounded proposal. You can stop here, or keep going to sharpen it.");
+            info_note(ui, p, if careers { "Resolve has heard enough to build your kit. You can stop here, or keep going to sharpen your gates." } else { "Resolve has heard enough for a grounded proposal. You can stop here, or keep going to sharpen it." });
             ui.add_space(space::S10);
         }
         ui.horizontal(|ui| {
             ui.spacing_mut().item_spacing.x = space::S16;
-            propose = link(ui, p, "Skip the rest and see my proposal →").clicked();
+            propose = link(ui, p, if careers { "Skip the rest and see my kit →" } else { "Skip the rest and see my proposal →" }).clicked();
             let cov = it.coverage();
             progress_line(ui, p, cov, space::S40 * 2.0);
-            ui.label(RichText::new(format!("Covered {:.0}%. More answers make a sharper proposal.", cov * 100.0)).size(size::ROW_SMALL).color(p.dim));
+            ui.label(RichText::new(format!("Covered {:.0}%. More answers make a sharper {}.", cov * 100.0, if careers { "kit" } else { "proposal" })).size(size::ROW_SMALL).color(p.dim));
         });
         }
         super::motion::end_move(ui, &mv, mv_start, 1.0);
@@ -634,7 +658,9 @@ impl App {
             if it.heard.is_empty() && !sorting {
                 ui.label(RichText::new("Nothing yet. It fills in as you answer.").size(size::ROW_SMALL).color(p.dim));
             }
-            for (kind, title, col) in [("evidence", "Evidence", p.green_text), ("assumption", "Assumptions", p.accent_text), ("question", "Open questions", p.orange)] {
+            let careers = it.mode == Mode::Careers;
+            let groups: [(&str, &str, Color32); 3] = if careers { [("gate", "Hard gates", p.dim), ("preference", "Preferences", p.accent_text), ("question", "Questions", p.orange)] } else { [("evidence", "Evidence", p.green_text), ("assumption", "Assumptions", p.accent_text), ("question", "Open questions", p.orange)] };
+            for (kind, title, col) in groups {
                 let idx: Vec<usize> = it.heard.iter().enumerate().filter(|(_, h)| h.kind == kind || (kind == "question" && h.kind == "uncertain")).map(|(i, _)| i).collect();
                 if idx.is_empty() {
                     continue;
@@ -695,13 +721,10 @@ impl App {
                         }
                         egui::popup_below_widget(ui, menu_id, &chip, egui::PopupCloseBehavior::CloseOnClick, |ui| {
                             ui.set_min_width(space::S40 * 4.0);
-                            for (k, name) in [("evidence", "Evidence"), ("assumption", "Assumption"), ("question", "Question")] {
+                            let kinds: [&'static str; 3] = if careers { ["gate", "preference", "question"] } else { ["evidence", "assumption", "question"] };
+                            for k in kinds {
                                 ui.horizontal(|ui| {
-                                    let (fg, bg) = match k {
-                                        "evidence" => (p.green_text, p.green_tint),
-                                        "assumption" => (p.accent_text, p.accent_soft),
-                                        _ => (p.orange, p.orange_tint),
-                                    };
+                                    let (fg, bg, name) = heard_colours(p, k);
                                     if tag(ui, name, fg, bg).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
                                         relabel = Some((i, k));
                                     }
@@ -1101,6 +1124,39 @@ impl App {
             self.temp.remove("err_focused");
             it.last_error.clear();
         }
+        if it.mode == Mode::Careers {
+            match step {
+                "Confirm understanding" => {
+                    if retry {
+                        self.ic_spawn_cards(it, true);
+                    } else if by_hand {
+                        // blank cards in edit mode (nothing invented)
+                        let n = answered(it);
+                        let c = it.career.get_or_insert_with(Default::default);
+                        c.cards = Some(Default::default());
+                        c.cards_n = n;
+                        it.editing = true;
+                    }
+                }
+                _ => {
+                    if retry {
+                        self.ic_spawn_kit(it, true);
+                    } else if by_hand {
+                        let cards = it.career.as_ref().and_then(|c| c.cards.clone()).unwrap_or_default();
+                        let k = crate::resolve::careers::offline_kit(it, &cards);
+                        let c = it.career.get_or_insert_with(Default::default);
+                        c.kit = Some(k);
+                        c.kit_from = c.cards_key();
+                        it.ending = 0;
+                    }
+                }
+            }
+            if settings {
+                self.settings_ui.tab = 1;
+                self.go(View::Settings);
+            }
+            return;
+        }
         match step {
             "Confirm understanding" => {
                 if retry {
@@ -1134,7 +1190,13 @@ impl App {
     /// where it stopped, with the same lines as the wait.
     pub(super) fn ij_limit(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
         let proposal = it.limit_at == "proposal";
-        let lines: &[(&str, &str)] = if proposal { &journey::WAIT_PROPOSAL } else { &journey::WAIT_UNDERSTAND };
+        let careers = it.mode == Mode::Careers;
+        let lines: &[(&str, &str)] = match (proposal, careers) {
+            (true, false) => &journey::WAIT_PROPOSAL,
+            (false, false) => &journey::WAIT_UNDERSTAND,
+            (true, true) => &crate::resolve::careers::WAIT_KIT,
+            (false, true) => &crate::resolve::careers::WAIT_CARDS,
+        };
         let budget = crate::ai::is_budget(&it.last_error);
         let (mut without, mut settings, mut leave) = (false, false, false);
         ui.add_space(space::S10);
@@ -1153,7 +1215,7 @@ impl App {
                 paint_icon(ui.painter(), r.center(), Icon::Pause, p.orange);
                 ui.ctx().request_repaint_after(std::time::Duration::from_millis(60));
                 ui.add_space(space::S14);
-                ui.label(RichText::new(if proposal { "Your proposal" } else { "Confirm understanding" }).font(fs(size::LABEL)).color(p.orange));
+                ui.label(RichText::new(match (proposal, careers) { (true, true) => "Your kit", (true, false) => "Your proposal", _ => "Confirm understanding" }).font(fs(size::LABEL)).color(p.orange));
                 ui.add(egui::Label::new(RichText::new("You've reached your AI limit for now.").font(fserif(size::STEP_TITLE + 4.0)).color(p.text)).wrap());
                 ui.add_space(space::S12);
                 ui.add(egui::Label::new(RichText::new("Nothing is lost. Your answers, what Resolve understood and the work done so far are saved exactly as you left them.").size(size::ROW + 1.5).color(p.text)).wrap());
@@ -1205,7 +1267,22 @@ impl App {
             it.provider = "offline".into();
             it.limit_at.clear();
             it.last_error.clear();
-            if proposal {
+            if careers {
+                let n = answered(it);
+                if proposal {
+                    let cards = it.career.as_ref().and_then(|c| c.cards.clone()).unwrap_or_default();
+                    let k = crate::resolve::careers::offline_kit(it, &cards);
+                    let c = it.career.get_or_insert_with(Default::default);
+                    c.kit = Some(k);
+                    c.kit_from = c.cards_key();
+                    it.ending = 0;
+                } else {
+                    let cards = crate::resolve::careers::offline_cards(it);
+                    let c = it.career.get_or_insert_with(Default::default);
+                    c.cards = Some(cards);
+                    c.cards_n = n;
+                }
+            } else if proposal {
                 let u = it.understanding.clone().unwrap_or_default();
                 it.proposal = Some(journey::offline_proposal(it, &u));
                 it.proposed_from = und_key(it);

@@ -246,6 +246,9 @@ impl App {
     /// Adopt: in this workspace, or — for "Start something new with Resolve" — in a new workspace
     /// named after the project, which then becomes the current workspace.
     pub(super) fn adopt_begin(&mut self, it: &mut Intake) {
+        if it.mode == Mode::Careers {
+            return self.adopt_begin_careers(it);
+        }
         let snapshot = it.clone();
         if let Some(p2) = it.proposal.as_mut() {
             journey::sanitise(p2, &snapshot);
@@ -276,6 +279,48 @@ impl App {
         self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
     }
 
+    /// Careers Adopt: a NEW workspace in Careers mode (default "Job search"), or, for a second
+    /// search started inside a Careers workspace, this workspace. The bridge continues there.
+    fn adopt_begin_careers(&mut self, it: &mut Intake) {
+        it.stage = "bridge".into();
+        it.editor = false;
+        let here = self.store.data.mode == Mode::Careers || self.testlab;
+        let c = it.career.get_or_insert_with(Default::default);
+        c.here = here;
+        if let Some(k) = c.kit.as_mut() {
+            crate::resolve::careers::finish(k);
+        }
+        if !here {
+            let want = if c.workspace.trim().is_empty() { "Job search".to_string() } else { c.workspace.trim().to_string() };
+            // a free name: "Job search", then "Job search 2"…
+            let mut name = want.clone();
+            let mut n = 2;
+            while self.reg.workspaces.iter().any(|w| w.name.eq_ignore_ascii_case(&name)) {
+                name = format!("{want} {n}");
+                n += 1;
+            }
+            let meta = self.reg.create(&name, [94, 125, 79]);
+            let mut moved = it.clone();
+            moved.new_workspace = false;
+            moved.touch();
+            let mut ws = crate::store::Store::open(meta.clone());
+            ws.data.mode = Mode::Careers;
+            ws.data.intakes.push(moved);
+            let _ = ws.save();
+            let old = it.id.clone();
+            self.store.data.bury(&old);
+            self.store.data.intakes.retain(|x| x.id != old);
+            self.touch();
+            self.save_now();
+            self.resolve_ui.adopt = None;
+            self.switch_workspace(&meta.id);
+            self.go(View::Intake(old));
+            return;
+        }
+        self.put_intake(it);
+        self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
+    }
+
     // ---------------------------------------------------------------- 10 bridge (E14)
 
     /// The bridge: full dark, "You just cleared the fog". Beats B0 to B4 run on a 9200 ms clock
@@ -288,9 +333,11 @@ impl App {
         let reduced = super::motion::reduced();
         let el = if reduced || self.shot.is_some() { 9200.0 } else { ((self.now - t0) * 1000.0) as f32 };
         let built = it.stage == "reveal";
+        let careers = it.mode == Mode::Careers;
+        let steps: &[&str] = if careers { &crate::resolve::careers::ADOPT_STEPS } else { &journey::ADOPT_STEPS };
         // run the real build, one step per tick (the writes take milliseconds); a screenshot
         // shows the steps without writing anything
-        let mut step = if built { journey::ADOPT_STEPS.len() } else { 0 };
+        let mut step = if built { steps.len() } else { 0 };
         if !built {
             if self.resolve_ui.adopt.as_ref().map_or(true, |a| a.0 != it.id) {
                 // resumed after a restart mid-way: start the writes again
@@ -304,14 +351,18 @@ impl App {
                 self.resolve_ui.adopt_t = self.now;
                 match journey::adopt_step(&mut self.store.data, &iid, s, &mut st) {
                     Ok(true) => {
-                        let name = it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_default();
-                        self.resolve_ui.adopt_cs = self.store.data.keep_change(&format!("Created project \"{name}\""), "adopt", &snap);
+                        let label = if careers {
+                            format!("Created your job search \"{}\"", it.career.as_ref().and_then(|c| c.kit.as_ref()).map(|k| k.search_name.clone()).unwrap_or_default())
+                        } else {
+                            format!("Created project \"{}\"", it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_default())
+                        };
+                        self.resolve_ui.adopt_cs = self.store.data.keep_change(&label, "adopt", &snap);
                         self.save_now();
-                        step = journey::ADOPT_STEPS.len();
+                        step = steps.len();
                     }
                     Ok(false) => self.resolve_ui.adopt = Some((iid, s + 1, st, snap)),
                     Err(e) => {
-                        it.last_error = format!("Couldn't create the project: {e}");
+                        it.last_error = format!("{}: {e}", if careers { "Couldn't create your job search" } else { "Couldn't create the project" });
                         it.stage = "proposal".into();
                         it.ending = 3;
                         self.temp.remove(&format!("bridge_t:{}", it.id));
@@ -341,14 +392,23 @@ impl App {
         let a = f1.alpha;
         painter.rect(card, radius::DIALOG + 4.0, tok::PANE.gamma_multiply(a), Stroke::new(stroke::HAIR, tok::amber_a(0.30 * a)));
         paint_icon(&painter, card.center_top() + egui::vec2(0.0, space::S40 * 1.6), Icon::Trophy, tok::AMBER.gamma_multiply(a));
-        painter.text(card.center() + egui::vec2(0.0, -space::S4), Align2::CENTER_CENTER, format!("You just cleared the fog, {}.", it.name), fserif(size::STEP_TITLE + 4.0), tok::TEXT_ON_DARK.gamma_multiply(a));
-        // the project's own name where the canvas says "A messy project"
-        let pname = it.proposal.as_ref().map(|x| x.name.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "Your project".into());
-        let line = painter.layout(format!("{pname}, turned into a focused path forward. That's the hard part done."), fp(size::ROW + 1.0), tok::TEXT_ON_DARK_SOFT.gamma_multiply(a), card.width() - space::S40 * 2.0);
+        let kit = it.career.as_ref().and_then(|c| c.kit.clone());
+        let (title, body) = if careers {
+            ("Setting up your job search…".to_string(), "This takes about half a minute. You can leave this screen. Nothing is lost.".to_string())
+        } else {
+            // the project's own name where the canvas says "A messy project"
+            let pname = it.proposal.as_ref().map(|x| x.name.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "Your project".into());
+            (format!("You just cleared the fog, {}.", it.name), format!("{pname}, turned into a focused path forward. That's the hard part done."))
+        };
+        if careers {
+            painter.text(card.center() + egui::vec2(0.0, -space::S40), Align2::CENTER_CENTER, "Adopting your kit", fs(size::LABEL), tok::AMBER.gamma_multiply(a));
+        }
+        painter.text(card.center() + egui::vec2(0.0, -space::S4), Align2::CENTER_CENTER, title, fserif(size::STEP_TITLE + 4.0), tok::TEXT_ON_DARK.gamma_multiply(a));
+        let line = painter.layout(body, fp(size::ROW + 1.0), tok::TEXT_ON_DARK_SOFT.gamma_multiply(a), card.width() - space::S40 * 2.0);
         let lw = line.size();
         painter.galley(egui::pos2(card.center().x - lw.x / 2.0, card.center().y + space::S30), line, tok::TEXT_ON_DARK_SOFT.gamma_multiply(a));
         // B2: the first move pins under the card (2.4 to 4.8 s)
-        let first = it.proposal.as_ref().map(|x| x.next_move.clone()).unwrap_or_default();
+        let first = if careers { kit.as_ref().map(|k| k.do_first.clone()).unwrap_or_default() } else { it.proposal.as_ref().map(|x| x.next_move.clone()).unwrap_or_default() };
         let b2 = if el > 2400.0 && el < 4800.0 { ((el - 2400.0) / 400.0).min(1.0).min((4800.0 - el) / 400.0) } else { 0.0 };
         if b2 > 0.0 && !first.is_empty() {
             let g = painter.layout(format!("Do this first: {first}"), fs(size::ROW_SMALL), tok::TEXT_ON_DARK.gamma_multiply(b2), space::BRIDGE_CARD_W);
@@ -359,14 +419,19 @@ impl App {
         // B3: the workspace forms (4.6 to 6.9 s)
         let b3 = if el > 4600.0 && el < 6900.0 { ((el - 4600.0) / 400.0).min(1.0).min((6900.0 - el) / 400.0) } else { 0.0 };
         if b3 > 0.0 {
-            let (themes, tasks) = it.proposal.as_ref().map_or((0, 0), |x| (x.roadmap.len(), x.tasks.len()));
-            painter.text(egui::pos2(full.center().x, card.bottom() + space::S40), Align2::CENTER_CENTER, format!("Your workspace: {themes} themes, {tasks} tasks, validation and pages"), fp(size::ROW_SMALL), tok::TEXT_ON_DARK_SOFT.gamma_multiply(b3));
+            let line = if careers {
+                kit.as_ref().map(super::intake_careers::bridge_counts).unwrap_or_default()
+            } else {
+                let (themes, tasks) = it.proposal.as_ref().map_or((0, 0), |x| (x.roadmap.len(), x.tasks.len()));
+                format!("Your workspace: {themes} themes, {tasks} tasks, validation and pages")
+            };
+            painter.text(egui::pos2(full.center().x, card.bottom() + space::S40), Align2::CENTER_CENTER, line, fp(size::ROW_SMALL), tok::TEXT_ON_DARK_SOFT.gamma_multiply(b3));
         }
         // B4: the build checklist, bound to the real steps (from 6.6 s, or at once with reduced motion)
         let b4 = if el > 6600.0 { ((el - 6600.0) / 300.0).min(1.0) } else { 0.0 };
         if b4 > 0.0 {
             let y = full.bottom() - space::S40 - space::S8;
-            let items: Vec<(String, u8)> = journey::ADOPT_STEPS.iter().enumerate().map(|(k, s)| (s.to_string(), if k < step { 2 } else if k == step { 1 } else { 0 })).collect();
+            let items: Vec<(String, u8)> = steps.iter().enumerate().map(|(k, s)| (s.to_string(), if k < step { 2 } else if k == step { 1 } else { 0 })).collect();
             let gap = space::S22;
             let widths: Vec<f32> = items.iter().map(|(s, _)| painter.layout_no_wrap(s.clone(), fp(size::ROW_SMALL), tok::TEXT_ON_DARK).size().x + space::S18).collect();
             let total: f32 = widths.iter().sum::<f32>() + gap * (items.len() as f32 - 1.0);
@@ -438,9 +503,13 @@ impl App {
         let mut brand = ui.new_child(egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(full.min + egui::vec2(space::RAIL_PAD, space::S18 + 2.0), egui::vec2(space::S40 * 5.0, space::S26))).layout(Layout::left_to_right(Align::Center)));
         brand_mark(&mut brand, false);
         // the project
+        let careers = it.mode == Mode::Careers;
         let pr = it.proposal.clone().unwrap_or_default();
+        let kit = it.career.as_ref().and_then(|c| c.kit.clone()).unwrap_or_default();
         let themes = self.store.data.records.iter().filter(|r| r.project_id.as_deref() == Some(&pid) && r.kind == Kind::Roadmap).count();
         let week = super::intake_ending::first_week(&pr).len();
+        let (gates, templates, proofs) = crate::resolve::careers::reveal_counts(&self.store.data, &pid);
+        let (first, first_why) = if careers { (kit.do_first.clone(), kit.why.clone()) } else { (pr.next_move.clone(), String::new()) };
         let col = space::REVEAL_COL;
         let area = egui::Rect::from_min_size(egui::pos2(full.center().x - col / 2.0, full.top() + full.height() * 0.27), egui::vec2(col, full.height() * 0.6));
         let mut c = ui.new_child(egui::UiBuilder::new().max_rect(area).layout(Layout::top_down(Align::Min)));
@@ -448,32 +517,46 @@ impl App {
         let f = |n: usize| super::motion::frame_at(el, super::motion::timing(450.0, 3250.0 + 70.0 * n as f32, super::motion::E_SPRING), reduced);
         let mut open = false;
         super::motion::fade_in(ui2, f(0), egui::vec2(0.0, space::S10), |ui| {
-            ui.label(RichText::new("Your project is ready").font(fs(size::LABEL)).color(p.orange));
-            ui.add(egui::Label::new(RichText::new(&pr.name).font(fserif(size::DISPLAY)).color(p.text)).wrap());
+            if careers {
+                ui.label(RichText::new("Done").font(fs(size::LABEL)).color(p.orange));
+                ui.add(egui::Label::new(RichText::new("Your job search is ready.").font(fserif(size::DISPLAY)).color(p.text)).wrap());
+            } else {
+                ui.label(RichText::new("Your project is ready").font(fs(size::LABEL)).color(p.orange));
+                ui.add(egui::Label::new(RichText::new(&pr.name).font(fserif(size::DISPLAY)).color(p.text)).wrap());
+            }
         });
         ui2.add_space(space::S12);
         super::motion::fade_in(ui2, f(1), egui::vec2(0.0, space::S10), |ui| {
             let w = (col - space::S10 * 2.0) / 3.0;
             ui.horizontal(|ui| {
                 ui.spacing_mut().item_spacing.x = space::S10;
-                count_card(ui, p, themes, "Themes on your roadmap", w);
-                count_card(ui, p, week, "Tasks for your first week", w);
-                count_card(ui, p, usize::from(!pr.next_move.trim().is_empty()), "First move, pinned", w);
+                if careers {
+                    count_card(ui, p, gates, "gates", w);
+                    count_card(ui, p, templates, "templates", w);
+                    count_card(ui, p, proofs, "proof points", w);
+                } else {
+                    count_card(ui, p, themes, "Themes on your roadmap", w);
+                    count_card(ui, p, week, "Tasks for your first week", w);
+                    count_card(ui, p, usize::from(!pr.next_move.trim().is_empty()), "First move, pinned", w);
+                }
             });
         });
         ui2.add_space(space::S12);
-        if !pr.next_move.trim().is_empty() {
+        if !first.trim().is_empty() {
             super::motion::fade_in(ui2, f(2), egui::vec2(0.0, space::S10), |ui| {
                 hero_card(ui, p, |ui| {
                     ui.label(RichText::new("Do this first").font(fs(size::SMALL)).color(tok::AMBER));
-                    ui.add(egui::Label::new(RichText::new(&pr.next_move).font(fserif(size::CARD_SERIF - 2.0)).color(tok::TEXT_ON_DARK)).wrap());
+                    ui.add(egui::Label::new(RichText::new(&first).font(fserif(size::CARD_SERIF - 2.0)).color(tok::TEXT_ON_DARK)).wrap());
+                    if !first_why.trim().is_empty() {
+                        ui.add(egui::Label::new(RichText::new(&first_why).size(size::ROW + 0.5).color(tok::TEXT_ON_DARK_SOFT)).wrap());
+                    }
                 });
             });
             ui2.add_space(space::S22);
         }
         super::motion::fade_in(ui2, f(3), egui::vec2(0.0, space::S10), |ui| {
             ui.horizontal(|ui| {
-                let r = big_button(ui, p, ButtonKind::Primary, "Open my project  →", true);
+                let r = big_button(ui, p, ButtonKind::Primary, if careers { "Open my job search  →" } else { "Open my project  →" }, true);
                 if !p.dark {
                     // the canvas: box-shadow 0 0 0 6px rgba(200,160,64,.14), a solid ring 6 px out
                     ui.painter().rect_stroke(r.rect.expand(space::S6 / 2.0), radius::BUTTON + space::S6 / 2.0, Stroke::new(space::S6, mix(p.bg, tok::AMBER, shadow::HALO_ALPHA)));
@@ -510,10 +593,11 @@ impl App {
             self.touch();
             self.resolve_ui.tab = 0;
             self.current_project = Some(pid.clone());
-            self.go(View::Resolve(pid));
+            // Careers lands on Home; PM opens the project
+            self.go(if careers { View::Dashboard } else { View::Resolve(pid) });
             self.back.clear();
             if let Some(cs) = self.resolve_ui.adopt_cs.take() {
-                self.undo_toasts.push(("Project created".into(), self.now + 8.0, cs));
+                self.undo_toasts.push((if careers { "Job search created" } else { "Project created" }.into(), self.now + 8.0, cs));
             }
         }
     }

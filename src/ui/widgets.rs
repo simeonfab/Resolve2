@@ -2202,6 +2202,11 @@ pub fn brand_mark(ui: &mut Ui, on_dark: bool) {
 /// The intake's top bar (64, nav-bg): the mark, a thin progress bar, "Save and exit" and, from
 /// Welcome on, a ⋯ menu with "Start this intake again (keeps your name)".
 pub fn intake_topbar(ui: &mut Ui, progress: f32, menu: bool, actions: bool) -> IntakeBarOut {
+    intake_topbar_labelled(ui, progress, menu, actions, "")
+}
+
+/// The intake top bar with a small label after the brand mark (Careers: "Careers").
+pub fn intake_topbar_labelled(ui: &mut Ui, progress: f32, menu: bool, actions: bool, label: &str) -> IntakeBarOut {
     let mut out = IntakeBarOut::default();
     let w = ui.available_width();
     let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::INTAKE_BAR), Sense::hover());
@@ -2210,6 +2215,13 @@ pub fn intake_topbar(ui: &mut Ui, progress: f32, menu: bool, actions: bool) -> I
     let inner = rect.shrink2(egui::vec2(space::RAIL_PAD, 0.0));
     let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)));
     brand_mark(&mut child, true);
+    if !label.is_empty() {
+        child.add_space(space::S10);
+        let g = child.painter().layout_no_wrap(label.to_string(), fs(size::TAG + 0.5), tok::TEXT_ON_DARK);
+        let (r, _) = child.allocate_exact_size(g.size() + egui::vec2(space::S10 * 2.0, space::S8), Sense::hover());
+        child.painter().rect_filled(r, radius::PILL, tok::amber_a(0.22));
+        child.painter().galley(r.min + egui::vec2(space::S10, space::S4), g, tok::TEXT_ON_DARK);
+    }
     child.add_space(space::S18 + 2.0);
     let (bar, _) = child.allocate_exact_size(egui::vec2(space::INTAKE_PROGRESS_W, space::INTAKE_PROGRESS_H), Sense::hover());
     let shown = motion::tween(child.ctx(), egui::Id::new("intake-progress"), progress.clamp(0.0, 1.0), timing(520.0, 0.0, E_OUT));
@@ -2365,6 +2377,11 @@ pub fn step_head(ui: &mut Ui, p: &Pal, eyebrow: &str, title: &str, sub: &str) {
 /// A path card on Welcome: an icon tile, a title and a line; greyed with "Coming soon" when the
 /// path isn't open yet. Returns the click (only when it is open).
 pub fn path_card(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, line: &str, open: bool, chosen: bool) -> Response {
+    path_card_tagged(ui, p, icon, title, line, open, chosen, None)
+}
+
+/// A path card with a tag on its right (Careers: "New", green).
+pub fn path_card_tagged(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, line: &str, open: bool, chosen: bool, new_tag: Option<&str>) -> Response {
     let w = ui.available_width();
     let h = space::S40 * 2.0;
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), if open { Sense::click() } else { Sense::hover() });
@@ -2386,6 +2403,12 @@ pub fn path_card(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, line: &str, open
         let tr = Rect::from_min_size(egui::pos2(rect.right() - space::S22 - g.size().x - space::S16, rect.center().y - g.size().y / 2.0 - space::S4), g.size() + egui::vec2(space::S16, space::S8));
         ui.painter().rect(tr, radius::PILL, p.card, Stroke::new(stroke::HAIR, p.line));
         ui.painter().galley(tr.min + egui::vec2(space::S8, space::S4), g, p.text);
+    }
+    if let (true, Some(t)) = (open, new_tag) {
+        let g = ui.painter().layout_no_wrap(t.to_string(), fs(size::TAG + 0.5), p.green_text);
+        let tr = Rect::from_min_size(egui::pos2(rect.right() - space::S22 - g.size().x - space::S16, rect.center().y - g.size().y / 2.0 - space::S4), g.size() + egui::vec2(space::S16, space::S8));
+        ui.painter().rect_filled(tr, radius::PILL, p.green_tint);
+        ui.painter().galley(tr.min + egui::vec2(space::S8, space::S4), g, p.green_text);
     }
     if open {
         resp.on_hover_cursor(egui::CursorIcon::PointingHand)
@@ -2507,17 +2530,49 @@ pub fn question_dots(ui: &mut Ui, p: &Pal, n: usize, current: usize, flagged: &[
 
 /// A heard item's label as a menu button ("Evidence ▾"). Returns the click.
 pub fn heard_label(ui: &mut Ui, p: &Pal, kind: &str, open: bool) -> Response {
-    let (fg, bg, name) = match kind {
-        "evidence" => (p.green_text, p.green_tint, "Evidence"),
-        "assumption" => (p.accent_text, p.accent_soft, "Assumption"),
-        _ => (p.orange, p.orange_tint, "Question"),
-    };
+    let (fg, bg, name) = heard_colours(p, kind);
     let text = format!("{name} {}", if open { "▴" } else { "▾" });
     let g = ui.painter().layout_no_wrap(text, fs(size::TAG + 0.5), fg);
     let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S10 * 2.0, space::S8), Sense::click());
     ui.painter().rect(r, radius::PILL, bg, if open { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::NONE });
     ui.painter().galley(r.min + egui::vec2(space::S10, space::S4), g, fg);
     resp.on_hover_text("Change the label").on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A heard item's colours and name: PM's evidence, assumption and question; Careers' hard gate
+/// (neutral), preference (amber) and question (terracotta).
+pub fn heard_colours(p: &Pal, kind: &str) -> (Color32, Color32, &'static str) {
+    match kind {
+        "evidence" => (p.green_text, p.green_tint, "Evidence"),
+        "assumption" => (p.accent_text, p.accent_soft, "Assumption"),
+        "gate" => (p.dim, p.surface_sunk, "Hard gate"),
+        "preference" => (p.accent_text, p.accent_soft, "Preference"),
+        _ => (p.orange, p.orange_tint, "Question"),
+    }
+}
+
+/// A gate's tag: Hard gate (neutral) or Preference (amber). `short` reads Hard / Preference.
+pub fn gate_tag(ui: &mut Ui, p: &Pal, hard: bool, short: bool) -> Response {
+    let (fg, bg, name) = heard_colours(p, if hard { "gate" } else { "preference" });
+    tag(ui, if hard && short { "Hard" } else { name }, fg, bg)
+}
+
+/// 09: one block of the kit (title, one line, a tick), `w` wide.
+pub fn kit_block(ui: &mut Ui, p: &Pal, title: &str, line: &str, w: f32) -> Response {
+    let r = egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0 - stroke::HAIR * 2.0);
+        ui.set_min_height(space::S40 + space::S4);
+        ui.horizontal_top(|ui| {
+            ui.vertical(|ui| {
+                ui.set_width(ui.available_width() - space::S22);
+                ui.label(RichText::new(title).font(fs(size::ROW + 0.5)).color(p.text));
+                ui.add(egui::Label::new(RichText::new(if line.trim().is_empty() { "Nothing yet" } else { line }).size(size::ROW_SMALL).color(p.dim)).wrap());
+            });
+            let (c, _) = ui.allocate_exact_size(egui::vec2(space::S16, space::S16), Sense::hover());
+            paint_icon(ui.painter(), c.center(), Icon::Check, p.green_text);
+        });
+    });
+    r.response
 }
 
 /// A checklist line: done (amber disc with a tick), doing (spinning ring), to do (empty ring).

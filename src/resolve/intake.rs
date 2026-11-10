@@ -307,6 +307,9 @@ pub struct Intake {
     pub limit_at: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub limit_done: Vec<String>,
+    /// The Careers intake's cards, kit and rebuilt CV (Careers mode only; see resolve/careers.rs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub career: Option<super::careers::Career>,
     pub created: i64,
     pub updated: i64,
 }

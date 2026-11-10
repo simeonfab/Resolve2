@@ -425,6 +425,9 @@ pub const MAX_QUESTIONS: usize = 8;
 /// Next question without AI: the first target not yet asked (never past the cap, never a
 /// question already asked in other words).
 pub fn offline_next(i: &Intake) -> Option<Qa> {
+    if i.mode == Mode::Careers {
+        return super::careers::offline_next(i);
+    }
     if i.qas.len() >= MAX_QUESTIONS {
         return None;
     }
@@ -472,6 +475,9 @@ pub fn next_question(cfg: &AiConfig, i: &Intake) -> Result<NextQ, String> {
     let covered = i.covered().join(", ");
     let ids: Vec<String> = std::iter::once("input".to_string()).chain(i.qas.iter().map(|q| q.id.clone())).collect();
     let build = |retry: bool| {
+        if i.mode == Mode::Careers {
+            return super::careers::next_prompt(i, &covered, &ids, retry);
+        }
         format!(
             r#"You are Resolve's intake interviewer. Your ONLY job is to choose the single next question to ask, one at a time, like a good product strategist. You do not summarise, advise or plan.
 
@@ -1150,6 +1156,8 @@ pub const ADOPT_STEPS: [&str; 6] = ["Creating the project", "Laying out the road
 
 #[derive(Default, Clone, Debug)]
 pub struct AdoptState {
+    /// A Careers adopt's own state (resolve/careers.rs).
+    pub careers: super::careers::AdoptState,
     pub project_id: Id,
     pub brief_id: Option<Id>,
     pub roadmap_ids: Vec<Id>,
@@ -1168,6 +1176,13 @@ fn basis_label(b: &str) -> String {
 
 /// Run one adopt step. Returns Ok(true) after the last step.
 pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut AdoptState) -> Result<bool, String> {
+    // the Careers intake adopts its kit, with its own six steps
+    if d.intakes.iter().any(|x| x.id == intake_id && x.mode == Mode::Careers) {
+        let r = super::careers::adopt_step(d, intake_id, step, &mut st.careers);
+        st.project_id = st.careers.project_id.clone();
+        st.first_task = st.careers.first_task.clone();
+        return r;
+    }
     let i = d.intakes.iter().find(|x| x.id == intake_id).cloned().ok_or("That intake no longer exists")?;
     let p = i.proposal.clone().ok_or("There is no proposal to adopt")?;
     let u = i.understanding.clone().unwrap_or_default();
@@ -1477,7 +1492,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
         if let Some(qa) = i.qas.iter().find(|q| q.id == qid) {
             let others: Vec<Heard> = i.heard.iter().filter(|h| h.from != qa.id || h.corrected).cloned().collect();
             let items = match &cfg {
-                Some(c) if !qa.answer.trim().is_empty() => match classify(c, &qa.target, &qa.question, &qa.answer, &qa.id) {
+                Some(c) if !qa.answer.trim().is_empty() => match if i.mode == Mode::Careers { super::careers::classify(c, &qa.target, &qa.question, &qa.answer, &qa.id) } else { classify(c, &qa.target, &qa.question, &qa.answer, &qa.id) } {
                     Ok(v) => filter_heard(v, &qa.target, &qa.question, &others, &qa.answer),
                     Err(e) => {
                         out.note = format!("AI couldn't sort that answer ({}); used the fixed rule.", e.chars().take(120).collect::<String>());
@@ -1505,6 +1520,11 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             view.heard.extend(items.iter().cloned());
         }
         note_progress(&i.id, "asked");
+        // Careers: a broad answer gets one push before anything else (no model call)
+        let push = if i.mode == Mode::Careers { qa_id.or(i.qas.last().map(|q| q.id.as_str())).and_then(|q| view.qas.iter().find(|x| x.id == q)).filter(|q| !q.answer.trim().is_empty()).and_then(|q| super::careers::push_for(&view, q)) } else { None };
+        if let Some(p) = push {
+            out.next = Some(p);
+        } else {
         match &cfg {
             Some(c) => match next_question(c, &view) {
                 Ok(n) => {
@@ -1522,6 +1542,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
                 out.next = offline_next(&view);
                 out.done = out.next.is_none();
             }
+        }
         }
     }
     if want_next {

@@ -40,6 +40,22 @@ pub enum Kind {
     Roadmap,
     /// A self-contained brief for Claude, Codex or a person (Handoffs).
     Handoff,
+    // ---- Careers mode (Careers brief, "Modes": new data the Careers mode stores). Never in
+    // `Kind::ALL`, so PM's record lists stay as they are.
+    /// A gate: the rule, Hard gate or Preference (status), why it matters.
+    Gate,
+    /// A CV template: the roles it suits, its headline, Default or not (status).
+    CvTemplate,
+    /// The cover letter template: its structure and text.
+    CoverLetter,
+    /// The master CV (My CV).
+    Cv,
+    /// An evidence bank proof point: theme, source role, number, source.
+    Proof,
+    /// A LinkedIn fix: the area (title) and the fix (body), To do or Done.
+    LinkedinFix,
+    /// Search settings: weekly target and daily hunt target.
+    SearchTarget,
 }
 
 pub struct FieldDef {
@@ -75,6 +91,8 @@ impl Kind {
         Kind::Guidance,
         Kind::Handoff,
     ];
+    /// Careers mode's kinds.
+    pub const CAREERS: [Kind; 7] = [Kind::Gate, Kind::CvTemplate, Kind::CoverLetter, Kind::Cv, Kind::Proof, Kind::LinkedinFix, Kind::SearchTarget];
     pub fn label(self) -> &'static str {
         match self {
             Kind::Hypothesis => "Hypothesis",
@@ -92,6 +110,13 @@ impl Kind {
             Kind::Guidance => "Guidance",
             Kind::Roadmap => "Roadmap item",
             Kind::Handoff => "Handoff",
+            Kind::Gate => "Gate",
+            Kind::CvTemplate => "CV template",
+            Kind::CoverLetter => "Cover letter template",
+            Kind::Cv => "Master CV",
+            Kind::Proof => "Proof point",
+            Kind::LinkedinFix => "LinkedIn fix",
+            Kind::SearchTarget => "Weekly target",
         }
     }
     pub fn plural(self) -> &'static str {
@@ -111,6 +136,13 @@ impl Kind {
             Kind::Guidance => "Guidance",
             Kind::Roadmap => "Roadmap",
             Kind::Handoff => "Handoffs",
+            Kind::Gate => "Gates",
+            Kind::CvTemplate => "CV templates",
+            Kind::CoverLetter => "Cover letter templates",
+            Kind::Cv => "Master CVs",
+            Kind::Proof => "Evidence bank",
+            Kind::LinkedinFix => "LinkedIn fixes",
+            Kind::SearchTarget => "Weekly targets",
         }
     }
     pub fn icon(self) -> &'static str {
@@ -130,6 +162,11 @@ impl Kind {
             Kind::Guidance => "✦",
             Kind::Roadmap => "▤",
             Kind::Handoff => "⇄",
+            Kind::Gate => "⛩",
+            Kind::CvTemplate | Kind::CoverLetter | Kind::Cv => "📄",
+            Kind::Proof => "◆",
+            Kind::LinkedinFix => "✎",
+            Kind::SearchTarget => "◎",
         }
     }
     pub fn key(self) -> &'static str {
@@ -149,11 +186,18 @@ impl Kind {
             Kind::Guidance => "guidance",
             Kind::Roadmap => "roadmap",
             Kind::Handoff => "handoff",
+            Kind::Gate => "gate",
+            Kind::CvTemplate => "cv_template",
+            Kind::CoverLetter => "cover_letter",
+            Kind::Cv => "cv",
+            Kind::Proof => "proof",
+            Kind::LinkedinFix => "linkedin_fix",
+            Kind::SearchTarget => "search_target",
         }
     }
     pub fn parse(s: &str) -> Option<Kind> {
         let s = s.trim().to_lowercase();
-        Kind::ALL.iter().copied().find(|k| k.key() == s || k.label().to_lowercase() == s || k.plural().to_lowercase() == s)
+        Kind::ALL.iter().chain(Kind::CAREERS.iter()).copied().find(|k| k.key() == s || k.label().to_lowercase() == s || k.plural().to_lowercase() == s)
     }
     /// Allowed values of `status` for this kind (first = default).
     pub fn statuses(self) -> &'static [&'static str] {
@@ -172,6 +216,11 @@ impl Kind {
             Kind::Update | Kind::Guidance => &["Recorded"],
             Kind::Roadmap => &["Planned", "Active", "Done", "Dropped"],
             Kind::Handoff => &["Draft", "Sent", "Done"],
+            Kind::Gate => &["Hard gate", "Preference"],
+            Kind::CvTemplate => &["Template", "Default"],
+            Kind::Proof => &["Needs a number", "Has a number"],
+            Kind::LinkedinFix => &["To do", "Done"],
+            Kind::CoverLetter | Kind::Cv | Kind::SearchTarget => &["Current"],
         }
     }
     /// Is a record in this status still something to act on?
@@ -189,7 +238,9 @@ impl Kind {
             Kind::Milestone => status == "Planned",
             Kind::Roadmap => status == "Planned" || status == "Active",
             Kind::Handoff => status == "Draft" || status == "Sent",
+            Kind::LinkedinFix => status == "To do",
             Kind::Evidence | Kind::Update | Kind::Guidance => false,
+            Kind::Gate | Kind::CvTemplate | Kind::CoverLetter | Kind::Cv | Kind::Proof | Kind::SearchTarget => false,
         }
     }
     pub fn fields(self) -> &'static [FieldDef] {
@@ -247,6 +298,12 @@ impl Kind {
         const RMP: &[FieldDef] = &[f("phase", "Now, Next or Later", false), f("detail", "What it involves", true), f("basis", "Basis: evidence, assumption or uncertain", false)];
         const HND: &[FieldDef] = &[f("to", "For (Claude Code, Codex, a person…)", false), f("focus", "What they should do", true)];
         const GUI: &[FieldDef] = &[f("role", "Role", false), f("action", "Action", false), f("provider", "Model / provider", false)];
+        const GATE: &[FieldDef] = &[f("why", "Why it matters", true), f("source", "Set by", false)];
+        const TPL: &[FieldDef] = &[f("suits", "Roles it suits", false), f("headline", "Headline", false)];
+        const LET: &[FieldDef] = &[f("structure", "Structure", false)];
+        const CV: &[FieldDef] = &[f("source", "Where it came from", false)];
+        const PRF: &[FieldDef] = &[f("theme", "Theme", false), f("role", "Source role", false), f("number", "Number", false), f("source", "Source", false)];
+        const TGT: &[FieldDef] = &[f("weekly_target", "Applications a week", false), f("daily_found", "Roles found a day", false)];
         match self {
             Kind::Hypothesis => HYP,
             Kind::Experiment => EXP,
@@ -263,6 +320,13 @@ impl Kind {
             Kind::Guidance => GUI,
             Kind::Roadmap => RMP,
             Kind::Handoff => HND,
+            Kind::Gate => GATE,
+            Kind::CvTemplate => TPL,
+            Kind::CoverLetter => LET,
+            Kind::Cv => CV,
+            Kind::Proof => PRF,
+            Kind::LinkedinFix => &[],
+            Kind::SearchTarget => TGT,
         }
     }
 }
