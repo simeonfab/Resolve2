@@ -427,7 +427,7 @@ impl App {
                                 ui.set_width(tw);
                                 ui.spacing_mut().item_spacing.y = space::S4;
                                 inline_edit(ui, p, egui::Id::new(("pe-rm", k)), &mut r.title, fp(size::ROW + 0.5), p.text, tw, "A theme", false);
-                                inline_edit(ui, p, egui::Id::new(("pe-rm-d", k)), &mut r.detail, fp(size::SMALL + 0.5), p.dim, tw, "What it involves", true);
+                                inline_edit(ui, p, egui::Id::new(("pe-rm-d", k)), &mut r.detail, fp(size::SMALL + 0.5), p.dim, tw, "Why it belongs on the roadmap", true);
                             });
                             if remove_x(ui, p).clicked() {
                                 remove = Some(k);

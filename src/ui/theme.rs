@@ -321,6 +321,13 @@ pub mod space {
     pub const TEAM_LIST: f32 = 280.0;
     /// Handoffs (Pack C): the new-handoff and list column 360 beside the brief.
     pub const HO_LEFT: f32 = 360.0;
+    /// Settings (Pack C): two columns 16 apart, the left a little wider; field heights 40.
+    pub const SET_GAP: f32 = 16.0;
+    pub const SET_LEFT_SHARE: f32 = 0.52;
+    /// Help (Pack C): the section list 200, the reading column 680; the Report dialog 560.
+    pub const HELP_LIST: f32 = 200.0;
+    pub const HELP_COL: f32 = 680.0;
+    pub const REPORT_W: f32 = 560.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

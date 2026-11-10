@@ -2,6 +2,30 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.6.0 (10 November 2026)
+
+Redesign Phase 5: Settings and Help, rebuilt to the Pack C canvases (branch `nav/p5-settings-help`).
+
+**What changed**
+- Settings has four tabs: AI and MCP, Sync and phone, Workspaces, About (C-E21).
+- AI and MCP: Connect your AI as four choices (Claude Code, Ollama, Claude API key, Other), each with its status (Connected, Testing…, No reply, Not set up) and Test or Set up. A test that gets no reply says why under the choices. Copy setup for Claude Desktop, Claude Code, Codex and ChatGPT, and the two switches for other AI apps.
+- The Spending card is labelled Estimated: this month's cost from the tokens Resolve logged and the prices you enter, against your monthly limit. Only API keys count; Claude Code and Ollama show $0.
+- Sync and phone: the phone link as text, with Copy for the token and the whole link (no QR code); the sync folder with when it last synced; backups with Restore one; the hub under Advanced.
+- Workspaces: every workspace with how many projects it has, Rename and Open, and Open Resolve 2 with (the last workspace you used, or one you pick); Import and Export.
+- About: the version, what stays on this PC, Report a problem, Open the data folder, Light or Dark, keyboard shortcuts, and What's new: this changelog, word for word.
+- Help: the guide list on the left, the dark Welcome card with Report a problem, and Quick start in five steps (C-E23).
+- Report a problem is a dialog: what happened (with the mic, C-E24), what's also included (version, Windows, the AI, the last error; no names, no project text), and Copy the report. It says Copied when the copy worked, and shows the text to copy yourself when the clipboard can't be reached.
+- The line under each theme on Does this belong on your roadmap? says why the theme belongs on your roadmap, in one sentence, instead of describing the work. One real run on Claude Code gave a reason for all six themes.
+
+**What was fixed**
+- The monthly budget no longer counts Ollama's tokens as a cost (confirmed: only pay-per-use API keys count).
+- The MCP setup names on AI and MCP stay on one line (Codex was cut off at 1280).
+
+**Known differences and open items**
+- Mobile is out of scope: the phone page and pairing stay as they are.
+- Things the canvas doesn't draw are folded under each tab: More AI options, Test Intake, Recently deleted, Calendar subscriptions, the hub, Where your files are and Opening Resolve 2.
+- Unverified: the mic on Report (Windows voice typing can't be shown in a screenshot).
+
 ## 0.5.1 (10 November 2026)
 
 Phase 3 fixes that didn't make the 0.4.0 merge (branch `intake/p3-fixes`).

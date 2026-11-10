@@ -246,7 +246,7 @@ impl App {
                     ui.add_space(space::S8);
                     if editing {
                         ui.add(egui::TextEdit::singleline(&mut t.title).font(fs(size::SECTION)).desired_width(f32::INFINITY).hint_text("Theme (a few words)"));
-                        ui.add(egui::TextEdit::multiline(&mut t.detail).desired_rows(2).desired_width(f32::INFINITY).hint_text("What it involves"));
+                        ui.add(egui::TextEdit::multiline(&mut t.detail).desired_rows(2).desired_width(f32::INFINITY).hint_text("Why it belongs on the roadmap"));
                         ui.horizontal(|ui| {
                             for ph in ["Now", "Next", "Later"] {
                                 if tab_chip(ui, p, ph, None, t.phase == ph).clicked() {

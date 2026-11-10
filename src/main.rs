@@ -38,6 +38,7 @@ mod selftest_p1;
 mod selftest_p2;
 mod selftest_p3;
 mod selftest_p4;
+mod selftest_p5;
 mod server;
 mod store;
 mod templates;

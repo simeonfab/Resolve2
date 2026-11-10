@@ -794,20 +794,41 @@ pub fn is_budget(e: &str) -> bool {
     e.contains("This month's AI budget")
 }
 
+/// The first moment of this month, local time, in ms.
+pub fn month_start_ms() -> i64 {
+    let now = chrono::Local::now();
+    chrono::NaiveDate::from_ymd_opt(chrono::Datelike::year(&now), chrono::Datelike::month(&now), 1)
+        .and_then(|d| d.and_hms_opt(0, 0, 0))
+        .and_then(|d| d.and_local_timezone(chrono::Local).single())
+        .map(|d| d.timestamp_millis())
+        .unwrap_or(0)
+}
+
+/// Does this provider cost per use? Claude Code and Codex run on a subscription and Ollama on
+/// this PC, so they cost nothing here.
+pub fn pays_per_use(provider: &str) -> bool {
+    !matches!(provider, "claude-code" | "codex-cli" | "ollama" | "offline" | "")
+}
+
+/// This month's estimated cost (C-E21): the logged tokens of pay-per-use providers at the
+/// prices you entered. An estimate: Resolve doesn't know your provider's real bill.
+pub fn estimated_cost(u: &UsageTotals, price_in: f64, price_out: f64) -> f64 {
+    u.by_model
+        .iter()
+        .filter(|(m, ..)| pays_per_use(m.split(" / ").next().unwrap_or("")))
+        .map(|(_, _, i, o)| (*i as f64 * price_in + *o as f64 * price_out) / 1_000_000.0)
+        .sum::<f64>()
+        .max(0.0)
+}
+
 /// Stop AI calls once this month's estimated spend reaches the user's budget (if set).
 pub fn check_budget() -> Result<(), String> {
     let s = crate::store::Registry::load().settings;
     if s.monthly_budget <= 0.0 {
         return Ok(());
     }
-    let now = chrono::Local::now();
-    let since = chrono::NaiveDate::from_ymd_opt(chrono::Datelike::year(&now), chrono::Datelike::month(&now), 1)
-        .and_then(|d| d.and_hms_opt(0, 0, 0))
-        .and_then(|d| d.and_local_timezone(chrono::Local).single())
-        .map(|d| d.timestamp_millis())
-        .unwrap_or(0);
-    let u = usage_since(since);
-    let cost = (u.input as f64 * s.price_in_per_m + u.output as f64 * s.price_out_per_m) / 1_000_000.0;
+    let u = usage_since(month_start_ms());
+    let cost = estimated_cost(&u, s.price_in_per_m, s.price_out_per_m);
     if cost >= s.monthly_budget {
         return Err(format!("This month's AI budget (${:.2}) has been reached (≈ ${cost:.2}). Raise it in Settings → AI, or continue manually.", s.monthly_budget));
     }

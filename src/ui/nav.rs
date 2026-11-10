@@ -147,6 +147,9 @@ pub const FRAMEWORKS: &[Framework] = &[Framework {
     about: "H0 is the baseline hypothesis. Every hypothesis Hx has its explicit negation NHx; any node can have sub-hypotheses; experiments E0, E1… test any node with predictions and thresholds set in advance. Results update the hypothesis (unresolved, supported, weakened, refuted) and gate roadmap items.",
 }];
 
+/// The Settings tabs (C-E21, Pack C "Settings"), in order. `--view settings-<n>` opens one.
+pub const SETTINGS_TABS: [&str; 4] = ["AI and MCP", "Sync and phone", "Workspaces", "About"];
+
 /// The parts of Knowledge, as tabs on the Knowledge screen.
 pub const KNOWLEDGE_TABS: &[(&str, &str)] = &[("Brief and documents", "📄"), ("Research", "🔎"), ("Cut list", "✂"), ("Evidence and Records", "◆"), ("Advanced: databases", "▦")];
 
