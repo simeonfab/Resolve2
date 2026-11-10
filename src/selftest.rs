@@ -333,6 +333,7 @@ pub fn run() -> i32 {
     crate::selftest_resolve::run(&mut t, personal.clone(), port + 7);
     crate::selftest_safety::run(&mut t, personal.clone(), port + 9);
     crate::selftest_journey::run(&mut t, personal.clone(), port + 11);
+    crate::selftest_careers::run(&mut t, port + 13);
     crate::selftest_alpha::run(&mut t, &base);
     crate::selftest_p0::run(&mut t);
     crate::selftest_p1::run(&mut t);

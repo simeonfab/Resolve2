@@ -40,6 +40,7 @@ mod selftest_p3;
 mod selftest_p4;
 mod selftest_p5;
 mod selftest_modes;
+mod selftest_careers;
 mod server;
 mod store;
 mod templates;
