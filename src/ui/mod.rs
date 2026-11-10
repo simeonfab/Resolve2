@@ -28,6 +28,7 @@ pub mod overview;
 pub mod roadmap;
 pub mod frameworks;
 pub mod kb;
+pub mod csv_dialog;
 pub mod proposal_editor;
 pub(crate) mod settings;
 pub mod tasks;
@@ -265,6 +266,8 @@ pub struct App {
     pub current_project: Option<Id>,
     pub connect: connect::ConnectUi,
     pub import: import_ui::ImportUi,
+    /// The CSV import dialog and the rows of the last import that didn't go in (C-E18).
+    pub csv: csv_dialog::CsvUi,
     /// One toast at a time (B-E10).
     pub toaster: toast::Toaster,
     /// --state full|empty|loading|error: which state views draw (screenshots of the four states).
@@ -377,6 +380,7 @@ impl App {
             current_project: None,
             connect: connect::ConnectUi::default(),
             import: import_ui::ImportUi::default(),
+            csv: csv_dialog::CsvUi::default(),
             toaster: toast::Toaster::default(),
             view_state: ViewState::default(),
             no_save: false,
@@ -497,6 +501,11 @@ impl App {
             } else if let Some(n) = name.strip_prefix("settings-").and_then(|n| n.parse::<usize>().ok()) {
                 app.settings_ui.tab = n;
                 app.view = View::Settings;
+            } else if let Some(t) = name.strip_prefix("db:") {
+                // db:<name>: that database (screenshots)
+                if let Some(x) = app.store.data.databases.iter().find(|x| x.name == t) {
+                    app.view = View::Database(x.id.clone());
+                }
             } else if let Some(t) = name.strip_prefix("page:") {
                 // page:<title>: that page in the editor; page:new a new blank page (screenshots)
                 if t == "new" {
@@ -624,6 +633,18 @@ impl App {
             }
             Some("kb-add") => {
                 app.temp.insert("kb_add".into(), "-10".into());
+            }
+            // csv:<path>: the CSV import dialog on that file, over the database that's open
+            Some(o) if o.starts_with("csv:") => {
+                let path = std::path::PathBuf::from(&o["csv:".len()..]);
+                if let Ok(text) = std::fs::read_to_string(&path) {
+                    let db = match &app.view {
+                        View::Database(x) => x.clone(),
+                        _ => String::new(),
+                    };
+                    let file = path.file_name().map(|x| x.to_string_lossy().to_string()).unwrap_or_default();
+                    app.csv_open(&file, &text, &db);
+                }
             }
             Some("new-page") => {
                 app.temp.insert("new_page_dialog".into(), String::new());
@@ -1616,6 +1637,7 @@ impl eframe::App for App {
             self.ask_sheet(ctx, &p);
             self.plan_sheet(ctx, &p);
             self.kb_overlays(ctx, &p);
+            self.csv_dialog_ui(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);

@@ -3114,6 +3114,22 @@ pub fn library_add_tile(ui: &mut Ui, p: &Pal, w: f32, text: &str) -> Response {
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+/// A dashed button the width of its column ("+ New database").
+pub fn dashed_button(ui: &mut Ui, p: &Pal, w: f32, text: &str) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H + 2.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, radius::NAV_ITEM, p.surface_raised);
+    }
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, text, fp(size::ROW_SMALL + 0.5), p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
 /// The grounding bar under the library: what Resolve searches when it answers, and a link.
 /// Returns the link's click.
 pub fn grounding_bar(ui: &mut Ui, p: &Pal, text: &str, link_text: &str) -> bool {

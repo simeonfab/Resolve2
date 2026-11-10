@@ -535,6 +535,38 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
             d.records.push(r);
         }
     }
+    // Pack C Databases: the café clients table and an hours log
+    {
+        let col = |name: &str, kind: ColKind, options: &[&str], width: f32| Column { id: new_id(), name: name.into(), kind, options: options.iter().map(|s| s.to_string()).collect(), width, target: String::new() };
+        let cols = vec![
+            col("Café", ColKind::Text, &[], 150.0),
+            col("Billing", ColKind::Select, &["Hourly", "Flat fee"], 80.0),
+            col("Avg hours / month", ColKind::Text, &[], 140.0),
+            col("Busiest month", ColKind::Text, &[], 120.0),
+            col("Flat fee?", ColKind::Select, &["Said yes", "Not asked", "Said no"], 110.0),
+            col("Next step", ColKind::Text, &[], 150.0),
+        ];
+        let rows = [
+            ["The Corner Café", "Hourly", "waiting on export", "", "Said yes", "Chase till export"],
+            ["Bean and Co.", "Hourly", "14", "January", "Said yes", "Book the price call"],
+            ["Harbour Kitchen", "Hourly", "9", "April", "Not asked", "Ask after E1"],
+        ];
+        let mut db = Database { id: new_id(), name: "Café clients".into(), icon: "▦".into(), columns: cols.clone(), rows: vec![], view: DbView::Table, group_by: None, updated: t, ..Default::default() };
+        for r in rows {
+            let cells = cols.iter().zip(r.iter()).map(|(c, v)| (c.id.clone(), v.to_string())).collect();
+            db.rows.push(Row { id: new_id(), cells, page_id: None });
+        }
+        d.databases.push(db);
+        let hcols = vec![col("Date", ColKind::Date, &[], 120.0), col("Staff", ColKind::Text, &[], 100.0), col("Hours", ColKind::Number, &[], 80.0), col("Task", ColKind::Select, &["Receipts", "Payroll", "VAT"], 110.0)];
+        let mut hdb = Database { id: new_id(), name: "Hours log".into(), icon: "▦".into(), columns: hcols.clone(), rows: vec![], view: DbView::Table, group_by: None, updated: t, ..Default::default() };
+        for k in 0..36 {
+            let day = today - Duration::days(36 - k as i64);
+            let vals = [day.format("%Y-%m-%d").to_string(), ["Ana", "Sam", "Jo"][k % 3].to_string(), format!("{}", 2 + (k * 7) % 6), ["Receipts", "Payroll", "VAT"][k % 3].to_string()];
+            let cells = hcols.iter().zip(vals.iter()).map(|(c, v)| (c.id.clone(), v.clone())).collect();
+            hdb.rows.push(Row { id: new_id(), cells, page_id: None });
+        }
+        d.databases.push(hdb);
+    }
     // waiting on someone else for three days (B-E5)
     set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));
     if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {

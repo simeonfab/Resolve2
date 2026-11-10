@@ -315,6 +315,8 @@ pub mod space {
     pub const PAGE_GAP: f32 = 30.0;
     /// The blocks' left gutter (their + and drag handle, 52, and the gap after it).
     pub const PAGE_GUTTER: f32 = 60.0;
+    /// Databases (Pack C): the list of databases 200 wide beside the table.
+    pub const DB_LIST: f32 = 200.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

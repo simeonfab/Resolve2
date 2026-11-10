@@ -117,6 +117,37 @@ pub fn run(t: &mut T) {
         t.check("C-E15: import_pages reports a parent it can't find for that page and files the rest", child_ok && stray["note"].as_str().map_or(false, |n| n.contains("\"No such page\" not found")) && v["pages_with_notes"] == 1, &out);
     }
 
+    // ---- Databases: the CSV import dialog (C-E18)
+    {
+        use crate::import::{csv_append, csv_check, csv_new_database, csv_plan};
+        use crate::model::ColKind;
+        let mut text = String::from("date,staff,hours,task\n");
+        for k in 0..36 {
+            let h = match k {
+                12 => "six".to_string(),
+                13 => "n/a".to_string(),
+                _ => format!("{}", 2 + k % 5),
+            };
+            text.push_str(&format!("2025-11-{:02},Ana,{h},Receipts\n", k % 28 + 1));
+        }
+        text.push_str("2025-12-01,Sam,3,VAT,extra cell\n");
+        let plan = csv_plan(&text).unwrap_or_default();
+        t.check("C-E18: the dialog reads 37 rows and 4 columns and guesses date, number", plan.rows.len() == 37 && plan.header.len() == 4 && plan.kinds[0] == ColKind::Date && plan.kinds[2] == ColKind::Number, format!("{} {:?}", plan.rows.len(), plan.kinds));
+        let (ok, failed) = csv_check(&plan, &plan.kinds);
+        t.check("C-E18: rows with text in a number column, or more cells than columns, are listed with their line and why", ok.len() == 34 && failed.len() == 3 && failed[0] == (14, "\"six\" in hours isn't a number".to_string()) && failed[2].1.starts_with("it has 5 cells"), format!("{} {:?}", ok.len(), failed));
+        let db = csv_new_database("Hours", &plan, &plan.kinds, &ok, false);
+        t.check("C-E18: the rest become a new database with those types", db.rows.len() == 34 && db.columns.iter().map(|c| c.kind).collect::<Vec<_>>() == plan.kinds, db.rows.len());
+        let mut db2 = db.clone();
+        let idx: Vec<usize> = failed.iter().map(|(n, _)| n - 2).collect();
+        let n = csv_append(&mut db2, &plan, &plan.kinds, &idx, true);
+        let hours = db2.columns[2].id.clone();
+        t.check("C-E18: Import them as text keeps the values as they were written", n == 3 && db2.rows.iter().any(|r| r.cells.get(&hours).map_or(false, |v| v == "six")), n);
+        let mut text_kinds = plan.kinds.clone();
+        text_kinds[2] = ColKind::Text;
+        let (ok2, failed2) = csv_check(&plan, &text_kinds);
+        t.check("C-E18: changing a column's type in the dialog changes which rows fail", ok2.len() == 36 && failed2.len() == 1, format!("{} {}", ok2.len(), failed2.len()));
+    }
+
     // ---- Proposal editor (C-E11)
     let full = crate::seed::cafe_proposal();
     let thin = crate::resolve::journey::Proposal { name: full.name.clone(), outcome: full.outcome.clone(), ..Default::default() };

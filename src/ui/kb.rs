@@ -187,6 +187,8 @@ enum KbAct {
     DismissErrors,
     Chip(Option<Kind>),
     NewDatabase,
+    ImportCsv,
+    Crm,
 }
 
 impl App {
@@ -217,7 +219,8 @@ impl App {
         let q = query.trim().to_lowercase();
         let chip: Option<Kind> = self.resolve_ui.kind_filter;
         let shown: Vec<&KbItem> = items.iter().filter(|i| q.is_empty() || i.title.to_lowercase().contains(&q) || i.snippet.to_lowercase().contains(&q)).filter(|i| tab != 3 || chip.map_or(true, |k| i.record_kind == Some(k))).collect();
-        let nothing = n_pages == 0 && n_recs == 0;
+        // the databases tab is empty when there are no databases (C-E18)
+        let nothing = if tab == 4 { items.is_empty() } else { n_pages == 0 && n_recs == 0 };
         let state = match self.view_state {
             ViewState::Full if nothing => ViewState::Empty,
             s => s,
@@ -265,6 +268,22 @@ impl App {
                                 ui.add_space(space::LIB_GAP);
                             }
                             ui.label(RichText::new("Reading the knowledge base…").size(size::SMALL).color(p.dim));
+                            return;
+                        }
+                        ViewState::Empty if tab == 4 => {
+                            ui.add_space(space::S40 * 1.5);
+                            let (a, b) = empty_center_two(ui, p, Icon::Knowledge, "No databases yet.", "A database is a table you sort and filter: clients, hours, prices. Bring in a spreadsheet as CSV, or start from a template.", "Import a CSV", "Blank table");
+                            if a {
+                                acts.push(KbAct::ImportCsv);
+                            }
+                            if b {
+                                acts.push(KbAct::NewDatabase);
+                            }
+                            ui.vertical_centered(|ui| {
+                                if link(ui, p, "Start from the CRM template").clicked() {
+                                    acts.push(KbAct::Crm);
+                                }
+                            });
                             return;
                         }
                         ViewState::Empty => {
@@ -423,6 +442,11 @@ impl App {
                 }
                 KbAct::NewDatabase => {
                     self.new_database();
+                }
+                KbAct::ImportCsv => self.csv_pick(""),
+                KbAct::Crm => {
+                    let id = self.create_db_from_template("crm");
+                    self.go(View::Database(id));
                 }
                 KbAct::Preview(t) => {
                     let key = match &t {
