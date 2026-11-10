@@ -400,9 +400,6 @@ impl App {
 
     pub(super) fn team_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         let roles = team::team(self.store.data.mode);
-        if roles.is_empty() {
-            return;
-        }
         if self.resolve_ui.agent.is_empty() || !roles.iter().any(|r| r.id == self.resolve_ui.agent) {
             // the all-projects view opens on the Product Director in PM, as before
             self.resolve_ui.agent = if self.store.data.mode.is_pm() { "product-director" } else { team::default_role(self.store.data.mode) }.into();

@@ -713,14 +713,13 @@ pub struct Tombstone {
 /// What a workspace is for (Careers brief, 10 Nov 2026, "Modes"). Set when the workspace is
 /// created and never changed; switching workspace switches the mode. The fixed tables (sidebar,
 /// Frameworks, Knowledge tabs, Ask Resolve wording, Help guide, intake targets and rail, AI Team
-/// roles) are picked by it. PM is today's app; YGO is a slot with no content yet.
+/// roles) are picked by it. PM is today's app. Two modes only (YGO was descoped, 10 Nov 2026).
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 #[serde(rename_all = "lowercase")]
 pub enum Mode {
     #[default]
     Pm,
     Careers,
-    Ygo,
 }
 
 impl Mode {
@@ -732,7 +731,6 @@ impl Mode {
         match self {
             Mode::Pm => "PM",
             Mode::Careers => "Careers",
-            Mode::Ygo => "YGO",
         }
     }
 }

@@ -207,7 +207,7 @@ impl App {
         let Some(pid) = self.current_project.clone() else { return false };
         let name = self.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
         let tabs: Vec<&str> = knowledge_tabs(self.mode()).iter().map(|t| t.0).collect();
-        let tab = self.resolve_ui.knowledge_tab.min(tabs.len().saturating_sub(1));
+        let tab = self.resolve_ui.knowledge_tab.min(tabs.len() - 1);
         let today_ = today();
         let mut items = kb_items(&self.store.data, &pid, tab, today_);
         let (n_pages, n_recs) = kb_counts(&self.store.data, &pid);

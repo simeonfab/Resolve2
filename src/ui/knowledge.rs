@@ -67,7 +67,7 @@ impl App {
 
     pub(super) fn knowledge_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         let tabs = knowledge_tabs(self.mode());
-        let mut tab = self.resolve_ui.knowledge_tab.min(tabs.len().saturating_sub(1));
+        let mut tab = self.resolve_ui.knowledge_tab.min(tabs.len() - 1);
         ui.horizontal_wrapped(|ui| {
             for (i, (label, icon)) in tabs.iter().enumerate() {
                 if pill(ui, p, &format!("{icon} {label}"), tab == i).clicked() {

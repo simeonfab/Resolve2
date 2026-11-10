@@ -26,7 +26,6 @@ pub fn team(mode: Mode) -> &'static [Specialist] {
     match mode {
         Mode::Pm => &TEAM,
         Mode::Careers => &TEAM_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
@@ -35,7 +34,6 @@ pub fn default_role(mode: Mode) -> &'static str {
     match mode {
         Mode::Pm => "validation",
         Mode::Careers => "tailor",
-        Mode::Ygo => GENERAL,
     }
 }
 

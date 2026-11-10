@@ -32,6 +32,12 @@ pub fn run() -> i32 {
     let base = std::env::temp_dir().join(format!("resolve2-selftest-{}", std::process::id()));
     let _ = std::fs::create_dir_all(&base);
     store::set_root(base.join("data"));
+    // standing rule: the self-test runs only in its own sandbox folder. If something set the data
+    // folder first (--data-dir, RESOLVE2_DATA), it stops before opening anything.
+    if store::root() != base.join("data") || store::is_real_root(&store::root()) {
+        eprintln!("Refused: the self-test runs only in its sandbox folder ({}), not {}.", base.join("data").display(), store::root().display());
+        return 2;
+    }
     let mut t = T { pass: 0, fail: 0 };
     println!("Resolve 2 self-test in {}", base.display());
 

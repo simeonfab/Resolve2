@@ -23,6 +23,26 @@ pub fn set_root(p: PathBuf) {
     let _ = ROOT.set(p);
 }
 
+/// The real data folder: where the app keeps your workspaces when nothing points it elsewhere.
+pub fn real_root() -> Option<PathBuf> {
+    if let Ok(a) = std::env::var("APPDATA") {
+        return Some(PathBuf::from(a).join("Resolve2"));
+    }
+    std::env::var("HOME").ok().map(|h| PathBuf::from(h).join(".resolve2"))
+}
+
+/// Is `p` the real data folder, or inside it? Standing rule: screenshots and tests run only in a
+/// sandbox folder, so they refuse when this is true (or can't be told).
+pub fn is_real_root(p: &Path) -> bool {
+    let Some(real) = real_root() else { return false };
+    let norm = |p: &Path| {
+        let p = fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+        p.to_string_lossy().trim_start_matches(r"\\?\").trim_end_matches(['\\', '/']).replace('/', "\\").to_lowercase()
+    };
+    let (p, real) = (norm(p), norm(&real));
+    p == real || p.starts_with(&format!("{real}\\"))
+}
+
 pub fn root() -> PathBuf {
     ROOT.get_or_init(|| {
         if let Ok(p) = std::env::var("RESOLVE2_DATA") {

@@ -7,10 +7,12 @@ Every build of Resolve 2 has a version number. The minor number goes up for each
 Careers Step 1: modes, the foundation for Resolve Careers (branch `careers/s1-modes`). Nothing you can see changes yet.
 
 **What changed**
-- Every workspace now has a mode: PM (the app you use today), Careers, or YGO (a slot for later, with nothing in it). A workspace's mode is set when it is made and never changes.
+- Every workspace now has a mode: PM (the app you use today) or Careers. There are two modes only. A workspace's mode is set when it is made and never changes.
 - Every workspace you already have opens as PM, exactly as before. Its file isn't changed: a PM workspace doesn't even write its mode.
 - The sidebar, the Ask Resolve wording, Frameworks, the Knowledge base tabs, the Help guide, the intake's questions and steps, and the AI Team now come from tables picked by the open workspace's mode. PM's tables are the ones you have today. Careers has its own, taken from the Careers brief.
+- My CV is the one home for your master CV, CV templates, the cover letter template and LinkedIn fixes, so Careers Frameworks no longer lists CV templates or the cover letter. The Knowledge base's CVs and cover letters tab holds the copies you sent with each application.
 - There are no Careers screens yet, and no way to make a Careers workspace from the app yet. Those come in the next steps.
+- Screenshots and the self-test now run only in a sandbox folder. A screenshot without its own data folder, or pointed at your real one, is refused, and so is a self-test outside its own folder. Nothing a test runs can open your workspaces.
 
 ## 0.6.0 (10 November 2026)
 

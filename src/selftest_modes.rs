@@ -54,10 +54,8 @@ pub fn run(t: &mut T) {
     let here = Path::new(env!("CARGO_MANIFEST_DIR")).join("shots");
     workspace_files(&here, 4, &mut files);
     let fixtures = files.len();
-    if let Ok(app) = std::env::var("APPDATA") {
-        // the real data folder, read only: nothing is written there
-        workspace_files(&Path::new(&app).join("Resolve2"), 0, &mut files);
-    }
+    // standing rule: tests never open the real data folder, so only the sandboxed test workspaces
+    t.check("the self-test runs in its sandbox, never the real data folder", !crate::store::is_real_root(&crate::store::root()), crate::store::root().display());
     let (mut loaded, mut pm, mut silent, mut same_bytes, mut failed) = (0, 0, 0, 0, vec![]);
     for f in &files {
         let Ok(text) = std::fs::read_to_string(f) else { continue };
@@ -80,11 +78,11 @@ pub fn run(t: &mut T) {
         }
     }
     t.check(
-        "every existing workspace (test data and this PC's own, read only) loads, as PM, and saves without a mode",
+        "every existing test workspace loads, as PM, and saves without a mode",
         !files.is_empty() && failed.is_empty() && pm == loaded && silent == loaded,
-        format!("{} files ({fixtures} test data, {} on this PC): {loaded} loaded, {pm} PM, {silent} save without a mode, {same_bytes} round-trip byte for byte; failed: {failed:?}", files.len(), files.len() - fixtures),
+        format!("{fixtures} files: {loaded} loaded, {pm} PM, {silent} save without a mode, {same_bytes} round-trip byte for byte; failed: {failed:?}"),
     );
-    println!("      {} files ({fixtures} test data, {} on this PC): {loaded} loaded, {pm} PM, {silent} save without a mode, {same_bytes} round-trip byte for byte", files.len(), files.len() - fixtures);
+    println!("      {fixtures} test workspaces: {loaded} loaded, {pm} PM, {silent} save without a mode, {same_bytes} round-trip byte for byte");
 
     // 2. a Careers workspace keeps its mode
     let mut c = WorkspaceData::default();
@@ -139,7 +137,8 @@ pub fn run(t: &mut T) {
     // Projects and Handoffs keep PM's wording (Handoffs: "Same as PM mode")
     t.check("every other Careers screen with a bar has its own placeholder and three suggestions; AI Team has no bar", nav::nav(Mode::Careers).iter().flat_map(|g| g.items.iter()).filter(|i| nav::shows_ask_bar(Some(i.target)) && !["Projects", "Handoffs"].contains(&i.label)).all(|i| !i.ask.placeholder.is_empty() && i.ask.suggestions.len() == 3) && !nav::shows_ask_bar(Some(nav::Target::Sec(nav::Section::AiTeam))), "");
     let fw: Vec<&str> = nav::frameworks(Mode::Careers).iter().map(|f| f.name).collect();
-    t.check("Careers Frameworks: Gates, CV templates, Cover letter, Interview prep, Offers and negotiation, Improvement playbook, Advice", fw == ["Gates", "CV templates", "Cover letter", "Interview prep", "Offers and negotiation", "Improvement playbook", "Advice"] && nav::frameworks(Mode::Careers)[0].read_by == "Reviewer", format!("{fw:?}"));
+    // CV templates and the cover letter template live in My CV only
+    t.check("Careers Frameworks: Gates, Interview prep, Offers and negotiation, Improvement playbook, Advice (templates are in My CV)", fw == ["Gates", "Interview prep", "Offers and negotiation", "Improvement playbook", "Advice"] && nav::frameworks(Mode::Careers)[0].read_by == "Reviewer", format!("{fw:?}"));
     let kt: Vec<&str> = nav::knowledge_tabs(Mode::Careers).iter().map(|t| t.0).collect();
     t.check("Careers Knowledge tabs: CVs and cover letters, Evidence bank, LinkedIn, Job ads, Interview notes, Offers, Advanced: databases", kt == ["CVs and cover letters", "Evidence bank", "LinkedIn", "Job ads", "Interview notes", "Offers", "Advanced: databases"], format!("{kt:?}"));
     let tg: Vec<&str> = journey::targets(Mode::Careers).iter().map(|t| t.1).collect();
@@ -158,8 +157,8 @@ pub fn run(t: &mut T) {
     let gd: Vec<&str> = help::guide(Mode::Careers).iter().map(|g| g.0).collect();
     t.check("Careers guide: one section per Careers screen, Pipeline written out", gd == ["Start a job search", "Home", "Pipeline", "My CV", "Stats", "Tasks", "Interview recorder", "Frameworks", "Knowledge base", "AI Team", "Calendar", "Handoffs"] && help::guide(Mode::Careers)[2].1.contains("### The tracker"), format!("{gd:?}"));
 
-    // 5. the YGO slot has no content
-    t.check("the YGO slot is there with no content", nav::nav(Mode::Ygo).is_empty() && nav::frameworks(Mode::Ygo).is_empty() && nav::knowledge_tabs(Mode::Ygo).is_empty() && help::guide(Mode::Ygo).is_empty() && journey::targets(Mode::Ygo).is_empty() && dashboard::rail_steps(Mode::Ygo).is_empty() && team::team(Mode::Ygo).is_empty(), "");
+    // 5. two modes only: a mode the app doesn't know is refused, never read as PM
+    t.check("two modes only: pm and careers; any other mode is refused", serde_json::from_str::<Mode>("\"pm\"").is_ok() && serde_json::from_str::<Mode>("\"careers\"").is_ok() && serde_json::from_str::<Mode>("\"ygo\"").is_err(), "");
 
     // 6. no em dash in the new copy
     let mut copy: Vec<&str> = vec![];

@@ -24,7 +24,6 @@ pub fn targets(mode: Mode) -> &'static [IntakeTarget] {
     match mode {
         Mode::Pm => &TARGETS,
         Mode::Careers => &TARGETS_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
@@ -384,9 +383,6 @@ impl Intake {
     pub fn coverage(&self) -> f32 {
         let c = self.covered();
         let ts = self.targets();
-        if ts.is_empty() {
-            return 0.0;
-        }
         ts.iter().filter(|t| c.iter().any(|x| x == t.0)).count() as f32 / ts.len() as f32
     }
     /// The coverage targets for this intake's mode.

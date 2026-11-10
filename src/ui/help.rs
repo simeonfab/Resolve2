@@ -13,12 +13,11 @@ pub const TUTORIAL: &str = include_str!("../../TUTORIAL.md");
 /// heading start).
 pub type GuideSection = (&'static str, &'static str, &'static [&'static str]);
 
-/// The Help guide in this mode (Careers brief, "Help"). YGO is a slot with no content yet.
+/// The Help guide in this mode (Careers brief, "Help").
 pub fn guide(mode: Mode) -> &'static [GuideSection] {
     match mode {
         Mode::Pm => GUIDE,
         Mode::Careers => GUIDE_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
@@ -222,9 +221,6 @@ impl App {
     pub fn help_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         let mode = self.mode();
         let g = guide(mode);
-        if g.is_empty() {
-            return;
-        }
         // the Welcome and Quick start cards are PM's guide's own first two sections
         let pm = mode.is_pm();
         let mut sel: usize = self.temp.get("help_section").and_then(|s| s.parse().ok()).unwrap_or(0).min(g.len() - 1);

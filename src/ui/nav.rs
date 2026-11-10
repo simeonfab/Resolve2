@@ -91,12 +91,11 @@ const ASK_C_KNOWLEDGE: AskCopy = AskCopy { placeholder: "Find or capture somethi
 const ASK_C_CALENDAR: AskCopy = AskCopy { placeholder: "Ask about your schedule", suggestions: &["Plan my day", "Which interviews are coming up?", "Which closing dates are this week?"] };
 
 /// The sidebar groups in this mode (Careers brief, "Modes"): only the middle group and the Ask
-/// wording differ between PM and Careers. YGO is a slot with no content yet.
+/// wording differ between PM and Careers.
 pub fn nav(mode: Mode) -> &'static [NavGroup] {
     match mode {
         Mode::Pm => NAV,
         Mode::Careers => NAV_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
@@ -117,11 +116,11 @@ pub const NAV_CAREERS: &[NavGroup] = &[
         picker: true,
         items: &[
             NavItem { label: "Pipeline", icon: Icon::Roadmap, target: Target::Sec(Section::Pipeline), hint: "Every role, by stage", ask: ASK_C_PIPELINE },
-            NavItem { label: "My CV", icon: Icon::Doc, target: Target::Sec(Section::MyCv), hint: "Your master CV, templates and LinkedIn fixes", ask: ASK_C_CV },
+            NavItem { label: "My CV", icon: Icon::Doc, target: Target::Sec(Section::MyCv), hint: "Your master CV, CV and cover letter templates, LinkedIn fixes", ask: ASK_C_CV },
             NavItem { label: "Stats", icon: Icon::Overview, target: Target::Sec(Section::Stats), hint: "Where you're dropping off, and against your target", ask: ASK_C_STATS },
             NavItem { label: "Tasks", icon: Icon::Tasks, target: Target::Tasks, hint: "Follow-ups and everything else to do", ask: ASK_C_TASKS },
             NavItem { label: "Interview recorder", icon: Icon::Resume, target: Target::Sec(Section::Recorder), hint: "Record an interview and see how each answer went", ask: ASK_C_RECORDER },
-            NavItem { label: "Frameworks", icon: Icon::Frameworks, target: Target::Sec(Section::Frameworks), hint: "Gates, templates, prep and the playbook", ask: ASK_C_FRAMEWORKS },
+            NavItem { label: "Frameworks", icon: Icon::Frameworks, target: Target::Sec(Section::Frameworks), hint: "Gates, interview prep, offers and the playbook", ask: ASK_C_FRAMEWORKS },
             NavItem { label: "Knowledge base", icon: Icon::Knowledge, target: Target::Sec(Section::Knowledge), hint: "CVs, evidence bank, LinkedIn, job ads, interview notes, offers", ask: ASK_C_KNOWLEDGE },
         ],
     },
@@ -210,15 +209,14 @@ pub fn frameworks(mode: Mode) -> &'static [Framework] {
     match mode {
         Mode::Pm => FRAMEWORKS,
         Mode::Careers => FRAMEWORKS_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
 /// Careers mode's registry, in order (Careers brief, "Frameworks"); it replaces Hypothesis Zero.
+/// CV templates and the cover letter template live in My CV only (decided 10 Nov 2026): My CV is
+/// the one home for the master CV, CV templates, the cover letter template and LinkedIn fixes.
 pub const FRAMEWORKS_CAREERS: &[Framework] = &[
     Framework { id: "gates", name: "Gates", about: "A list of rules, each a Hard gate or a Preference, with why it matters. Set by intake. A hard gate fails the job. A preference only lowers its score.", read_by: "Reviewer" },
-    Framework { id: "cv-templates", name: "CV templates", about: "Each template with the roles it suits. Open, edit, set as default.", read_by: "Tailor" },
-    Framework { id: "cover-letter", name: "Cover letter", about: "The template and its structure.", read_by: "Tailor" },
     Framework { id: "interview-prep", name: "Interview prep", about: "The Cockpit sheet (running order, key numbers, answers on pay and logistics, likely objections, questions to ask), the 90-day plan, the six-month plan and technical-depth drills.", read_by: "Coach" },
     Framework { id: "offers", name: "Offers and negotiation", about: "Offer comparison, market rate check and the counter-offer plan.", read_by: "Negotiator" },
     Framework { id: "playbook", name: "Improvement playbook", about: "For each weak stage: likely causes, the fix, and which role owns it.", read_by: "Stats" },
@@ -241,11 +239,11 @@ pub fn knowledge_tabs(mode: Mode) -> &'static [(&'static str, &'static str)] {
     match mode {
         Mode::Pm => KNOWLEDGE_TABS,
         Mode::Careers => KNOWLEDGE_TABS_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
-/// Careers mode's Knowledge base tabs (Careers brief, "Knowledge base").
+/// Careers mode's Knowledge base tabs (Careers brief, "Knowledge base"). "CVs and cover letters"
+/// holds the copies sent with each application; the master CV and templates are in My CV.
 pub const KNOWLEDGE_TABS_CAREERS: &[(&str, &str)] = &[("CVs and cover letters", "📄"), ("Evidence bank", "◆"), ("LinkedIn", "📄"), ("Job ads", "📄"), ("Interview notes", "📄"), ("Offers", "📄"), ("Advanced: databases", "▦")];
 
 /// PM mode's Knowledge base tabs, as tabs on the Knowledge screen.

@@ -61,13 +61,11 @@ fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
 
-/// The intake rail's four steps in this mode: (name, the line under it). YGO is a slot with no
-/// content yet.
+/// The intake rail's four steps in this mode: (name, the line under it).
 pub fn rail_steps(mode: Mode) -> &'static [(&'static str, &'static str)] {
     match mode {
         Mode::Pm => &RAIL_STEPS,
         Mode::Careers => &RAIL_STEPS_CAREERS,
-        Mode::Ygo => &[],
     }
 }
 
