@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Intake 06, next move</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8B4A2A}a:hover{color:#6E3A20}
+.app{font-family:Inter,'Segoe UI',system-ui,sans-serif;color:#1A1A18;background:#F2EDE4;font-size:14px;line-height:1.5}
+.serif{font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.2px}
+.side{flex:0 0 248px;background:#1E1E1A;color:#B4AFA3;display:flex;flex-direction:column;padding:12px;box-sizing:border-box;gap:2px}
+.ni{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:6px;color:#B4AFA3;font-size:13.5px;text-decoration:none}
+.ni:hover{background:#2F2D28;color:#F5F1E8}
+.ni.on{background:#393320;color:#F5F1E8}
+.ni.on svg{stroke:#C8A040}
+.grp{font-size:11px;letter-spacing:.44px;color:#A39E92;font-weight:600;padding:16px 10px 6px}
+.card{background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:16px;box-sizing:border-box}
+.dark{background:#1A1A18;color:#F5F1E8;border-radius:10px;padding:24px;box-sizing:border-box}
+.eb{font-size:12px;font-weight:600;color:#8B4A2A;letter-spacing:.5px;text-transform:uppercase}
+.ebd{font-size:12px;font-weight:600;color:#C97A4A;letter-spacing:.5px;text-transform:uppercase}
+.ch{font-size:12px;font-weight:600;color:#4A4A44;letter-spacing:.5px;text-transform:uppercase}
+.dim{color:#4A4A44}.faint{color:#6B6A62}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:6px;font:600 14px Inter,system-ui,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.bp{background:#C8A040;color:#1A1A18}
+.bs{background:#fff;color:#1A1A18;border-color:#DDD8CE}
+.bd{background:#1A1A18;color:#F5F1E8}
+.bg{background:transparent;color:#F5F1E8;border-color:#4A4840}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;font-size:11px;font-weight:600;white-space:nowrap}
+.tg{background:#E8EFE3;color:#3F5A33}
+.ta{background:#FBF5E6;color:#7A5B12}
+.tt{background:#F5E8E1;color:#8B4A2A}
+.tn{background:#EAE4D9;color:#4A4A44}
+.row{display:flex;align-items:center;gap:10px}
+.chip{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:15px;background:#fff;border:1px solid #DDD8CE;font:500 13px Inter,system-ui,sans-serif;color:#1A1A18;cursor:pointer}
+.bar{height:6px;border-radius:3px;background:#E4DED2;overflow:hidden}
+.bar>div{height:100%;background:#C8A040;border-radius:3px}
+.tab{height:34px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#4A4A44;cursor:pointer}
+.tab.on{color:#1A1A18;border-bottom-color:#C8A040;font-weight:600}
+.seg{display:inline-flex;background:#EAE4D9;border-radius:6px;padding:2px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:5px;background:transparent;font:500 13px Inter,system-ui,sans-serif;color:#4A4A44}
+.seg button.on{background:#fff;color:#1A1A18;font-weight:600}
+.li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEE9DF}
+</style>
+</helmet>
+<div class="app" style="display:flex;flex-wrap:wrap;width:100%;min-height:820px"><header style="flex:0 0 100%;height:56px;background:#1A1A18;color:#F5F1E8;display:flex;align-items:center;gap:14px;padding:0 24px;box-sizing:border-box"><span class="serif" style="font-size:22px">Resolve</span><span class="tag" style="background:#393320;color:#E9D9A8">Careers</span><span style="flex:1"></span><span style="font-size:13px;color:#B4AFA3">Saved just now</span><button class="btn bg" style="height:32px">Save and exit</button></header><aside style="flex:0 0 248px;background:#EAE4D9;padding:32px 24px;box-sizing:border-box"><div class="ch" style="margin-bottom:16px">Your job search</div><ol style="list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:18px"><li style="display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:#4A4A44"><span style="width:24px;height:24px;border-radius:12px;background:#5E7D4F;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Get started</li><li style="display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:#4A4A44"><span style="width:24px;height:24px;border-radius:12px;background:#5E7D4F;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Bring it in</li><li style="display:flex;align-items:center;gap:12px;font-size:14px;font-weight:500;color:#4A4A44"><span style="width:24px;height:24px;border-radius:12px;background:#5E7D4F;display:flex;align-items:center;justify-content:center"><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3.5 8.5l3 3 6-7"/></svg></span>Confirm understanding</li><li style="display:flex;align-items:center;gap:12px;font-size:14px;font-weight:600;color:#1A1A18"><span style="width:24px;height:24px;border-radius:12px;background:#C8A040;color:#1A1A18;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700">4</span>Your kit</li></ol></aside><main style="flex:999 1 560px;min-width:0;padding:40px 48px;box-sizing:border-box;display:flex;gap:32px;flex-wrap:wrap;align-items:flex-start"><div style="flex:999 1 520px;min-width:0;max-width:720px;display:flex;flex-direction:column;gap:20px"><div class="eb">Your next move</div><h1 class="serif" style="margin:0;font-size:36px;line-height:1.1">Here's your next move.</h1>
+<div class="dark" style="display:flex;flex-direction:column;gap:8px"><div class="ebd">Do this first</div><div class="serif" style="font-size:28px;line-height:1.15">Fix your CV headline</div>
+<div style="color:#D8D3C7;font-size:14.5px">Why: it says Senior Product Owner, and every role you want says Head of Product. Reviewers read the headline first.</div></div>
+<div style="display:flex;gap:12px;flex-wrap:wrap"><div class="card" style="flex:1 1 180px;border-color:#C8A040;box-shadow:0 0 0 2px #FBF5E6"><div class="ch">Now</div><div style="font-weight:600;font-size:15px;margin-top:2px">Get your kit ready</div><div class="dim" style="font-size:13px">Headline, CV templates, gates, weekly target</div></div><div class="card" style="flex:1 1 180px;"><div class="ch">Next</div><div style="font-weight:600;font-size:15px;margin-top:2px">Start applying</div><div class="dim" style="font-size:13px">Daily hunt, 10 a week, follow-ups</div></div><div class="card" style="flex:1 1 180px;"><div class="ch">Later</div><div style="font-weight:600;font-size:15px;margin-top:2px">Prepare for interviews</div><div class="dim" style="font-size:13px">Cockpit sheets, drills, the recorder</div></div></div>
+<div class="row"><button class="btn bp">Looks right →</button><button class="btn bs">Change it</button></div></div></main></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

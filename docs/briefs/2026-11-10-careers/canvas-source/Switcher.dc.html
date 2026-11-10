@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Workspace switcher</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8B4A2A}a:hover{color:#6E3A20}
+.app{font-family:Inter,'Segoe UI',system-ui,sans-serif;color:#1A1A18;background:#F2EDE4;font-size:14px;line-height:1.5}
+.serif{font-family:'DM Serif Display',Georgia,serif;font-weight:400;letter-spacing:-.2px}
+.side{flex:0 0 248px;background:#1E1E1A;color:#B4AFA3;display:flex;flex-direction:column;padding:12px;box-sizing:border-box;gap:2px}
+.ni{display:flex;align-items:center;gap:10px;height:32px;padding:0 10px;border-radius:6px;color:#B4AFA3;font-size:13.5px;text-decoration:none}
+.ni:hover{background:#2F2D28;color:#F5F1E8}
+.ni.on{background:#393320;color:#F5F1E8}
+.ni.on svg{stroke:#C8A040}
+.grp{font-size:11px;letter-spacing:.44px;color:#A39E92;font-weight:600;padding:16px 10px 6px}
+.card{background:#fff;border:1px solid #DDD8CE;border-radius:10px;padding:16px;box-sizing:border-box}
+.dark{background:#1A1A18;color:#F5F1E8;border-radius:10px;padding:24px;box-sizing:border-box}
+.eb{font-size:12px;font-weight:600;color:#8B4A2A;letter-spacing:.5px;text-transform:uppercase}
+.ebd{font-size:12px;font-weight:600;color:#C97A4A;letter-spacing:.5px;text-transform:uppercase}
+.ch{font-size:12px;font-weight:600;color:#4A4A44;letter-spacing:.5px;text-transform:uppercase}
+.dim{color:#4A4A44}.faint{color:#6B6A62}
+.btn{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 14px;border-radius:6px;font:600 14px Inter,system-ui,sans-serif;border:1px solid transparent;cursor:pointer;white-space:nowrap;text-decoration:none;box-sizing:border-box}
+.bp{background:#C8A040;color:#1A1A18}
+.bs{background:#fff;color:#1A1A18;border-color:#DDD8CE}
+.bd{background:#1A1A18;color:#F5F1E8}
+.bg{background:transparent;color:#F5F1E8;border-color:#4A4840}
+.tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:11px;font-size:11px;font-weight:600;white-space:nowrap}
+.tg{background:#E8EFE3;color:#3F5A33}
+.ta{background:#FBF5E6;color:#7A5B12}
+.tt{background:#F5E8E1;color:#8B4A2A}
+.tn{background:#EAE4D9;color:#4A4A44}
+.row{display:flex;align-items:center;gap:10px}
+.chip{display:inline-flex;align-items:center;height:30px;padding:0 12px;border-radius:15px;background:#fff;border:1px solid #DDD8CE;font:500 13px Inter,system-ui,sans-serif;color:#1A1A18;cursor:pointer}
+.bar{height:6px;border-radius:3px;background:#E4DED2;overflow:hidden}
+.bar>div{height:100%;background:#C8A040;border-radius:3px}
+.tab{height:34px;padding:0 14px;border:0;border-bottom:2px solid transparent;background:transparent;font:500 14px Inter,system-ui,sans-serif;color:#4A4A44;cursor:pointer}
+.tab.on{color:#1A1A18;border-bottom-color:#C8A040;font-weight:600}
+.seg{display:inline-flex;background:#EAE4D9;border-radius:6px;padding:2px}
+.seg button{height:30px;padding:0 12px;border:0;border-radius:5px;background:transparent;font:500 13px Inter,system-ui,sans-serif;color:#4A4A44}
+.seg button.on{background:#fff;color:#1A1A18;font-weight:600}
+.li{display:flex;align-items:center;gap:10px;padding:10px 0;border-top:1px solid #EEE9DF}
+</style>
+</helmet>
+<div class="app" style="position:relative;display:flex;flex-wrap:wrap;width:100%;min-height:1040px"><nav class="side" aria-label="Main"><button style="display:flex;align-items:center;gap:10px;height:44px;padding:0 8px;border:0;border-radius:8px;background:transparent;color:#F5F1E8;cursor:pointer;font:inherit;text-align:left" aria-label="Switch workspace"><span style="width:26px;height:26px;border-radius:6px;background:#C8A040;color:#1A1A18;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">J</span><span style="flex:1;font-weight:600;font-size:14px">Job search</span><span class="tag" style="background:#393320;color:#E9D9A8;height:20px">Careers</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#B4AFA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6.5l3 3 3-3"/></svg></button><div style="display:flex;gap:8px;padding:8px 0 4px"><button class="btn bp" style="flex:1;height:34px;font-size:13px;justify-content:center"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>Add task</button><button class="btn" style="flex:1;height:34px;font-size:13px;justify-content:center;background:#292723;color:#F5F1E8;border-color:#37352F"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C8A040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l1.4 4.6L14 8l-4.6 1.4L8 14l-1.4-4.6L2 8l4.6-1.4z"/></svg>Ask AI</button></div><div class="grp">WORKSPACE</div><a class="ni on" href="#" aria-current="page"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l5-4 5 4v5H3z"/></svg><span>Home</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="9" rx="1.5"/><path d="M2.5 6.5h11"/></svg><span>Projects</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"/><path d="M2.5 7h11M5.5 2v3M10.5 2v3"/></svg><span>Calendar</span></a><div class="grp">YOUR SEARCH</div><button style="display:flex;align-items:center;gap:8px;height:34px;margin:0 0 4px;padding:0 10px;border:1px solid #37352F;border-radius:6px;background:#292723;color:#F5F1E8;font:500 13px Inter,system-ui,sans-serif;cursor:pointer" aria-label="Choose search"><span style="width:8px;height:8px;border-radius:4px;background:#5E7D4F"></span><span style="flex:1;text-align:left">Head of Product search</span><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#B4AFA3" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6.5l3 3 3-3"/></svg></button><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3" width="3" height="10" rx="1"/><rect x="6.5" y="3" width="3" height="7" rx="1"/><rect x="10.5" y="3" width="3" height="4" rx="1"/></svg><span>Pipeline</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 2.5h5l3 3v8H4z"/><path d="M9 2.5v3h3M6 8.5h4M6 11h4"/></svg><span>My CV</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 13V8M8 13V4M13 13V10"/></svg><span>Stats</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="2.5" width="11" height="11" rx="2"/><path d="M5.5 8l2 2 3-4"/></svg><span>Tasks</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="4" height="7" rx="2"/><path d="M4 8a4 4 0 008 0M8 12v2"/></svg><span>Interview recorder</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 4h10M3 8h10M3 12h6"/></svg><span>Frameworks</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3.5h4l1 1.5h5v8H3z"/></svg><span>Knowledge base</span></a><div class="grp">COLLABORATION</div><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="6" r="2.2"/><circle cx="11" cy="7" r="1.8"/><path d="M2.5 13c.5-2.2 2-3.2 3.5-3.2S9 10.8 9.5 13M9.8 13c.3-1.5 1.1-2.3 2.2-2.3s1.7.8 2 2.3"/></svg><span>AI Team</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h8M8 5l3 3-3 3"/></svg><span>Handoffs</span></a><div style="flex:1"></div><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="2.2"/><path d="M8 2v2M8 12v2M2 8h2M12 8h2M3.8 3.8l1.4 1.4M10.8 10.8l1.4 1.4M3.8 12.2l1.4-1.4M10.8 5.2l1.4-1.4"/></svg><span>Settings</span></a><a class="ni" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="5.5"/><path d="M6.5 6.5a1.5 1.5 0 113 0c0 1-1.5 1.2-1.5 2.3M8 11v.2"/></svg><span>Help</span></a><div style="display:flex;align-items:center;gap:10px;padding:10px;border-top:1px solid #37352F;margin-top:6px"><span style="width:28px;height:28px;border-radius:14px;background:#37352F;color:#F5F1E8;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600">S</span><span style="color:#F5F1E8;font-size:13px">Simeon</span></div></nav><main style="flex:999 1 560px;min-width:0;padding:30px 40px 22px;box-sizing:border-box;display:flex;flex-direction:column;gap:20px"><div style="opacity:.35">
+<div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap">
+ <div style="flex:1;min-width:300px"><h1 class="serif" style="margin:0;font-size:32px;line-height:1.15">Good morning, Simeon</h1>
+ <p class="dim" style="margin:4px 0 0;font-size:14px">Friday 6 November · 4 of 10 applied this week · 1 interview · 2 closing soon</p></div>
+ <button class="btn bs"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3v10M3 8h10"/></svg>New project</button>
+</div>
+<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:flex-start">
+ <div style="flex:999 1 520px;min-width:0;display:flex;flex-direction:column;gap:16px">
+  <section class="card" aria-label="Add a job" style="display:flex;flex-direction:column;gap:12px">
+   <div class="row"><span class="ch">Add a job</span><span class="faint" style="font-size:12.5px">Paste the ad text, a link, or drop a screenshot</span></div>
+   <div style="border:1px dashed #CFC8BA;border-radius:8px;background:#F7F3EC;padding:12px 14px;font-size:13.5px;color:#4A4A44;line-height:1.45">Director of Product, Identity · Halden Bank · London (hybrid, 2 days) · £ competitive · Lead the product team across customer login, verification and account recovery…</div>
+   <div style="border-top:1px solid #EEE9DF;padding-top:12px;display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap">
+    <span class="tag tg" style="height:26px;font-size:12px">Apply</span>
+    <div style="flex:1;min-width:240px"><div style="font-weight:600;font-size:14px">Passes all 5 hard gates. Strong match on identity and platform.</div>
+    <div class="dim" style="font-size:12.5px">Deciding gate: No more than 2 office days a week · pass</div></div>
+   </div>
+   <div class="row" style="flex-wrap:wrap"><button class="btn bp">Tailor and apply →</button><button class="btn bs">Save for later</button><button class="btn bs">Skip</button><span style="flex:1"></span><a href="Pipeline.dc.html" style="font-size:13px">Open in Pipeline →</a></div>
+  </section>
+  <section class="dark" style="display:flex;flex-direction:column;gap:12px">
+   <div class="ebd">Your highest-value move · Head of Product search</div>
+   <h2 class="serif" style="margin:0;font-size:28px;line-height:1.15">Tailor your CV for the Fernbank role closing Friday</h2>
+   <p style="margin:0;color:#D8D3C7;font-size:14.5px">It passed every gate on Tuesday and closes in 2 days. Tailor has your Platform CV template and 6 matching proof points ready.</p>
+   <div class="row" style="padding-top:4px"><button class="btn bp">Start this →</button><button class="btn bg">Plan my day</button></div>
+  </section>
+  <section class="card">
+   <div class="row" style="margin-bottom:6px"><span style="font-weight:600;font-size:13px;flex:1">Today</span><a href="#" style="font-size:12.5px">Open calendar →</a></div>
+   <div class="li"><span style="width:52px;font-size:13px;font-weight:600">10:30</span><span style="width:4px;height:28px;border-radius:2px;background:#8B4A2A"></span><div style="flex:1"><div style="font-size:14px">Screen call · Corvid Labs, Head of Product</div><div class="faint" style="font-size:12.5px">Interviews · 30 min</div></div></div>
+   <div class="li"><span style="width:52px;font-size:13px;font-weight:600">All day</span><span style="width:4px;height:28px;border-radius:2px;background:#C8A040"></span><div style="flex:1"><div style="font-size:14px">Closing date · Fernbank Software, Director of Product</div><div class="faint" style="font-size:12.5px">Closing dates</div></div></div>
+   <div class="li"><span style="width:52px;font-size:13px;font-weight:600">Today</span><span style="width:4px;height:28px;border-radius:2px;background:#5E7D4F"></span><div style="flex:1"><div style="font-size:14px">Follow up on Tallis Group application</div><div class="faint" style="font-size:12.5px">Follow-ups · Task</div></div></div>
+  </section>
+ </div>
+ <div style="flex:1 1 300px;min-width:280px;max-width:340px;display:flex;flex-direction:column;gap:12px">
+  <section class="card"><div class="ch" style="margin-bottom:8px">This week</div>
+   <div class="row"><span class="serif" style="font-size:28px;line-height:1">4</span><span class="dim" style="font-size:13px">of 10 applied</span></div>
+   <div class="bar" style="margin:10px 0 12px"><div style="width:40%"></div></div>
+   <div class="row" style="border-top:1px solid #EEE9DF;padding-top:10px"><span style="flex:1;font-size:13px">Today's hunt · 12 of 20 found</span></div>
+   <button class="btn bs" style="width:100%;justify-content:center;margin-top:8px"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#C8A040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l1.4 4.6L14 8l-4.6 1.4L8 14l-1.4-4.6L2 8l4.6-1.4z"/></svg>Start my daily hunt</button></section>
+  <section class="card"><div class="ch" style="margin-bottom:4px">Waiting to hear back</div>
+   <div class="li" style="font-size:13.5px"><span style="flex:1">Tallis Group · Head of Product</span><span class="tag tt">14 days</span></div>
+   <div class="li" style="font-size:13.5px"><span style="flex:1">Mosaic Retail · Product Director</span><span class="tag ta">9 days</span></div>
+   <div class="li" style="font-size:13.5px"><span style="flex:1">Quayside Energy · Head of Product</span><span class="tag tn">5 days</span></div></section>
+  <section class="card"><div class="row" style="margin-bottom:8px"><span class="ch" style="flex:1">Pipeline</span><a href="Pipeline.dc.html" style="font-size:12.5px">All →</a></div>
+   <div style="display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;text-align:center">
+    <div><div style="font-weight:600;font-size:17px">8</div><div class="faint" style="font-size:11.5px">Sourced</div></div>
+    <div><div style="font-weight:600;font-size:17px">11</div><div class="faint" style="font-size:11.5px">Applied</div></div>
+    <div><div style="font-weight:600;font-size:17px">3</div><div class="faint" style="font-size:11.5px">Screen</div></div>
+    <div><div style="font-weight:600;font-size:17px">2</div><div class="faint" style="font-size:11.5px">Interview</div></div></div></section>
+  <section class="card" style="background:#FBF5E6;border-color:#E9D9A8"><div class="row"><span class="serif" style="font-size:24px;line-height:1">5</span><span style="flex:1;font-size:13px">new from Scout, waiting for keep or skip</span><button class="btn bs" style="height:30px">Review →</button></div></section>
+  <section class="card"><div class="ch" style="margin-bottom:4px">Needs a check</div>
+   <div class="li" style="font-size:13px;align-items:flex-start"><span style="flex:1">Email from Mosaic Retail reads like a rejection. Move to Closed?</span></div>
+   <div class="row"><button class="btn bs" style="height:30px">Yes, move it</button><button class="btn bs" style="height:30px">Not a rejection</button></div></section>
+ </div>
+</div><div style="margin-top:auto;padding-top:8px;display:flex;flex-direction:column;gap:10px;max-width:760px;width:100%;align-self:center"><div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center"><button class="chip">Review this job ad</button><button class="chip">What should I apply to today?</button><button class="chip">Start my daily hunt</button></div><label style="display:flex;align-items:center;gap:10px;height:48px;padding:0 8px 0 16px;background:#fff;border:1px solid #DDD8CE;border-radius:24px;box-shadow:0 2px 10px rgba(26,26,24,.06)"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C8A040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l1.4 4.6L14 8l-4.6 1.4L8 14l-1.4-4.6L2 8l4.6-1.4z"/></svg><input aria-label="Ask Resolve" placeholder="Add a job, or ask what's next" style="flex:1;border:0;outline:0;font:400 14px Inter,system-ui,sans-serif;color:#1A1A18;background:transparent"><button class="btn" aria-label="Speak" style="width:36px;padding:0;justify-content:center;border-radius:18px;background:#F2EDE4"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#1A1A18" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="6" y="2.5" width="4" height="7" rx="2"/><path d="M4 8a4 4 0 008 0M8 12v2"/></svg></button></label></div></div></main><div role="menu" style="position:absolute;top:56px;left:12px;width:300px;background:#292723;border:1px solid #37352F;border-radius:10px;box-shadow:0 12px 32px rgba(0,0,0,.35);padding:6px;color:#F5F1E8;font-size:14px;z-index:2"><div style="font-size:11px;letter-spacing:.44px;color:#A39E92;font-weight:600;padding:8px 10px 4px">WORKSPACES</div><button role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:38px;padding:0 10px;border:0;border-radius:6px;background:#393320;color:#F5F1E8;font:500 14px Inter,system-ui,sans-serif;text-align:left"><span style="width:22px;height:22px;border-radius:5px;background:#C8A040;color:#1A1A18;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">J</span><span style="flex:1">Job search</span><span class="tag" style="background:#37352F;color:#E9D9A8;height:20px">Careers</span></button><button role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:38px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#F5F1E8;font:500 14px Inter,system-ui,sans-serif;text-align:left"><span style="width:22px;height:22px;border-radius:5px;background:#B4AFA3;color:#1A1A18;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">P</span><span style="flex:1">Personal</span><span class="tag" style="background:#37352F;color:#E9D9A8;height:20px">PM</span></button><button role="menuitem" style="display:flex;align-items:center;gap:10px;width:100%;height:38px;padding:0 10px;border:0;border-radius:6px;background:transparent;color:#F5F1E8;font:500 14px Inter,system-ui,sans-serif;text-align:left"><span style="width:22px;height:22px;border-radius:5px;background:#B4AFA3;color:#1A1A18;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px">R</span><span style="flex:1">Response Game Studio</span><span class="tag" style="background:#37352F;color:#E9D9A8;height:20px">PM</span></button><div style="border-top:1px solid #37352F;margin:6px 0"></div><a href="Intake01.dc.html" style="display:flex;align-items:center;gap:10px;height:38px;padding:0 10px;color:#F5F1E8;text-decoration:none"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="#C8A040" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2l1.4 4.6L14 8l-4.6 1.4L8 14l-1.4-4.6L2 8l4.6-1.4z"/></svg>Start something new with Resolve</a></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1040}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
