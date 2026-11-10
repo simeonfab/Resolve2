@@ -20,7 +20,7 @@ mod team;
 pub mod testlab;
 pub mod dashboard;
 pub mod plan;
-mod help;
+pub mod help;
 mod assistant;
 mod databases;
 mod pages;
@@ -29,6 +29,7 @@ pub mod roadmap;
 pub mod frameworks;
 pub mod kb;
 pub mod csv_dialog;
+pub mod settings_page;
 pub mod proposal_editor;
 pub(crate) mod settings;
 pub mod tasks;
@@ -268,6 +269,8 @@ pub struct App {
     pub import: import_ui::ImportUi,
     /// The CSV import dialog and the rows of the last import that didn't go in (C-E18).
     pub csv: csv_dialog::CsvUi,
+    /// The Report a problem dialog (C-E23).
+    pub report: help::ReportUi,
     /// One toast at a time (B-E10).
     pub toaster: toast::Toaster,
     /// --state full|empty|loading|error: which state views draw (screenshots of the four states).
@@ -315,6 +318,7 @@ impl App {
             .and_then(|w| reg.find(w).cloned())
             // Test Intake keeps all runs in the sandbox's "Personal" workspace
             .or_else(|| if opts.testlab { reg.find("Personal").cloned() } else { None })
+            .or_else(|| reg.settings.open_with.as_deref().and_then(|w| reg.find(w).cloned()))
             .or_else(|| reg.settings.last_workspace.as_deref().and_then(|w| reg.find(w).cloned()))
             .unwrap_or_else(|| reg.workspaces[0].clone());
         let mut store = Store::open(meta);
@@ -381,6 +385,7 @@ impl App {
             connect: connect::ConnectUi::default(),
             import: import_ui::ImportUi::default(),
             csv: csv_dialog::CsvUi::default(),
+            report: help::ReportUi::default(),
             toaster: toast::Toaster::default(),
             view_state: ViewState::default(),
             no_save: false,
@@ -610,6 +615,52 @@ impl App {
                 app.reg.settings.ai_model = m.clone();
             }
         }
+        // Settings screenshots (C-E21), in memory only: full = Claude Code connected with the
+        // canvas's prices and limit; empty = no AI set up, phone off, no sync folder, one
+        // workspace; loading = Claude Code being tested; error = the test got no reply
+        if app.shot.is_some() && app.view == View::Settings {
+            let s = &mut app.reg.settings;
+            s.price_in_per_m = 3.0;
+            s.price_out_per_m = 15.0;
+            s.monthly_budget = 10.0;
+            match app.view_state {
+                ViewState::Empty => {
+                    s.ai_setup_done = false;
+                    app.store.settings.server_enabled = false;
+                    app.store.settings.sync_dir.clear();
+                    app.store.settings.last_sync = 0;
+                    let cur = app.store.meta.id.clone();
+                    app.reg.workspaces.retain(|w| w.id == cur);
+                }
+                _ => {
+                    s.ai_provider = "claude-code".into();
+                    s.ai_setup_done = app.view_state == ViewState::Full;
+                    app.store.settings.server_enabled = true;
+                    app.store.settings.sync_dir = "C:\\Users\\Simeon\\OneDrive\\Resolve".into();
+                    // on the screenshot's own clock: today at 14:02
+                    app.store.settings.last_sync = today().and_hms_opt(14, 2, 0).and_then(|d| d.and_local_timezone(chrono::Local).single()).map(|d| d.timestamp_millis()).unwrap_or_else(now_ms);
+                    if app.reg.workspaces.len() < 2 {
+                        let mut w = app.store.meta.clone();
+                        w.id = "sample-work".into();
+                        w.name = "Work".into();
+                        w.color = crate::ui::theme::PICK_COLOURS[3];
+                        app.reg.workspaces.push(w);
+                    }
+                }
+            }
+            match app.view_state {
+                ViewState::Loading => {
+                    let (tx, rx) = std::sync::mpsc::channel();
+                    std::mem::forget(tx);
+                    app.connect.test_rx = Some(("claude-code", rx));
+                    app.connect.test_started = app.now;
+                }
+                ViewState::Error => {
+                    app.connect.results.insert("claude-code", Err("It's installed but not signed in. Open a terminal, run claude once and sign in, then press Test again.".into()));
+                }
+                _ => {}
+            }
+        }
         match opts.open.as_deref() {
             Some("ask") => app.page_ui.ai_open = true,
             Some("plan") => app.open_plan_day(),
@@ -645,6 +696,22 @@ impl App {
             }
             Some("kb-add") => {
                 app.temp.insert("kb_add".into(), "-10".into());
+            }
+            // the Report a problem dialog: written in, copying, copied, or the clipboard error
+            Some(o) if o.starts_with("report") => {
+                app.open_report();
+                app.report.text = "The roadmap didn't save when I moved a theme to Next.".into();
+                match o {
+                    "report-copying" => {
+                        let (tx, rx) = std::sync::mpsc::channel();
+                        std::mem::forget(tx);
+                        app.report.job = Some(rx);
+                    }
+                    "report-copied" => app.report.done = Some(Ok(())),
+                    "report-error" => app.report.done = Some(Err("clipboard busy".into())),
+                    "report-empty" => app.report.text.clear(),
+                    _ => {}
+                }
             }
             // csv:<path>: the CSV import dialog on that file, over the database that's open
             Some(o) if o.starts_with("csv:") => {
@@ -1665,6 +1732,7 @@ impl eframe::App for App {
             self.plan_sheet(ctx, &p);
             self.kb_overlays(ctx, &p);
             self.csv_dialog_ui(ctx, &p);
+            self.report_dialog(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);

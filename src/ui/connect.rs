@@ -47,9 +47,20 @@ fn windows_version() -> String {
     .clone()
 }
 
+/// "Windows 11" or "Windows 10" (from the build number), else what `ver` says.
+pub(super) fn windows_short() -> String {
+    let v = windows_version();
+    let build: Option<u32> = v.rsplit('.').nth(1).and_then(|b| b.trim().parse().ok());
+    match build {
+        Some(b) if b >= 22000 => "Windows 11".into(),
+        Some(_) => "Windows 10".into(),
+        None => v,
+    }
+}
+
 impl App {
     /// Start detection once (Claude Code on PATH, Ollama answering).
-    fn connect_detect(&mut self, force: bool) {
+    pub(super) fn connect_detect(&mut self, force: bool) {
         if self.connect.checked && !force {
             return;
         }
@@ -59,7 +70,7 @@ impl App {
         self.connect.ollama_rx = Some(crate::ai::list_models_async("ollama", OLLAMA_URL));
     }
 
-    fn connect_poll(&mut self, ctx: &egui::Context) {
+    pub(super) fn connect_poll(&mut self, ctx: &egui::Context) {
         if let Some(rx) = &self.connect.ollama_rx {
             if let Ok(r) = rx.try_recv() {
                 self.connect.ollama = Some(r);
@@ -112,7 +123,7 @@ impl App {
         }
     }
 
-    fn connect_test(&mut self, which: &'static str) {
+    pub(super) fn connect_test(&mut self, which: &'static str) {
         let cfg = self.connect_cfg(which);
         let (tx, rx) = std::sync::mpsc::channel();
         std::thread::spawn(move || {

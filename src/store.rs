@@ -63,6 +63,10 @@ pub struct AppSettings {
     pub dark: bool,
     #[serde(default)]
     pub last_workspace: Option<Id>,
+    /// "Open Resolve 2 with" (Settings, Workspaces): this workspace every time; None = the last
+    /// workspace used.
+    #[serde(default)]
+    pub open_with: Option<Id>,
     #[serde(default = "default_provider")]
     pub ai_provider: String,
     #[serde(default = "default_ai_url")]
@@ -119,6 +123,7 @@ impl Default for AppSettings {
         AppSettings {
             dark: true,
             last_workspace: None,
+            open_with: None,
             ai_provider: default_provider(),
             ai_url: default_ai_url(),
             ai_model: default_ai_model(),

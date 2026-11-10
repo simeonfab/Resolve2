@@ -3420,6 +3420,173 @@ pub fn chat_box(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &st
     send
 }
 
+// ======================================================================================
+// Settings and Help components (Phase 5, Pack C "Settings", "Help").
+// ======================================================================================
+
+/// A settings card: white, radius 14, padding 18 / 16, its title (600 15) at the top.
+pub fn set_card<R>(ui: &mut Ui, p: &Pal, title: &str, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::TOAST)).inner_margin(egui::Margin::symmetric(space::S18, space::S16)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        if !title.is_empty() {
+            ui.label(RichText::new(title).font(fs(size::SECTION)).color(p.text));
+        }
+        add(ui)
+    })
+    .inner
+}
+
+/// A settings card that folds: its title with ▸ / ▾; the body only when open.
+pub fn fold_card(ui: &mut Ui, p: &Pal, id: egui::Id, title: &str, add: impl FnOnce(&mut Ui)) {
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::TOAST)).inner_margin(egui::Margin::symmetric(space::S18, space::S14)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        let open: bool = ui.data(|d| d.get_temp(id)).unwrap_or(false);
+        let r = ui.add(egui::Label::new(RichText::new(format!("{} {title}", if open { "▾" } else { "▸" })).font(fs(size::ROW_SMALL + 0.5)).color(p.text)).sense(Sense::click()));
+        if r.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+            ui.data_mut(|d| d.insert_temp(id, !open));
+        }
+        if open {
+            add(ui);
+        }
+    });
+}
+
+/// One AI choice in Connect your AI: a radio dot, the name (600 14.5) and its line, then a
+/// status word and a small button on the right. The one in use takes the amber tint.
+/// Returns (the row clicked, the button clicked).
+pub fn conn_row(ui: &mut Ui, p: &Pal, id: egui::Id, picked: bool, name: &str, line: &str, status: Option<(&str, Color32)>, action: &str) -> (bool, bool) {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let mut acted = false;
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(space::S14, space::S10)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S12;
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S16, space::S16), Sense::hover());
+            if picked {
+                ui.painter().circle_filled(r.center(), space::S8 - 0.5, tok::INK);
+            } else {
+                ui.painter().circle_stroke(r.center(), space::S8 - 1.0, Stroke::new(stroke::HAIR, p.faint));
+            }
+            let bw = ui.painter().layout_no_wrap(action.to_string(), fs(size::SMALL), p.text).size().x + 20.0;
+            let sw = status.map(|(s, _)| ui.painter().layout_no_wrap(s.to_string(), fs(size::SMALL), p.text).size().x + space::S10).unwrap_or(0.0);
+            let tw = (ui.available_width() - bw - sw - space::S12 * 2.0).max(space::S40 * 3.0);
+            ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(tw);
+                ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+                ui.label(RichText::new(name).font(fs(size::HERO_BODY)).color(p.text));
+                ui.add(egui::Label::new(RichText::new(line).size(size::SMALL + 0.5).color(p.dim)).wrap());
+            });
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                ui.spacing_mut().item_spacing.x = space::S10;
+                if !action.is_empty() {
+                    acted = button(ui, p, ButtonKind::Secondary, action, true, true).clicked();
+                }
+                if let Some((s, c)) = status {
+                    ui.label(RichText::new(s).font(fs(size::SMALL)).color(c));
+                }
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let resp = ui.interact(rect, id, Sense::click());
+    let (fill, edge) = if picked { (if p.dark { p.callout } else { tok::AMBER_LIGHT }, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.faint) } else { (p.card, p.line) };
+    ui.painter().set(bg_at, Shape::Vec(vec![Shape::rect_filled(rect, radius::BUTTON, fill), Shape::rect_stroke(rect, radius::BUTTON, Stroke::new(stroke::HAIR, edge))]));
+    (resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !acted, acted)
+}
+
+/// A small box with a name and one button (the MCP setup rows). Returns the button's click.
+pub fn mini_row(ui: &mut Ui, p: &Pal, w: f32, name: &str, action: &str) -> bool {
+    let mut clicked = false;
+    egui::Frame::none().stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::SMALL_BUTTON)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+        ui.set_width(w - space::S10 * 2.0 - stroke::HAIR * 2.0);
+        ui.horizontal(|ui| {
+            let bw = ui.painter().layout_no_wrap(action.to_string(), fs(size::SMALL), p.text).size().x + 20.0;
+            let tw = ui.available_width() - bw - space::S8;
+            ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(tw);
+                ui.add(egui::Label::new(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text)).wrap());
+            });
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                clicked = button(ui, p, ButtonKind::Secondary, action, true, true).clicked();
+            });
+        });
+    });
+    clicked
+}
+
+/// A dollar field ("$  10.00"): a white box with the amount you type. Returns true when changed.
+pub fn money_field(ui: &mut Ui, p: &Pal, id: egui::Id, value: &mut f64, w: f32) -> bool {
+    let key = id.with("text");
+    let mut text: String = ui.data(|d| d.get_temp(key)).unwrap_or_else(|| format!("{value:.2}"));
+    let mut changed = false;
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S12, space::S10)).show(ui, |ui| {
+        ui.set_width(w - space::S12 * 2.0);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("$").size(size::ROW + 0.5).color(p.text));
+            let r = ui.add(egui::TextEdit::singleline(&mut text).id(id).frame(false).font(fp(size::ROW + 0.5)).text_color(p.text).desired_width(ui.available_width()));
+            if r.changed() {
+                if let Ok(v) = text.trim().replace(',', "").parse::<f64>() {
+                    if v >= 0.0 {
+                        *value = v;
+                        changed = true;
+                    }
+                }
+            }
+            if !r.has_focus() && !changed {
+                text = format!("{value:.2}");
+            }
+        });
+    });
+    ui.data_mut(|d| d.insert_temp(key, text));
+    changed
+}
+
+/// A keyboard shortcut row: what it does, and the keys on the right in mono.
+pub fn shortcut_row(ui: &mut Ui, p: &Pal, what: &str, keys: &str) {
+    ui.horizontal(|ui| {
+        ui.label(RichText::new(what).size(size::ROW_SMALL).color(p.text));
+        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+            ui.label(RichText::new(keys).monospace().size(size::ROW_SMALL - 0.5).color(p.text));
+        });
+    });
+}
+
+/// A help section in the list on the left: plain text, the current one on white.
+pub fn help_item(ui: &mut Ui, p: &Pal, w: f32, name: &str, selected: bool) -> Response {
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H - 3.0), Sense::click());
+    if selected {
+        ui.painter().rect_filled(r, radius::GATE, p.card);
+    } else if resp.hovered() {
+        ui.painter().rect_filled(r, radius::GATE, p.hover);
+    }
+    ui.painter().text(r.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, name, if selected { fs(size::ROW_SMALL) } else { fp(size::ROW_SMALL) }, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A numbered step in Help's Quick start: the number in an amber-light circle, the bold lead
+/// and the rest of the line.
+pub fn numbered_step(ui: &mut Ui, p: &Pal, n: usize, lead: &str, rest: &str) {
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S14;
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S22 + 2.0, space::S22 + 2.0), Sense::hover());
+        ui.painter().circle_filled(r.center(), space::S12, if p.dark { p.callout } else { tok::AMBER_LIGHT });
+        ui.painter().text(r.center(), Align2::CENTER_CENTER, n.to_string(), fs(size::SMALL), p.accent_text);
+        let mut job = egui::text::LayoutJob::default();
+        job.append(lead, 0.0, egui::text::TextFormat { font_id: fs(size::ROW + 0.5), color: p.text, ..Default::default() });
+        job.append(&format!(" {rest}"), 0.0, egui::text::TextFormat { font_id: fp(size::ROW + 0.5), color: p.text, ..Default::default() });
+        let w = ui.available_width();
+        job.wrap.max_width = w;
+        ui.allocate_ui_with_layout(egui::vec2(w, 0.0), Layout::top_down(Align::Min), |ui| {
+            ui.set_width(w);
+            ui.add(egui::Label::new(job).wrap());
+        });
+    });
+}
+
 /// A column head on the whole picture: dark for Now, sunk for the others.
 pub fn whole_head(ui: &mut Ui, p: &Pal, w: f32, name: &str, now: bool) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::S26), Sense::hover());
