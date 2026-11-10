@@ -2,16 +2,35 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
-## 0.5.0 (in progress, not merged yet)
+## 0.5.0 (10 November 2026, waiting for your review, not merged yet)
 
-Redesign Phase 4: project sections (branch `nav/p4-project`).
+Redesign Phase 4: project sections, rebuilt to the Pack C canvases (branch `nav/p4-project`). Each section below is the redesigned page when a project is picked; with no project picked, the earlier all-projects view stays.
 
 **What changed**
-- You can see the version number in the window title, for example "Resolve 2 0.5.0".
-- This changelog, with Phases 0 to 3 filled in from their reports.
+- You can see the version number in the window title, for example "Resolve 2 0.5.0", and this changelog has Phases 0 to 3 filled in from their reports.
+- Overview: your next move, what it tests and the gate it opens (only when the data links them), progress, What matters now, Resolve suggests, Project context and a small Tasks board. Weekly review sits in the header. A suggestion that fails shows its error in the next-move card while the rest of the page loads (C-E1, C-E2, C-E3).
+- Roadmap: Now, Next and Later lanes of theme cards with their tag, gate chip and progress, opening in place; By theme; the Whole picture of hypotheses by phase; and a rail with milestones, what is held up and what's coming up. Moving a theme, changing its gate, order or status now has Undo, and a move that can't be made changes nothing and says so (C-E4 to C-E8, C-E26).
+- Frameworks: Hypothesis Zero in a registry strip, the tree with each negation and what each experiment holds on, and an editor beside it. A result updates the experiment, then the hypothesis, then the roadmap gate, then tells you, as one change you can undo (C-E9, C-E10).
+- The proposal editor ("See and edit everything") has its own window: Back to the summary keeps your edits, Adopt sits in the top bar, a list of sections on the left, and text you edit where it stands (C-E11).
+- Knowledge base: five tabs, a card library, filter chips with counts, a line saying what Resolve searches, an Add sheet with five ways to add (a new item lands first, outlined, for 2 s), a preview panel, and each file that couldn't be read named with why (C-E12 to C-E15).
+- Pages: a breadcrumb, a toolbar (H1, H2, bold, italic, lists, to-do), Saved / Not saved, the To-dos and Linked cards beside the text, and a New page dialog with the built-in templates and your own (C-E16, C-E17).
+- Databases: the list of databases beside the table, + Row, + Column, Import CSV, Group and Sort. The CSV import dialog shows each column's type to check, and lists any rows that didn't import, with why, so you can bring them in as text (C-E18).
+- AI Team: role cards, earlier chats, suggestions, and a Proposed change card you accept or not; reaching your AI budget shows in the chat with Open Settings and Copy my question (C-E19).
+- Handoffs: For and Who, a brief in five parts (The job, What already exists, Why it matters, Off limits, Done when), Sent and Done with Mark done and Reopen, and a plain brief when the AI doesn't reply (C-E20).
+- A mic on Handoffs and AI Team uses Windows voice typing (C-E24). Each page keeps its width on a wide screen (C-E25).
+
+**What was fixed**
+- Roadmap moves, gates, order and status had no Undo; they do now.
+- The AI's `import_pages` tool now tells you when a page's parent couldn't be found, instead of dropping it silently.
+- Error cards said "Try again" even where the action was "Save again" or "Choose another file".
 
 **Known differences and open items**
-- The rest of Phase 4 is still being built; this entry grows as it lands.
+- A CSV row "fails" by a rule I chose (more cells than columns, or an unreadable date or number). Tell me if you want a different one.
+- The Proposed change card appears when a role can't change your workspace itself (Ollama and OpenAI-compatible models). With Anthropic, OpenAI cloud or a CLI, roles still make changes directly, with Undo, as before.
+- The table, filter and search controls inside a database are the earlier ones; only the frame and toolbar are new.
+- Frameworks' one-line description is parked for a brainstorm; its slot stays empty.
+- The .98 and .97 scale effects (press and lift) are left for the polish pass.
+- Unverified: the mic with Windows voice typing on Handoffs and AI Team (it can't be tested in a screenshot); a real AI writing a Proposed change line.
 
 ## 0.4.0 (10 November 2026)
 
