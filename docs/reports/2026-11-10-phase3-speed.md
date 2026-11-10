@@ -1,56 +1,41 @@
-# Phase 3 speed fix (D5): the validation half on Claude Code's default model and on Sonnet
+# Phase 3 speed fix (D5): the validation half on the default model and on Sonnet (10 Nov 2026)
 
-10 Nov 2026. Branch `intake/p3-redesign`. **The setting is off by default**: Settings → AI → "Faster proposal: write the validation half on Sonnet (Claude Code and the Claude API only)". You decide from this.
+You asked for the speed fix behind a setting, off by default, and a side-by-side for every Test Intake scenario so you can decide. The setting is in Settings → AI: "Faster proposal: write the validation half on Sonnet (Claude Code and the Claude API only)". It is **off**.
 
 ## How it was run
 
-- **Every Test Intake scenario** (5), on Claude Code, with `resolve2 --testlab --speed-compare "<scenario>" --max-q 3`.
-- For each scenario, the questions (3 answered from the scenario) and the understanding ran **once**. Then the proposal's **validation half** (H0, hypotheses, experiments, uncertainties, pages) was written **twice from that same understanding**: first on Claude Code's own default model, then on Sonnet. So the model is the only difference between the two.
-- On this PC Claude Code's default model is an Opus model. Its own answer named it `claude-opus-4-8`.
-- These are real Claude Code answers; nothing below was written or edited by me. The files are `shots/p3/speed/scenario1.md` to `scenario5.md` (shots/ isn't committed; the text is copied in full below).
-- **Caveats:**
-  - **One run per model per scenario**, so the timings are single samples.
-  - Scenarios 1 to 4 ran two at a time; scenario 5 ran alone. Its first try hit this PC's **real Claude Code weekly limit**, and I re-ran it after the limit reset.
-  - The plan half isn't part of this comparison; it stays on the default model either way.
-  - In the app, `sanitise` then shortens long titles, keeping the full text as the detail, and removes em dashes. The text below is the raw answer, before that.
+- `resolve2 --testlab --speed-compare "<scenario>" --max-q 3 confirm`, once per scenario, on Claude Code (your subscription). These are real calls; nothing below is edited except the headings.
+- For each scenario, the questions and the understanding run **once**. The validation half (H0, hypotheses, experiments, uncertainties, pages) is then written **twice from that same understanding**: first on Claude Code's own default model (on this PC an Opus model, read from the CLI's own report), then on Sonnet. The model is the only difference.
+- Each half ran alone and was timed from the call to the answer. In the app the plan half runs beside it, and the proposal is ready when the slower half finishes.
+- Scenarios 1 to 4 ran two at a time; scenario 5 ran alone two days later. While it ran the first time, this PC's Claude Code hit its weekly cap ("You've hit your weekly limit · resets Nov 9, 5pm"). The app recognised that as a limit, which is E28 seen live. Scenario 5 was run again after the cap reset.
+- **One run per model per scenario.** AI timings vary a lot from run to run (see scenario 2), so these numbers are indicative, not a benchmark.
+- The text is the AI's raw answer, before the app's clean-up. The app now removes em dashes from every proposal field (found in these runs).
 
 ## Timings
 
-| Scenario | Default model | Sonnet | Sonnet against default |
+| Scenario | Default model | Sonnet | What each wrote (hypotheses / experiments / uncertainties / pages) |
 |---|---|---|---|
-| New consumer app idea | 41.4 s | 61.1 s | 19.7 s slower |
-| Rescuing a stalled project | 125.6 s | 51.2 s | 74.4 s faster |
-| Service business | 51.1 s | 72.2 s | 21.1 s slower |
-| Internal work project | 39.8 s | 56.0 s | 16.2 s slower |
-| Doom Clock corporate events | 86.5 s | 51.9 s | 34.6 s faster |
-| **Total** | **344.4 s** | **292.4 s** | |
+| New consumer app idea | 41.4 s | 61.1 s | default 4 / 2 / 5 / 1 · Sonnet 4 / 5 / 7 / 3 |
+| Rescuing a stalled project | 125.6 s | 51.2 s | default 3 / 2 / 4 / 1 · Sonnet 4 / 5 / 7 / 3 |
+| Service business | 51.1 s | 72.2 s | default 3 / 2 / 5 / 1 · Sonnet 4 / 5 / 7 / 3 |
+| Internal work project | 39.8 s | 56.0 s | default 4 / 2 / 5 / 1 · Sonnet 4 / 5 / 7 / 3 |
+| Doom Clock corporate events | 86.5 s | 51.9 s | default 4 / 2 / 5 / 1 · Sonnet 4 / 4 / 7 / 2 |
+| **Total (mean)** | **344.4 s (68.9 s)** | **292.4 s (58.5 s)** | |
 | **Median** | **51.1 s** | **56.0 s** | |
 
-Sonnet was faster in 2 of 5 scenarios and slower in 3. The default model's times swung far more, from 39.8 to 125.6 s; Sonnet's ran from 51.2 to 72.2 s. With one run each, I can't say from this whether either is faster in general (**unverified**).
+**What the numbers show:**
+- Sonnet was slower in three of five runs. Its total is lower only because two default runs were slow (125.6 s and 86.5 s).
+- Sonnet steadily wrote more: about 5 experiments, 7 uncertainties and 3 pages, against 2, 5 and 1. That extra length is the likeliest reason it isn't faster.
+- On this evidence the setting doesn't make the proposal reliably quicker. I haven't measured whether a different prompt would make Sonnet shorter.
 
-For comparison, the first measurement (8 Nov, Service business, both halves side by side) had the validation half at 47.0 s.
+**Differences you can see in the text** (my reading; judge them yourself below):
+- **Titles:** the default model writes short titles ("Fixed £150 café package"); Sonnet writes whole sentences as titles.
+- **Experiment titles:** Sonnet's experiment titles are often cut off mid-phrase by the app's title shortener ("E2: How much of the wait is before anyone picks"). The default model's are complete.
+- **Experiment detail:** Sonnet's "supports it if" lines are longer and more measurable (thresholds, sample sizes, time windows). The default model's are shorter and still checkable.
+- **Uncertainties:** Sonnet adds more, and often says which question you skipped. The default model's are terse.
+- **Pages:** Sonnet adds an evidence and assumptions page (and sometimes a third); the default model writes only the project brief.
 
-## What each model wrote (counts)
-
-| Scenario | Default: hypotheses / experiments / uncertainties / pages | Sonnet: hypotheses / experiments / uncertainties / pages |
-|---|---|---|
-| New consumer app idea | 4 / 2 / 5 / 1 | 4 / 5 / 7 / 3 |
-| Rescuing a stalled project | 3 / 2 / 4 / 1 | 4 / 5 / 7 / 3 |
-| Service business | 3 / 2 / 5 / 1 | 4 / 5 / 7 / 3 |
-| Internal work project | 4 / 2 / 5 / 1 | 4 / 5 / 7 / 3 |
-| Doom Clock corporate events | 4 / 2 / 5 / 1 | 4 / 4 / 7 / 2 |
-
-What differs, as written (I'm describing, not judging):
-
-- **Length.** Sonnet writes more items every time, and longer ones: full-sentence titles, negations of two or three sentences. That is most of its time.
-- **Titles.** The default model writes short titles ("Workload is month-to-month stable"). Sonnet writes sentences ("The work per café is stable enough month to month that about 5 hours covers it."), which the app would shorten for display.
-- **Experiments.** The default model gives an E0 and E1 with one threshold each. Sonnet gives E0 to E4, each with a numeric "Supports it if", often with a sample size.
-- **Skipped questions.** Sonnet names the questions you skipped as open uncertainties ("You skipped this question, so…"); the default model does so less often.
-- **Em dashes.** The default model's text has em dashes in 3 of 5 scenarios. The app now removes them in every proposal field (`sanitise`, with a self-check).
-
-## The two validations, side by side, per scenario
-
-Each scenario's understanding is first, then the default model's validation, then Sonnet's, from the same understanding.
+## Side by side
 
 ## New consumer app idea
 
@@ -58,7 +43,7 @@ Each scenario's understanding is first, then the default model's validation, the
 
 **Outcome:** 
 
-### Default model (Opus, Claude Code's default): 41.4 s
+### Default model (Claude Code's own default): 41.4 s
 
 - **H0:** Bill-split app stops late payments (uncertain). Against it: A phone app does not reduce late payments or arguments, because the real cause of late payments is not something clarity or reminders can fix.
 - **Hypothesis:** Late payment cause unknown (evidence). The cause is already known and is a single, specific thing (forgetting, disputed amounts, or payment friction), not a mix.
@@ -103,7 +88,7 @@ Each scenario's understanding is first, then the default model's validation, the
 
 **Outcome:** New volunteers are registered within two days of applying, and office staff stop spending mornings on sign-up calls.
 
-### Default model (Opus, Claude Code's default): 125.6 s
+### Default model (Claude Code's own default): 125.6 s
 
 - **H0:** Form redesign solves it (uncertain). Against it: Finishing and launching the redesigned form does not register volunteers in two days or free staff mornings, because the real bottleneck lies elsewhere.
 - **Hypothesis:** Form friction drives drop-off (uncertain). The 40% who never finished sign-up abandoned for reasons the form cannot fix (timing, eligibility, follow-up delay, loss of interest), so a better form barely moves completion.
@@ -146,7 +131,7 @@ Each scenario's understanding is first, then the default model's validation, the
 
 **Outcome:** Your café clients pay a known fixed fee each month and stop worrying about unpredictable bookkeeping costs, and your own income becomes steady rather than lumpy.
 
-### Default model (Opus, Claude Code's default): 51.1 s
+### Default model (Claude Code's own default): 51.1 s
 
 - **H0:** Fixed £150 café package (uncertain). Against it: Packaging your café bookkeeping into a fixed ~£150/month fee will not deliver steady income or real client cost-certainty — because the per-café workload swings, the price is wrong, or the anxiety sits elsewhere.
 - **Hypothesis:** Workload is month-to-month stable (assumption). NH1: Hours per café swing widely across the year, so a fixed fee leaves you working well below your effective rate in busy months (VAT quarters, year-end) while clients feel the saving.
@@ -190,7 +175,7 @@ Each scenario's understanding is first, then the default model's validation, the
 
 **Outcome:** Customers get a first reply within 4 working hours, and the team stops missing emails — visible in the help desk's response-time report.
 
-### Default model (Opus, Claude Code's default): 39.8 s
+### Default model (Claude Code's own default): 39.8 s
 
 - **H0:** Unowned triage across three inboxes (uncertain). Against it: First-reply delay is not mainly caused by unowned triage across three inboxes; it persists even where triage is clear, driven by volume, staffing, or one specific tool.
 - **Hypothesis:** Delay concentrates in one tool (uncertain). The 19-hour median is spread roughly evenly across all three tools, so no single inbox explains the delay.
@@ -235,7 +220,7 @@ Each scenario's understanding is first, then the default model's validation, the
 
 **Outcome:** 
 
-### Default model (Opus, Claude Code's default): 86.5 s
+### Default model (Claude Code's own default): 86.5 s
 
 - **H0:** Doom Clock sells as paid corporate team-building (uncertain). Against it: Companies will not book and pay for Doom Clock as an on-site event
 - **Hypothesis:** Quote interest becomes paid bookings (evidence). Quote requests stall before anyone pays and schedules a run event
