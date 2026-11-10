@@ -143,9 +143,13 @@ END OF STEP: stop and send me (1) what you built, item by item; (2) screenshots 
 
 SCREENS: Pipeline, PipelineList, PipelineClosed, Record, StatePipelineEmpty.
 
-CHECK AND REPORT FIRST (do not build until I answer)
-- Pipeline storage: the existing CRM database (records linked to pages and tasks) or a new model type. Recommend one with reasons. Rule 4 in CLAUDE.md: one data system.
-- Gmail for the tracker: how a desktop app can read it, with setup steps for me, privacy and cost. Propose one approach and wait.
+DECIDED (build these unless the check below finds a blocker; if it does, stop and tell me)
+- Pipeline storage: the existing CRM database, with records linked to pages and tasks. Rule 4: one data system. Stage, verdict per gate, timeline, documents and interviews live as record fields or linked pages. No new model type.
+- Gmail for the tracker: IMAP to imap.gmail.com:993 with a Google app password (needs 2-Step Verification on the account), read only. Store the app password in Windows Credential Manager, never in the JSON data files or the repo. Read only messages that match a job search (from companies in the Pipeline, recruiters, or job-site senders); never store unrelated mail. Settings shows the setup steps for me. OAuth comes later, before Careers goes to other users: note in the report what it would take.
+
+CHECK AND REPORT FIRST
+- That the CRM database can hold everything the record needs. List any field it cannot hold before building.
+- That an IMAP client fits the stack (ureq and curl.exe today). Ask before adding a crate.
 - Fetching job links: test a few common job sites and report what blocks. Fallback is paste text or a screenshot.
 - Screenshot of an ad: what reading text from an image needs with the current providers.
 
@@ -153,7 +157,7 @@ BUILD (brief section: Pipeline)
 - Board on the built Tasks board: seven columns, Open and Closed tabs, drag with Undo, cards as drawn. List view. Closed tab with filters; a rejection keeps its stage.
 - + Add a job (shared with Home): Reviewer runs the gates and saves to Sourced or Triaged with the verdict.
 - Record page with right rail, every section in the brief's order. Saved ad kept offline.
-- Tracker, only after I approve the Gmail approach: logs on apply, reads replies, moves stages, adds interviews to Calendar, every change in the timeline with source and Undo, unsure changes to NEEDS A CHECK.
+- Tracker: logs on apply, reads replies, moves stages, adds interviews to Calendar, every change in the timeline with source and Undo, unsure changes to NEEDS A CHECK.
 - Wire Home's PIPELINE, WAITING TO HEAR BACK and NEEDS A CHECK cards and the task template links.
 
 DONE WHEN
@@ -248,7 +252,11 @@ END OF STEP: stop and send me (1) what you built, item by item; (2) screenshots 
 SCREENS: Frameworks, Knowledge, Team, SettingsAI, SettingsWorkspaces, Help.
 
 CHECK AND REPORT FIRST
-- Scout's job source: job board feeds, saved searches or AI search. Propose one with cost and reliability, and wait. Build everything else meanwhile.
+- Scout's sources (DECIDED: flexible per search). Scout uses whichever sources fit what the search is looking for, chosen per search in Scout's settings with toggles. Check and report which of these work, with cost and reliability:
+    1. Job alert emails already arriving in Gmail (LinkedIn, Indeed, job boards, recruiters), read through the Step 4 IMAP connection. Default on.
+    2. AI web search through the connected provider, using the search strings Scout sets. Good for niche or senior roles.
+    3. Public job board APIs or feeds where they exist for the target (for example sector boards). No scraping of sites that forbid it.
+  Scout proposes which sources to switch on from the intake target, and the user confirms. Every sourced role records its source, so Stats can show results by source.
 - Settings tab names: the screens use AI and MCP and Workspaces. Confirm against what Phase 5 built and ask me if they differ.
 
 BUILD (brief sections: Frameworks and Knowledge base, AI Team and Handoffs, Settings and Help)
@@ -284,8 +292,11 @@ END OF STEP: stop and send me (1) what you built, item by item; (2) screenshots 
 
 SCREENS: RecorderPrep, RecorderRecording, Recorder, StateRecorderEmpty, StateRecorderLoading, StateRecorderError.
 
-CHECK AND REPORT FIRST (do not build recording or transcription until I answer)
-- Recording microphone and system audio on Windows, and transcription with speaker split. Propose one approach with cost, download size and privacy. Reuse the Phase 0 voice capture choice if it fits.
+DECIDED: Whisper, run locally (whisper.cpp), the same engine as the Phase 0 voice capture proposal. Audio never leaves the PC. base.en is the default model. Offer a larger English model as an optional download for interviews if base.en is too weak on a test recording. Speaker split: record the microphone and system audio as two separate tracks, so the mic track is "You" and system audio is "Interviewer". Uploaded single-track files and voice debriefs need no split; label them as one speaker unless a simple, local method works.
+
+CHECK AND REPORT FIRST
+- Whether Phase 0 built local Whisper. If yes, reuse it. If no, report what adding it takes (download size, crate or bundled binary) and ask before adding a crate.
+- How to capture system audio on Windows (WASAPI loopback) alongside the microphone, as two tracks.
 - Measure transcription time per 10 minutes of audio and put the real number in the loading copy.
 
 BUILD (brief section: Interview recorder)
