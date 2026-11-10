@@ -9,8 +9,42 @@ use eframe::egui::{self, RichText};
 /// The written tutorial, shipped inside the program.
 pub const TUTORIAL: &str = include_str!("../../TUTORIAL.md");
 
-/// (title, the guide's own text, the tutorial sections filed here — matched by heading start)
-const GUIDE: &[(&str, &str, &[&str])] = &[
+/// One guide section: (title, the guide's own text, the tutorial sections filed here, matched by
+/// heading start).
+pub type GuideSection = (&'static str, &'static str, &'static [&'static str]);
+
+/// The Help guide in this mode (Careers brief, "Help"). YGO is a slot with no content yet.
+pub fn guide(mode: Mode) -> &'static [GuideSection] {
+    match mode {
+        Mode::Pm => GUIDE,
+        Mode::Careers => GUIDE_CAREERS,
+        Mode::Ygo => &[],
+    }
+}
+
+/// The Careers guide: one section per Careers screen. The canvas writes out Pipeline; the other
+/// sections get their text with the Careers Help step.
+const GUIDE_CAREERS: &[GuideSection] = &[
+    ("Start a job search", "", &[]),
+    ("Home", "", &[]),
+    (
+        "Pipeline",
+        "Every job you add or Scout finds lands here, as one card per role. Drag a card to move it between stages. Every move undoes from the toast.\n\n### The stages\n\nSourced, Triaged, Applied, Screen, Interview, Final, Offer. Rejected, Withdrawn and Skipped roles move to the Closed tab and keep the stage they reached.\n\n### The record\n\nClick a card to open its record: the saved ad, the verdict gate by gate, the CV and cover letter you sent, the timeline, interviews and the offer.\n\n### The tracker\n\nOnce Gmail is connected, the tracker logs replies and moves stages for you. Anything it isn't sure about waits under NEEDS A CHECK on Home.",
+        &[],
+    ),
+    ("My CV", "", &[]),
+    ("Stats", "", &[]),
+    ("Tasks", "", &[]),
+    ("Interview recorder", "", &[]),
+    ("Frameworks", "", &[]),
+    ("Knowledge base", "", &[]),
+    ("AI Team", "", &[]),
+    ("Calendar", "", &[]),
+    ("Handoffs", "", &[]),
+];
+
+/// PM mode's guide.
+const GUIDE: &[GuideSection] = &[
     (
         "Welcome",
         "This is the Resolve alpha. Thank you for being one of the first testers. I made this, and I want to hear what works and what doesn't. Message Simeon on the number he gave you if you get stuck.\n\nIf something goes wrong, use Report a problem below. It copies what Simeon needs to know, with no personal data or project content.",
@@ -91,8 +125,8 @@ fn tutorial_part(head: &str) -> String {
     rest[..end].to_string()
 }
 
-fn section_text(i: usize) -> String {
-    let (title, own, parts) = GUIDE[i];
+fn section_text(g: &[GuideSection], i: usize) -> String {
+    let (title, own, parts) = g[i];
     let mut s = format!("## {title}\n\n{own}\n");
     for h in parts.iter() {
         let t = tutorial_part(h);
@@ -106,16 +140,17 @@ fn section_text(i: usize) -> String {
 }
 
 /// The whole guide as text (Copy as text).
-pub fn guide_text() -> String {
+pub fn guide_text(mode: Mode) -> String {
+    let g = guide(mode);
     let mut s = format!("# Resolve help ({})\n\n", crate::store::VERSION);
-    for i in 0..GUIDE.len() {
-        s.push_str(&section_text(i));
+    for i in 0..g.len() {
+        s.push_str(&section_text(g, i));
         s.push('\n');
     }
     s
 }
 
-/// The Quick start steps: (lead, rest), from the guide's own numbered list.
+/// The Quick start steps: (lead, rest), from the PM guide's own numbered list.
 pub fn quick_steps() -> Vec<(String, String)> {
     GUIDE[1]
         .1
@@ -185,7 +220,14 @@ impl App {
     }
 
     pub fn help_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        let mut sel: usize = self.temp.get("help_section").and_then(|s| s.parse().ok()).unwrap_or(0).min(GUIDE.len() - 1);
+        let mode = self.mode();
+        let g = guide(mode);
+        if g.is_empty() {
+            return;
+        }
+        // the Welcome and Quick start cards are PM's guide's own first two sections
+        let pm = mode.is_pm();
+        let mut sel: usize = self.temp.get("help_section").and_then(|s| s.parse().ok()).unwrap_or(0).min(g.len() - 1);
         let mut report = false;
         let mut copy_all = false;
         egui::ScrollArea::vertical().auto_shrink([false, false]).id_salt(("help", sel)).show(ui, |ui| {
@@ -202,7 +244,7 @@ impl App {
                         ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
                         ui.label(RichText::new("Help").font(fserif(size::GREETING)).color(p.text));
                         ui.add_space(space::S10);
-                        for (i, (title, _, _)) in GUIDE.iter().enumerate() {
+                        for (i, (title, _, _)) in g.iter().enumerate() {
                             if help_item(ui, p, space::HELP_LIST, title, sel == i).clicked() {
                                 sel = i;
                             }
@@ -219,8 +261,8 @@ impl App {
                         ui.set_width(cw);
                         ui.set_max_width(cw);
                         ui.spacing_mut().item_spacing.y = space::S14;
-                        let (title, own, _) = GUIDE[sel];
-                        if sel == 0 {
+                        let (title, own, _) = g[sel];
+                        if pm && sel == 0 {
                             // the dark ALPHA card, then Quick start
                             report = welcome_card(ui, p, own);
                             quick_card(ui, p);
@@ -228,15 +270,15 @@ impl App {
                             if !intro.trim().is_empty() {
                                 guide_card(ui, p, "", &intro);
                             }
-                        } else if sel == 1 {
+                        } else if pm && sel == 1 {
                             quick_card(ui, p);
-                            let text = section_text(sel);
+                            let text = section_text(g, sel);
                             let rest: String = text.split("\n### ").skip(1).map(|s| format!("### {s}")).collect::<Vec<_>>().join("\n");
                             if !rest.trim().is_empty() {
                                 guide_card(ui, p, "", &rest);
                             }
                         } else {
-                            let text = section_text(sel);
+                            let text = section_text(g, sel);
                             let body = text.splitn(2, '\n').nth(1).unwrap_or("").to_string();
                             guide_card(ui, p, title, &body);
                         }
@@ -249,7 +291,7 @@ impl App {
             self.open_report();
         }
         if copy_all {
-            ui.ctx().copy_text(guide_text());
+            ui.ctx().copy_text(guide_text(mode));
             self.toast("Help copied");
         }
     }

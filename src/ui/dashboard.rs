@@ -61,8 +61,26 @@ fn plural(n: usize, one: &str, many: &str) -> String {
     format!("{n} {}", if n == 1 { one } else { many })
 }
 
-/// The rail's step names (1 to 4).
-pub const RAIL_STEPS: [&str; 4] = ["Get started", "Bring it in", "Confirm understanding", "Your next move"];
+/// The intake rail's four steps in this mode: (name, the line under it). YGO is a slot with no
+/// content yet.
+pub fn rail_steps(mode: Mode) -> &'static [(&'static str, &'static str)] {
+    match mode {
+        Mode::Pm => &RAIL_STEPS,
+        Mode::Careers => &RAIL_STEPS_CAREERS,
+        Mode::Ygo => &[],
+    }
+}
+
+/// PM mode's rail steps.
+pub const RAIL_STEPS: [(&str, &str); 4] = [
+    ("Get started", "Tell Resolve your name and what you need help with"),
+    ("Bring it in", "Share your project context: rough notes, imports, anything you have"),
+    ("Confirm understanding", "Check what Resolve understood and fill any gaps"),
+    ("Your next move", "One clear recommended action and a roadmap built from your project"),
+];
+
+/// Careers mode's rail steps (Careers brief, "Careers intake"). The canvas rail shows names only.
+pub const RAIL_STEPS_CAREERS: [(&str, &str); 4] = [("Get started", ""), ("Bring it in", ""), ("Confirm understanding", ""), ("Your kit", "")];
 
 /// Everything Home shows, from the workspace alone (no AI). `now` is the app's clock;
 /// `real_ms` the real time, for ages and "since Monday" (edit times are real).
@@ -179,7 +197,11 @@ pub fn home_model(d: &WorkspaceData, now: NaiveDateTime, real_ms: i64, pick: Opt
         m.projects.push((pr.id.clone(), pr.name.clone(), all.iter().filter(|t| t.completed).count(), all.len()));
     }
     m.captured = d.tasks.iter().filter(|t| !t.completed && t.project_id.is_none() && t.parent_id.is_none()).count();
-    m.setup = crate::ui::resolve::open_intakes(d).into_iter().next().map(|(id, _, step)| (id, RAIL_STEPS[(step.clamp(1, 4) - 1) as usize]));
+    m.setup = crate::ui::resolve::open_intakes(d).into_iter().next().and_then(|(id, _, step)| {
+        let mode = d.intakes.iter().find(|i| i.id == id).map(|i| i.mode).unwrap_or_default();
+        let name = rail_steps(mode).get((step.clamp(1, 4) - 1) as usize)?.0;
+        Some((id, name))
+    });
     m
 }
 

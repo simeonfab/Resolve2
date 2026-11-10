@@ -5,7 +5,7 @@
 //! checks everything first: a save that can't be made writes nothing and the edit stays in the
 //! panel.
 
-use super::nav::FRAMEWORKS;
+use super::nav::frameworks;
 use super::theme::*;
 use super::widgets::*;
 use super::*;
@@ -294,7 +294,7 @@ impl App {
                     // description beside it is parked for a brainstorm, so its slot stays empty.
                     ui.horizontal_top(|ui| {
                         ui.spacing_mut().item_spacing.x = space::S10;
-                        for f in FRAMEWORKS {
+                        for f in frameworks(self.mode()) {
                             registry_card(ui, p, space::FW_REGISTRY_W, f.name, &format!("{} hypothes{} · {} experiment{} · {} resolved", m.hyps, if m.hyps == 1 { "is" } else { "es" }, m.exps, if m.exps == 1 { "" } else { "s" }, m.resolved), true, false);
                         }
                         registry_card(ui, p, space::FW_REGISTRY_MORE_W, "More methods later", "The registry holds one method today", false, true);

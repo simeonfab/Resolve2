@@ -2,6 +2,16 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.7.0 (10 November 2026)
+
+Careers Step 1: modes, the foundation for Resolve Careers (branch `careers/s1-modes`). Nothing you can see changes yet.
+
+**What changed**
+- Every workspace now has a mode: PM (the app you use today), Careers, or YGO (a slot for later, with nothing in it). A workspace's mode is set when it is made and never changes.
+- Every workspace you already have opens as PM, exactly as before. Its file isn't changed: a PM workspace doesn't even write its mode.
+- The sidebar, the Ask Resolve wording, Frameworks, the Knowledge base tabs, the Help guide, the intake's questions and steps, and the AI Team now come from tables picked by the open workspace's mode. PM's tables are the ones you have today. Careers has its own, taken from the Careers brief.
+- There are no Careers screens yet, and no way to make a Careers workspace from the app yet. Those come in the next steps.
+
 ## 0.6.0 (10 November 2026)
 
 Redesign Phase 5: Settings and Help, rebuilt to the Pack C canvases (branch `nav/p5-settings-help`).

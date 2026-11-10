@@ -2246,14 +2246,6 @@ pub fn serif_text(ui: &mut Ui, text: &str, size: f32, line_height: f32, col: Col
     ui.label(job)
 }
 
-/// The four steps of the intake rail.
-pub const INTAKE_STEPS: [(&str, &str); 4] = [
-    ("Get started", "Tell Resolve your name and what you need help with"),
-    ("Bring it in", "Share your project context: rough notes, imports, anything you have"),
-    ("Confirm understanding", "Check what Resolve understood and fill any gaps"),
-    ("Your next move", "One clear recommended action and a roadmap built from your project"),
-];
-
 /// One step's dot: done (✓ in an amber ring), current (number, amber ring; filled when the rail
 /// is narrow) or to come (muted ring).
 fn rail_dot(painter: &egui::Painter, c: Pos2, n: usize, state: u8, narrow: bool) {
@@ -2280,13 +2272,14 @@ fn rail_dot(painter: &egui::Painter, c: Pos2, n: usize, state: u8, narrow: bool)
 
 /// The stepper rail (E4): 308 wide with each step's name and line, or 72 with dots only on the
 /// wide steps; done steps show ✓; the "Saved as you go" card at the foot. `current` is 1..=4.
-pub fn intake_rail(ui: &mut Ui, rect: Rect, current: usize, narrow: bool) {
+/// `steps` is the mode's (name, line) table (`dashboard::rail_steps`).
+pub fn intake_rail(ui: &mut Ui, rect: Rect, steps: &[(&str, &str)], current: usize, narrow: bool) {
     let painter = ui.painter_at(rect);
     painter.rect_filled(rect, 0.0, tok::NAV_BG);
     let x = rect.left() + space::RAIL_PAD;
     let mut y = rect.top() + space::RAIL_PAD + space::S18;
     let wrap_w = rect.width() - space::RAIL_PAD * 2.0 - space::RAIL_DOT - space::S12;
-    for (k, (title, line)) in INTAKE_STEPS.iter().enumerate() {
+    for (k, (title, line)) in steps.iter().enumerate() {
         let n = k + 1;
         let state = if n < current { 2 } else if n == current { 1 } else { 0 };
         let c = egui::pos2(x + space::RAIL_DOT / 2.0, y);

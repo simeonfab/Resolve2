@@ -15,6 +15,13 @@ Storage is plain JSON you own, one folder per workspace:
 Every item has `id` and `updated` (ms). Two copies merge per item: newest `updated` wins; deletions
 are tombstones `{id, deleted}` kept 60 days.
 
+`mode` (0.7.0, Careers Step 1): `"pm"` (default), `"careers"` or `"ygo"`. Set when the workspace is
+made, never changed; a merge keeps the local copy's mode. It picks the per-mode tables (sidebar and
+Ask wording, Frameworks, Knowledge tabs in `ui/nav.rs`; Help guide in `ui/help.rs`; intake targets
+in `resolve/journey.rs`; rail steps in `ui/dashboard.rs`; AI Team in `resolve/team.rs`). A PM
+workspace never writes it, so files saved before modes stay byte for byte as they were. An intake
+carries its own `mode` too (same rule), since it runs before its workspace exists.
+
 | Collection | Type | Key fields |
 |---|---|---|
 | `pages` | Page | title, icon, parent, blocks[{kind, text, checked, task_id}], favorite, tags, template |

@@ -24,6 +24,11 @@ pub enum Section {
     Knowledge,
     AiTeam,
     Handoffs,
+    // Careers mode's own sections (Careers brief, "Shell"). Their screens come in later steps.
+    Pipeline,
+    MyCv,
+    Stats,
+    Recorder,
 }
 
 #[derive(Clone, Copy, PartialEq, Debug)]
@@ -74,6 +79,63 @@ const ASK_HANDOFFS: AskCopy = AskCopy { placeholder: "Ask about a handoff", sugg
 const ASK_PLAIN: AskCopy = AskCopy { placeholder: "Ask Resolve, or capture a thought", suggestions: &["What should I focus on right now?", "Capture a quick note"] };
 const ASK_CALENDAR: AskCopy = AskCopy { placeholder: "Ask about your schedule", suggestions: &["Plan my day", "What's overdue?", "Find time for my next task"] };
 
+// Ask Resolve wording in Careers mode (Careers brief, "Ask Resolve wording (Careers)").
+const ASK_C_HOME: AskCopy = AskCopy { placeholder: "Add a job, or ask what's next", suggestions: &["Review this job ad", "What should I apply to today?", "Start my daily hunt"] };
+const ASK_C_PIPELINE: AskCopy = AskCopy { placeholder: "Ask about your applications", suggestions: &["Who haven't I heard back from?", "What closes this week?", "Move a role to Interview"] };
+const ASK_C_CV: AskCopy = AskCopy { placeholder: "Ask about your CV", suggestions: &["What's weakest on my CV?", "Rebuild my CV for this job", "Which proof points need a number?"] };
+const ASK_C_STATS: AskCopy = AskCopy { placeholder: "Ask about your numbers", suggestions: &["Where am I dropping off?", "Am I on target this week?", "What should I change?"] };
+const ASK_C_TASKS: AskCopy = AskCopy { placeholder: "Add a task, or ask what's next", suggestions: &["Add a follow-up", "What's waiting to hear back?", "Clear my captured inbox"] };
+const ASK_C_RECORDER: AskCopy = AskCopy { placeholder: "Ask about your interviews", suggestions: &["What did I struggle with last time?", "Drill me on my weak spots", "Prep me for my next interview"] };
+const ASK_C_FRAMEWORKS: AskCopy = AskCopy { placeholder: "Ask about your gates and templates", suggestions: &["Is my target too broad?", "Tighten my gates", "Update my cover letter template"] };
+const ASK_C_KNOWLEDGE: AskCopy = AskCopy { placeholder: "Find or capture something about your search", suggestions: &["What proof do I have for this skill?", "Add a proof point", "Which CV did I send here?"] };
+const ASK_C_CALENDAR: AskCopy = AskCopy { placeholder: "Ask about your schedule", suggestions: &["Plan my day", "Which interviews are coming up?", "Which closing dates are this week?"] };
+
+/// The sidebar groups in this mode (Careers brief, "Modes"): only the middle group and the Ask
+/// wording differ between PM and Careers. YGO is a slot with no content yet.
+pub fn nav(mode: Mode) -> &'static [NavGroup] {
+    match mode {
+        Mode::Pm => NAV,
+        Mode::Careers => NAV_CAREERS,
+        Mode::Ygo => &[],
+    }
+}
+
+/// Careers mode's sidebar (Careers brief, "Sidebar"): YOUR SEARCH replaces YOUR PROJECT, with the
+/// search picker under it. Icons reuse the shell's set until the Careers screens are built.
+pub const NAV_CAREERS: &[NavGroup] = &[
+    NavGroup {
+        label: "Workspace",
+        picker: false,
+        items: &[
+            NavItem { label: "Home", icon: Icon::Home, target: Target::Home, hint: "Today, what needs a check, your daily hunt", ask: ASK_C_HOME },
+            NavItem { label: "Projects", icon: Icon::Projects, target: Target::Projects, hint: "All projects", ask: ASK_PLAIN },
+            NavItem { label: "Calendar", icon: Icon::Calendar, target: Target::Calendar, hint: "Interviews, follow-ups and closing dates", ask: ASK_C_CALENDAR },
+        ],
+    },
+    NavGroup {
+        label: "Your search",
+        picker: true,
+        items: &[
+            NavItem { label: "Pipeline", icon: Icon::Roadmap, target: Target::Sec(Section::Pipeline), hint: "Every role, by stage", ask: ASK_C_PIPELINE },
+            NavItem { label: "My CV", icon: Icon::Doc, target: Target::Sec(Section::MyCv), hint: "Your master CV, templates and LinkedIn fixes", ask: ASK_C_CV },
+            NavItem { label: "Stats", icon: Icon::Overview, target: Target::Sec(Section::Stats), hint: "Where you're dropping off, and against your target", ask: ASK_C_STATS },
+            NavItem { label: "Tasks", icon: Icon::Tasks, target: Target::Tasks, hint: "Follow-ups and everything else to do", ask: ASK_C_TASKS },
+            NavItem { label: "Interview recorder", icon: Icon::Resume, target: Target::Sec(Section::Recorder), hint: "Record an interview and see how each answer went", ask: ASK_C_RECORDER },
+            NavItem { label: "Frameworks", icon: Icon::Frameworks, target: Target::Sec(Section::Frameworks), hint: "Gates, templates, prep and the playbook", ask: ASK_C_FRAMEWORKS },
+            NavItem { label: "Knowledge base", icon: Icon::Knowledge, target: Target::Sec(Section::Knowledge), hint: "CVs, evidence bank, LinkedIn, job ads, interview notes, offers", ask: ASK_C_KNOWLEDGE },
+        ],
+    },
+    NavGroup {
+        label: "Collaboration",
+        picker: false,
+        items: &[
+            NavItem { label: "AI Team", icon: Icon::Team, target: Target::Sec(Section::AiTeam), hint: "Scout, Reviewer, Tailor, Coach and Negotiator", ask: ASK_TEAM },
+            NavItem { label: "Handoffs", icon: Icon::Handoffs, target: Target::Sec(Section::Handoffs), hint: "Briefs for Claude, Codex or people", ask: ASK_HANDOFFS },
+        ],
+    },
+];
+
+/// PM mode's sidebar.
 pub const NAV: &[NavGroup] = &[
     NavGroup {
         label: "Workspace",
@@ -135,14 +197,38 @@ pub fn sidebar_frame(elapsed_ms: f32, collapsing: bool, reduced: bool) -> (f32, 
 }
 /// Frameworks registry. Each declares its name and what it is; Hypothesis Zero is the first.
 /// To add a method, add an entry here and a renderer in `sections::frameworks_view`.
+/// `read_by` names who reads it (Careers: "Read by Reviewer"); empty in PM.
 pub struct Framework {
     pub id: &'static str,
     pub name: &'static str,
     pub about: &'static str,
+    pub read_by: &'static str,
 }
 
+/// The Frameworks registry in this mode.
+pub fn frameworks(mode: Mode) -> &'static [Framework] {
+    match mode {
+        Mode::Pm => FRAMEWORKS,
+        Mode::Careers => FRAMEWORKS_CAREERS,
+        Mode::Ygo => &[],
+    }
+}
+
+/// Careers mode's registry, in order (Careers brief, "Frameworks"); it replaces Hypothesis Zero.
+pub const FRAMEWORKS_CAREERS: &[Framework] = &[
+    Framework { id: "gates", name: "Gates", about: "A list of rules, each a Hard gate or a Preference, with why it matters. Set by intake. A hard gate fails the job. A preference only lowers its score.", read_by: "Reviewer" },
+    Framework { id: "cv-templates", name: "CV templates", about: "Each template with the roles it suits. Open, edit, set as default.", read_by: "Tailor" },
+    Framework { id: "cover-letter", name: "Cover letter", about: "The template and its structure.", read_by: "Tailor" },
+    Framework { id: "interview-prep", name: "Interview prep", about: "The Cockpit sheet (running order, key numbers, answers on pay and logistics, likely objections, questions to ask), the 90-day plan, the six-month plan and technical-depth drills.", read_by: "Coach" },
+    Framework { id: "offers", name: "Offers and negotiation", about: "Offer comparison, market rate check and the counter-offer plan.", read_by: "Negotiator" },
+    Framework { id: "playbook", name: "Improvement playbook", about: "For each weak stage: likely causes, the fix, and which role owns it.", read_by: "Stats" },
+    Framework { id: "advice", name: "Advice", about: "Short practical guides.", read_by: "Everyone" },
+];
+
+/// PM mode's registry.
 pub const FRAMEWORKS: &[Framework] = &[Framework {
     id: "h0",
+    read_by: "",
     name: "Hypothesis Zero",
     about: "H0 is the baseline hypothesis. Every hypothesis Hx has its explicit negation NHx; any node can have sub-hypotheses; experiments E0, E1… test any node with predictions and thresholds set in advance. Results update the hypothesis (unresolved, supported, weakened, refuted) and gate roadmap items.",
 }];
@@ -150,7 +236,19 @@ pub const FRAMEWORKS: &[Framework] = &[Framework {
 /// The Settings tabs (C-E21, Pack C "Settings"), in order. `--view settings-<n>` opens one.
 pub const SETTINGS_TABS: [&str; 4] = ["AI and MCP", "Sync and phone", "Workspaces", "About"];
 
-/// The parts of Knowledge, as tabs on the Knowledge screen.
+/// The Knowledge base tabs in this mode.
+pub fn knowledge_tabs(mode: Mode) -> &'static [(&'static str, &'static str)] {
+    match mode {
+        Mode::Pm => KNOWLEDGE_TABS,
+        Mode::Careers => KNOWLEDGE_TABS_CAREERS,
+        Mode::Ygo => &[],
+    }
+}
+
+/// Careers mode's Knowledge base tabs (Careers brief, "Knowledge base").
+pub const KNOWLEDGE_TABS_CAREERS: &[(&str, &str)] = &[("CVs and cover letters", "📄"), ("Evidence bank", "◆"), ("LinkedIn", "📄"), ("Job ads", "📄"), ("Interview notes", "📄"), ("Offers", "📄"), ("Advanced: databases", "▦")];
+
+/// PM mode's Knowledge base tabs, as tabs on the Knowledge screen.
 pub const KNOWLEDGE_TABS: &[(&str, &str)] = &[("Brief and documents", "📄"), ("Research", "🔎"), ("Cut list", "✂"), ("Evidence and Records", "◆"), ("Advanced: databases", "▦")];
 
 impl App {
@@ -200,10 +298,15 @@ impl App {
         }
     }
 
+    /// The open workspace's mode: picks every per-mode table.
+    pub fn mode(&self) -> Mode {
+        self.store.data.mode
+    }
+
     /// What Ask Resolve offers on the current screen.
     pub fn ask_copy(&self) -> &'static AskCopy {
         let t = self.nav_target_of(&self.view);
-        NAV.iter().flat_map(|g| g.items.iter()).chain(UTILITIES.iter()).find(|i| Some(i.target) == t).map(|i| &i.ask).unwrap_or(&ASK_PLAIN)
+        nav(self.mode()).iter().flat_map(|g| g.items.iter()).chain(UTILITIES.iter()).find(|i| Some(i.target) == t).map(|i| &i.ask).unwrap_or(&ASK_PLAIN)
     }
 
     /// Pick which project the product-management sections show.
@@ -346,7 +449,7 @@ impl App {
                 egui::CentralPanel::default().frame(egui::Frame::none()).show_inside(ui, |ui| {
                     egui::ScrollArea::vertical().auto_shrink([false, false]).scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).show(ui, |ui| {
                         ui.spacing_mut().item_spacing.y = space::NAV_GAP;
-                        for g in NAV {
+                        for g in nav(self.mode()) {
                             side_group(ui, g.label, labels);
                             if g.picker {
                                 self.project_picker(ui, p, labels, icons_only);
