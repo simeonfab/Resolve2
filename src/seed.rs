@@ -567,6 +567,40 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
         }
         d.databases.push(hdb);
     }
+    // Pack C AI Team: the canvas's own sample chat with the Validation Lead (the design's text,
+    // in the screenshot sample only; no model wrote it), and two earlier chats
+    if let Some(pid) = cafe_id.clone() {
+        let msg = |role: &str, text: &str, at: i64| ChatMessage { role: role.into(), text: text.into(), at, ..Default::default() };
+        let day = 24 * 3600 * 1000;
+        d.conversations.push(Conversation { id: new_id(), project_id: Some(pid.clone()), agent: "validation".into(), title: "Validation Lead".into(), messages: vec![msg("user", "Threshold for E0", t - 4 * day), msg("validation", "Sample answer from the canvas.", t - 4 * day)], updated: t - 4 * day });
+        d.conversations.push(Conversation { id: new_id(), project_id: Some(pid.clone()), agent: "validation".into(), title: "Validation Lead".into(), messages: vec![msg("user", "Is two yes answers enough for H2?", t - 3 * day), msg("validation", "Sample answer from the canvas.", t - 3 * day)], updated: t - 3 * day });
+        d.conversations.push(Conversation {
+            id: new_id(),
+            project_id: Some(pid),
+            agent: "validation".into(),
+            title: "Validation Lead".into(),
+            messages: vec![
+                msg("user", "Two clients said yes in principle. Is that enough to call H2 supported?", t - 60_000),
+                msg("validation", "No. A yes in principle costs them nothing. E1 tests it properly: a written price, and a deadline to sign. Your threshold says at least one signs within two weeks. I'd add a second check: ask both what they pay you now per year, so the price lands against a real number.\nPROPOSED: question | H2 | What does each café pay you now per year?", t - 30_000),
+            ],
+            updated: t,
+        });
+    }
+    // Pack C Handoffs: three briefs written by Resolve's own generator (no AI), two sent, one done
+    if let Some(ctx) = cafe_id.as_ref().and_then(|p| d.context_for(p)).cloned() {
+        let day = 24 * 3600 * 1000;
+        for (to, focus, status, ago) in [("Codex", "Draft the fixed-fee offer letter", "Done", 9), ("Claude Code", "Build the flat-fee calculator sheet", "Sent", 3), ("Maya, who does my admin", "Pull 12 months of hours for each café from the till exports", "Sent", 0)] {
+            let mut r = crate::resolve::Record::new(crate::resolve::Kind::Handoff, cafe_id.clone(), focus);
+            r.body = crate::resolve::roles::handoff_for(d, &ctx, to, focus);
+            r.fields.insert("to".into(), to.into());
+            r.fields.insert("focus".into(), focus.into());
+            r.fields.insert("writer".into(), "Resolve (no AI connected)".into());
+            r.status = status.into();
+            r.created = t - ago * day;
+            r.updated = t - ago * day;
+            d.records.push(r);
+        }
+    }
     // waiting on someone else for three days (B-E5)
     set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));
     if let Some(c) = cafe_id.as_ref().and_then(|p| d.context_for_mut(p)) {

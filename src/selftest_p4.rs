@@ -148,6 +148,32 @@ pub fn run(t: &mut T) {
         t.check("C-E18: changing a column's type in the dialog changes which rows fail", ok2.len() == 36 && failed2.len() == 1, format!("{} {}", ok2.len(), failed2.len()));
     }
 
+    // ---- AI Team (C-E19)
+    {
+        use crate::resolve::team::{apply_proposal, find_parent, mark_proposal, split_proposals};
+        let msg = "No. Ask both what they pay now.\nPROPOSED: question | H2 | What does each café pay you now per year?\nPROPOSED: nonsense line";
+        let (text, props) = split_proposals(msg);
+        t.check("C-E19: a role's PROPOSED line becomes a card; the text keeps the rest", props.len() == 1 && props[0].on == "H2" && props[0].kind == "question" && text.contains("No. Ask both") && !text.contains("café pay") && text.contains("nonsense"), format!("{props:?}"));
+        let mut d9 = d.clone();
+        let parent = find_parent(&d9, &pid, "H2");
+        let before = d9.records.len();
+        let cs = d9.record_change("Added", "add", |dd| apply_proposal(dd, &pid, &props[0], parent.as_deref()));
+        let added = d9.records.iter().find(|r| r.title == "What does each café pay you now per year?").cloned();
+        t.check("C-E19: Add it puts the question under H2, as one undoable change", parent.is_some() && added.as_ref().map_or(false, |r| r.kind == crate::resolve::Kind::Question && r.parent_id == parent) && cs.as_ref().map_or(false, |c| d9.undo_change(c).is_ok()) && d9.records.len() == before, "");
+        let marked = mark_proposal(msg, 0, "ADDED");
+        let (_, p2) = split_proposals(&marked);
+        t.check("C-E19: the message remembers that it was added", p2.len() == 1 && p2[0].decided == "ADDED", &marked);
+        t.check("C-E19: the budget message is recognised in the chat", crate::ai::is_limit("This month's AI budget ($10) is used up. Raise it in Settings, AI and MCP, or carry on by hand."), "");
+    }
+    // ---- Handoffs (C-E20)
+    {
+        let ctx = d.context_for(&pid).cloned().unwrap_or_default();
+        let b = crate::resolve::roles::handoff_for(&d, &ctx, "Maya", "Pull 12 months of hours for each café from the till exports");
+        let parts: Vec<String> = crate::resolve::roles::brief_sections(&b).into_iter().map(|x| x.0).collect();
+        t.check("C-E20: the brief has five parts: The job, What already exists, Why it matters, Off limits, Done when", parts == vec!["The job", "What already exists", "Why it matters", "Off limits", "Done when"], format!("{parts:?}"));
+        t.check("C-E20: the cut list is in Off limits", b.contains("Not yet: Payroll add-on"), "");
+    }
+
     // ---- Proposal editor (C-E11)
     let full = crate::seed::cafe_proposal();
     let thin = crate::resolve::journey::Proposal { name: full.name.clone(), outcome: full.outcome.clone(), ..Default::default() };

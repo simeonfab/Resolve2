@@ -134,6 +134,12 @@ impl App {
         if s == Section::Knowledge && self.current_project.is_some() && self.kb_page(ui, p) {
             return;
         }
+        if s == Section::AiTeam && self.current_project.is_some() && self.team_page(ui, p) {
+            return;
+        }
+        if s == Section::Handoffs && self.current_project.is_some() && self.handoffs_page(ui, p) {
+            return;
+        }
         self.top_bar(ui, p, |_, _| {});
         let wide = matches!(s, Section::Roadmap);
         egui::ScrollArea::vertical().id_salt(("sec", s as u8)).auto_shrink([false, false]).show(ui, |ui| {

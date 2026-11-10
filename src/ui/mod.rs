@@ -646,6 +646,21 @@ impl App {
                     app.csv_open(&file, &text, &db);
                 }
             }
+            // team-budget: the latest Validation Lead chat ends in the budget message (the error state)
+            Some("team-budget") => {
+                let pid = app.current_project.clone();
+                if let Some(c) = app.store.data.conversations.iter_mut().filter(|c| c.agent == "validation" && c.project_id == pid).max_by_key(|c| c.updated) {
+                    c.messages.truncate(1);
+                    c.messages.push(ChatMessage { role: "validation".into(), text: "This month's AI budget ($10) is used up. Raise it in Settings, AI and MCP, or carry on by hand.".into(), at: now_ms(), via: String::new(), error: true });
+                }
+            }
+            // team-wait: the latest Validation Lead chat has only your question (loading)
+            Some("team-wait") => {
+                let pid = app.current_project.clone();
+                if let Some(c) = app.store.data.conversations.iter_mut().filter(|c| c.agent == "validation" && c.project_id == pid).max_by_key(|c| c.updated) {
+                    c.messages.clear();
+                }
+            }
             Some("new-page") => {
                 app.temp.insert("new_page_dialog".into(), String::new());
             }

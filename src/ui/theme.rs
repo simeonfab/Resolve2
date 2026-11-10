@@ -317,6 +317,10 @@ pub mod space {
     pub const PAGE_GUTTER: f32 = 60.0;
     /// Databases (Pack C): the list of databases 200 wide beside the table.
     pub const DB_LIST: f32 = 200.0;
+    /// AI Team (Pack C): the roles column 280 beside the chat.
+    pub const TEAM_LIST: f32 = 280.0;
+    /// Handoffs (Pack C): the new-handoff and list column 360 beside the brief.
+    pub const HO_LEFT: f32 = 360.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

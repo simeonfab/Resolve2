@@ -75,6 +75,8 @@ impl App {
         prompt.push_str(&format!("\nConversation so far:\n{history}\n\nUser: {}", msg.trim()));
         let cfg = self.ai_config();
         let can_change = self.role_can_change(agent);
+        // a role that may not change the workspace proposes, and you confirm (C-E19)
+        let system = if can_change { system } else { format!("{system}\n\n{}", team::PROPOSE_RULE) };
         let tool_capable = matches!(cfg.provider.as_str(), "anthropic" | "openai-cloud" | "claude-code" | "codex-cli") || can_change;
         self.resolve_ui.chat_started_ms = now_ms();
         let job = if tool_capable { crate::ai::ask_agent(cfg, &system, &prompt, self.store.meta.clone(), can_change, label) } else { crate::ai::ask(&cfg.provider, &cfg.url, &cfg.model, &system, &prompt, label) };
@@ -163,6 +165,223 @@ impl App {
             self.resolve_ui.chat_job = None;
             self.touch();
         }
+    }
+
+    /// The redesigned AI Team for one project (C-E19, Pack C "AITeam"). Returns false with no
+    /// project picked (the old view stays for all projects).
+    pub(super) fn team_page(&mut self, ui: &mut egui::Ui, p: &Pal) -> bool {
+        let Some(pid) = self.current_project.clone() else { return false };
+        if self.resolve_ui.agent.is_empty() || !TEAM.iter().any(|r| r.id == self.resolve_ui.agent) {
+            self.resolve_ui.agent = "validation".into();
+        }
+        let agent = self.resolve_ui.agent.clone();
+        let sp = team::specialist(&agent);
+        let name = self.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
+        let cid = self.conversation_for(Some(&pid), &agent);
+        let conv = self.store.data.conversations.iter().find(|c| c.id == cid).cloned().unwrap_or_default();
+        let earlier: Vec<(Id, String, String)> = {
+            let mut v: Vec<&Conversation> = self.store.data.conversations.iter().filter(|c| c.agent == agent && c.project_id.as_deref() == Some(pid.as_str()) && c.id != cid && !c.messages.is_empty()).collect();
+            v.sort_by_key(|c| std::cmp::Reverse(c.updated));
+            v.into_iter().take(5).map(|c| (c.id.clone(), c.messages.iter().find(|m| m.role == "user").map(|m| m.text.lines().next().unwrap_or("").to_string()).unwrap_or_else(|| c.title.clone()), super::kb::day_label(c.updated, today()))).collect()
+        };
+        let (n_pages, n_recs) = super::kb::kb_counts(&self.store.data, &pid);
+        let reads = format!("Reads your brief, roadmap, H0 tree and {n_recs} record{}", if n_recs == 1 { "" } else { "s" });
+        let _ = n_pages;
+        let busy_any = self.resolve_ui.chat_job.is_some();
+        let busy_here = self.resolve_ui.chat_job.as_ref().map_or(false, |(c, _)| c == &cid);
+        let state = match self.view_state {
+            ViewState::Full if conv.messages.is_empty() && !busy_here => ViewState::Empty,
+            s => s,
+        };
+        let input_id = egui::Id::new("team-chat-input");
+        let mut pick: Option<&'static str> = None;
+        let mut open_conv: Option<Id> = None;
+        let (mut send, mut new_chat) = (false, false);
+        let mut prefill: Option<String> = None;
+        let mut decide: Option<(usize, bool)> = None;
+        let mut open_settings = false;
+        let mut copy_q: Option<String> = None;
+        let screen_h = ui.available_height();
+        egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE - space::S8, right: space::WORK_SIDE - space::S8, top: space::S8, bottom: space::S24 }).show(ui, |ui| {
+            capped(ui, space::CAP_TEAM, |ui| {
+                ui.horizontal_top(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S18;
+                    // the roles and earlier chats
+                    ui.allocate_ui_with_layout(egui::vec2(space::TEAM_LIST, 0.0), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(space::TEAM_LIST);
+                        ui.spacing_mut().item_spacing.y = space::S8;
+                        ui.label(RichText::new(&name).font(fs(size::ROW_SMALL)).color(p.orange));
+                        ui.label(RichText::new("AI Team").font(fserif(size::GREETING)).color(p.text));
+                        ui.add_space(space::S4);
+                        for r in TEAM.iter() {
+                            let sub = if r.id == GENERAL { "Ask anything · same chat as Ask AI".to_string() } else { r.tag.replace(" & ", " and ") };
+                            let glyph = if r.id == GENERAL { "✦" } else { r.avatar };
+                            if role_card(ui, p, glyph, r.name, &sub, r.id == agent).clicked() {
+                                pick = Some(r.id);
+                            }
+                        }
+                        if !earlier.is_empty() {
+                            ui.add_space(space::S10);
+                            ui.label(RichText::new(format!("Earlier with the {}", sp.name)).font(fs(size::SMALL)).color(p.text));
+                            for (id, t, day) in &earlier {
+                                if ui.add(egui::Label::new(RichText::new(format!("{t} · {day}")).size(size::ROW_SMALL).color(p.text)).truncate().sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                                    open_conv = Some(id.clone());
+                                }
+                            }
+                        }
+                    });
+                    // the chat
+                    // the gap before the next item isn't taken off available_width yet
+                    let w = ui.available_width() - ui.spacing().item_spacing.x - stroke::HAIR * 2.0;
+                    let h = (screen_h - space::S8 - space::S24).max(space::S40 * 10.0);
+                    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::DIALOG)).show(ui, |ui| {
+                        ui.set_width(w);
+                        ui.set_height(h);
+                        ui.vertical(|ui| {
+                            // head
+                            egui::Frame::none().inner_margin(egui::Margin::symmetric(space::S18, space::S12)).show(ui, |ui| {
+                                ui.set_width(w - space::S18 * 2.0);
+                                ui.horizontal(|ui| {
+                                    ui.label(RichText::new(sp.name).font(fs(size::HERO_BODY)).color(p.text));
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        new_chat = button(ui, p, ButtonKind::Secondary, "New chat", true, !conv.messages.is_empty()).on_hover_text("Start fresh. This chat is kept under Earlier").clicked();
+                                        ui.label(RichText::new(&reads).size(size::SMALL).color(p.dim));
+                                    });
+                                });
+                            });
+                            let (hr, _) = ui.allocate_exact_size(egui::vec2(w, stroke::HAIR), Sense::hover());
+                            ui.painter().rect_filled(hr, 0.0, p.divider);
+                            // the messages, then the suggestions and the box at the foot
+                            let foot = space::S40 * 2.5;
+                            let body_h = (ui.available_height() - foot).max(space::S40 * 3.0);
+                            ui.allocate_ui_with_layout(egui::vec2(w, body_h), Layout::top_down(Align::Min), |ui| {
+                                ui.set_height(body_h);
+                                egui::ScrollArea::vertical().id_salt(("team-chat", &cid)).stick_to_bottom(true).auto_shrink([false, false]).show(ui, |ui| {
+                                    egui::Frame::none().inner_margin(egui::Margin::same(space::S18)).show(ui, |ui| {
+                                        let cw = w - space::S18 * 2.0;
+                                        ui.set_width(cw);
+                                        ui.spacing_mut().item_spacing.y = space::S12;
+                                        if state == ViewState::Loading && conv.messages.is_empty() {
+                                            chat_bubble(ui, p, "Two clients said yes in principle. Is that enough to call H2 supported?", true, cw);
+                                            thinking_line(ui, p, "Reading H2, E1 and your records…");
+                                            return;
+                                        }
+                                        if state == ViewState::Empty {
+                                            ui.add_space(body_h * 0.28);
+                                            ui.vertical_centered(|ui| {
+                                                ui.set_max_width(space::SEARCH_W - space::S40 * 3.0);
+                                                ui.label(RichText::new(format!("Ask the {}", sp.name)).font(fserif(size::CARD_SERIF)).color(p.text));
+                                                ui.add(egui::Label::new(RichText::new(format!("{}. It reads this project before it answers, and proposes changes for you to accept.", sp.tag.replace(" & ", " and "))).size(size::ROW_SMALL).color(p.dim)).wrap());
+                                            });
+                                            return;
+                                        }
+                                        for (k, m) in conv.messages.iter().enumerate() {
+                                            let mine = m.role == "user";
+                                            if m.error && crate::ai::is_limit(&m.text) {
+                                                let q = conv.messages[..k].iter().rev().find(|x| x.role == "user").map(|x| x.text.clone()).unwrap_or_default();
+                                                let (a, b) = budget_card(ui, p, &m.text, cw * 0.82);
+                                                open_settings |= a;
+                                                if b {
+                                                    copy_q = Some(q);
+                                                }
+                                                continue;
+                                            }
+                                            let (text, props) = team::split_proposals(&m.text);
+                                            if !text.trim().is_empty() {
+                                                chat_bubble(ui, p, text.trim(), mine, cw);
+                                            }
+                                            for (j, pr) in props.iter().enumerate() {
+                                                match pr_card(ui, p, pr, cw * 0.82) {
+                                                    Some(true) => decide = Some((k * 100 + j, true)),
+                                                    Some(false) => decide = Some((k * 100 + j, false)),
+                                                    None => {}
+                                                }
+                                            }
+                                        }
+                                        if busy_here {
+                                            let secs = (self.now - self.resolve_ui.chat_started).max(0.0) as u64;
+                                            thinking_line(ui, p, &format!("Reading this project… {secs} s"));
+                                        }
+                                    });
+                                });
+                            });
+                            egui::Frame::none().inner_margin(egui::Margin { left: space::S18, right: space::S18, top: 0.0, bottom: space::S14 }).show(ui, |ui| {
+                                ui.set_width(w - space::S18 * 2.0);
+                                ui.spacing_mut().item_spacing.y = space::S10;
+                                ui.horizontal(|ui| {
+                                    ui.spacing_mut().item_spacing.x = space::S8;
+                                    for s in team::suggestions(&agent) {
+                                        if suggestion_chip(ui, p, s).clicked() {
+                                            prefill = Some(s.to_string());
+                                        }
+                                    }
+                                });
+                                let focused = ui.memory(|m| m.has_focus(input_id));
+                                if focused && ui.input_mut(|i| i.consume_key(egui::Modifiers::NONE, egui::Key::Enter)) {
+                                    send = true;
+                                }
+                                let out = chat_box(ui, p, input_id, &mut self.resolve_ui.chat_input, &format!("Ask the {}", sp.name), !busy_any);
+                                send |= out;
+                            });
+                        });
+                    });
+                });
+            });
+        });
+        if let Some(id) = pick {
+            self.resolve_ui.agent = id.to_string();
+        }
+        if let Some(c) = open_conv {
+            if let Some(x) = self.store.data.conversations.iter_mut().find(|x| x.id == c) {
+                x.updated = now_ms();
+            }
+            self.touch();
+        }
+        if new_chat {
+            let c = Conversation { id: new_id(), project_id: Some(pid.clone()), agent: agent.clone(), title: sp.name.to_string(), messages: vec![], updated: now_ms() + 1 };
+            self.store.data.conversations.push(c);
+            self.touch();
+        }
+        if let Some(s) = prefill {
+            self.resolve_ui.chat_input = s;
+            ui.memory_mut(|m| m.request_focus(input_id));
+        }
+        if send && !busy_any && !self.resolve_ui.chat_input.trim().is_empty() {
+            let msg = std::mem::take(&mut self.resolve_ui.chat_input);
+            self.team_send(&agent, &msg, "", "team");
+        }
+        if open_settings {
+            self.go(View::Settings);
+        }
+        if let Some(q) = copy_q {
+            ui.ctx().copy_text(q);
+            self.toast("Copied your question");
+        }
+        if let Some((key, add)) = decide {
+            self.decide_proposal(&cid, &pid, key / 100, key % 100, add);
+        }
+        true
+    }
+
+    /// Add it / Not now on a proposed change: the change goes through history (Add it), and the
+    /// message remembers the choice either way.
+    fn decide_proposal(&mut self, cid: &str, pid: &str, msg: usize, j: usize, add: bool) {
+        let Some(text) = self.store.data.conversations.iter().find(|c| c.id == cid).and_then(|c| c.messages.get(msg)).map(|m| m.text.clone()) else { return };
+        let (_, props) = team::split_proposals(&text);
+        let Some(pr) = props.get(j).cloned() else { return };
+        if add {
+            let pid = pid.to_string();
+            let what = pr.clone();
+            let parent = team::find_parent(&self.store.data, &pid, &pr.on);
+            self.undoable(&format!("Added: {}", pr.text), "add", move |d| team::apply_proposal(d, &pid, &what, parent.as_deref()));
+        }
+        if let Some(c) = self.store.data.conversations.iter_mut().find(|c| c.id == cid) {
+            if let Some(m) = c.messages.get_mut(msg) {
+                m.text = team::mark_proposal(&m.text, j, if add { "ADDED" } else { "SKIPPED" });
+            }
+            c.updated = now_ms();
+        }
+        self.touch();
     }
 
     pub(super) fn team_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
@@ -287,6 +506,305 @@ impl App {
         if self.resolve_ui.handoff_job.is_some() {
             ctx.request_repaint_after(std::time::Duration::from_millis(300));
         }
+    }
+
+    /// Ask the AI to rewrite a handoff's brief (a new one, or Try again).
+    fn handoff_rewrite(&mut self, pid: &str, rid: &str) -> bool {
+        let Some(ctx) = self.ensure_context(pid) else { return false };
+        let Some(r) = self.store.data.record(rid).cloned() else { return false };
+        let cfg = self.ai_config();
+        if cfg.provider == "offline" || self.resolve_ui.handoff_job.is_some() {
+            return false;
+        }
+        if let Some(x) = self.store.data.record_mut(rid) {
+            x.fields.insert("writer".into(), "writing with AI…".into());
+        }
+        let (d, to, focus) = (self.store.data.clone(), r.field("to").to_string(), r.field("focus").to_string());
+        let (tx, rx) = std::sync::mpsc::channel();
+        std::thread::spawn(move || {
+            let _ = tx.send(roles::handoff_ai(&cfg, &d, &ctx, &to, &focus));
+        });
+        self.resolve_ui.handoff_job = Some((rid.to_string(), rx));
+        true
+    }
+
+    /// The redesigned Handoffs for one project (C-E20, Pack C "Handoffs"). Returns false with no
+    /// project picked.
+    pub(super) fn handoffs_page(&mut self, ui: &mut egui::Ui, p: &Pal) -> bool {
+        let Some(pid) = self.current_project.clone() else { return false };
+        self.poll_handoff(ui.ctx());
+        let name = self.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
+        let mut list: Vec<Record> = self.store.data.records.iter().filter(|r| r.kind == Kind::Handoff && r.project_id.as_deref() == Some(pid.as_str())).cloned().collect();
+        list.sort_by_key(|r| std::cmp::Reverse(r.created));
+        let done_tab = self.temp.get("ho_tab").map_or(false, |x| x == "done");
+        let sel = self.resolve_ui.sel_record.clone().filter(|s| list.iter().any(|r| &r.id == s)).or_else(|| list.first().map(|r| r.id.clone()));
+        let cur = sel.as_ref().and_then(|s| list.iter().find(|r| &r.id == s)).cloned();
+        let state = match self.view_state {
+            ViewState::Full if list.is_empty() => ViewState::Empty,
+            s => s,
+        };
+        let for_kind = self.temp.get("ho_for").cloned().unwrap_or_else(|| "A person".into());
+        let mut make = false;
+        let mut pick: Option<Id> = None;
+        let mut set_status: Option<(Id, &'static str)> = None;
+        let mut copy: Option<String> = None;
+        let mut copy_live = false;
+        let mut retry = false;
+        let mut plain = false;
+        let mut tab: Option<bool> = None;
+        let mut for_pick: Option<&'static str> = None;
+        let screen_h = ui.available_height();
+        egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE - space::S8, right: space::WORK_SIDE - space::S8, top: space::S8, bottom: space::S24 }).show(ui, |ui| {
+            capped(ui, space::CAP_DEFAULT, |ui| {
+                ui.label(RichText::new(&name).font(fs(size::ROW_SMALL)).color(p.orange));
+                ui.label(RichText::new("Handoffs").font(fserif(size::GREETING)).color(p.text));
+                ui.add_space(space::S10);
+                let h = (screen_h - space::S40 * 3.0).max(space::S40 * 10.0);
+                ui.horizontal_top(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S16;
+                    ui.allocate_ui_with_layout(egui::vec2(space::HO_LEFT, h), Layout::top_down(Align::Min), |ui| {
+                        ui.set_width(space::HO_LEFT);
+                        ui.spacing_mut().item_spacing.y = space::S12;
+                        white_card(ui, p, false, |ui| {
+                            ui.spacing_mut().item_spacing.y = space::S8;
+                            ui.label(RichText::new("New handoff").font(fs(size::ROW + 0.5)).color(p.text));
+                            field_label(ui, p, "For");
+                            ui.horizontal(|ui| {
+                                ui.spacing_mut().item_spacing.x = space::S6;
+                                for k in ["Claude Code", "Codex", "A person"] {
+                                    if tab_chip(ui, p, k, None, for_kind == k).clicked() {
+                                        for_pick = Some(k);
+                                    }
+                                }
+                            });
+                            let w = ui.available_width();
+                            if for_kind == "A person" {
+                                field_label(ui, p, "Who");
+                                text_field(ui, p, egui::Id::new("ho-who"), &mut self.resolve_ui.handoff_for, "Their name, and who they are to you", false, w);
+                            }
+                            field_label(ui, p, "What they should do");
+                            let fid = egui::Id::new("ho-what");
+                            ui.horizontal_top(|ui| {
+                                text_field(ui, p, fid, &mut self.resolve_ui.handoff_focus, "The job, in a sentence or two", true, w - space::MIC - space::S8);
+                                mic_for(ui, p, fid, false);
+                            });
+                            ui.add_space(space::S4);
+                            make = wide_button(ui, p, ButtonKind::Primary, "Create brief", !self.resolve_ui.handoff_focus.trim().is_empty()).clicked();
+                        });
+                        let sent: Vec<&Record> = list.iter().filter(|r| r.status != "Done").collect();
+                        let done: Vec<&Record> = list.iter().filter(|r| r.status == "Done").collect();
+                        egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S16, space::S12)).show(ui, |ui| {
+                            ui.set_width(ui.available_width());
+                            ui.set_min_height((ui.available_height() - space::S24).max(space::S40 * 3.0));
+                            if let Some(t) = underline_tabs(ui, p, &[&format!("Sent · {}", sent.len()), &format!("Done · {}", done.len())], done_tab as usize) {
+                                tab = Some(t == 1);
+                            }
+                            ui.add_space(space::S6);
+                            let rows = if done_tab { &done } else { &sent };
+                            if rows.is_empty() {
+                                ui.add(egui::Label::new(RichText::new(if done_tab { "Nothing done yet. Briefs you mark Done move here." } else { "No saved handoffs yet. Briefs you mark Sent wait here until they're done." }).size(size::SMALL + 0.5).color(p.dim)).wrap());
+                            }
+                            for (i, r) in rows.iter().enumerate() {
+                                if i > 0 {
+                                    let (hr, _) = ui.allocate_exact_size(egui::vec2(ui.available_width(), stroke::HAIR), Sense::hover());
+                                    ui.painter().rect_filled(hr, 0.0, p.divider);
+                                }
+                                let who = if r.field("to").is_empty() { "Someone".to_string() } else { r.field("to").to_string() };
+                                let when = super::kb::day_label(r.updated, today());
+                                let meta = match r.status.as_str() {
+                                    "Done" => format!("{who} · done {}", when.to_lowercase()),
+                                    "Sent" => format!("{who} · sent {when}"),
+                                    _ => format!("{who} · draft"),
+                                };
+                                let (action, to) = match r.status.as_str() {
+                                    "Done" => ("Reopen", "Sent"),
+                                    "Sent" => ("Mark done", "Done"),
+                                    _ => ("Mark sent", "Sent"),
+                                };
+                                ui.horizontal(|ui| {
+                                    let tw = ui.available_width() - space::S40 * 2.5;
+                                    let r2 = ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+                                        ui.set_width(tw);
+                                        ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+                                        ui.add(egui::Label::new(RichText::new(&r.title).font(fs(size::ROW_SMALL)).color(if sel.as_deref() == Some(r.id.as_str()) { p.accent_text } else { p.text })).truncate());
+                                        ui.label(RichText::new(meta).size(size::SMALL).color(p.dim));
+                                    });
+                                    if ui.interact(r2.response.rect, egui::Id::new(("ho-row", &r.id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                                        pick = Some(r.id.clone());
+                                    }
+                                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                        if button(ui, p, ButtonKind::Secondary, action, true, true).clicked() {
+                                            set_status = Some((r.id.clone(), to));
+                                        }
+                                    });
+                                });
+                            }
+                        });
+                    });
+                    // the brief
+                    let w = ui.available_width() - ui.spacing().item_spacing.x - stroke::HAIR * 2.0;
+                    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(egui::Rounding::same(radius::CARD + 1.0)).show(ui, |ui| {
+                        ui.set_width(w);
+                        ui.set_height(h);
+                        ui.vertical(|ui| {
+                            egui::Frame::none().inner_margin(egui::Margin::symmetric(space::S18, space::S12)).show(ui, |ui| {
+                                ui.set_width(w - space::S18 * 2.0);
+                                ui.horizontal(|ui| {
+                                    let who = cur.as_ref().map(|r| r.field("to").to_string()).filter(|x| !x.is_empty());
+                                    ui.label(RichText::new(match &who { Some(x) => format!("Brief for {}", x.split(',').next().unwrap_or(x).trim()), None => "Brief".into() }).font(fs(size::HERO_BODY)).color(p.text));
+                                    if let Some(r) = cur.as_ref().filter(|_| state == ViewState::Full) {
+                                        ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                                            ui.spacing_mut().item_spacing.x = space::S8;
+                                            let (action, to) = match r.status.as_str() {
+                                                "Done" => ("Reopen", "Sent"),
+                                                "Sent" => ("Mark done", "Done"),
+                                                _ => ("Mark sent", "Sent"),
+                                            };
+                                            if button(ui, p, ButtonKind::Dark, action, true, true).clicked() {
+                                                set_status = Some((r.id.clone(), to));
+                                            }
+                                            if button(ui, p, ButtonKind::Secondary, "Copy", true, true).clicked() {
+                                                copy = Some(r.body.clone());
+                                            }
+                                        });
+                                    }
+                                });
+                            });
+                            let (hr, _) = ui.allocate_exact_size(egui::vec2(w, stroke::HAIR), Sense::hover());
+                            ui.painter().rect_filled(hr, 0.0, p.divider);
+                            let foot = space::S40;
+                            let body_h = (ui.available_height() - foot).max(space::S40 * 3.0);
+                            ui.allocate_ui_with_layout(egui::vec2(w, body_h), Layout::top_down(Align::Min), |ui| {
+                                ui.set_height(body_h);
+                                egui::ScrollArea::vertical().id_salt(("ho-brief", sel.clone().unwrap_or_default())).auto_shrink([false, false]).show(ui, |ui| {
+                                    egui::Frame::none().inner_margin(egui::Margin::same(space::S18)).show(ui, |ui| {
+                                        ui.set_width(w - space::S18 * 2.0);
+                                        ui.spacing_mut().item_spacing.y = space::S6;
+                                        match (state, &cur) {
+                                            (ViewState::Empty, _) | (_, None) => {
+                                                ui.add_space(body_h * 0.28);
+                                                ui.vertical_centered(|ui| {
+                                                    ui.set_max_width(space::SEARCH_W - space::S40 * 4.0);
+                                                    ui.label(RichText::new("Write a brief for someone else").font(fserif(size::CARD_SERIF)).color(p.text));
+                                                    ui.add(egui::Label::new(RichText::new("Say who it's for and what they should do. Resolve adds what exists, why it matters, what's off limits and when it's done.").size(size::ROW_SMALL).color(p.dim)).wrap());
+                                                });
+                                            }
+                                            (_, Some(r)) => {
+                                                let writer = r.field("writer").to_string();
+                                                if state == ViewState::Loading || writer.starts_with("writing") {
+                                                    ui.label(RichText::new("Writing the brief from the project…").size(size::ROW_SMALL).color(p.dim));
+                                                    let ww = ui.available_width();
+                                                    for k in 0..3 {
+                                                        skeleton(ui, p, ww * (0.95 - k as f32 * 0.15), space::S8);
+                                                    }
+                                                    return;
+                                                }
+                                                if state == ViewState::Error || writer.starts_with("Resolve (the AI couldn't") {
+                                                    let (a, b) = handoff_fallback_card(ui, p);
+                                                    retry |= a;
+                                                    plain |= b;
+                                                    if state == ViewState::Error {
+                                                        return;
+                                                    }
+                                                    ui.add_space(space::S8);
+                                                }
+                                                for (head, body) in roles::brief_sections(&r.body) {
+                                                    if !head.is_empty() {
+                                                        ui.add_space(space::S6);
+                                                        ui.label(RichText::new(head.to_uppercase()).font(fs(size::SMALL)).color(p.orange));
+                                                    }
+                                                    ui.add(egui::Label::new(RichText::new(body).size(size::ROW + 0.5).color(p.text)).wrap().selectable(true));
+                                                }
+                                            }
+                                        }
+                                    });
+                                });
+                            });
+                            let (fr, _) = ui.allocate_exact_size(egui::vec2(w, foot), Sense::hover());
+                            ui.painter().rect_filled(fr, egui::Rounding { nw: 0.0, ne: 0.0, sw: radius::CARD, se: radius::CARD }, p.surface_raised);
+                            let mut fu = ui.new_child(egui::UiBuilder::new().max_rect(fr.shrink2(egui::vec2(space::S18, 0.0))).layout(Layout::left_to_right(Align::Center)));
+                            fu.label(RichText::new("Current project brief (always up to date) ·").size(size::ROW_SMALL).color(p.dim));
+                            copy_live = link(&mut fu, p, "Copy it").clicked();
+                        });
+                    });
+                });
+            });
+        });
+        if let Some(k) = for_pick {
+            self.temp.insert("ho_for".into(), k.into());
+            if k != "A person" {
+                self.resolve_ui.handoff_for.clear();
+            }
+        }
+        if let Some(t) = tab {
+            self.temp.insert("ho_tab".into(), if t { "done".into() } else { "sent".into() });
+        }
+        if let Some(id) = pick {
+            self.resolve_ui.sel_record = Some(id);
+        }
+        if let Some(b) = copy {
+            ui.ctx().copy_text(b);
+            self.toast("Brief copied");
+        }
+        if copy_live {
+            if let Some(ctx) = self.ensure_context(&pid) {
+                ui.ctx().copy_text(roles::handoff_brief(&self.store.data, &ctx));
+                self.toast("Current project brief copied");
+            }
+        }
+        if let Some((id, to)) = set_status {
+            let title = self.store.data.record(&id).map(|r| r.title.clone()).unwrap_or_default();
+            let label = match to {
+                "Done" => format!("Marked \"{title}\" done"),
+                "Sent" => format!("Marked \"{title}\" sent"),
+                _ => format!("Changed \"{title}\""),
+            };
+            self.undoable(&label, "edit", move |d| {
+                if let Some(r) = d.record_mut(&id) {
+                    let _ = r.set_status(to);
+                }
+            });
+        }
+        if retry {
+            if let Some(r) = &cur {
+                if !self.handoff_rewrite(&pid, &r.id) {
+                    self.toast("No AI is connected, so the plain brief stays.");
+                }
+            }
+            if self.view_state == ViewState::Error {
+                self.view_state = ViewState::Full;
+            }
+        }
+        if plain {
+            if let Some(r) = &cur {
+                if let Some(x) = self.store.data.record_mut(&r.id) {
+                    x.fields.insert("writer".into(), "Resolve (plain brief)".into());
+                }
+                self.touch();
+            }
+            if self.view_state == ViewState::Error {
+                self.view_state = ViewState::Full;
+            }
+        }
+        if make {
+            let to = if for_kind == "A person" { std::mem::take(&mut self.resolve_ui.handoff_for).trim().to_string() } else { for_kind.clone() };
+            let focus = std::mem::take(&mut self.resolve_ui.handoff_focus).trim().to_string();
+            if let Some(ctx) = self.ensure_context(&pid) {
+                let body = roles::handoff_for(&self.store.data, &ctx, &to, &focus);
+                let mut r = Record::new(Kind::Handoff, Some(pid.clone()), focus.chars().take(60).collect::<String>());
+                r.body = body;
+                r.fields.insert("to".into(), to);
+                r.fields.insert("focus".into(), focus);
+                r.fields.insert("writer".into(), "Resolve (no AI connected)".into());
+                let id = r.id.clone();
+                let label = format!("Wrote a handoff: {}", r.title);
+                self.undoable(&label, "add", move |d| d.records.push(r));
+                self.resolve_ui.sel_record = Some(id.clone());
+                self.temp.insert("ho_tab".into(), "sent".into());
+                self.handoff_rewrite(&pid, &id);
+            }
+        }
+        true
     }
 
     pub(super) fn handoffs_view(&mut self, ui: &mut egui::Ui, p: &Pal) {

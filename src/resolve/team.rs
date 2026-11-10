@@ -6,7 +6,7 @@
 //! and every role runs on the same engine as Ask AI (`ai::ask_agent` with the workspace tools).
 //! The General assistant *is* Ask AI.
 
-use super::ProjectContext;
+use super::{Kind, ProjectContext, Record};
 use crate::model::*;
 
 pub struct Specialist {
@@ -35,6 +35,125 @@ pub fn specialist(id: &str) -> &'static Specialist {
 /// list them), so they read the workspace but don't change it. Subscription and API models can.
 pub fn may_change(provider: &str) -> bool {
     !matches!(provider, "ollama" | "openai")
+}
+
+// ---------------------------------------------------------------- proposed changes (C-E19)
+
+/// Added to a role's instructions when it may not change the workspace itself.
+pub const PROPOSE_RULE: &str = "You can't change the workspace in this chat. When you suggest adding something, end your reply with one line per suggestion, exactly like this:\nPROPOSED: question | H2 | What does each café pay you now per year?\nThe first part is one of question, task, evidence or assumption; the second is the hypothesis label (H1, H2...) or theme it belongs to, or empty; the third is the text to add. The person adds it with one click, or not.";
+
+/// A change a role proposes: what kind, what it belongs to ("H2", a theme, or empty), the text,
+/// and what was decided ("" open, "ADDED", "SKIPPED").
+#[derive(Clone, Debug, PartialEq, Default)]
+pub struct Proposed {
+    pub kind: String,
+    pub on: String,
+    pub text: String,
+    pub decided: String,
+}
+
+/// The message without its PROPOSED lines, and the proposals.
+pub fn split_proposals(text: &str) -> (String, Vec<Proposed>) {
+    let mut keep = vec![];
+    let mut props = vec![];
+    for l in text.lines() {
+        let t = l.trim();
+        let (decided, rest) = if let Some(r) = t.strip_prefix("PROPOSED:") {
+            ("", r)
+        } else if let Some(r) = t.strip_prefix("ADDED:") {
+            ("ADDED", r)
+        } else if let Some(r) = t.strip_prefix("SKIPPED:") {
+            ("SKIPPED", r)
+        } else {
+            keep.push(l);
+            continue;
+        };
+        let parts: Vec<&str> = rest.split('|').map(|s| s.trim()).collect();
+        let kind = parts.first().map(|s| s.to_lowercase()).unwrap_or_default();
+        if parts.len() >= 3 && ["question", "task", "evidence", "assumption"].contains(&kind.as_str()) && !parts[2].is_empty() {
+            props.push(Proposed { kind, on: parts[1].to_string(), text: parts[2..].join(" | "), decided: decided.to_string() });
+        } else {
+            keep.push(l);
+        }
+    }
+    (keep.join("\n"), props)
+}
+
+/// Mark proposal `j` of a message as added or skipped (the text is kept).
+pub fn mark_proposal(text: &str, j: usize, how: &str) -> String {
+    let mut k = 0;
+    text.lines()
+        .map(|l| {
+            let t = l.trim_start();
+            if let Some(rest) = t.strip_prefix("PROPOSED:") {
+                let this = k;
+                k += 1;
+                if this == j {
+                    return format!("{how}:{rest}");
+                }
+            } else if t.starts_with("ADDED:") || t.starts_with("SKIPPED:") {
+                k += 1;
+            }
+            l.to_string()
+        })
+        .collect::<Vec<_>>()
+        .join("\n")
+}
+
+/// The record a proposal belongs to: a hypothesis by its label ("H2"), else a theme by title.
+pub fn find_parent(d: &WorkspaceData, pid: &str, on: &str) -> Option<String> {
+    let on = on.trim();
+    if on.is_empty() {
+        return None;
+    }
+    d.records
+        .iter()
+        .filter(|r| r.project_id.as_deref() == Some(pid))
+        .find(|r| (r.kind == Kind::Hypothesis && r.title.split_once(':').map_or(false, |(l, _)| l.trim().eq_ignore_ascii_case(on))) || (r.kind == Kind::Roadmap && r.title.eq_ignore_ascii_case(on)))
+        .map(|r| r.id.clone())
+}
+
+/// Write a proposal into the workspace (the caller wraps it in history).
+pub fn apply_proposal(d: &mut WorkspaceData, pid: &str, pr: &Proposed, parent: Option<&str>) {
+    match pr.kind.as_str() {
+        "task" => {
+            let mut t = Task::new(pr.text.clone());
+            t.project_id = Some(pid.to_string());
+            t.section = "Now".into();
+            let id = t.id.clone();
+            d.tasks.push(t);
+            if let Some(r) = parent.and_then(|x| d.record_mut(x)) {
+                r.links.push(id);
+            }
+        }
+        k => {
+            let kind = match k {
+                "evidence" => Kind::Evidence,
+                "assumption" => Kind::Assumption,
+                _ => Kind::Question,
+            };
+            let mut r = Record::new(kind, Some(pid.to_string()), pr.text.clone());
+            if let Some(par) = parent {
+                if d.record(par).map_or(false, |x| x.kind == Kind::Hypothesis) {
+                    r.parent_id = Some(par.to_string());
+                } else {
+                    r.links.push(par.to_string());
+                }
+            }
+            d.records.push(r);
+        }
+    }
+}
+
+/// Two things to ask each role (the chips above the box).
+pub fn suggestions(agent: &str) -> [&'static str; 2] {
+    match agent {
+        "validation" => ["Which hypothesis is weakest?", "Write this up as a handoff"],
+        "product-director" => ["What should I cut?", "Is the Now column right?"],
+        "growth-lead" => ["Who should I talk to next?", "How should I price this?"],
+        "tech-lead" => ["Turn the Now themes into tasks", "Write a handoff for Claude Code"],
+        _ => ["What matters this week?", "Summarise this project"],
+    }
 }
 
 /// System prompt for a role working on a project (or the whole workspace).

@@ -3260,6 +3260,159 @@ pub fn remove_x(ui: &mut Ui, p: &Pal) -> Response {
     resp.on_hover_text("Remove").on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+// ======================================================================================
+// AI Team and Handoffs components (Phase 4, Pack C "AITeam", "Handoffs").
+// ======================================================================================
+
+/// A role card: a square avatar (dark when picked), the name and what it does; picked takes the
+/// amber tint and edge.
+pub fn role_card(ui: &mut Ui, p: &Pal, glyph: &str, name: &str, sub: &str, picked: bool) -> Response {
+    let w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::S40 + space::S16), Sense::click());
+    let (fill, edge) = if picked { (if p.dark { p.callout } else { tok::AMBER_LIGHT }, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.faint) } else { (p.card, p.line) };
+    ui.painter().rect(rect, radius::BUTTON, fill, Stroke::new(stroke::HAIR, edge));
+    let a = Rect::from_center_size(egui::pos2(rect.left() + space::S12 + space::S16 + 1.0, rect.center().y), egui::vec2(space::S32 + 2.0, space::S32 + 2.0));
+    ui.painter().rect_filled(a, radius::SMALL_BUTTON, if picked { tok::INK } else { p.surface_raised });
+    ui.painter().text(a.center(), Align2::CENTER_CENTER, glyph, fserif(size::ROW + 1.0), if picked { tok::AMBER } else { p.text });
+    let x = a.right() + space::S12;
+    ui.painter().text(egui::pos2(x, rect.center().y - 1.0), Align2::LEFT_BOTTOM, name, fs(size::ROW_SMALL + 0.5), p.text);
+    ui.painter().text(egui::pos2(x, rect.center().y + 1.0), Align2::LEFT_TOP, fit_text(ui.painter(), sub, fp(size::SMALL + 0.5), rect.right() - x - space::S10), fp(size::SMALL + 0.5), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A chat message: yours dark on the right, the role's on a raised fill on the left.
+pub fn chat_bubble(ui: &mut Ui, p: &Pal, text: &str, mine: bool, w: f32) {
+    let max = w * 0.82;
+    let layout = if mine { Layout::right_to_left(Align::Min) } else { Layout::left_to_right(Align::Min) };
+    ui.allocate_ui_with_layout(egui::vec2(w, 0.0), layout, |ui| {
+        let g = ui.painter().layout(text.to_string(), fp(size::ROW + 0.5), if mine { tok::TEXT_ON_DARK } else { p.text }, max - space::S16 * 2.0);
+        let size = g.size() + egui::vec2(space::S16 * 2.0, space::S12 * 2.0);
+        let (r, _) = ui.allocate_exact_size(size, Sense::hover());
+        ui.painter().rect_filled(r, radius::CARD + 1.0, if mine { tok::INK } else { p.surface_raised });
+        ui.painter().galley(r.min + egui::vec2(space::S16, space::S12), g, p.text);
+    });
+}
+
+/// The role is working: three amber dots and what it's doing.
+pub fn thinking_line(ui: &mut Ui, p: &Pal, text: &str) {
+    ui.horizontal(|ui| {
+        let ph = motion::loop_phase(ui.ctx(), 1200.0);
+        for k in 0..3 {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S8, space::S8), Sense::hover());
+            let on = ((ph * 3.0) as usize) % 3 == k;
+            ui.painter().circle_filled(r.center(), 3.0, if on { tok::AMBER } else { tok::amber_a(0.35) });
+        }
+        ui.add_space(space::S4);
+        ui.label(RichText::new(text).size(size::ROW_SMALL).color(p.dim));
+    });
+}
+
+/// A proposed change from a role: PROPOSED CHANGE, what it adds and to what, Add it / Not now.
+/// Returns Some(true) for Add it, Some(false) for Not now.
+pub fn pr_card(ui: &mut Ui, p: &Pal, pr: &crate::resolve::team::Proposed, w: f32) -> Option<bool> {
+    let mut out = None;
+    let what = match pr.kind.as_str() {
+        "task" => "a task",
+        "evidence" => "evidence",
+        "assumption" => "an assumption",
+        _ => "an open question",
+    };
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, if pr.decided.is_empty() { tok::AMBER } else { p.line })).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        let head = match pr.decided.as_str() {
+            "ADDED" => "ADDED",
+            "SKIPPED" => "NOT ADDED",
+            _ => "PROPOSED CHANGE",
+        };
+        ui.label(RichText::new(head).font(fs(size::SMALL)).color(p.accent_text));
+        let mut job = egui::text::LayoutJob::default();
+        let lead = if pr.on.is_empty() { format!("Add {what}: ") } else { format!("Add {what} to {}: ", pr.on) };
+        job.append(&lead, 0.0, egui::text::TextFormat { font_id: fp(size::ROW + 0.5), color: p.text, ..Default::default() });
+        job.append(&pr.text, 0.0, egui::text::TextFormat { font_id: fs(size::ROW + 0.5), color: p.text, ..Default::default() });
+        job.wrap.max_width = ui.available_width();
+        ui.label(job);
+        if pr.decided.is_empty() {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S8;
+                if button(ui, p, ButtonKind::Dark, "Add it", true, true).clicked() {
+                    out = Some(true);
+                }
+                if button(ui, p, ButtonKind::Secondary, "Not now", true, true).clicked() {
+                    out = Some(false);
+                }
+                ui.label(RichText::new("↶ in the sidebar undoes it").size(size::SMALL).color(p.dim));
+            });
+        }
+    });
+    out
+}
+
+/// The AI's limit or budget, in the chat: what happened, Open Settings and Copy my question.
+pub fn budget_card(ui: &mut Ui, p: &Pal, text: &str, w: f32) -> (bool, bool) {
+    let mut out = (false, false);
+    egui::Frame::none().fill(p.orange_tint).stroke(Stroke::new(stroke::HAIR, p.orange.gamma_multiply(0.4))).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        ui.add(egui::Label::new(RichText::new(format!("{} Your question is kept.", text.trim())).size(size::ROW_SMALL).color(p.orange)).wrap());
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            out.0 = button(ui, p, ButtonKind::Dark, "Open Settings", true, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, "Copy my question", true, true).clicked();
+        });
+    });
+    out
+}
+
+/// The AI didn't write a handoff: a plain brief is there instead. Returns (Try again, Use the
+/// plain brief).
+pub fn handoff_fallback_card(ui: &mut Ui, p: &Pal) -> (bool, bool) {
+    let mut out = (false, false);
+    egui::Frame::none().fill(p.orange_tint).stroke(Stroke::new(stroke::HAIR, p.orange.gamma_multiply(0.4))).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        let mut job = egui::text::LayoutJob::default();
+        job.append("The AI didn't reply. ", 0.0, egui::text::TextFormat { font_id: fs(size::ROW_SMALL), color: p.orange, ..Default::default() });
+        job.append("You have a plain brief made from the project instead. It's usable, just less polished. Try again for the rewritten one.", 0.0, egui::text::TextFormat { font_id: fp(size::ROW_SMALL), color: p.text, ..Default::default() });
+        job.wrap.max_width = ui.available_width();
+        ui.label(job);
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            out.0 = button(ui, p, ButtonKind::Dark, "Try again", true, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, "Use the plain brief", true, true).clicked();
+        });
+    });
+    out
+}
+
+/// A suggestion above the chat box (a pill with a hairline).
+pub fn suggestion_chip(ui: &mut Ui, p: &Pal, text: &str) -> Response {
+    let g = ui.painter().layout_no_wrap(text.to_string(), fp(size::ROW_SMALL), p.text);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S12 * 2.0, space::S8 * 2.0), Sense::click());
+    ui.painter().rect(r, radius::PILL, if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, p.line));
+    ui.painter().galley(r.min + egui::vec2(space::S12, space::S8), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The chat box: the field, the mic (Windows voice typing, C-E24) and the amber send button.
+/// Returns true when send is pressed.
+pub fn chat_box(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &str, can_send: bool) -> bool {
+    let mut send = false;
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin { left: space::S16, right: space::S6, top: space::S6, bottom: space::S6 }).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal(|ui| {
+            let w = ui.available_width() - space::MIC * 2.0 - space::S10;
+            ui.add(egui::TextEdit::multiline(text).id(id).frame(false).font(fp(size::ROW + 0.5)).text_color(p.text).hint_text(RichText::new(hint).color(p.faint)).desired_rows(1).desired_width(w));
+            mic_for(ui, p, id, false);
+            let (r, resp) = ui.allocate_exact_size(egui::vec2(space::MIC, space::MIC), if can_send { Sense::click() } else { Sense::hover() });
+            ui.painter().circle_filled(r.center(), space::MIC / 2.0, if can_send { tok::AMBER } else { p.track });
+            ui.painter().text(r.center(), Align2::CENTER_CENTER, "↑", fs(size::ROW + 1.0), tok::INK);
+            send = can_send && resp.on_hover_text("Send (Enter)").on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
+        });
+    });
+    send
+}
+
 /// A column head on the whole picture: dark for Now, sunk for the others.
 pub fn whole_head(ui: &mut Ui, p: &Pal, w: f32, name: &str, now: bool) {
     let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::S26), Sense::hover());
