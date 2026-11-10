@@ -16,8 +16,33 @@ use serde_json::{json, Value};
 
 pub const H0: &str = include_str!("../../resolveos/h0.md");
 
-/// Coverage targets (brief 5.2.5): key, label, fixed question used without AI, default kind of what's heard.
-pub const TARGETS: [(&str, &str, &str, &str); 9] = [
+/// One coverage target: key, label, fixed question used without AI, default kind of what's heard.
+pub type IntakeTarget = (&'static str, &'static str, &'static str, &'static str);
+
+/// The coverage targets an intake in this mode works through (Careers brief, "Modes").
+pub fn targets(mode: Mode) -> &'static [IntakeTarget] {
+    match mode {
+        Mode::Pm => &TARGETS,
+        Mode::Careers => &TARGETS_CAREERS,
+    }
+}
+
+/// Careers intake targets (Careers brief, Intake 03; cap 8, the same MAX_QUESTIONS). What's heard
+/// is a hard gate, a preference or a question. The office-days question is the canvas's; the other
+/// fixed questions (used only without AI) are proposals until the Careers intake step.
+pub const TARGETS_CAREERS: [IntakeTarget; 8] = [
+    ("role", "Role and level", "What role, and at what level, are you looking for?", "gate"),
+    ("company", "Company type and size", "What kind of company, and what size, do you want to work for?", "preference"),
+    ("pay", "Minimum pay", "What's the lowest base pay you'd accept?", "gate"),
+    ("location", "Location and office days", "How many days a week can you be in an office, and where?", "gate"),
+    ("travel", "Travel", "How much travel is fine for you?", "preference"),
+    ("contract", "Contract type", "Permanent, contract, or either?", "gate"),
+    ("disciplines", "Disciplines open to", "Which other kinds of role would you be open to?", "preference"),
+    ("timeline", "Timeline and weekly hours", "By when do you want to start, and how many hours a week can you give the search?", "question"),
+];
+
+/// Coverage targets (brief 5.2.5) for PM mode: key, label, fixed question used without AI, default kind of what's heard.
+pub const TARGETS: [IntakeTarget; 9] = [
     ("goal", "What they want to achieve", "What do you want to achieve?", "assumption"),
     ("problem", "The problem or opportunity", "What problem or opportunity is behind this?", "assumption"),
     ("who", "Who is affected", "Who is affected? Who has this problem, or who would benefit?", "assumption"),
@@ -29,8 +54,13 @@ pub const TARGETS: [(&str, &str, &str, &str); 9] = [
     ("uncertainties", "Uncertainties", "What are you least sure about?", "question"),
 ];
 
+/// A target by its key, in any mode (the keys don't overlap; PM is looked up first).
+fn any_target(key: &str) -> Option<&'static IntakeTarget> {
+    TARGETS.iter().chain(TARGETS_CAREERS.iter()).find(|t| t.0 == key)
+}
+
 pub fn target_label(key: &str) -> &'static str {
-    TARGETS.iter().find(|t| t.0 == key).map(|t| t.1).unwrap_or("Follow-up")
+    any_target(key).map(|t| t.1).unwrap_or("Follow-up")
 }
 
 #[derive(Serialize, Deserialize, Clone, Debug, Default, PartialEq)]
@@ -352,7 +382,12 @@ impl Intake {
     /// Fraction of coverage targets with an answer.
     pub fn coverage(&self) -> f32 {
         let c = self.covered();
-        TARGETS.iter().filter(|t| c.iter().any(|x| x == t.0)).count() as f32 / TARGETS.len() as f32
+        let ts = self.targets();
+        ts.iter().filter(|t| c.iter().any(|x| x == t.0)).count() as f32 / ts.len() as f32
+    }
+    /// The coverage targets for this intake's mode.
+    pub fn targets(&self) -> &'static [IntakeTarget] {
+        targets(self.mode)
     }
     /// The answer for a target (latest non-empty).
     pub fn answer_for(&self, target: &str) -> String {
@@ -394,7 +429,7 @@ pub fn offline_next(i: &Intake) -> Option<Qa> {
         return None;
     }
     let asked: Vec<&str> = i.qas.iter().map(|q| q.target.as_str()).collect();
-    TARGETS.iter().filter(|t| !i.qas.iter().any(|q| similar(&q.question, t.2))).find(|t| !asked.contains(&t.0)).map(|t| Qa {
+    i.targets().iter().filter(|t| !i.qas.iter().any(|q| similar(&q.question, t.2))).find(|t| !asked.contains(&t.0)).map(|t| Qa {
         id: new_id(),
         target: t.0.into(),
         question: t.2.into(),
@@ -411,7 +446,7 @@ pub fn offline_classify(qa: &Qa) -> Vec<Heard> {
     if qa.answer.trim().is_empty() {
         return vec![];
     }
-    let kind = TARGETS.iter().find(|t| t.0 == qa.target).map(|t| t.3).unwrap_or("assumption");
+    let kind = any_target(&qa.target).map(|t| t.3).unwrap_or("assumption");
     let text = if kind == "assumption" { clean_claim(&qa.answer) } else { qa.answer.trim().to_string() };
     vec![Heard { id: new_id(), text, kind: kind.into(), from: qa.id.clone(), corrected: false }]
 }
@@ -424,8 +459,8 @@ pub struct NextQ {
     pub qa: Option<Qa>,
 }
 
-fn targets_text() -> String {
-    TARGETS.iter().map(|t| format!("- {}: {}", t.0, t.1)).collect::<Vec<_>>().join("\n")
+fn targets_text(mode: Mode) -> String {
+    targets(mode).iter().map(|t| format!("- {}: {}", t.0, t.1)).collect::<Vec<_>>().join("\n")
 }
 
 fn label(cfg: &AiConfig) -> String {
@@ -466,7 +501,7 @@ Rules:
 
 Return ONLY JSON: {{"done": true|false, "covered": ["target keys now covered"], "target": "one target key or followup", "question": "…", "why": "…", "builds_on": ["ids"]}}{retry}"#,
             h0 = H0,
-            targets = targets_text(),
+            targets = targets_text(i.mode),
             covered = if covered.is_empty() { "nothing yet".to_string() } else { covered.clone() },
             transcript = fence(&i.transcript()),
             ids = ids.join(", "),
@@ -476,15 +511,15 @@ Return ONLY JSON: {{"done": true|false, "covered": ["target keys now covered"], 
     let src = label(cfg);
     complete_json(cfg, Some(0.3), build, |v| {
         let done = v.get("done").and_then(|x| x.as_bool()).unwrap_or(false);
-        let covered: Vec<String> = v.get("covered").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|x| x.as_str()).filter(|k| TARGETS.iter().any(|t| t.0 == *k)).map(|s| s.to_string()).collect()).unwrap_or_default();
-        let q = v.get("question").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
+        let covered: Vec<String> = v.get("covered").and_then(|x| x.as_array()).map(|a| a.iter().filter_map(|x| x.as_str()).filter(|k| i.targets().iter().any(|t| t.0 == *k)).map(|s| s.to_string()).collect()).unwrap_or_default();
+        let q =v.get("question").and_then(|x| x.as_str()).unwrap_or("").trim().to_string();
         if q.is_empty() && !done {
             return Err("empty question".into());
         }
         if q.matches('?').count() > 1 {
             return Err("two questions in one".into());
         }
-        let target = v.get("target").and_then(|x| x.as_str()).filter(|k| TARGETS.iter().any(|t| t.0 == *k)).unwrap_or("followup").to_string();
+        let target = v.get("target").and_then(|x| x.as_str()).filter(|k| i.targets().iter().any(|t| t.0 == *k)).unwrap_or("followup").to_string();
         // never ask the same thing twice (small local models loop on one question)
         if !q.is_empty() && i.qas.iter().any(|x| similar(&x.question, &q)) {
             return Err(format!("\"{q}\" was already asked — ask about something not yet covered"));

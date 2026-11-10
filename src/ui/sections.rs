@@ -121,6 +121,17 @@ impl App {
     }
 
     pub(super) fn section_view(&mut self, ui: &mut egui::Ui, p: &Pal, s: Section) {
+        // Careers mode's own screens, and its Frameworks and Knowledge base, come in later steps
+        // (Careers Step 1 builds no Careers screen): until then they say so. PM never gets here.
+        if !self.mode().is_pm() && matches!(s, Section::Pipeline | Section::MyCv | Section::Stats | Section::Recorder | Section::Frameworks | Section::Knowledge) {
+            self.top_bar(ui, p, |_, _| {});
+            let label = nav::nav(self.mode()).iter().flat_map(|g| g.items.iter()).find(|i| i.target == nav::Target::Sec(s)).map(|i| i.label).unwrap_or("This screen");
+            ui.add_space(space::S40 * 3.0);
+            if empty_center(ui, p, Icon::Info, &format!("{label} comes in a later step"), "This mode's screens are being built one step at a time.", "Open Home") {
+                self.go(View::Dashboard);
+            }
+            return;
+        }
         // the redesigned sections (Phase 4) draw their own header, no top bar
         if s == Section::Overview && self.current_project.is_some() && self.overview_page(ui, p) {
             return;
@@ -151,6 +162,10 @@ impl App {
                     Section::Knowledge => "Knowledge",
                     Section::AiTeam => "AI Team",
                     Section::Handoffs => "Handoffs",
+                    Section::Pipeline => "Pipeline",
+                    Section::MyCv => "My CV",
+                    Section::Stats => "Stats",
+                    Section::Recorder => "Interview recorder",
                 };
                 if self.current_project.is_some() {
                     self.project_header(ui, p, name);
@@ -172,6 +187,8 @@ impl App {
                     Section::Knowledge => self.knowledge_view(ui, p),
                     Section::AiTeam => self.team_view(ui, p),
                     Section::Handoffs => self.handoffs_view(ui, p),
+                    // only Careers mode lists these, and it returned above
+                    Section::Pipeline | Section::MyCv | Section::Stats | Section::Recorder => {}
                 }
                 ui.add_space(40.0);
             });

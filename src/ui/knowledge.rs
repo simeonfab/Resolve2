@@ -7,7 +7,7 @@
 //! databases are the ones that used to be listed in the sidebar; the cut list is the project
 //! context's "not yet" list.
 
-use super::nav::{FRAMEWORKS, KNOWLEDGE_TABS};
+use super::nav::{frameworks, knowledge_tabs};
 use super::theme::*;
 use super::widgets::*;
 use super::*;
@@ -19,12 +19,12 @@ impl App {
 
     pub(super) fn frameworks_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
         ui.horizontal_wrapped(|ui| {
-            for f in FRAMEWORKS {
+            for f in frameworks(self.mode()) {
                 pill(ui, p, f.name, true).on_hover_text(f.id);
             }
             ui.label(RichText::new("More methods can be added to the registry later.").size(size::TINY).color(p.faint));
         });
-        if let Some(f) = FRAMEWORKS.first() {
+        if let Some(f) = frameworks(self.mode()).first() {
             wrap_label(ui, RichText::new(f.about).size(size::SMALL).color(p.dim));
         }
         ui.add_space(10.0);
@@ -66,9 +66,10 @@ impl App {
     // ------------------------------------------------------------ Knowledge
 
     pub(super) fn knowledge_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        let mut tab = self.resolve_ui.knowledge_tab.min(KNOWLEDGE_TABS.len() - 1);
+        let tabs = knowledge_tabs(self.mode());
+        let mut tab = self.resolve_ui.knowledge_tab.min(tabs.len() - 1);
         ui.horizontal_wrapped(|ui| {
-            for (i, (label, icon)) in KNOWLEDGE_TABS.iter().enumerate() {
+            for (i, (label, icon)) in tabs.iter().enumerate() {
                 if pill(ui, p, &format!("{icon} {label}"), tab == i).clicked() {
                     tab = i;
                 }

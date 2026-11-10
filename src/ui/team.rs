@@ -9,7 +9,7 @@
 use super::theme::*;
 use super::widgets::*;
 use super::*;
-use crate::resolve::team::{self, GENERAL, TEAM};
+use crate::resolve::team::{self, GENERAL};
 use crate::resolve::{roles, Kind, Record};
 use eframe::egui::{self, RichText, Sense, Stroke};
 
@@ -182,11 +182,12 @@ impl App {
     /// project picked (the old view stays for all projects).
     pub(super) fn team_page(&mut self, ui: &mut egui::Ui, p: &Pal) -> bool {
         let Some(pid) = self.current_project.clone() else { return false };
-        if self.resolve_ui.agent.is_empty() || !TEAM.iter().any(|r| r.id == self.resolve_ui.agent) {
-            self.resolve_ui.agent = "validation".into();
+        let roles = team::team(self.store.data.mode);
+        if self.resolve_ui.agent.is_empty() || !roles.iter().any(|r| r.id == self.resolve_ui.agent) {
+            self.resolve_ui.agent = team::default_role(self.store.data.mode).into();
         }
         let agent = self.resolve_ui.agent.clone();
-        let sp = team::specialist(&agent);
+        let sp = team::specialist_in(self.store.data.mode, &agent);
         let name = self.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
         let cid = self.conversation_for(Some(&pid), &agent);
         let conv = self.store.data.conversations.iter().find(|c| c.id == cid).cloned().unwrap_or_default();
@@ -224,7 +225,7 @@ impl App {
                         ui.label(RichText::new(&name).font(fs(size::ROW_SMALL)).color(p.orange));
                         ui.label(RichText::new("AI Team").font(fserif(size::GREETING)).color(p.text));
                         ui.add_space(space::S4);
-                        for r in TEAM.iter() {
+                        for r in roles.iter() {
                             let sub = if r.id == GENERAL { "Ask anything · same chat as Ask AI".to_string() } else { r.tag.replace(" & ", " and ") };
                             let glyph = if r.id == GENERAL { "✦" } else { r.avatar };
                             if role_card(ui, p, glyph, r.name, &sub, r.id == agent).clicked() {
@@ -398,15 +399,17 @@ impl App {
     }
 
     pub(super) fn team_view(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        if self.resolve_ui.agent.is_empty() || !TEAM.iter().any(|r| r.id == self.resolve_ui.agent) {
-            self.resolve_ui.agent = "product-director".into();
+        let roles = team::team(self.store.data.mode);
+        if self.resolve_ui.agent.is_empty() || !roles.iter().any(|r| r.id == self.resolve_ui.agent) {
+            // the all-projects view opens on the Product Director in PM, as before
+            self.resolve_ui.agent = if self.store.data.mode.is_pm() { "product-director" } else { team::default_role(self.store.data.mode) }.into();
         }
         // one row of equal cards: same width and height; the selected one only gets a highlight
         // border (same size, same place, so nothing moves)
         let mut pick: Option<&'static str> = None;
         let current = self.resolve_ui.agent.clone();
-        ui.columns(TEAM.len(), |cols| {
-            for (i, sp) in TEAM.iter().enumerate() {
+        ui.columns(roles.len(), |cols| {
+            for (i, sp) in roles.iter().enumerate() {
                 let ui = &mut cols[i];
                 let on = current == sp.id;
                 let r = egui::Frame::none().fill(p.card).stroke(Stroke::new(if on { 2.0 } else { 1.0 }, if on { p.accent } else { p.line })).rounding(space::RADIUS_SMALL).inner_margin(egui::Margin::same(if on { 9.0 } else { 10.0 })).show(ui, |ui| {
@@ -430,7 +433,7 @@ impl App {
         }
         ui.add_space(8.0);
         let agent = self.resolve_ui.agent.clone();
-        let sp = team::specialist(&agent);
+        let sp = team::specialist_in(self.store.data.mode, &agent);
         let scope = self.current_project.clone();
         let cid = self.conversation_for(scope.as_deref(), &agent);
         let scope_name = scope.as_deref().and_then(|x| self.store.data.project(x)).map(|x| x.name.clone()).unwrap_or_else(|| "all projects".into());

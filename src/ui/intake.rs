@@ -144,7 +144,7 @@ impl App {
                 // the rail: 308, or 72 on the wide steps, on the M02.7 clock
                 let rail_w = super::motion::tween(ui.ctx(), egui::Id::new("intake-rail-w"), if narrow { space::RAIL_NARROW } else { space::RAIL }, super::motion::timing(420.0, 0.0, super::motion::E_SPRING));
                 let rail = egui::Rect::from_min_size(body.min, egui::vec2(rail_w, body.height()));
-                intake_rail(ui, rail, step, rail_w < (space::RAIL + space::RAIL_NARROW) / 2.0);
+                intake_rail(ui, rail, super::dashboard::rail_steps(it.mode), step, rail_w < (space::RAIL + space::RAIL_NARROW) / 2.0);
                 let pane = egui::Rect::from_min_max(egui::pos2(rail.right(), body.top()), body.max);
                 ui.painter().rect_filled(pane, 0.0, p.bg);
                 let (col, left, heard_w) = pane_layout(&stage, whole, pane.width(), wide);

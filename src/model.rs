@@ -710,10 +710,39 @@ pub struct Tombstone {
     pub deleted: i64,
 }
 
+/// What a workspace is for (Careers brief, 10 Nov 2026, "Modes"). Set when the workspace is
+/// created and never changed; switching workspace switches the mode. The fixed tables (sidebar,
+/// Frameworks, Knowledge tabs, Ask Resolve wording, Help guide, intake targets and rail, AI Team
+/// roles) are picked by it. PM is today's app. Two modes only (YGO was descoped, 10 Nov 2026).
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[serde(rename_all = "lowercase")]
+pub enum Mode {
+    #[default]
+    Pm,
+    Careers,
+}
+
+impl Mode {
+    pub fn is_pm(&self) -> bool {
+        *self == Mode::Pm
+    }
+    /// The short label a workspace row can show.
+    pub fn label(&self) -> &'static str {
+        match self {
+            Mode::Pm => "PM",
+            Mode::Careers => "Careers",
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct WorkspaceData {
     #[serde(default)]
     pub version: u32,
+    /// The workspace's mode. Missing in every workspace saved before modes, so it loads as PM;
+    /// a PM workspace never writes it, so its file stays as it was.
+    #[serde(default, skip_serializing_if = "Mode::is_pm")]
+    pub mode: Mode,
     #[serde(default)]
     pub pages: Vec<Page>,
     #[serde(default)]

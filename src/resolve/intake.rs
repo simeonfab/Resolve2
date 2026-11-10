@@ -194,6 +194,10 @@ pub struct Attachment {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Intake {
     pub id: Id,
+    /// Which mode's questions this intake asks (`journey::targets`). It runs before its workspace
+    /// exists, so it carries the mode itself. Missing in every intake saved before modes: PM.
+    #[serde(default, skip_serializing_if = "Mode::is_pm")]
+    pub mode: Mode,
     #[serde(default)]
     pub name: String,
     #[serde(default)]

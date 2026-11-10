@@ -7,7 +7,7 @@
 
 use super::frameworks::{exp_label, split_label};
 use super::import_ui::{pick_files, ImportTarget};
-use super::nav::{Section, KNOWLEDGE_TABS};
+use super::nav::{knowledge_tabs, Section};
 use super::theme::*;
 use super::widgets::*;
 use super::*;
@@ -206,7 +206,7 @@ impl App {
     pub(super) fn kb_page(&mut self, ui: &mut egui::Ui, p: &Pal) -> bool {
         let Some(pid) = self.current_project.clone() else { return false };
         let name = self.store.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default();
-        let tabs: Vec<&str> = KNOWLEDGE_TABS.iter().map(|t| t.0).collect();
+        let tabs: Vec<&str> = knowledge_tabs(self.mode()).iter().map(|t| t.0).collect();
         let tab = self.resolve_ui.knowledge_tab.min(tabs.len() - 1);
         let today_ = today();
         let mut items = kb_items(&self.store.data, &pid, tab, today_);
