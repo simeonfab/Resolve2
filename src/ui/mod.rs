@@ -27,6 +27,7 @@ mod pages;
 pub mod overview;
 pub mod roadmap;
 pub mod frameworks;
+pub mod proposal_editor;
 pub(crate) mod settings;
 pub mod tasks;
 
@@ -670,9 +671,14 @@ impl App {
             return;
         }
         match self.store.save() {
-            Ok(()) => self.dirty = false,
+            Ok(()) => {
+                self.dirty = false;
+                self.temp.remove("save_error");
+            }
             Err(e) => {
                 self.dirty = false;
+                // the proposal editor shows "Not saved" and offers Save again (C-E11)
+                self.temp.insert("save_error".into(), e.to_string());
                 self.toast(format!("Couldn't save: {e}"));
             }
         }
@@ -1704,6 +1710,29 @@ impl App {
                 self.temp.insert(format!("q_out:{id}"), "6".into());
             }
             "edit" => i.editing = true,
+            // the full proposal editor (C-E11); in the empty state, a proposal with almost nothing
+            // editor:<section>: scrolled to that section
+            o if o.starts_with("editor:") => {
+                i.stage = "proposal".into();
+                i.editor = true;
+                if i.proposal.is_none() {
+                    i.proposal = Some(crate::seed::cafe_proposal());
+                }
+                self.temp.insert("pe_goto".into(), o["editor:".len()..].to_string());
+                self.temp.insert("pe_sec".into(), o["editor:".len()..].to_string());
+            }
+            "editor" => {
+                i.stage = "proposal".into();
+                i.editor = true;
+                if i.proposal.is_none() || self.view_state == ViewState::Empty {
+                    let mut pr = crate::seed::cafe_proposal();
+                    if self.view_state == ViewState::Empty {
+                        let keep = crate::resolve::journey::Proposal { name: pr.name.clone(), outcome: pr.outcome.clone(), ..Default::default() };
+                        pr = keep;
+                    }
+                    i.proposal = Some(pr);
+                }
+            }
             "pull" => {
                 i.input = String::new();
                 self.resolve_ui.show_import = true;

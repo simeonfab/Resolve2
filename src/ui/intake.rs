@@ -107,6 +107,10 @@ impl App {
             self.ij_bridge(ui, p, &mut it);
         } else if it.stage == "reveal" {
             self.ij_reveal(ui, p, &mut it);
+        } else if it.stage == "proposal" && it.editor && it.proposal.is_some() && !self.testlab {
+            // the full proposal editor has its own frame (C-E11, Pack C); Test Intake keeps the
+            // inspector's frame
+            self.proposal_editor_page(ui, p, &mut it);
         } else {
             let stage = it.stage.clone();
             let front = stage == "name";

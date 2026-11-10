@@ -293,6 +293,10 @@ pub mod space {
     pub const FW_EDITOR: f32 = 436.0;
     pub const FW_INDENT: f32 = 32.0;
     pub const FW_LABEL_W: f32 = 40.0;
+    /// The proposal editor (Pack C): a 60 top bar, the section list 210, 24 to the cards.
+    pub const PE_BAR: f32 = 60.0;
+    pub const PE_LIST: f32 = 210.0;
+    pub const PE_GAP: f32 = 24.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

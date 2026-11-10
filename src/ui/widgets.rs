@@ -1733,6 +1733,11 @@ pub fn empty_center_two(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &st
 /// A centred error card: what failed (serif 24), that nothing else was lost, Try again and a
 /// manual path.
 pub fn error_center(ui: &mut Ui, p: &Pal, title: &str, body: &str, manual: &str) -> ErrorAction {
+    error_center_as(ui, p, title, body, "Try again", manual)
+}
+
+/// The same card with its own wording for the retry ("Save again").
+pub fn error_center_as(ui: &mut Ui, p: &Pal, title: &str, body: &str, retry: &str, manual: &str) -> ErrorAction {
     let mut out = ErrorAction { retry: false, manual: false };
     ui.vertical_centered(|ui| {
         ui.set_max_width(space::SEARCH_W - space::S40 * 4.0);
@@ -3015,6 +3020,65 @@ pub fn soft_note<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
         add(ui)
     })
     .inner
+}
+
+// ======================================================================================
+// Proposal editor components (Phase 4, Pack C "ProposalEditor").
+// ======================================================================================
+
+/// The editor's top bar: white, 60 high, a hairline under it.
+pub fn editor_bar(ui: &mut Ui, p: &Pal, rect: Rect, add: impl FnOnce(&mut Ui)) {
+    ui.painter().rect_filled(rect, 0.0, p.card);
+    ui.painter().hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(stroke::HAIR, p.line));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink2(egui::vec2(space::S30 - 2.0, 0.0))).layout(Layout::left_to_right(Align::Center)));
+    add(&mut child);
+}
+
+/// One entry of the editor's section list: the name and its count; the current one sits on white.
+pub fn section_item(ui: &mut Ui, p: &Pal, w: f32, name: &str, count: Option<usize>, selected: bool) -> Response {
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H + 2.0), Sense::click());
+    if selected {
+        ui.painter().rect_filled(r, radius::NAV_ITEM, p.card);
+    } else if resp.hovered() {
+        ui.painter().rect_filled(r, radius::NAV_ITEM, p.hover);
+    }
+    ui.painter().text(r.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, name, if selected { fs(size::ROW_SMALL) } else { fp(size::ROW_SMALL + 0.5) }, p.text);
+    if let Some(n) = count {
+        ui.painter().text(r.right_center() - egui::vec2(space::S10, 0.0), Align2::RIGHT_CENTER, n.to_string(), fp(size::ROW_SMALL), p.dim);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// Text you edit where it stands ("Click any text to edit it"): no box until you point at it
+/// (a hairline) or type in it (amber).
+pub fn inline_edit(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, font: egui::FontId, color: Color32, width: f32, hint: &str, multiline: bool) -> Response {
+    let te = if multiline { egui::TextEdit::multiline(text).desired_rows(1) } else { egui::TextEdit::singleline(text) };
+    // a frameless TextEdit still keeps 4 px of margin each side: stay inside `width`
+    let r = ui.add(te.id(id).frame(false).font(font).text_color(color).desired_width((width - space::S8).max(space::S8)).hint_text(RichText::new(hint).color(p.faint)));
+    let edge = if r.has_focus() { Some(tok::AMBER) } else if r.hovered() { Some(p.line) } else { None };
+    if let Some(c) = edge {
+        ui.painter().rect_stroke(r.rect.expand(space::S4 - 1.0), radius::GATE, Stroke::new(stroke::HAIR, c));
+    }
+    r
+}
+
+/// A row in an editor card: a hairline box, radius 10, padding 12 / 10.
+pub fn edit_row<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S12, space::S10)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        add(ui)
+    })
+    .inner
+}
+
+/// The small × that removes a row.
+pub fn remove_x(ui: &mut Ui, p: &Pal) -> Response {
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S22, space::S22), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(r, radius::GATE, p.hover);
+    }
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, "×", fp(size::ROW + 2.0), if resp.hovered() { p.text } else { p.dim });
+    resp.on_hover_text("Remove").on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 /// A column head on the whole picture: dark for Now, sunk for the others.

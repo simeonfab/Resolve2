@@ -401,7 +401,7 @@ fn set_task(d: &mut WorkspaceData, title: &str, f: impl FnOnce(&mut Task)) {
 
 /// The café proposal from the canvases (Pack A to C), shared by the sample project and the
 /// intake screenshots.
-fn cafe_proposal() -> crate::resolve::journey::Proposal {
+pub fn cafe_proposal() -> crate::resolve::journey::Proposal {
     use crate::resolve::journey::Proposal;
     Proposal {
         name: "Café flat-fee bookkeeping".into(),

@@ -93,5 +93,9 @@ pub fn run(t: &mut T) {
     dr.status = "Supported".into();
     dr.statement = "Café clients want a flat monthly fee over hourly billing".into();
     let ok = save_node(&mut d8, &dr).unwrap_or_default();
+    // ---- Proposal editor (C-E11)
+    let full = crate::seed::cafe_proposal();
+    let thin = crate::resolve::journey::Proposal { name: full.name.clone(), outcome: full.outcome.clone(), ..Default::default() };
+    t.check("C-E11: the editor shows its empty state only when the proposal has nothing to edit", !crate::ui::proposal_editor::proposal_is_thin(&full) && crate::ui::proposal_editor::proposal_is_thin(&thin), "");
     t.check("C-E9: saving a node keeps its label and reports the gate it opens", d8.record(&h2_id).map_or(false, |x| x.title == "H2: Café clients want a flat monthly fee over hourly billing") && ok == "H2 is now Supported. The gate on Convert the two willing clients is open.", &ok);
 }
