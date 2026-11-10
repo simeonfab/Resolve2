@@ -36,6 +36,7 @@ mod selftest_alpha;
 mod selftest_p0;
 mod selftest_p1;
 mod selftest_p2;
+mod selftest_p3;
 mod server;
 mod store;
 mod templates;
@@ -146,6 +147,56 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        return;
+    }
+    // resolve2 --testlab --speed-compare "SCENARIO" --out FILE [--max-q N] (the D5 speed fix):
+    // the questions and the understanding once on Claude Code, then the proposal's validation half
+    // twice from that same understanding (the default model, then the faster one), timed, both
+    // written to FILE as Markdown. Real AI calls; nothing is invented.
+    if let Some(name) = arg_value(&args, "--speed-compare") {
+        let Some(scn) = resolve::testlab::scenario(&name) else {
+            println!("No scenario called '{name}'.");
+            std::process::exit(2);
+        };
+        let max_q = arg_value(&args, "--max-q").and_then(|n| n.parse().ok()).unwrap_or(3);
+        let out = arg_value(&args, "--out").unwrap_or_else(|| "speed.md".into());
+        // "confirm" makes the headless run stop once the understanding is written
+        let mut i = resolve::testlab::headless_run(&scn, "claude-code||", max_q, false, &mut |s| println!("{s}"));
+        let cfg = ai::AiConfig { provider: "claude-code".into(), url: String::new(), model: String::new(), key: String::new() };
+        let u = i.understanding.clone().unwrap_or_default();
+        i.outcome_confirmed = true;
+        let mut md = format!("## {name}\n\n**Project, as understood:** {}\n\n**Outcome:** {}\n\n", u.project, u.outcome);
+        let mut row = vec![name.clone()];
+        for (label, c) in [("Default model (Claude Code's own default)", cfg.clone()), ("Faster model (Sonnet)", ai::fast_cfg(&cfg).unwrap_or(cfg.clone()))] {
+            let t0 = std::time::Instant::now();
+            let r = resolve::journey::propose_half(&c, &i, &u, "validation");
+            let secs = t0.elapsed().as_secs_f32();
+            row.push(format!("{secs:.1} s{}", if r.is_err() { " (failed)" } else { "" }));
+            md.push_str(&format!("### {label}: {secs:.1} s\n\n"));
+            match r {
+                Ok(p) => {
+                    let it = |x: &resolve::journey::Item| format!("{} ({})", x.title, if x.basis.is_empty() { "uncertain" } else { &x.basis });
+                    md.push_str(&format!("- **H0:** {}{}\n", it(&p.h0), if p.h0.negation.is_empty() { String::new() } else { format!(". Against it: {}", p.h0.negation) }));
+                    for h in &p.hypotheses {
+                        md.push_str(&format!("- **Hypothesis:** {}{}\n", it(h), if h.negation.is_empty() { String::new() } else { format!(". {}", h.negation) }));
+                    }
+                    for e in &p.experiments {
+                        let s = e.fields.get("support_if").cloned().unwrap_or_default();
+                        md.push_str(&format!("- **Experiment:** {}{}\n", e.title, if s.is_empty() { String::new() } else { format!(". Supports it if {s}") }));
+                    }
+                    for x in &p.uncertainties {
+                        md.push_str(&format!("- **Uncertainty:** {}\n", x.title));
+                    }
+                    for x in &p.pages {
+                        md.push_str(&format!("- **Page:** {}\n", x.title));
+                    }
+                }
+                Err(e) => md.push_str(&format!("Failed: {e}\n")),
+            }
+            md.push('\n');
+        }
+        let _ = std::fs::write(&out, md);
+        println!("ROW|{}", row.join("|"));
         return;
     }
     // resolve2 --testlab --lab-run "SCENARIO" [--provider P] [--model M] [--url U] [--max-q N] [--adopt]
@@ -338,6 +389,7 @@ fn main() {
         reduced_motion: args.iter().any(|a| a == "--reduced-motion"),
         scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
         collapsed: args.iter().any(|a| a == "--collapsed"),
+        motion_at: arg_value(&args, "--motion-at").and_then(|v| v.parse().ok()),
         open: arg_value(&args, "--open"),
         project: arg_value(&args, "--project"),
         provider: arg_value(&args, "--provider"),

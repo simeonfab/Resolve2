@@ -187,7 +187,12 @@ pub mod size {
     /// Screen and step headlines.
     pub const STEP_TITLE: f32 = 30.0;
     /// One intake question at a time.
-    pub const QUESTION: f32 = 30.0;
+    /// The intake question: 29 as the Pack A canvas draws it (the brief said 30; Simeon chose
+    /// the canvas on 8 Nov), line height 1.22.
+    pub const QUESTION: f32 = 29.0;
+    /// egui sets DM Serif about 1.7% wider than the browser does (measured on the canvas's first
+    /// line: 675 against 664), so the question loses 0.2 px per letter to wrap as drawn.
+    pub const QUESTION_TRACKING: f32 = -0.2;
     /// Hero cards, theme cards, sheet titles (card-serif 20 to 28).
     pub const CARD_SERIF: f32 = 24.0;
     pub const TITLE: f32 = 22.0;
@@ -332,6 +337,42 @@ pub mod space {
     pub const BUTTON_H_SMALL: f32 = 28.0;
     /// Focus ring width.
     pub const FOCUS_RING: f32 = 3.0;
+    /// The intake frame (Pack A): top bar 64, rail 308 (72 on wide steps), pane padding 40 top
+    /// and 56 sides, column 760 (800 on Confirm, 960 at 1600 and wider), heard panel 380 (440).
+    pub const INTAKE_BAR: f32 = 64.0;
+    pub const INTAKE_PROGRESS_W: f32 = 360.0;
+    pub const INTAKE_PROGRESS_H: f32 = 3.0;
+    pub const RAIL: f32 = 308.0;
+    pub const RAIL_NARROW: f32 = 72.0;
+    pub const RAIL_PAD: f32 = 24.0;
+    pub const RAIL_DOT: f32 = 26.0;
+    pub const PANE_TOP: f32 = 40.0;
+    pub const PANE_SIDE: f32 = 56.0;
+    pub const INTAKE_COL: f32 = 760.0;
+    pub const INTAKE_COL_CONFIRM: f32 = 800.0;
+    pub const INTAKE_COL_WIDE: f32 = 960.0;
+    pub const HEARD_W: f32 = 380.0;
+    pub const HEARD_W_WIDE: f32 = 440.0;
+    pub const INTAKE_GAP: f32 = 40.0;
+    /// Questions: the pane's side margin there (the canvas's column is 691 at 1280).
+    pub const PANE_SIDE_QUESTIONS: f32 = 48.0;
+    /// Front door and bridge: the centred column.
+    pub const FRONT_COL: f32 = 460.0;
+    pub const BRIDGE_CARD_W: f32 = 640.0;
+    pub const REVEAL_COL: f32 = 620.0;
+    /// Path cards on Welcome; the icon tile inside them.
+    pub const PATH_TILE: f32 = 40.0;
+    /// The answer box and the Bring it in box (minimum heights).
+    pub const ANSWER_MIN_H: f32 = 108.0;
+    pub const BRING_MIN_H: f32 = 290.0;
+    /// The waiting card's ring and the 15 s bar.
+    pub const WAIT_RING: f32 = 40.0;
+    pub const WAIT_CUTOFF_S: f32 = 15.0;
+    /// The resume card.
+    pub const RESUME_W: f32 = 580.0;
+    /// The intake's large buttons (Continue →, Next →): 44 high.
+    pub const BUTTON_H_LARGE: f32 = 44.0;
+    pub const BUTTON_PAD_LARGE: f32 = 22.0;
 }
 
 /// Stroke widths.

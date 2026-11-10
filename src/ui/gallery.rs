@@ -239,7 +239,7 @@ fn gallery_type(ui: &mut egui::Ui, p: &Pal) {
         ("hero · DM Serif 52 / 1.05", fserif(size::HERO), "Hi Simeon."),
         ("display · DM Serif 44 / 1.1", fserif(size::DISPLAY), "Welcome in"),
         ("title · DM Serif 30 / 1.15", fserif(size::STEP_TITLE), "Here's what Resolve understood."),
-        ("question · DM Serif 30 / 1.22", fserif(size::QUESTION), "Who is better off if this works?"),
+        ("question · DM Serif 29 / 1.22", fserif(size::QUESTION), "Who is better off if this works?"),
         ("card-serif · DM Serif 24 / 1.25", fserif(size::CARD_SERIF), "Reconstruct 12 months of hours"),
         ("body · Inter 400 14 / 1.5", fp(size::BODY), "Reconstruct the real hours per café across a full year."),
         ("answer · Inter 400 15 / 1.55", fp(size::ANSWER), "I run a small bookkeeping practice for cafés."),

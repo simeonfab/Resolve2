@@ -851,6 +851,7 @@ impl App {
                 changed |= ui.add(egui::DragValue::new(&mut s.monthly_budget).speed(0.5).range(0.0..=100000.0).prefix("$")).changed();
                 ui.label(RichText::new("(0 = no limit; guided AI steps stop when it's reached)").size(11.5).color(p.faint));
             });
+            changed |= ui.checkbox(&mut s.fast_validation, "Faster proposal: write the validation half on Sonnet (Claude Code and the Claude API only)").changed();
             let cost = (u.input as f64 * s.price_in_per_m + u.output as f64 * s.price_out_per_m) / 1_000_000.0;
             ui.label(RichText::new(format!("{} calls · {} input + {} output tokens · ≈ ${:.2} at the prices above", u.calls, u.input, u.output, cost)).size(13.0));
             for (m, c, i, o) in &u.by_model {

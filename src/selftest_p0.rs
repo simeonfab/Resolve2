@@ -33,7 +33,7 @@ pub fn run(t: &mut T) {
     // tokens: every value in the brief's table, by name
     let wrong: Vec<String> = tok::ALL.iter().filter(|(_, c, h)| hex(*c) != *h).map(|(n, c, h)| format!("{n} is {} not {h}", hex(*c))).collect();
     t.check("the 24 colour tokens match the brief exactly", wrong.is_empty() && tok::ALL.len() == 24, wrong.join("; "));
-    t.check("type: HERO 52, QUESTION 30, ANSWER 15 (resized as the brief asks)", size::HERO == 52.0 && size::QUESTION == 30.0 && size::ANSWER == 15.0, format!("{} {} {}", size::HERO, size::QUESTION, size::ANSWER));
+    t.check("type: HERO 52, QUESTION 29 (the canvas), ANSWER 15", size::HERO == 52.0 && size::QUESTION == 29.0 && size::ANSWER == 15.0, format!("{} {} {}", size::HERO, size::QUESTION, size::ANSWER));
 
     // contrast: the pairs in Tokens, and no amber text on light
     let light = crate::ui::theme::pal(false);

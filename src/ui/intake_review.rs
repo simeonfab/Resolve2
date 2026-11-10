@@ -276,102 +276,227 @@ impl App {
         self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
     }
 
-    // ---------------------------------------------------------------- 6. bridge (real progress)
+    // ---------------------------------------------------------------- 10 bridge (E14)
 
+    /// The bridge: full dark, "You just cleared the fog". Beats B0 to B4 run on a 9200 ms clock
+    /// (at least 7.2 s); Adopt's six real steps run underneath, one per tick, and the checklist at
+    /// the foot (B4) ticks with them and holds until the build ends.
     pub(super) fn ij_bridge(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
-        if self.resolve_ui.adopt.as_ref().map_or(true, |a| a.0 != it.id) {
-            // resumed after a restart mid-way: start the writes again
-            self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
+        let full = ui.max_rect();
+        let key = format!("bridge_t:{}", it.id);
+        let t0: f64 = self.temp.entry(key).or_insert_with(|| self.now.to_string()).parse().unwrap_or(self.now);
+        let reduced = super::motion::reduced();
+        let el = if reduced || self.shot.is_some() { 9200.0 } else { ((self.now - t0) * 1000.0) as f32 };
+        let built = it.stage == "reveal";
+        // run the real build, one step per tick (the writes take milliseconds); a screenshot
+        // shows the steps without writing anything
+        let mut step = if built { journey::ADOPT_STEPS.len() } else { 0 };
+        if !built {
+            if self.resolve_ui.adopt.as_ref().map_or(true, |a| a.0 != it.id) {
+                // resumed after a restart mid-way: start the writes again
+                self.resolve_ui.adopt = Some((it.id.clone(), 0, journey::AdoptState::default(), crate::history::snapshot(&self.store.data)));
+            }
+            let (iid, s, mut st, snap) = self.resolve_ui.adopt.take().unwrap();
+            step = s;
+            if self.now - self.resolve_ui.adopt_t < 0.3 || self.shot.is_some() {
+                self.resolve_ui.adopt = Some((iid, s, st, snap));
+            } else {
+                self.resolve_ui.adopt_t = self.now;
+                match journey::adopt_step(&mut self.store.data, &iid, s, &mut st) {
+                    Ok(true) => {
+                        let name = it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_default();
+                        self.resolve_ui.adopt_cs = self.store.data.keep_change(&format!("Created project \"{name}\""), "adopt", &snap);
+                        self.save_now();
+                        step = journey::ADOPT_STEPS.len();
+                    }
+                    Ok(false) => self.resolve_ui.adopt = Some((iid, s + 1, st, snap)),
+                    Err(e) => {
+                        it.last_error = format!("Couldn't create the project: {e}");
+                        it.stage = "proposal".into();
+                        it.ending = 3;
+                        self.temp.remove(&format!("bridge_t:{}", it.id));
+                        // roll back anything written so far
+                        let cs = self.store.data.keep_change("Failed adopt", "adopt", &snap);
+                        if let Some(cs) = cs {
+                            let _ = self.store.data.undo_change(&cs);
+                        }
+                    }
+                }
+                self.touch();
+            }
         }
-        let (iid, step, mut st, snap) = self.resolve_ui.adopt.take().unwrap();
-        ui.label(RichText::new("Building your project…").font(fserif(size::STEP_TITLE)));
-        ui.add_space(12.0);
-        for (k, label) in journey::ADOPT_STEPS.iter().enumerate() {
-            ui.horizontal(|ui| {
-                let (mark, col) = if k < step { ("✓", p.green) } else if k == step { ("◌", p.accent) } else { ("·", p.faint) };
-                ui.label(RichText::new(mark).color(col).size(size::SECTION));
-                ui.label(RichText::new(*label).size(size::BODY).color(if k <= step { p.text } else { p.faint }));
-            });
+        // ---- paint
+        let painter = ui.painter_at(full);
+        painter.rect_filled(full, 0.0, tok::INK);
+        let k = el / 9200.0;
+        let glow_a = if k < 0.23 { 0.35 } else if k < 0.30 { 0.35 + (k - 0.23) / 0.07 * 0.5 } else if k < 0.72 { 0.85 } else { 0.85 - (k - 0.72).min(0.28) / 0.28 * 0.5 };
+        glow(&painter, full.center(), full.height() * 0.55, tok::AMBER, 0.12 * glow_a);
+        let mut top = ui.new_child(egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(full.min + egui::vec2(space::RAIL_PAD, space::S18 + 2.0), egui::vec2(space::S40 * 5.0, space::S26))).layout(Layout::left_to_right(Align::Center)));
+        brand_mark(&mut top, true);
+        // B1: the card (scale .62 → 1 as it arrives)
+        let f1 = super::motion::frame_at(el, super::motion::timing(900.0, 0.0, super::motion::E_OUT), reduced);
+        let scale = 0.92 + 0.08 * f1.t;
+        let cw = space::BRIDGE_CARD_W * scale;
+        let card = egui::Rect::from_center_size(full.center() - egui::vec2(0.0, space::S40), egui::vec2(cw, space::S40 * 6.2 * scale));
+        let a = f1.alpha;
+        painter.rect(card, radius::DIALOG + 4.0, tok::PANE.gamma_multiply(a), Stroke::new(stroke::HAIR, tok::amber_a(0.30 * a)));
+        paint_icon(&painter, card.center_top() + egui::vec2(0.0, space::S40 * 1.6), Icon::Trophy, tok::AMBER.gamma_multiply(a));
+        painter.text(card.center() + egui::vec2(0.0, -space::S4), Align2::CENTER_CENTER, format!("You just cleared the fog, {}.", it.name), fserif(size::STEP_TITLE + 4.0), tok::TEXT_ON_DARK.gamma_multiply(a));
+        let line = painter.layout("A messy project, turned into a focused path forward. That's the hard part done.".to_string(), fp(size::ROW + 1.0), tok::TEXT_ON_DARK_SOFT.gamma_multiply(a), card.width() - space::S40 * 2.0);
+        let lw = line.size();
+        painter.galley(egui::pos2(card.center().x - lw.x / 2.0, card.center().y + space::S30), line, tok::TEXT_ON_DARK_SOFT.gamma_multiply(a));
+        // B2: the first move pins under the card (2.4 to 4.8 s)
+        let first = it.proposal.as_ref().map(|x| x.next_move.clone()).unwrap_or_default();
+        let b2 = if el > 2400.0 && el < 4800.0 { ((el - 2400.0) / 400.0).min(1.0).min((4800.0 - el) / 400.0) } else { 0.0 };
+        if b2 > 0.0 && !first.is_empty() {
+            let g = painter.layout(format!("Do this first: {first}"), fs(size::ROW_SMALL), tok::TEXT_ON_DARK.gamma_multiply(b2), space::BRIDGE_CARD_W);
+            let r = egui::Rect::from_center_size(egui::pos2(full.center().x, card.bottom() + space::S40), g.size() + egui::vec2(space::S24, space::S14));
+            painter.rect_filled(r, radius::PILL, tok::amber_a(0.16 * b2));
+            painter.galley(r.min + egui::vec2(space::S12, space::S6 + 1.0), g, tok::TEXT_ON_DARK);
+        }
+        // B3: the workspace forms (4.6 to 6.9 s)
+        let b3 = if el > 4600.0 && el < 6900.0 { ((el - 4600.0) / 400.0).min(1.0).min((6900.0 - el) / 400.0) } else { 0.0 };
+        if b3 > 0.0 {
+            let (themes, tasks) = it.proposal.as_ref().map_or((0, 0), |x| (x.roadmap.len(), x.tasks.len()));
+            painter.text(egui::pos2(full.center().x, card.bottom() + space::S40), Align2::CENTER_CENTER, format!("Your workspace: {themes} themes, {tasks} tasks, validation and pages"), fp(size::ROW_SMALL), tok::TEXT_ON_DARK_SOFT.gamma_multiply(b3));
+        }
+        // B4: the build checklist, bound to the real steps (from 6.6 s, or at once with reduced motion)
+        let b4 = if el > 6600.0 { ((el - 6600.0) / 300.0).min(1.0) } else { 0.0 };
+        if b4 > 0.0 {
+            let y = full.bottom() - space::S40 - space::S8;
+            let items: Vec<(String, u8)> = journey::ADOPT_STEPS.iter().enumerate().map(|(k, s)| (s.to_string(), if k < step { 2 } else if k == step { 1 } else { 0 })).collect();
+            let gap = space::S22;
+            let widths: Vec<f32> = items.iter().map(|(s, _)| painter.layout_no_wrap(s.clone(), fp(size::ROW_SMALL), tok::TEXT_ON_DARK).size().x + space::S18).collect();
+            let total: f32 = widths.iter().sum::<f32>() + gap * (items.len() as f32 - 1.0);
+            let mut x = full.center().x - total / 2.0;
+            for ((s, state), w) in items.iter().zip(widths) {
+                let c = egui::pos2(x + space::S6, y);
+                let col = match state {
+                    2 => tok::TEXT_ON_DARK,
+                    1 => tok::TEXT_ON_DARK,
+                    _ => tok::TEXT_ON_DARK_MUTED,
+                }
+                .gamma_multiply(b4);
+                match state {
+                    2 => paint_icon(&painter, c, Icon::Check, tok::AMBER.gamma_multiply(b4)),
+                    1 => {
+                        let ph = super::motion::loop_phase(ui.ctx(), 900.0);
+                        let pts: Vec<egui::Pos2> = (0..=16).map(|i| ph * std::f32::consts::TAU + i as f32 / 16.0 * 4.0).map(|a| c + egui::vec2(a.cos(), a.sin()) * space::S6).collect();
+                        painter.add(egui::Shape::line(pts, Stroke::new(stroke::ICON, tok::AMBER.gamma_multiply(b4))));
+                    }
+                    _ => {}
+                }
+                painter.text(egui::pos2(x + space::S18, y), Align2::LEFT_CENTER, s, fp(size::ROW_SMALL), col);
+                x += w + gap;
+            }
         }
         ui.ctx().request_repaint();
-        // one real step at a time, each visible for a moment (the writes themselves take milliseconds)
-        // (a screenshot shows the steps without writing anything)
-        if self.now - self.resolve_ui.adopt_t < 0.3 || self.shot.is_some() {
-            self.resolve_ui.adopt = Some((iid, step, st, snap));
-            return;
-        }
-        self.resolve_ui.adopt_t = self.now;
-        match journey::adopt_step(&mut self.store.data, &iid, step, &mut st) {
-            Ok(true) => {
-                let name = it.proposal.as_ref().map(|x| x.name.clone()).unwrap_or_default();
-                self.resolve_ui.adopt_cs = self.store.data.keep_change(&format!("Created project \"{name}\""), "adopt", &snap);
-                self.save_now();
-            }
-            Ok(false) => self.resolve_ui.adopt = Some((iid, step + 1, st, snap)),
-            Err(e) => {
-                it.last_error = format!("Couldn't create the project: {e}");
-                it.stage = "proposal".into();
-                // roll back anything written so far
-                let cs = self.store.data.keep_change("Failed adopt", "adopt", &snap);
-                if let Some(cs) = cs {
-                    let _ = self.store.data.undo_change(&cs);
-                }
-            }
-        }
-        self.touch();
     }
 
-    // ---------------------------------------------------------------- 7. roadmap reveal
+    // ---------------------------------------------------------------- 11 reveal (E15, D4)
 
+    /// The reveal on a 6500 ms clock: ✓ and "Welcome in" on dark (D1), the dark lifts behind an
+    /// amber bloom (D2), then the project: its name, three counts, the first move and Open my
+    /// project (D3). The brand mark never moves (D4). A click skips to the end.
     pub(super) fn ij_reveal(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut Intake) {
+        let full = ui.max_rect();
         let Some(pid) = it.project_id.clone().filter(|x| self.store.data.project(x).is_some()) else {
-            ui.label("The project is no longer there (it may have been undone).");
-            if ui.button("Back to the proposal").clicked() {
-                it.stage = "proposal".into();
-                it.status = "in_progress".into();
-                it.project_id = None;
-            }
+            ui.painter().rect_filled(full, 0.0, p.bg);
+            ui.add_space(space::S40 * 3.0);
+            ui.vertical_centered(|ui| {
+                ui.label(RichText::new("The project is no longer there (it may have been undone).").size(size::ROW).color(p.text));
+                if big_button(ui, p, ButtonKind::Secondary, "Back to the whole picture", true).clicked() {
+                    it.stage = "proposal".into();
+                    it.ending = 3;
+                    it.status = "in_progress".into();
+                    it.project_id = None;
+                }
+            });
             return;
         };
-        ui.label(RichText::new("Your roadmap").size(size::SMALL).color(p.eyebrow).strong());
-        ui.label(RichText::new("Here's the whole picture.").font(fserif(size::STEP_TITLE)));
-        ui.add_space(14.0);
-        let d = &self.store.data;
-        let items: Vec<crate::resolve::Record> = d.records.iter().filter(|r| r.project_id.as_deref() == Some(&pid) && r.kind == Kind::Roadmap).cloned().collect();
-        ui.columns(3, |cols| {
-            for (c, phase) in ["Now", "Next", "Later"].iter().enumerate() {
-                // a plain (non-justified) column, so text isn't stretched
-                cols[c].vertical(|ui| {
-                ui.label(RichText::new(*phase).font(fs(size::SECTION)).color(if c == 0 { p.accent } else { p.dim }));
-                let mine: Vec<&crate::resolve::Record> = items.iter().filter(|r| r.field("phase") == *phase).collect();
-                if mine.is_empty() {
-                    egui::Frame::none().stroke(Stroke::new(1.0, p.line)).rounding(space::RADIUS).inner_margin(12.0).show(ui, |ui| {
-                        ui.set_width(ui.available_width());
-                        ui.label(RichText::new("Nothing yet").size(size::SMALL).color(p.faint));
-                    });
-                }
-                for r in mine {
-                    egui::Frame::none().fill(p.card).stroke(Stroke::new(1.0, if c == 0 { p.accent } else { p.line })).rounding(space::RADIUS).inner_margin(12.0).show(ui, |ui| {
-                        ui.set_width(ui.available_width());
-                        ui.label(RichText::new(&r.title).font(fs(size::BODY)));
-                        for t in r.links.iter().filter_map(|l| d.task(l)) {
-                            ui.label(RichText::new(format!("☐ {}", t.title)).size(size::SMALL).color(p.dim));
-                        }
-                        chip(ui, r.field("basis"), match r.field("basis") { "evidence" => p.green, "assumption" => p.accent, _ => p.orange });
-                    });
-                    ui.add_space(6.0);
-                }
-                });
-            }
-        });
-        ui.add_space(18.0);
+        let key = format!("reveal_t:{}", it.id);
+        let t0: f64 = self.temp.entry(key).or_insert_with(|| self.now.to_string()).parse().unwrap_or(self.now);
+        let skip_key = format!("reveal_skip:{}", it.id);
+        if ui.input(|i| i.pointer.any_click()) {
+            self.temp.insert(skip_key.clone(), "1".into());
+        }
+        let reduced = super::motion::reduced();
+        let el = if reduced || self.shot.is_some() || self.temp.contains_key(&skip_key) { 6500.0 } else { ((self.now - t0) * 1000.0) as f32 };
+        if el < 6500.0 {
+            ui.ctx().request_repaint();
+        }
+        let painter = ui.painter_at(full);
+        // the light layer, then the dark one over it (fades 34 to 44% of the clock)
+        painter.rect_filled(full, 0.0, p.bg);
+        let k = el / 6500.0;
+        let bloom_scale = if k < 0.30 { 0.4 } else if k < 0.58 { 0.4 + (k - 0.30) / 0.28 * 10.6 } else { 11.0 };
+        let light = ((k - 0.36) / 0.12).clamp(0.0, 1.0);
+        bloom(&painter, egui::pos2(full.center().x, full.top() + space::S40 * 2.0), space::S40 * 0.6, bloom_scale.min(8.0), 0.22 * light.max(0.3));
+        let dark = 1.0 - ((k - 0.34) / 0.10).clamp(0.0, 1.0);
+        let mut brand = ui.new_child(egui::UiBuilder::new().max_rect(egui::Rect::from_min_size(full.min + egui::vec2(space::RAIL_PAD, space::S18 + 2.0), egui::vec2(space::S40 * 5.0, space::S26))).layout(Layout::left_to_right(Align::Center)));
+        brand_mark(&mut brand, false);
+        // the project
+        let pr = it.proposal.clone().unwrap_or_default();
+        let themes = self.store.data.records.iter().filter(|r| r.project_id.as_deref() == Some(&pid) && r.kind == Kind::Roadmap).count();
+        let week = super::intake_ending::first_week(&pr).len();
+        let col = space::REVEAL_COL;
+        let area = egui::Rect::from_min_size(egui::pos2(full.center().x - col / 2.0, full.top() + full.height() * 0.27), egui::vec2(col, full.height() * 0.6));
+        let mut c = ui.new_child(egui::UiBuilder::new().max_rect(area).layout(Layout::top_down(Align::Min)));
+        let ui2 = &mut c;
+        let f = |n: usize| super::motion::frame_at(el, super::motion::timing(450.0, 3250.0 + 70.0 * n as f32, super::motion::E_SPRING), reduced);
         let mut open = false;
-        ui.horizontal(|ui| {
-            open = ui.add(cta(p, "Open my project  →")).clicked();
-            if self.testlab {
-                ui.label(RichText::new("Test mode: this project lives in the sandbox. Promote it from the test runs list.").size(size::TINY).color(p.faint));
-            }
+        super::motion::fade_in(ui2, f(0), egui::vec2(0.0, space::S10), |ui| {
+            ui.label(RichText::new("Your project is ready").font(fs(size::LABEL)).color(p.orange));
+            ui.add(egui::Label::new(RichText::new(&pr.name).font(fserif(size::DISPLAY)).color(p.text)).wrap());
         });
+        ui2.add_space(space::S12);
+        super::motion::fade_in(ui2, f(1), egui::vec2(0.0, space::S10), |ui| {
+            let w = (col - space::S10 * 2.0) / 3.0;
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S10;
+                count_card(ui, p, themes, "Themes on your roadmap", w);
+                count_card(ui, p, week, "Tasks for your first week", w);
+                count_card(ui, p, usize::from(!pr.next_move.trim().is_empty()), "First move, pinned", w);
+            });
+        });
+        ui2.add_space(space::S12);
+        if !pr.next_move.trim().is_empty() {
+            super::motion::fade_in(ui2, f(2), egui::vec2(0.0, space::S10), |ui| {
+                hero_card(ui, p, |ui| {
+                    ui.label(RichText::new("Do this first").font(fs(size::SMALL)).color(tok::AMBER));
+                    ui.add(egui::Label::new(RichText::new(&pr.next_move).font(fserif(size::CARD_SERIF - 2.0)).color(tok::TEXT_ON_DARK)).wrap());
+                });
+            });
+            ui2.add_space(space::S22);
+        }
+        super::motion::fade_in(ui2, f(3), egui::vec2(0.0, space::S10), |ui| {
+            ui.horizontal(|ui| {
+                let r = big_button(ui, p, ButtonKind::Primary, "Open my project  →", true);
+                if !p.dark {
+                    ui.painter().rect_stroke(r.rect.expand(space::S4), radius::BUTTON + 4.0, Stroke::new(space::S4, tok::amber_a(0.22)));
+                }
+                open = r.clicked();
+                if self.testlab {
+                    ui.label(RichText::new("Test mode: this project lives in the sandbox. Promote it from the test runs list.").size(size::SMALL).color(p.dim));
+                }
+            });
+        });
+        // D1: the welcome on dark, over everything until the dark lifts
+        if dark > 0.0 {
+            let fg = ui.ctx().layer_painter(egui::LayerId::new(egui::Order::Foreground, egui::Id::new(("reveal-dark", &it.id))));
+            fg.rect_filled(full, 0.0, tok::INK.gamma_multiply(dark));
+            let d1 = super::motion::frame_at(el, super::motion::timing(600.0, 100.0, super::motion::E_SPRING), reduced).alpha * dark;
+            let w1 = super::motion::frame_at(el, super::motion::timing(500.0, 500.0, super::motion::EASE), reduced).alpha * dark;
+            let ctr = full.center() - egui::vec2(0.0, space::S40);
+            fg.circle_filled(ctr - egui::vec2(0.0, space::S40 + space::S10), space::S22, tok::AMBER.gamma_multiply(d1));
+            paint_icon(&fg, ctr - egui::vec2(0.0, space::S40 + space::S10), Icon::Check, tok::INK.gamma_multiply(d1));
+            fg.text(ctr, Align2::CENTER_CENTER, format!("Welcome in, {}.", it.name), fserif(size::DISPLAY), tok::TEXT_ON_DARK.gamma_multiply(w1));
+            // the brand mark stays put (D4), drawn on the dark too
+            let tile = egui::Rect::from_min_size(full.min + egui::vec2(space::RAIL_PAD, space::S18 + 2.0), egui::vec2(space::S26, space::S26));
+            fg.rect_filled(tile, radius::CHIP, tok::AMBER);
+            fg.text(tile.center(), Align2::CENTER_CENTER, "R", fserif(size::SECTION + 1.0), tok::INK);
+            fg.text(tile.right_center() + egui::vec2(space::S8, 0.0), Align2::LEFT_CENTER, "Resolve", fs(size::SECTION + 1.5), tok::TEXT_ON_DARK);
+        }
         if open {
             if let Some(c) = self.store.data.context_for_mut(&pid) {
                 c.reveal_seen = true;
@@ -381,6 +506,7 @@ impl App {
             self.put_intake(it);
             self.touch();
             self.resolve_ui.tab = 0;
+            self.current_project = Some(pid.clone());
             self.go(View::Resolve(pid));
             self.back.clear();
             if let Some(cs) = self.resolve_ui.adopt_cs.take() {

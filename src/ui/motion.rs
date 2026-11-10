@@ -297,6 +297,26 @@ pub fn fade_in<R>(ui: &mut egui::Ui, f: Frame, offset: Vec2, add: impl FnOnce(&m
     r
 }
 
+/// The same as `fade_in`, in two halves, for long blocks: draw into the returned child, then call
+/// `end_move`. `keep` (0..1) is how much of the block's height stays in the layout (1 normally;
+/// less while a row collapses away).
+pub fn begin_move(ui: &mut egui::Ui, f: Frame, offset: Vec2) -> (egui::Ui, Pos2) {
+    let (off, _, alpha) = entrance(f, offset, 1.0);
+    let start = ui.cursor().min;
+    let avail = ui.available_size_before_wrap();
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(Rect::from_min_size(start + off, avail)).layout(*ui.layout()));
+    child.multiply_opacity(alpha.clamp(0.0, 1.0));
+    (child, start)
+}
+
+pub fn end_move(ui: &mut egui::Ui, child: &egui::Ui, start: Pos2, keep: f32) {
+    let size = child.min_rect().size();
+    ui.advance_cursor_after_rect(Rect::from_min_size(start, Vec2::new(size.x, size.y * keep.clamp(0.0, 1.0))));
+}
+
+/// A finished move (nothing to animate).
+pub const SETTLED: Frame = Frame { t: 1.0, alpha: 1.0, done: true };
+
 #[cfg(test)]
 mod tests {
     use super::*;

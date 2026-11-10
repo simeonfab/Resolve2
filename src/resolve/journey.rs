@@ -535,7 +535,12 @@ pub fn grounded(item: &str, source: &str) -> bool {
     if words.is_empty() {
         return true;
     }
-    let hit = words.iter().filter(|w| src.contains(w.as_str()) || src.contains(&w[..w.len().saturating_sub(2).max(4)])).count();
+    // the word without its last two letters (counted in characters, so "café" never splits)
+    let stem = |w: &str| -> String {
+        let n = w.chars().count();
+        w.chars().take(n.saturating_sub(2).max(4)).collect()
+    };
+    let hit = words.iter().filter(|w| src.contains(w.as_str()) || src.contains(stem(w).as_str())).count();
     hit as f32 / words.len() as f32 >= 0.6
 }
 
@@ -741,8 +746,29 @@ pub fn validate_part(v: &Value, i: &Intake, u: &Understanding, part: &str) -> Re
 }
 
 /// Deterministic clean-up applied to every proposal (also after the user edits/regenerates).
+/// No em dash reaches the screen, even from the AI: " — " becomes ", " (found in the D5 runs).
+pub fn no_em_dash(s: &str) -> String {
+    s.replace(" \u{2014} ", ", ").replace('\u{2014}', ", ")
+}
+
 pub fn sanitise(p: &mut Proposal, i: &Intake) {
     let evidence = heard_ids(i, "evidence");
+    {
+        let clean = |it: &mut Item| {
+            for s in [&mut it.title, &mut it.detail, &mut it.negation] {
+                *s = no_em_dash(s);
+            }
+            for v in it.fields.values_mut() {
+                *v = no_em_dash(v);
+            }
+        };
+        for it in std::iter::once(&mut p.h0).chain(p.hypotheses.iter_mut()).chain(p.experiments.iter_mut()).chain(p.uncertainties.iter_mut()).chain(p.roadmap.iter_mut()).chain(p.tasks.iter_mut()).chain(p.pages.iter_mut()) {
+            clean(it);
+        }
+        for s in [&mut p.name, &mut p.summary, &mut p.objective, &mut p.outcome, &mut p.next_move, &mut p.why] {
+            *s = no_em_dash(s);
+        }
+    }
     let fix = |it: &mut Item, max: usize| {
         if words(&it.title) > max {
             if it.detail.is_empty() {
@@ -896,6 +922,11 @@ pub fn propose(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str>
     propose_part(cfg, i, u, only, part)
 }
 
+/// One half of the proposal on its own (the speed comparison runs the validation half alone).
+pub fn propose_half(cfg: &AiConfig, i: &Intake, u: &Understanding, part: &str) -> Result<Proposal, String> {
+    propose_part(cfg, i, u, None, part)
+}
+
 fn propose_part(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str>, part: &str) -> Result<Proposal, String> {
     crate::ai::set_purpose(&format!("intake:proposal:{part}"));
     // first answer: strict quality rules (a retry is cheap); second answer: fix deterministically
@@ -913,11 +944,24 @@ fn propose_part(cfg: &AiConfig, i: &Intake, u: &Understanding, only: Option<&str
 /// The proposal in two calls run side by side (plan / validation): about half the wait.
 /// Returns the merged proposal and the traces from both threads.
 pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Result<Proposal, String>, Vec<Trace>) {
+    let fast = crate::store::Registry::load().settings.fast_validation;
+    propose_parallel_with(cfg, i, u, fast)
+}
+
+/// The proposal, with the validation half on the faster model when `fast` is on (and the AI has one).
+pub fn propose_parallel_with(cfg: &AiConfig, i: &Intake, u: &Understanding, fast: bool) -> (Result<Proposal, String>, Vec<Trace>) {
     let run = |part: &'static str| {
-        let (c, ii, uu) = (cfg.clone(), i.clone(), u.clone());
+        let c = if part == "validation" && fast { crate::ai::fast_cfg(cfg).unwrap_or_else(|| cfg.clone()) } else { cfg.clone() };
+        let (ii, uu) = (i.clone(), u.clone());
         std::thread::spawn(move || {
             let _ = crate::ai::take_trace();
             let r = propose_part(&c, &ii, &uu, None, part);
+            // whichever part finishes first ticks the first line, the other the second
+            // only work that finished counts (a refused or failed half ticks nothing)
+            if r.is_ok() {
+                let ev = if has_progress(&ii.id, "first-part") { "second-part" } else { "first-part" };
+                note_progress(&ii.id, ev);
+            }
             (r, crate::ai::take_trace())
         })
     };
@@ -933,7 +977,9 @@ pub fn propose_parallel(cfg: &AiConfig, i: &Intake, u: &Understanding) -> (Resul
             pa.uncertainties = pb.uncertainties;
             pa.experiments = pb.experiments;
             pa.pages = pb.pages;
+            note_progress(&i.id, "merged");
             sanitise(&mut pa, i);
+            note_progress(&i.id, "proposed");
             Ok(pa)
         }
         (Err(e), _) | (_, Err(e)) => Err(e),
@@ -1045,6 +1091,22 @@ fn offline_brief(i: &Intake, u: &Understanding) -> String {
 
 // ---------------------------------------------------------------- adopt (bridge steps)
 
+/// The first week (Pack A 08, E27): the proposal's first five tasks in the order they matter:
+/// Now before Next before Later, theme by theme in roadmap order. Task 1 is the first move that
+/// Adopt pins, and it sits in the first Now theme that has tasks.
+pub fn first_week_ix(p: &Proposal) -> Vec<usize> {
+    let rank = |ph: &str| match ph {
+        "Now" | "" => 0,
+        "Next" => 1,
+        _ => 2,
+    };
+    let theme_rank = |t: &Item| t.parent.and_then(|x| p.roadmap.get(x)).map(|r| rank(&r.phase)).unwrap_or(rank(&t.phase));
+    let mut v: Vec<usize> = (0..p.tasks.len()).collect();
+    v.sort_by_key(|&k| (theme_rank(&p.tasks[k]), p.tasks[k].parent.unwrap_or(usize::MAX), k));
+    v.truncate(5);
+    v
+}
+
 pub const ADOPT_STEPS: [&str; 6] = ["Creating the project", "Laying out the roadmap", "Adding tasks", "Setting up validation", "Writing the knowledge pages", "Saving the intake transcript"];
 
 #[derive(Default, Clone, Debug)]
@@ -1119,6 +1181,7 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
         2 => {
             if on("tasks") {
                 let today = today();
+                let first = first_week_ix(&p).first().copied();
                 for (n, tk) in p.tasks.iter().enumerate() {
                     let mut task = Task::new(tk.title.clone());
                     task.project_id = Some(st.project_id.clone());
@@ -1134,7 +1197,8 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
                     task.priority = prio;
                     task.due = days.and_then(|x| today.checked_add_days(chrono::Days::new(x)));
                     task.order = t + n as i64;
-                    if st.first_task.is_none() && tk.phase == "Now" {
+                    // the first move is task 1 of the first week (E27)
+                    if first == Some(n) {
                         st.first_task = Some(task.id.clone());
                     }
                     if let Some(ri) = tk.parent.and_then(|x| st.roadmap_ids.get(x)).cloned() {
@@ -1386,6 +1450,9 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             out.heard = Some((qa.id.clone(), items));
         }
     }
+    if qa_id.is_some() {
+        note_progress(&i.id, "sorted");
+    }
     // the cap: after the 8th question, no more questions
     let want_next = want_next && i.qas.len() < MAX_QUESTIONS;
     if i.qas.len() >= MAX_QUESTIONS {
@@ -1398,6 +1465,7 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
             view.heard.retain(|h| &h.from != qid || h.corrected);
             view.heard.extend(items.iter().cloned());
         }
+        note_progress(&i.id, "asked");
         match &cfg {
             Some(c) => match next_question(c, &view) {
                 Ok(n) => {
@@ -1416,6 +1484,9 @@ pub fn run_answer(cfg: Option<AiConfig>, i: &Intake, qa_id: Option<&str>, want_n
                 out.done = out.next.is_none();
             }
         }
+    }
+    if want_next {
+        note_progress(&i.id, "chosen");
     }
     out.calls = crate::ai::take_trace();
     out
@@ -1450,7 +1521,8 @@ pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
     }
     if let Some(mut q) = out_next {
         if !out.note.is_empty() && q.source == "fixed question set" {
-            q.why = format!("{} {}", out.note, q.why);
+            // the note itself shows above the question (ST2); "Why" names the target
+            q.why = format!("Fixed question set: covers \"{}\".", target_label(&q.target));
         }
         q.calls.extend(out.calls.iter().filter(|c| c.purpose == "intake:next-question").cloned());
         i.qas.push(q);
@@ -1463,13 +1535,51 @@ pub fn apply_answer(i: &mut Intake, out: AnswerOut) {
 
 pub fn run_understanding(cfg: Option<AiConfig>, i: &Intake) -> (Result<Understanding, String>, Vec<Trace>) {
     let _ = crate::ai::take_trace();
+    note_progress(&i.id, "reading");
     let r = match &cfg {
-        // if the model fails, fall back to the user's own words (never invent)
-        Some(c) => Ok(understand(c, i).unwrap_or_else(|_| offline_understanding(i))),
+        // a failure is shown (Try again, or fill the cards yourself); nothing is invented
+        Some(c) => understand(c, i),
         None => Ok(offline_understanding(i)),
     };
+    if r.is_ok() {
+        note_progress(&i.id, "understood");
+    }
     (r, crate::ai::take_trace())
 }
+
+// ---------------------------------------------------------------- progress events
+//
+// Real progress from the intake's AI work, read by the waiting cards (E5) and the AI limit
+// screen's frozen checklist (E10, E11). Each event is noted when that piece of work finishes.
+
+static PROGRESS: std::sync::Mutex<Vec<(String, String)>> = std::sync::Mutex::new(Vec::new());
+
+/// Note that `event` has happened for this intake.
+pub fn note_progress(intake: &str, event: &str) {
+    if let Ok(mut v) = PROGRESS.lock() {
+        if !v.iter().any(|(i, e)| i == intake && e == event) {
+            v.push((intake.to_string(), event.to_string()));
+        }
+    }
+}
+
+/// Has `event` happened for this intake (since its progress was last cleared)?
+pub fn has_progress(intake: &str, event: &str) -> bool {
+    PROGRESS.lock().map_or(false, |v| v.iter().any(|(i, e)| i == intake && e == event))
+}
+
+/// Start counting again (a new wait begins).
+pub fn clear_progress(intake: &str, events: &[&str]) {
+    if let Ok(mut v) = PROGRESS.lock() {
+        v.retain(|(i, e)| i != intake || !events.contains(&e.as_str()));
+    }
+}
+
+/// The waiting checklists, each line ticked by a real event (E5). The AI limit screen shows the
+/// same strings, frozen where the work stopped (E11).
+pub const WAIT_NEXT: [(&str, &str); 3] = [("Noting that answer", "sorted"), ("Checking what's still not covered", "asked"), ("Choosing the next question", "chosen")];
+pub const WAIT_UNDERSTAND: [(&str, &str); 3] = [("Reading everything you said", "reading"), ("Separating what's decided from what's open", "understood"), ("Writing the cards", "cards")];
+pub const WAIT_PROPOSAL: [(&str, &str); 4] = [("Weighing what matters most", "first-part"), ("Checking against what you confirmed", "second-part"), ("Sequencing the work", "merged"), ("Choosing your first move", "proposed")];
 
 pub fn run_proposal(cfg: Option<AiConfig>, i: &Intake, section: Option<&str>) -> (Result<Proposal, String>, Vec<Trace>) {
     let _ = crate::ai::take_trace();
