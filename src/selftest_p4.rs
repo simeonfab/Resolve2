@@ -197,6 +197,16 @@ pub fn run(t: &mut T) {
         t.check("What matters now has no \"Run:\" prefix; a planned experiment says it hasn't started", !lines.iter().any(|l| l.starts_with("Run:")) && lines.iter().any(|l| l.starts_with("E0 hasn't started yet: reconstruct 12 months")), format!("{lines:?}"));
     }
 
+    // ---- Phase 3 fixes (10 Nov): a theme without a reason is asked for again
+    {
+        use crate::resolve::journey::validate_proposal;
+        let i = crate::resolve::intake::Intake::new();
+        let u = crate::resolve::intake::Understanding::default();
+        let v = serde_json::json!({"name": "Café flat fee", "summary": "s", "objective": "o", "h0": {"title": "A fixed fee works"}, "next_move": "Pull the hours you logged for each café", "why": "You already have the numbers in your records.", "roadmap": [{"title": "Measure true monthly hours", "detail": "", "phase": "Now"}], "tasks": [{"title": "Export the till hours", "detail": "d", "phase": "Now", "parent": 0}], "pages": [{"title": "Project brief", "detail": "## Café flat fee"}]});
+        let r = validate_proposal(&v, &i, &u).and_then(|p| crate::resolve::journey::quality_check(&v, &p));
+        t.check("screen 07: a roadmap theme with no reason line is sent back to the AI", r.as_ref().err().map_or(false, |e| e.contains("needs a \"detail\"")), format!("{:?}", r.err()));
+    }
+
     // ---- Proposal editor (C-E11)
     let full = crate::seed::cafe_proposal();
     let thin = crate::resolve::journey::Proposal { name: full.name.clone(), outcome: full.outcome.clone(), ..Default::default() };

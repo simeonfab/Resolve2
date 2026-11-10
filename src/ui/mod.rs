@@ -531,8 +531,20 @@ impl App {
             // --view intake-<stage> opens the newest run at that stage (screenshots / checks)
             app.view = match opts.view.as_deref() {
                 Some(v) if v.starts_with("intake") => {
-                    let stage = v.strip_prefix("intake-").unwrap_or("");
-                    app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| View::Intake(i.id.clone())).unwrap_or(View::TestLab)
+                    // intake-<stage>[-<ending step>]: the newest run at that stage, on that step
+                    let rest = v.strip_prefix("intake-").unwrap_or("");
+                    let (stage, step) = match rest.rsplit_once('-') {
+                        Some((s, n)) if n.parse::<u8>().is_ok() => (s.to_string(), n.parse::<u8>().ok()),
+                        _ => (rest.to_string(), None),
+                    };
+                    let id = app.store.data.intakes.iter().filter(|i| stage.is_empty() || i.stage == stage).max_by_key(|i| i.updated).map(|i| i.id.clone());
+                    if let (Some(id), Some(n)) = (&id, step) {
+                        if let Some(i) = app.store.data.intakes.iter_mut().find(|i| &i.id == id) {
+                            i.ending = n;
+                            app.no_save = true;
+                        }
+                    }
+                    id.map(View::Intake).unwrap_or(View::TestLab)
                 }
                 _ => View::TestLab,
             };
@@ -1832,6 +1844,12 @@ impl App {
                 // no proposal yet: the app asks for one, and the budget stop answers
                 i.proposal = None;
                 i.proposed_from = String::new();
+            }
+            // limit-budget / limit-provider: screen 12 with Resolve's own budget stop, or with a
+            // provider's own message (only that one is quoted under "It said:")
+            "limit-budget" | "limit-provider" => {
+                i.limit_at = "proposal".into();
+                i.last_error = if open == "limit-budget" { "This month's AI budget ($10) is used up. Raise it in Settings, AI and MCP, or carry on by hand.".into() } else { "Claude AI usage limit reached. Your limit will reset at 3am (Europe/London).".into() };
             }
             _ => {}
         }

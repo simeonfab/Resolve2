@@ -38,7 +38,7 @@ fn reply(system: &str, proposals: &AtomicUsize) -> Value {
                 "experiments": [{"title": "E0: quote three HR teams", "parent": 0, "fields": {"decision": "Price point", "prediction": "2 of 3 accept", "support_if": ">=2 accept", "refute_if": "0 accept", "inconclusive_if": "1 accepts"}}],
                 "roadmap": [{"title": "Price the corporate package", "detail": "Fixed price per team of 12", "phase": "Now", "basis": "assumption"},
                             {"title": "Run three paid pilots", "detail": "With the two HR leads plus one more", "phase": "Next", "basis": "evidence", "sources": ["missing-id"]},
-                            {"title": "Repeat-booking offer", "phase": "Later", "basis": "uncertain"}],
+                            {"title": "Repeat-booking offer", "detail": "A quarterly rebooking deal, because you don't know yet whether bookings repeat", "phase": "Later", "basis": "uncertain"}],
                 "tasks": [{"title": "Email both HR managers a quote for a 12-person session with venue and timing options", "detail": "", "phase": "Now", "parent": 0, "basis": "assumption"},
                           {"title": "List three venues", "detail": "Within 20 minutes of the office", "phase": "Now", "parent": 1, "basis": "uncertain"}],
                 "pages": [{"title": "Project brief", "detail": "## Doom Clock corporate events\n\nTeam events built on the Doom Clock game."}]})

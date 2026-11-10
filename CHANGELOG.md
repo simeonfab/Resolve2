@@ -2,6 +2,19 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.5.1 (10 November 2026)
+
+Phase 3 fixes that didn't make the 0.4.0 merge (branch `intake/p3-fixes`).
+
+**What was fixed**
+- The AI limit screen (12) quotes "It said:" only for your AI provider's own message, never for Resolve's own budget stop, which the sentence above already explains.
+- Every theme card on Does this belong on your roadmap? (07) has its line: the AI is asked for what each theme involves and why it matters now, and a first answer with a theme missing it is sent back once. In one real run (Ollama, llama3.2) all three themes had their line.
+- The bridge (10) says your project's name, for example "Café flat-fee bookkeeping, turned into a focused path forward", instead of "A messy project".
+- The halo round Open my project on the reveal (11) is the canvas's soft 6 px ring, not a bright amber one.
+
+**Known differences and open items**
+- If the AI's second answer still leaves a theme without its line, the card shows none; Resolve doesn't make one up.
+
 ## 0.5.0 (10 November 2026)
 
 Redesign Phase 4: project sections, rebuilt to the Pack C canvases (branch `nav/p4-project`). Each section below is the redesigned page when a project is picked; with no project picked, the earlier all-projects view stays.

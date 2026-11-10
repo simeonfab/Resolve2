@@ -477,6 +477,8 @@ pub mod shadow {
     pub const ASK_BAR: Shadow = sh(0.0, 10.0, 30.0, 0.0, ink(56));
     /// focus: 0 0 0 3px rgba(200,160,64,.22) (drawn as a ring, plus an amber border)
     pub const FOCUS_ALPHA: f32 = 0.22;
+    /// The halo round the reveal's Open my project (Pack A 11): a 6 px ring at .14.
+    pub const HALO_ALPHA: f32 = 0.14;
     /// backdrop alphas: panel .18, sheet .32, dialog .38
     pub const BACKDROP_PANEL: f32 = 0.18;
     pub const BACKDROP_SHEET: f32 = 0.32;
@@ -491,6 +493,12 @@ pub fn status_pair(status: &str) -> (Color32, Color32) {
         "Refuted" | "Blocked" | "Missed" => (tok::TERRACOTTA, tok::TERRACOTTA_TINT),
         _ => (tok::INK_SOFT, tok::SURFACE),
     }
+}
+
+/// `over` laid over `base` at `a` (a CSS rgba shadow over an opaque page), as a solid colour.
+pub fn mix(base: Color32, over: Color32, a: f32) -> Color32 {
+    let m = |x: u8, y: u8| (x as f32 + (y as f32 - x as f32) * a.clamp(0.0, 1.0)).round() as u8;
+    Color32::from_rgb(m(base.r(), over.r()), m(base.g(), over.g()), m(base.b(), over.b()))
 }
 
 /// Knowledge base card kinds: (text, fill).
