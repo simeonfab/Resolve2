@@ -698,3 +698,92 @@ pub fn intake_sample(d: &mut WorkspaceData) -> Id {
     d.intakes.push(i);
     id
 }
+
+/// The Careers intake part-way through, as the Careers canvases draw it (Intake 03 to 11):
+/// three questions (the third answered), what Resolve heard, the 04 cards and the kit. Screenshot
+/// data only (`--view careers-<step>`); in memory, never saved. Copy is the canvas's sample.
+pub fn careers_sample(d: &mut WorkspaceData) -> Id {
+    use crate::resolve::careers::{self, Cards, Career, CvTemplate, Gate, Kit, LinkedinFix, Proof};
+    use crate::resolve::intake::{Attachment, Intake};
+    use crate::resolve::journey::{Heard, Qa};
+    let mut i = Intake::new();
+    i.mode = Mode::Careers;
+    i.situation = "job_search".into();
+    i.name = "Simeon".into();
+    i.greeted = true;
+    i.input = careers::EXAMPLE.into();
+    i.attachments = vec![
+        Attachment { name: "Simeon_CV_2026.pdf".into(), text: "Senior Product Owner, Capgemini. Senior PM, OneAdvanced: owned the managed services portfolio end to end. Partner Manager, OneAdvanced: achieved both Microsoft Solution Partner designations, in both years.".into(), place: "cv".into(), how: "you".into(), why: String::new() },
+        Attachment { name: "LinkedIn.pdf".into(), text: "Headline: Senior Product Owner.".into(), place: "cv".into(), how: "you".into(), why: String::new() },
+    ];
+    i.stage = "questions".into();
+    i.ai_covered = vec!["role".into(), "company".into()];
+    let qa = |target: &str, q: &str, a: &str, why: &str| Qa { id: new_id(), target: target.into(), question: q.into(), answer: a.into(), classified: a.into(), why: why.into(), source: "sample".into(), ..Default::default() };
+    i.qas = vec![
+        qa("pay", "What's the lowest base pay you'd accept?", "I'd rather keep that private here, but I know my number.", ""),
+        qa("contract", "Permanent, contract, or either?", "Permanent roles only.", ""),
+        qa("location", "How many days a week can you be in an office, and where?", "Two a week at most. London is fine, Birmingham is better.", "Sets your office-days gate: Reviewer fails any job that asks for more."),
+    ];
+    i.cursor = 2;
+    let heard = |kind: &str, text: &str| Heard { id: new_id(), kind: kind.into(), text: text.into(), ..Default::default() };
+    i.heard = vec![heard("gate", "Head of Product or Director level"), heard("gate", "Permanent roles only"), heard("preference", "Identity or platform products"), heard("question", "Is travel to London once a fortnight fine?")];
+    let cards = Cards {
+        job: "Head of Product or Director of Product, in identity, platform or customer access.".into(),
+        hard_gates: "Head of Product or Director · 2 office days a week at most · minimum base pay · permanent · identity or platform".into(),
+        preferences: "Under 2 hours from Birmingham · scale-up or enterprise, 200+ people".into(),
+        win: "A Head of Product role, at or above your minimum, signed by March".into(),
+        strengths: "Platform and managed services depth. Partner programmes with results.".into(),
+        gaps: "Headline says Senior Product Owner. Few numbers on outcomes.".into(),
+        fix: "Headline, LinkedIn About, add a number to 6 proof points.".into(),
+        broad: false,
+    };
+    let gate = |rule: &str, hard: bool, why: &str, check: &str| Gate { rule: rule.into(), hard, why: why.into(), check: check.into() };
+    let mut kit = Kit {
+        search_name: "Head of Product search".into(),
+        target: "Head of Product or Director of Product, identity, platform or customer access".into(),
+        do_first: "Fix your CV headline".into(),
+        why: "It says Senior Product Owner, and every role you want says Head of Product. Reviewers read the headline first.".into(),
+        gates: vec![
+            gate("Head of Product or Director level", true, "The level you're aiming for.", "kept"),
+            gate("Minimum base pay met", true, "Your minimum, kept private.", "kept"),
+            gate("Permanent contract", true, "You said permanent roles only.", "kept"),
+            gate("No more than 2 office days a week", true, "You said family time and the commute from Birmingham come first, and two London days a month is comfortable.", ""),
+            gate("Identity, platform or customer access", true, "Where your proof points are strongest.", ""),
+            gate("Under 2 hours from Birmingham", false, "Birmingham is better than London.", ""),
+            gate("Scale-up or enterprise, 200+ people", false, "No agencies.", ""),
+        ],
+        templates: vec![
+            CvTemplate { name: "Platform".into(), suits: "platform, identity, customer access, managed services".into(), headline: "Product leader for platforms and customer access at national scale".into(), default: true },
+            CvTemplate { name: "Identity".into(), suits: "identity, verification, account security".into(), headline: String::new(), default: false },
+            CvTemplate { name: "General".into(), suits: "anything outside the two above".into(), headline: String::new(), default: false },
+        ],
+        letter_structure: "Hook, proof, fit, close".into(),
+        letter: String::new(),
+        evidence: vec![
+            Proof { point: "Achieved both Microsoft Solution Partner designations, in both years".into(), theme: "Partners and channels".into(), role: "OneAdvanced, Partner Manager".into(), number: "2 of 2".into(), source: "from CV, 2025".into() },
+            Proof { point: "Owned the managed services portfolio end to end".into(), theme: "Platform scale".into(), role: "OneAdvanced, Senior PM".into(), number: String::new(), source: "from Interview debrief".into() },
+            Proof { point: "Shipped a sign-in journey for a national identity service".into(), theme: "Identity".into(), role: "Capgemini, Senior PO".into(), number: String::new(), source: "from CV, 2026".into() },
+            Proof { point: "Rebuilt the cloud services catalogue for enterprise buyers".into(), theme: "Platform scale".into(), role: "CDW".into(), number: String::new(), source: "from Evidence session".into() },
+        ],
+        linkedin: vec![
+            LinkedinFix { area: "Headline".into(), fix: "Say Head of Product, not Senior Product Owner".into() },
+            LinkedinFix { area: "About".into(), fix: "Lead with platforms and identity".into() },
+            LinkedinFix { area: "OneAdvanced, Senior PM".into(), fix: "Add a number to the managed services work".into() },
+            LinkedinFix { area: "Capgemini, Senior PO".into(), fix: "Name the national identity service".into() },
+        ],
+        weekly_target: 10,
+        daily_found: 20,
+        week: vec![],
+        offline: false,
+    };
+    careers::finish(&mut kit);
+    let mut c = Career { cards: Some(cards), kit: Some(kit), workspace: "Job search".into(), ..Default::default() };
+    c.cards_n = i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + 1;
+    c.kit_from = c.cards_key();
+    i.career = Some(c);
+    i.outcome_confirmed = true;
+    i.theme_ix = 3;
+    let id = i.id.clone();
+    d.intakes.push(i);
+    id
+}

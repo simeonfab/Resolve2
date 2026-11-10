@@ -779,7 +779,12 @@ impl App {
                 } else {
                     for (rule, hard) in &kept {
                         ui.horizontal(|ui| {
-                            ui.add(egui::Label::new(RichText::new(rule).size(size::ROW_SMALL).color(p.text)).truncate());
+                            // the rule takes what the tag leaves, cut short with … if it must
+                            let room = (ui.available_width() - space::S40 * 1.5).max(space::S40);
+                            ui.allocate_ui_with_layout(egui::vec2(room, space::S22), Layout::left_to_right(Align::Center), |ui| {
+                                ui.set_width(room);
+                                ui.add(egui::Label::new(RichText::new(rule).size(size::ROW_SMALL).color(p.text)).truncate());
+                            });
                             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                                 gate_tag(ui, p, *hard, true);
                             });

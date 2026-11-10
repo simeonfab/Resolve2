@@ -232,14 +232,15 @@ impl App {
     /// The intake's "Attach a brief or notes" row.
     pub(super) fn attach_row(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut crate::resolve::Intake) {
         ui.horizontal_wrapped(|ui| {
-            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Attach a brief or notes")).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
+            let careers = it.mode == Mode::Careers;
+            if ui.add_enabled(self.import.job.is_none(), egui::Button::new(if careers { "📎 Attach" } else { "📎 Attach a brief or notes" })).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
                 let paths = pick_files();
                 self.import_files(ImportTarget::Intake(it.id.clone()), paths);
             }
             if self.import.job.is_some() {
                 ui.spinner();
                 ui.label(RichText::new("Reading…").size(size::SMALL).color(p.dim));
-            } else {
+            } else if !careers {
                 ui.label(RichText::new("Resolve reads them like your own words; a claim counts as evidence only when the file states it as fact.").size(size::TINY).color(p.faint));
             }
         });
@@ -247,7 +248,9 @@ impl App {
         for (i, a) in it.attachments.iter().enumerate() {
             ui.horizontal_wrapped(|ui| {
                 chip(ui, &format!("📎 {}", a.name), p.blue);
-                ui.label(RichText::new(format!("{} words · will go to {}", a.text.split_whitespace().count(), files::label(&a.place))).size(size::TINY).color(p.faint));
+                // Careers keeps them as your CV files (a PM intake files them in Knowledge)
+                let place = if it.mode == Mode::Careers { "kept with your CV".to_string() } else { format!("will go to {}", files::label(&a.place)) };
+                ui.label(RichText::new(format!("{} words · {place}", a.text.split_whitespace().count())).size(size::TINY).color(p.faint));
                 if ui.small_button("×").on_hover_text("Remove").clicked() {
                     remove = Some(i);
                 }

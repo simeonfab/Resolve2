@@ -720,8 +720,13 @@ pub fn kit_lines(k: &Kit) -> [(&'static str, String); 6] {
     let hard = k.gates.iter().filter(|g| g.hard && g.check != "not quite").count();
     let pref = k.gates.iter().filter(|g| !g.hard && g.check != "not quite").count();
     let need = k.evidence.iter().filter(|p| p.number.trim().is_empty()).count();
-    let areas: Vec<String> = k.linkedin.iter().map(|l| l.area.clone()).collect();
-    let li = if areas.len() > 3 { format!("{} · {} more", areas[..2].join(" · "), areas.len() - 2) } else { areas.join(" · ") };
+    // Headline and About by name, then the roles counted ("Headline · About · 2 roles")
+    let mut parts: Vec<String> = ["Headline", "About"].iter().filter(|a| k.linkedin.iter().any(|l| l.area.eq_ignore_ascii_case(a))).map(|a| a.to_string()).collect();
+    let roles = k.linkedin.iter().filter(|l| !["headline", "about"].contains(&l.area.to_lowercase().as_str())).count();
+    if roles > 0 {
+        parts.push(count(roles, "role", "roles"));
+    }
+    let li = parts.join(" · ");
     [
         ("Gates", format!("{} · {}", count(hard, "hard gate", "hard gates"), count(pref, "preference", "preferences"))),
         ("CV templates", k.templates.iter().map(|t| t.name.clone()).collect::<Vec<_>>().join(" · ")),
