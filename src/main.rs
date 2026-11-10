@@ -63,10 +63,17 @@ fn main() {
         store::set_root(resolve::testlab::default_root());
     }
     // standing rule: screenshots run only in a sandbox folder, never the real data folder. This
-    // runs before anything opens a workspace.
-    if args.iter().any(|a| a == "--screenshot") && (arg_value(&args, "--data-dir").is_none() && !testlab || store::is_real_root(&store::root())) {
-        eprintln!("Refused: a screenshot needs --data-dir with a sandbox folder, never the real data folder ({}).", store::root().display());
-        std::process::exit(2);
+    // runs before anything opens a workspace. With no --data-dir, a screenshot gets a fresh sandbox
+    // folder of its own under %TEMP% (Craft Anything's build check runs it that way); pointed at
+    // the real folder, it's refused.
+    if args.iter().any(|a| a == "--screenshot") {
+        if arg_value(&args, "--data-dir").is_none() && !testlab {
+            store::set_root(std::env::temp_dir().join(format!("resolve2-shot-{}", std::process::id())).join("data"));
+        }
+        if store::is_real_root(&store::root()) {
+            eprintln!("Refused: a screenshot runs only in a sandbox folder, never the real data folder ({}).", store::root().display());
+            std::process::exit(2);
+        }
     }
     // resolve2 --test-connection PROVIDER: the same real round trip as Connect your AI's Test button
     if let Some(which) = arg_value(&args, "--test-connection") {
