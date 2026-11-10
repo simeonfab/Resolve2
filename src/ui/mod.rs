@@ -24,6 +24,12 @@ mod help;
 mod assistant;
 mod databases;
 mod pages;
+pub mod overview;
+pub mod roadmap;
+pub mod frameworks;
+pub mod kb;
+pub mod csv_dialog;
+pub mod proposal_editor;
 pub(crate) mod settings;
 pub mod tasks;
 
@@ -260,6 +266,8 @@ pub struct App {
     pub current_project: Option<Id>,
     pub connect: connect::ConnectUi,
     pub import: import_ui::ImportUi,
+    /// The CSV import dialog and the rows of the last import that didn't go in (C-E18).
+    pub csv: csv_dialog::CsvUi,
     /// One toast at a time (B-E10).
     pub toaster: toast::Toaster,
     /// --state full|empty|loading|error: which state views draw (screenshots of the four states).
@@ -372,6 +380,7 @@ impl App {
             current_project: None,
             connect: connect::ConnectUi::default(),
             import: import_ui::ImportUi::default(),
+            csv: csv_dialog::CsvUi::default(),
             toaster: toast::Toaster::default(),
             view_state: ViewState::default(),
             no_save: false,
@@ -467,6 +476,19 @@ impl App {
             if pick {
                 app.current_project = app.store.data.contexts.iter().filter(|c| app.store.data.project(&c.project_id).is_some()).max_by_key(|c| c.created).map(|c| c.project_id.clone());
             }
+            // --state empty --project <name>: the canvases' empty state is a project made but not
+            // set up (no tasks, no roadmap), so add a bare one, in memory only
+            if let (ViewState::Empty, Some(name)) = (app.view_state, opts.project.as_deref()) {
+                if app.shot.is_some() && !app.store.data.projects.iter().any(|p| p.name.eq_ignore_ascii_case(name)) {
+                    let pr = Project { id: new_id(), name: name.to_string(), color: crate::ui::theme::PICK_COLOURS[2], sections: vec![], page_id: None, archived: false, favorite: false, order: 1, updated: now_ms() };
+                    let pid = pr.id.clone();
+                    app.store.data.projects.push(pr);
+                    if let Some(mut ctx) = crate::resolve::ProjectContext::adopt(&app.store.data, &pid) {
+                        ctx.outcome = crate::seed::canvas_outcome(name);
+                        app.store.data.contexts.push(ctx);
+                    }
+                }
+            }
             // --project <name>: that project (screenshots of a particular one)
             if let Some(pid) = opts.project.as_deref().and_then(|n| app.store.data.projects.iter().find(|p| p.name.eq_ignore_ascii_case(n))).map(|p| p.id.clone()) {
                 app.current_project = Some(pid);
@@ -479,6 +501,21 @@ impl App {
             } else if let Some(n) = name.strip_prefix("settings-").and_then(|n| n.parse::<usize>().ok()) {
                 app.settings_ui.tab = n;
                 app.view = View::Settings;
+            } else if let Some(t) = name.strip_prefix("db:") {
+                // db:<name>: that database (screenshots)
+                if let Some(x) = app.store.data.databases.iter().find(|x| x.name == t) {
+                    app.view = View::Database(x.id.clone());
+                }
+            } else if let Some(t) = name.strip_prefix("page:") {
+                // page:<title>: that page in the editor; page:new a new blank page (screenshots)
+                if t == "new" {
+                    let mut pg = Page::new("");
+                    pg.parent = app.current_project.as_deref().and_then(|p| crate::ui::kb::brief_of(&app.store.data, p));
+                    app.view = View::Page(pg.id.clone());
+                    app.store.data.pages.push(pg);
+                } else if let Some(pg) = app.store.data.pages.iter().find(|x| x.title == t) {
+                    app.view = View::Page(pg.id.clone());
+                }
             } else if name == "projects" {
                 app.view = View::Projects;
             } else if name == "tasks-board" {
@@ -582,6 +619,68 @@ impl App {
             Some("try") => {
                 app.temp.insert("show_try".into(), "1".into());
             }
+            // the Roadmap's whole picture, its By theme list, or one theme open (screenshots)
+            Some("whole") => {
+                app.temp.insert("rm_whole".into(), "1".into());
+            }
+            Some("by-theme") => app.resolve_ui.roadmap_by_theme = true,
+            // the Knowledge base: a tab, the Add sheet, a card's preview, the New page dialog
+            Some(o) if o.starts_with("kbtab:") => {
+                app.resolve_ui.knowledge_tab = o.split(':').nth(1).and_then(|n| n.parse().ok()).unwrap_or(0);
+                if let Some(k) = o.split(':').nth(2) {
+                    app.resolve_ui.kind_filter = crate::resolve::Kind::ALL.iter().copied().find(|x| x.plural() == k);
+                }
+            }
+            Some("kb-add") => {
+                app.temp.insert("kb_add".into(), "-10".into());
+            }
+            // csv:<path>: the CSV import dialog on that file, over the database that's open
+            Some(o) if o.starts_with("csv:") => {
+                let path = std::path::PathBuf::from(&o["csv:".len()..]);
+                if let Ok(text) = std::fs::read_to_string(&path) {
+                    let db = match &app.view {
+                        View::Database(x) => x.clone(),
+                        _ => String::new(),
+                    };
+                    let file = path.file_name().map(|x| x.to_string_lossy().to_string()).unwrap_or_default();
+                    app.csv_open(&file, &text, &db);
+                }
+            }
+            // team-budget: the latest Validation Lead chat ends in the budget message (the error state)
+            Some("team-budget") => {
+                let pid = app.current_project.clone();
+                if let Some(c) = app.store.data.conversations.iter_mut().filter(|c| c.agent == "validation" && c.project_id == pid).max_by_key(|c| c.updated) {
+                    c.messages.truncate(1);
+                    c.messages.push(ChatMessage { role: "validation".into(), text: "This month's AI budget ($10) is used up. Raise it in Settings, AI and MCP, or carry on by hand.".into(), at: now_ms(), via: String::new(), error: true });
+                }
+            }
+            // team-wait: the latest Validation Lead chat has only your question (loading)
+            Some("team-wait") => {
+                let pid = app.current_project.clone();
+                if let Some(c) = app.store.data.conversations.iter_mut().filter(|c| c.agent == "validation" && c.project_id == pid).max_by_key(|c| c.updated) {
+                    c.messages.clear();
+                }
+            }
+            Some("new-page") => {
+                app.temp.insert("new_page_dialog".into(), String::new());
+            }
+            Some(o) if o.starts_with("kb-preview:") => {
+                let t = &o["kb-preview:".len()..];
+                if let Some(pg) = app.store.data.pages.iter().find(|x| x.title == t) {
+                    app.temp.insert("kb_preview".into(), format!("page:{}", pg.id));
+                    app.temp.insert("kb_preview_t".into(), "-10".into());
+                }
+            }
+            // node:<title start>: that hypothesis or experiment open in Frameworks (screenshots)
+            Some(o) if o.starts_with("node:") => {
+                let pid = app.current_project.clone();
+                app.resolve_ui.sel_record = app.store.data.records.iter().find(|r| r.project_id == pid && r.title.starts_with(&o["node:".len()..])).map(|r| r.id.clone());
+            }
+            Some(o) if o.starts_with("theme:") => {
+                if let Some(r) = app.store.data.records.iter().find(|r| r.kind == crate::resolve::Kind::Roadmap && r.title == o["theme:".len()..]) {
+                    app.temp.insert("rm_open".into(), r.id.clone());
+                }
+            }
             // ask:<question>: a real question to the AI, read-only, answered before the screenshot
             Some(o) if o.starts_with("ask:") => {
                 app.page_ui.ai_open = true;
@@ -639,9 +738,14 @@ impl App {
             return;
         }
         match self.store.save() {
-            Ok(()) => self.dirty = false,
+            Ok(()) => {
+                self.dirty = false;
+                self.temp.remove("save_error");
+            }
             Err(e) => {
                 self.dirty = false;
+                // the proposal editor shows "Not saved" and offers Save again (C-E11)
+                self.temp.insert("save_error".into(), e.to_string());
                 self.toast(format!("Couldn't save: {e}"));
             }
         }
@@ -870,9 +974,14 @@ impl App {
     }
 
     pub fn page_from_builtin(&mut self, i: usize) {
+        self.page_from_builtin_in(i, None);
+    }
+
+    /// A page from a built-in template, under `parent` (a project's brief, from the Knowledge base).
+    pub fn page_from_builtin_in(&mut self, i: usize, parent: Option<Id>) -> Id {
         let t = &crate::templates::PAGE_TEMPLATES[i];
         let (_, blocks) = markdown_to_blocks(t.markdown);
-        let id = self.new_page(None);
+        let id = self.new_page(parent);
         if let Some(pg) = self.store.data.page_mut(&id) {
             pg.icon = t.icon.to_string();
             pg.blocks = blocks;
@@ -880,17 +989,23 @@ impl App {
                 pg.title = format!("{} ({})", t.name, today().format("%-d %b %Y"));
             }
         }
+        id
     }
 
     pub fn page_from_template(&mut self, tid: &str) {
-        let Some(tpl) = self.store.data.page(tid).cloned() else { return };
-        let id = self.new_page(None);
+        self.page_from_template_in(tid, None);
+    }
+
+    pub fn page_from_template_in(&mut self, tid: &str, parent: Option<Id>) -> Id {
+        let Some(tpl) = self.store.data.page(tid).cloned() else { return String::new() };
+        let id = self.new_page(parent);
         if let Some(pg) = self.store.data.page_mut(&id) {
             pg.icon = tpl.icon.clone();
             pg.title = tpl.title.trim_end_matches(" (template)").to_string();
             pg.blocks = tpl.blocks.iter().map(|b| Block { id: new_id(), ..b.clone() }).collect();
         }
         self.temp.remove("focus_title");
+        id
     }
 
     pub fn new_database(&mut self) -> Id {
@@ -1536,6 +1651,8 @@ impl eframe::App for App {
         if !full_screen {
             self.ask_sheet(ctx, &p);
             self.plan_sheet(ctx, &p);
+            self.kb_overlays(ctx, &p);
+            self.csv_dialog_ui(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);
@@ -1673,6 +1790,29 @@ impl App {
                 self.temp.insert(format!("q_out:{id}"), "6".into());
             }
             "edit" => i.editing = true,
+            // the full proposal editor (C-E11); in the empty state, a proposal with almost nothing
+            // editor:<section>: scrolled to that section
+            o if o.starts_with("editor:") => {
+                i.stage = "proposal".into();
+                i.editor = true;
+                if i.proposal.is_none() {
+                    i.proposal = Some(crate::seed::cafe_proposal());
+                }
+                self.temp.insert("pe_goto".into(), o["editor:".len()..].to_string());
+                self.temp.insert("pe_sec".into(), o["editor:".len()..].to_string());
+            }
+            "editor" => {
+                i.stage = "proposal".into();
+                i.editor = true;
+                if i.proposal.is_none() || self.view_state == ViewState::Empty {
+                    let mut pr = crate::seed::cafe_proposal();
+                    if self.view_state == ViewState::Empty {
+                        let keep = crate::resolve::journey::Proposal { name: pr.name.clone(), outcome: pr.outcome.clone(), ..Default::default() };
+                        pr = keep;
+                    }
+                    i.proposal = Some(pr);
+                }
+            }
             "pull" => {
                 i.input = String::new();
                 self.resolve_ui.show_import = true;

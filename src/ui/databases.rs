@@ -223,32 +223,142 @@ impl App {
                 self.toast("Saved as a template. Find it under New database.");
             }
         }
+        // C-E18: the eyebrow and name, the list of databases on the left, the table on the right
+        let mut goto_kb = false;
+        let mut open_db: Option<Id> = None;
+        let mut new_db: Option<String> = None;
+        let failed = self.temp.get("csv_failed").cloned().filter(|s| s.starts_with(&format!("{id}\t")));
+        let state = self.view_state;
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
-            ui.add_space(20.0);
-            ui.horizontal(|ui| {
-                ui.add_space(40.0);
-                ui.vertical(|ui| {
+            egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE - space::S4, right: space::WORK_SIDE - space::S4, top: space::S8, bottom: space::S40 * 2.0 }).show(ui, |ui| {
+                capped(ui, space::CAP_DEFAULT, |ui| {
                     let Some(db) = self.store.data.database(id).cloned() else { return };
-                    ui.horizontal(|ui| {
-                        ui.label(RichText::new(if db.icon.is_empty() { "▦" } else { &db.icon }).size(34.0));
-                        let mut name = db.name.clone();
-                        if ui.add(egui::TextEdit::singleline(&mut name).font(fb(32.0)).frame(false).desired_width(600.0)).changed() {
-                            if let Some(x) = self.store.data.database_mut(id) {
-                                x.name = name;
-                                x.updated = now_ms();
-                            }
-                            self.touch();
-                        }
-                    });
-                    if db.template {
-                        ui.label(RichText::new("This is a template. New databases made from it copy its columns.").size(12.0).color(p.orange));
+                    if ui.add(egui::Label::new(RichText::new("Knowledge base · Advanced: databases").font(fs(size::ROW_SMALL)).color(p.orange)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                        goto_kb = true;
                     }
-                    ui.add_space(6.0);
-                    self.db_table(ui, p, id, false);
+                    let mut name = db.name.clone();
+                    if ui.add(egui::TextEdit::singleline(&mut name).font(fserif(size::GREETING)).text_color(p.text).frame(false).desired_width(ui.available_width())).changed() {
+                        if let Some(x) = self.store.data.database_mut(id) {
+                            x.name = name;
+                            x.updated = now_ms();
+                        }
+                        self.touch();
+                    }
+                    if db.template {
+                        ui.label(RichText::new("This is a template. New databases made from it copy its columns.").size(size::SMALL).color(p.orange));
+                    }
+                    ui.add_space(space::S12);
+                    ui.horizontal_top(|ui| {
+                        ui.spacing_mut().item_spacing.x = space::S16;
+                        // the databases
+                        ui.allocate_ui_with_layout(egui::vec2(space::DB_LIST, 0.0), Layout::top_down(Align::Min), |ui| {
+                            ui.set_width(space::DB_LIST);
+                            ui.spacing_mut().item_spacing.y = space::S4;
+                            let list: Vec<(Id, String, usize)> = self.store.data.databases.iter().filter(|x| !x.template).map(|x| (x.id.clone(), x.name.clone(), x.rows.len())).collect();
+                            for (did, dname, n) in &list {
+                                if section_item(ui, p, space::DB_LIST, &format!("▦ {dname}"), Some(*n), did == id).clicked() && did != id {
+                                    open_db = Some(did.clone());
+                                }
+                            }
+                            ui.add_space(space::S6);
+                            let nb = dashed_button(ui, p, space::DB_LIST, "+ New database");
+                            let nm = egui::Id::new("db-new-menu");
+                            if nb.clicked() {
+                                ui.memory_mut(|m| m.toggle_popup(nm));
+                            }
+                            egui::popup_below_widget(ui, nm, &nb, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                                ui.set_min_width(space::S40 * 6.0);
+                                if ui.button("Blank table").clicked() {
+                                    new_db = Some("blank".into());
+                                }
+                                if ui.button("CRM: companies, contacts, deals").clicked() {
+                                    new_db = Some("crm".into());
+                                }
+                                if ui.button("Project tracker").clicked() {
+                                    new_db = Some("projects".into());
+                                }
+                                if ui.button("Content calendar").clicked() {
+                                    new_db = Some("content".into());
+                                }
+                                for t in self.store.data.databases.iter().filter(|x| x.template) {
+                                    if ui.button(&t.name).clicked() {
+                                        new_db = Some(t.id.clone());
+                                    }
+                                }
+                                if ui.button("From a CSV file…").clicked() {
+                                    new_db = Some("csv".into());
+                                }
+                            });
+                            ui.add_space(space::S4);
+                            ui.label(RichText::new("Templates: CRM, Projects, Content").size(size::SMALL).color(p.dim));
+                        });
+                        // the table
+                        ui.allocate_ui_with_layout(egui::vec2(ui.available_width(), 0.0), Layout::top_down(Align::Min), |ui| {
+                            ui.set_width(ui.available_width());
+                            match state {
+                                ViewState::Loading => {
+                                    skeleton_card(ui, p, 3, "Opening the table…");
+                                    return;
+                                }
+                                _ => {}
+                            }
+                            let sample = (state == ViewState::Error && failed.is_none()).then(|| format!("{id}\tcorner-cafe-hours.csv\t14|\"six\" in Hours isn't a number;15|\"n/a\" in Hours isn't a number;16|\"none\" in Hours isn't a number\t33"));
+                            if let Some(f) = failed.clone().or(sample) {
+                                let parts: Vec<&str> = f.split('\t').collect();
+                                let rows: Vec<(usize, String)> = parts.get(2).map(|s| s.split(';').filter_map(|x| x.split_once('|').map(|(a, b)| (a.parse().unwrap_or(0), b.to_string()))).collect()).unwrap_or_default();
+                                let done: usize = parts.get(3).and_then(|s| s.parse().ok()).unwrap_or(0);
+                                if !rows.is_empty() {
+                                    let (lo, hi) = (rows.first().map(|r| r.0).unwrap_or(0), rows.last().map(|r| r.0).unwrap_or(0));
+                                    let title = if rows.len() == 1 { format!("Row {lo} didn't import.") } else if hi - lo + 1 == rows.len() { format!("Rows {lo} to {hi} didn't import.") } else { format!("{} rows didn't import.", rows.len()) };
+                                    let mut body: String = rows.iter().map(|(n, w)| format!("Row {n}: {w}.")).collect::<Vec<_>>().join("\n");
+                                    body.push_str(&format!("\nThe other {done} row{} {} in. Fix those rows in the file and import it again, or bring them in with their text as it is.", if done == 1 { "" } else { "s" }, if done == 1 { "is" } else { "are" }));
+                                    let a = error_center_as(ui, p, &title, &body, "Import them as text", "Dismiss");
+                                    if a.retry {
+                                        self.temp.insert("csv_retry".into(), "1".into());
+                                    }
+                                    if a.manual {
+                                        self.temp.remove("csv_failed");
+                                        self.temp.remove("csv_failed_rows");
+                                        if self.view_state == ViewState::Error {
+                                            self.view_state = ViewState::Full;
+                                        }
+                                    }
+                                    ui.add_space(space::S12);
+                                    if state == ViewState::Error {
+                                        return;
+                                    }
+                                }
+                            }
+                            self.db_table(ui, p, id, false);
+                            ui.add_space(space::S8);
+                            ui.label(RichText::new("Saved on this PC with your workspace. Resolve and the AI Team can read these rows.").size(size::SMALL).color(p.dim));
+                        });
+                    });
                 });
             });
-            ui.add_space(40.0);
         });
+        if goto_kb {
+            self.resolve_ui.knowledge_tab = 4;
+            self.go(View::Sec(super::nav::Section::Knowledge));
+        }
+        if let Some(d) = open_db {
+            self.go(View::Database(d));
+        }
+        if let Some(w) = new_db {
+            match w.as_str() {
+                "blank" => {
+                    self.new_database();
+                }
+                "csv" => self.csv_pick(""),
+                t => {
+                    let nid = self.create_db_from_template(t);
+                    self.go(View::Database(nid));
+                }
+            }
+        }
+        if self.temp.remove("csv_retry").is_some() {
+            self.csv_import_failed_as_text(id);
+        }
     }
 
     /// Toolbar + table/board for a database. Used full-page and embedded in pages.
@@ -258,6 +368,65 @@ impl App {
         let search_key = format!("dbsearch-{id}");
         let mut search = self.temp.get(&search_key).cloned().unwrap_or_default();
         let mut open_row: Option<String> = None;
+        let mut import_csv = false;
+        let mut add_col_top = false;
+        // ---- the full page's toolbar (C-E18): + Row, + Column, Import CSV; Group and Sort
+        if !embedded {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S8;
+                if button(ui, p, ButtonKind::Primary, "+ Row", false, true).clicked() {
+                    db.rows.push(Row { id: new_id(), cells: Default::default(), page_id: None });
+                }
+                if button(ui, p, ButtonKind::Secondary, "+ Column", false, true).clicked() {
+                    add_col_top = true;
+                }
+                if button(ui, p, ButtonKind::Secondary, "Import CSV", false, true).on_hover_text("Add rows from a .csv file, or make a new database from it").clicked() {
+                    import_csv = true;
+                }
+                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                    ui.spacing_mut().item_spacing.x = space::S8;
+                    let cur_sort = db.sort_by.as_ref().and_then(|(c, a)| db.columns.iter().find(|x| &x.id == c).map(|x| format!("Sort: {} {}", x.name, if *a { "↑" } else { "↓" }))).unwrap_or_else(|| "Sort".into());
+                    let sb = button(ui, p, ButtonKind::Secondary, &cur_sort, false, true);
+                    let sm = egui::Id::new(("db-sort", id));
+                    if sb.clicked() {
+                        ui.memory_mut(|m| m.toggle_popup(sm));
+                    }
+                    egui::popup_below_widget(ui, sm, &sb, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                        ui.set_min_width(space::S40 * 5.0);
+                        if ui.button("No sort").clicked() {
+                            db.sort_by = None;
+                        }
+                        for c in &db.columns {
+                            if ui.button(format!("{} ↑", c.name)).clicked() {
+                                db.sort_by = Some((c.id.clone(), true));
+                            }
+                            if ui.button(format!("{} ↓", c.name)).clicked() {
+                                db.sort_by = Some((c.id.clone(), false));
+                            }
+                        }
+                    });
+                    let selects: Vec<(Id, String)> = db.columns.iter().filter(|c| c.kind == ColKind::Select).map(|c| (c.id.clone(), c.name.clone())).collect();
+                    let gname = db.group_by.as_ref().and_then(|g| selects.iter().find(|s| &s.0 == g)).map(|s| format!("Group: {}", s.1)).unwrap_or_else(|| "Group".into());
+                    let gb = button(ui, p, ButtonKind::Secondary, &gname, false, !selects.is_empty()).on_hover_text("Group the rows by a choice column");
+                    let gm = egui::Id::new(("db-group", id));
+                    if gb.clicked() {
+                        ui.memory_mut(|m| m.toggle_popup(gm));
+                    }
+                    egui::popup_below_widget(ui, gm, &gb, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                        ui.set_min_width(space::S40 * 4.0);
+                        if ui.button("No grouping").clicked() {
+                            db.group_by = None;
+                        }
+                        for (cid, name) in &selects {
+                            if ui.button(name).clicked() {
+                                db.group_by = Some(cid.clone());
+                            }
+                        }
+                    });
+                });
+            });
+            ui.add_space(space::S10);
+        }
         // ---- toolbar
         ui.horizontal(|ui| {
             for (v, l) in [(DbView::Table, "▦ Table"), (DbView::Board, "▥ Board")] {
@@ -266,7 +435,7 @@ impl App {
                 }
             }
             ui.separator();
-            if db.view == DbView::Board {
+            if db.view == DbView::Board && embedded {
                 let selects: Vec<&Column> = db.columns.iter().filter(|c| c.kind == ColKind::Select).collect();
                 let cur = db.group_by.as_ref().and_then(|g| db.columns.iter().find(|c| &c.id == g)).map(|c| c.name.clone()).unwrap_or_else(|| "choose".into());
                 let mut gb = db.group_by.clone();
@@ -313,6 +482,7 @@ impl App {
                 ui.label(RichText::new("Dates use YYYY-MM-DD. Filters are saved with the database.").size(11.0).color(p.faint));
             });
             let cur_sort = db.sort_by.as_ref().and_then(|(c, a)| db.columns.iter().find(|x| &x.id == c).map(|x| format!("{} {}", x.name, if *a { "↑" } else { "↓" }))).unwrap_or_else(|| "Sort".into());
+            if embedded {
             ui.menu_button(format!("⇅ {cur_sort}"), |ui| {
                 if ui.button("None").clicked() {
                     db.sort_by = None;
@@ -331,12 +501,13 @@ impl App {
                     });
                 }
             });
+            }
             let r = ui.add(egui::TextEdit::singleline(&mut search).hint_text("🔍 Search").desired_width(150.0));
             if r.changed() {
                 self.temp.insert(search_key.clone(), search.clone());
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                if primary_button(ui, p, "New").clicked() {
+                if embedded && primary_button(ui, p, "New").clicked() {
                     let mut row = Row { id: new_id(), cells: Default::default(), page_id: None };
                     // new rows match the active filters where that's simple
                     for f in &db.filters {
@@ -458,7 +629,38 @@ impl App {
                 });
                 hline(ui, p);
                 let max_rows = if embedded { 50 } else { 1000 };
+                // grouped by a choice column (C-E18): rows in the order of its options, under a
+                // heading with the count
+                let gcol = db.group_by.as_ref().and_then(|g| db.columns.iter().find(|c| &c.id == g && c.kind == ColKind::Select)).cloned();
+                let mut rows = rows.clone();
+                if let Some(gc) = &gcol {
+                    let rank = |ri: &usize| {
+                        let v = db.rows[*ri].cells.get(&gc.id).cloned().unwrap_or_default();
+                        gc.options.iter().position(|o| *o == v).unwrap_or(usize::MAX)
+                    };
+                    rows.sort_by_key(rank);
+                }
+                let mut last_group: Option<String> = None;
                 for &ri in rows.iter().take(max_rows) {
+                    if let Some(gc) = &gcol {
+                        let v = db.rows[ri].cells.get(&gc.id).cloned().unwrap_or_default();
+                        let v = if gc.options.contains(&v) { v } else { String::new() };
+                        if last_group.as_ref() != Some(&v) {
+                            let n = rows.iter().filter(|&&x| {
+                                let w = db.rows[x].cells.get(&gc.id).cloned().unwrap_or_default();
+                                (if gc.options.contains(&w) { w } else { String::new() }) == v
+                            }).count();
+                            ui.add_space(space::S6);
+                            ui.horizontal(|ui| {
+                                ui.add_space(space::S12);
+                                let name = if v.is_empty() { format!("No {}", gc.name.to_lowercase()) } else { v.clone() };
+                                tag(ui, &name, p.text, if v.is_empty() { p.surface_raised } else { select_color(&v).gamma_multiply(0.25) });
+                                ui.label(RichText::new(n.to_string()).size(size::SMALL).color(p.dim));
+                            });
+                            ui.add_space(space::S4);
+                            last_group = Some(v);
+                        }
+                    }
                     let highlight = self.db_ui.highlight.as_deref() == Some(db.rows[ri].id.as_str());
                     let row_top = ui.cursor().min;
                     ui.horizontal(|ui| {
@@ -576,7 +778,10 @@ impl App {
         if let Some(ri) = delete_row {
             db.rows.remove(ri);
         }
-        if add_col {
+        if import_csv {
+            self.csv_pick(id);
+        }
+        if add_col || add_col_top {
             db.columns.push(Column { id: new_id(), name: format!("Property {}", db.columns.len() + 1), kind: ColKind::Text, options: vec![], width: 150.0, target: String::new() });
         }
         if let Some((ci, what)) = col_action {

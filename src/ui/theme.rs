@@ -273,6 +273,54 @@ pub mod space {
     pub const EVENT_LABEL_W: f32 = 104.0;
     pub const CAP_SETTINGS: f32 = 1100.0;
     pub const CAP_TEAM: f32 = 1320.0;
+    /// Roadmap (Pack C): lanes 12 apart, the right rail 270 (it stays 270 at 1920 while the lanes
+    /// widen), 16 between them; the whole picture is 944 wide, 40 from the top, its hypothesis
+    /// column 190.
+    pub const CAP_ROADMAP: f32 = 1600.0;
+    pub const RM_LANE_GAP: f32 = 12.0;
+    pub const RM_RAIL: f32 = 270.0;
+    pub const RM_RAIL_GAP: f32 = 16.0;
+    pub const RM_TOGGLE: f32 = 24.0;
+    pub const RM_CARD_PAD: f32 = 12.0;
+    pub const WHOLE_W: f32 = 944.0;
+    pub const WHOLE_TOP: f32 = 40.0;
+    pub const WHOLE_LABEL_W: f32 = 190.0;
+    pub const WHOLE_CELL_H: f32 = 54.0;
+    /// Frameworks (Pack C): registry cards 330 and 270, the node editor 436 beside the tree,
+    /// tree levels 32 apart, the node label column 40.
+    pub const FW_REGISTRY_W: f32 = 330.0;
+    pub const FW_REGISTRY_MORE_W: f32 = 270.0;
+    pub const FW_EDITOR: f32 = 436.0;
+    pub const FW_INDENT: f32 = 32.0;
+    pub const FW_LABEL_W: f32 = 40.0;
+    /// The proposal editor (Pack C): a 60 top bar, the section list 210, 24 to the cards.
+    pub const PE_BAR: f32 = 60.0;
+    pub const PE_LIST: f32 = 210.0;
+    pub const PE_GAP: f32 = 24.0;
+    /// Knowledge base (Pack C): library cards 120 high and 12 apart, 3 across (4 from a 1200
+    /// wide library), the find field 240, the Add sheet 620, the preview panel 520, the New page
+    /// dialog 684.
+    pub const LIB_CARD_H: f32 = 120.0;
+    pub const LIB_GAP: f32 = 12.0;
+    pub const LIB_FOUR_FROM: f32 = 1200.0;
+    pub const FIND_W: f32 = 240.0;
+    pub const ADD_SHEET_W: f32 = 620.0;
+    pub const PREVIEW_W: f32 = 520.0;
+    pub const NEW_PAGE_W: f32 = 684.0;
+    /// The page editor (Pack C): a 52 top bar, text 680 to 720 wide for reading, the rail 250
+    /// with 30 before it.
+    pub const PAGE_BAR: f32 = 52.0;
+    pub const PAGE_COL: f32 = 720.0;
+    pub const PAGE_RAIL: f32 = 250.0;
+    pub const PAGE_GAP: f32 = 30.0;
+    /// The blocks' left gutter (their + and drag handle, 52, and the gap after it).
+    pub const PAGE_GUTTER: f32 = 60.0;
+    /// Databases (Pack C): the list of databases 200 wide beside the table.
+    pub const DB_LIST: f32 = 200.0;
+    /// AI Team (Pack C): the roles column 280 beside the chat.
+    pub const TEAM_LIST: f32 = 280.0;
+    /// Handoffs (Pack C): the new-handoff and list column 360 beside the brief.
+    pub const HO_LEFT: f32 = 360.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

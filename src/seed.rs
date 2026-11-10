@@ -401,7 +401,7 @@ fn set_task(d: &mut WorkspaceData, title: &str, f: impl FnOnce(&mut Task)) {
 
 /// The café proposal from the canvases (Pack A to C), shared by the sample project and the
 /// intake screenshots.
-fn cafe_proposal() -> crate::resolve::journey::Proposal {
+pub fn cafe_proposal() -> crate::resolve::journey::Proposal {
     use crate::resolve::journey::Proposal;
     Proposal {
         name: "Café flat-fee bookkeeping".into(),
@@ -454,6 +454,15 @@ fn cafe_proposal() -> crate::resolve::journey::Proposal {
     }
 }
 
+/// The outcome line the canvases draw for a sample project (empty for any other name).
+pub fn canvas_outcome(name: &str) -> String {
+    if name == "Café flat-fee bookkeeping" {
+        "Café owners know their monthly cost up front and stop sending shoeboxes of receipts at year end.".into()
+    } else {
+        String::new()
+    }
+}
+
 pub fn seed_canvas(d: &mut WorkspaceData) {
     use crate::resolve::journey::Proposal;
     use crate::ui::theme::PICK_COLOURS;
@@ -488,6 +497,109 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
             x.completed = true;
             x.completed_at = at;
         });
+    }
+    // the canvas's links (Pack C Overview, Roadmap): E0 tests the hours task, and H1's result
+    // opens the gate on "Price to absorb spikes"
+    {
+        use crate::resolve::Kind;
+        let task = d.tasks.iter().find(|x| x.title == "Reconstruct 12 months of hours per café" && x.project_id == cafe_id).map(|x| x.id.clone());
+        let h1 = d.records.iter().find(|r| r.kind == Kind::Hypothesis && r.title.starts_with("H1:") && r.project_id == cafe_id).map(|r| r.id.clone());
+        if let (Some(t), Some(e)) = (task, d.records.iter_mut().find(|r| r.kind == Kind::Experiment && r.title.starts_with("Reconstruct 12 months"))) {
+            e.links.push(t);
+        }
+        if let (Some(h), Some(g)) = (h1, d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == "Price to absorb spikes")) {
+            g.fields.insert("gate".into(), h);
+        }
+        // Pack C Roadmap: H2 and H3 gate their themes; E1 and E2 test the willing-client call and
+        // the receipt handover; three milestones with dates
+        let hyp = |d: &WorkspaceData, n: &str| d.records.iter().find(|r| r.kind == Kind::Hypothesis && r.title.starts_with(n) && r.project_id == cafe_id).map(|r| r.id.clone());
+        for (theme, h) in [("Convert the two willing clients", "H2:"), ("Reach cafés beyond word of mouth", "H3:")] {
+            if let Some(hid) = hyp(d, h) {
+                if let Some(g) = d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == theme && r.project_id == cafe_id) {
+                    g.fields.insert("gate".into(), hid);
+                }
+            }
+        }
+        for (exp, task) in [("Offer the fixed fee", "Book a call with each willing client"), ("Run a 3-month flat-fee trial", "Define the monthly receipt handover")] {
+            let tid = d.tasks.iter().find(|x| x.title == task && x.project_id == cafe_id).map(|x| x.id.clone());
+            if let (Some(t), Some(e)) = (tid, d.records.iter_mut().find(|r| r.kind == Kind::Experiment && r.title.starts_with(exp) && r.project_id == cafe_id)) {
+                e.links.push(t);
+            }
+        }
+        if let Some(g) = d.records.iter_mut().find(|r| r.kind == Kind::Roadmap && r.title == "Measure true monthly hours" && r.project_id == cafe_id) {
+            g.body = "Count the hours you actually worked for each café, month by month. If the busiest month is under twice the quietest, H1 holds.".into();
+        }
+        for (title, days) in [("12 months of hours in hand", 14), ("First flat-fee client signed", 40), ("Trial review", 140)] {
+            let mut r = crate::resolve::Record::new(Kind::Milestone, cafe_id.clone(), title);
+            r.fields.insert("date".into(), (today + Duration::days(days)).format("%Y-%m-%d").to_string());
+            d.records.push(r);
+        }
+    }
+    // Pack C Databases: the café clients table and an hours log
+    {
+        let col = |name: &str, kind: ColKind, options: &[&str], width: f32| Column { id: new_id(), name: name.into(), kind, options: options.iter().map(|s| s.to_string()).collect(), width, target: String::new() };
+        let cols = vec![
+            col("Café", ColKind::Text, &[], 150.0),
+            col("Billing", ColKind::Select, &["Hourly", "Flat fee"], 80.0),
+            col("Avg hours / month", ColKind::Text, &[], 140.0),
+            col("Busiest month", ColKind::Text, &[], 120.0),
+            col("Flat fee?", ColKind::Select, &["Said yes", "Not asked", "Said no"], 110.0),
+            col("Next step", ColKind::Text, &[], 150.0),
+        ];
+        let rows = [
+            ["The Corner Café", "Hourly", "waiting on export", "", "Said yes", "Chase till export"],
+            ["Bean and Co.", "Hourly", "14", "January", "Said yes", "Book the price call"],
+            ["Harbour Kitchen", "Hourly", "9", "April", "Not asked", "Ask after E1"],
+        ];
+        let mut db = Database { id: new_id(), name: "Café clients".into(), icon: "▦".into(), columns: cols.clone(), rows: vec![], view: DbView::Table, group_by: None, updated: t, ..Default::default() };
+        for r in rows {
+            let cells = cols.iter().zip(r.iter()).map(|(c, v)| (c.id.clone(), v.to_string())).collect();
+            db.rows.push(Row { id: new_id(), cells, page_id: None });
+        }
+        d.databases.push(db);
+        let hcols = vec![col("Date", ColKind::Date, &[], 120.0), col("Staff", ColKind::Text, &[], 100.0), col("Hours", ColKind::Number, &[], 80.0), col("Task", ColKind::Select, &["Receipts", "Payroll", "VAT"], 110.0)];
+        let mut hdb = Database { id: new_id(), name: "Hours log".into(), icon: "▦".into(), columns: hcols.clone(), rows: vec![], view: DbView::Table, group_by: None, updated: t, ..Default::default() };
+        for k in 0..36 {
+            let day = today - Duration::days(36 - k as i64);
+            let vals = [day.format("%Y-%m-%d").to_string(), ["Ana", "Sam", "Jo"][k % 3].to_string(), format!("{}", 2 + (k * 7) % 6), ["Receipts", "Payroll", "VAT"][k % 3].to_string()];
+            let cells = hcols.iter().zip(vals.iter()).map(|(c, v)| (c.id.clone(), v.clone())).collect();
+            hdb.rows.push(Row { id: new_id(), cells, page_id: None });
+        }
+        d.databases.push(hdb);
+    }
+    // Pack C AI Team: the canvas's own sample chat with the Validation Lead (the design's text,
+    // in the screenshot sample only; no model wrote it), and two earlier chats
+    if let Some(pid) = cafe_id.clone() {
+        let msg = |role: &str, text: &str, at: i64| ChatMessage { role: role.into(), text: text.into(), at, ..Default::default() };
+        let day = 24 * 3600 * 1000;
+        d.conversations.push(Conversation { id: new_id(), project_id: Some(pid.clone()), agent: "validation".into(), title: "Validation Lead".into(), messages: vec![msg("user", "Threshold for E0", t - 4 * day), msg("validation", "Sample answer from the canvas.", t - 4 * day)], updated: t - 4 * day });
+        d.conversations.push(Conversation { id: new_id(), project_id: Some(pid.clone()), agent: "validation".into(), title: "Validation Lead".into(), messages: vec![msg("user", "Is two yes answers enough for H2?", t - 3 * day), msg("validation", "Sample answer from the canvas.", t - 3 * day)], updated: t - 3 * day });
+        d.conversations.push(Conversation {
+            id: new_id(),
+            project_id: Some(pid),
+            agent: "validation".into(),
+            title: "Validation Lead".into(),
+            messages: vec![
+                msg("user", "Two clients said yes in principle. Is that enough to call H2 supported?", t - 60_000),
+                msg("validation", "No. A yes in principle costs them nothing. E1 tests it properly: a written price, and a deadline to sign. Your threshold says at least one signs within two weeks. I'd add a second check: ask both what they pay you now per year, so the price lands against a real number.\nPROPOSED: question | H2 | What does each café pay you now per year?", t - 30_000),
+            ],
+            updated: t,
+        });
+    }
+    // Pack C Handoffs: three briefs written by Resolve's own generator (no AI), two sent, one done
+    if let Some(ctx) = cafe_id.as_ref().and_then(|p| d.context_for(p)).cloned() {
+        let day = 24 * 3600 * 1000;
+        for (to, focus, status, ago) in [("Codex", "Draft the fixed-fee offer letter", "Done", 9), ("Claude Code", "Build the flat-fee calculator sheet", "Sent", 3), ("Maya, who does my admin", "Pull 12 months of hours for each café from the till exports", "Sent", 0)] {
+            let mut r = crate::resolve::Record::new(crate::resolve::Kind::Handoff, cafe_id.clone(), focus);
+            r.body = crate::resolve::roles::handoff_for(d, &ctx, to, focus);
+            r.fields.insert("to".into(), to.into());
+            r.fields.insert("focus".into(), focus.into());
+            r.fields.insert("writer".into(), "Resolve (no AI connected)".into());
+            r.status = status.into();
+            r.created = t - ago * day;
+            r.updated = t - ago * day;
+            d.records.push(r);
+        }
     }
     // waiting on someone else for three days (B-E5)
     set_task(d, "Hours export from The Corner Café's till system", |x| x.waiting_since = Some(t - 3 * 24 * 3600 * 1000));

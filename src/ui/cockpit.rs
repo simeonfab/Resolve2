@@ -194,7 +194,7 @@ impl App {
         });
     }
 
-    fn proposals_panel(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
+    pub(super) fn proposals_panel(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
         let Some((ppid, action, summary, items, mut accept)) = self.resolve_ui.proposals.clone() else { return };
         if ppid != pid {
             return;

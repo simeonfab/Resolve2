@@ -7,6 +7,29 @@ const EMOJI: [&str; 40] = [
     "📄", "📝", "📌", "📚", "💡", "🚀", "🎯", "✅", "📅", "🧭", "🧪", "💼", "🏠", "❤", "⭐", "🔥", "🎨", "🛠", "📊", "🧠", "🌱", "🎵", "✈", "🍽", "💰", "📦", "🔒", "🌍", "⚙", "🗂", "🧾", "🎉", "☕", "🏃", "📷", "🎮", "🧩", "🗒", "🚨", "📈",
 ];
 
+/// A toolbar action (C-E16).
+#[derive(Clone, Copy)]
+enum PageTool {
+    Turn(BlockKind),
+    Wrap(&'static str),
+}
+
+/// How a blank page starts, and the error card's buttons.
+enum StartWith {
+    Builtin(usize),
+    Mine(Id),
+    File,
+    SaveNow,
+    CopyText,
+}
+
+/// Where a breadcrumb entry goes.
+#[derive(Clone)]
+enum Crumb {
+    Page(Id),
+    Knowledge(Id, usize),
+}
+
 enum BAct {
     Split(usize, usize),
     MergeUp(usize),
@@ -173,34 +196,79 @@ fn cursor_of(ctx: &egui::Context, id: egui::Id) -> Option<(usize, usize)> {
 impl App {
     pub fn page_view(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str) {
         let Some(page) = self.store.data.page(pid).cloned() else { return };
-        // ---- top bar
+        // ---- top bar (C-E16): the breadcrumb, the toolbar, Saved, and ⋯
         let mut delete_page = false;
-        ui.horizontal(|ui| {
-            ui.set_height(34.0);
-            ui.add_space(12.0);
-            if ui.add_enabled(!self.back.is_empty(), egui::Button::new(RichText::new("⏴").color(p.dim)).frame(false)).clicked() {
-                if let Some(v) = self.back.pop() {
-                    self.view = v;
+        let bar_rect = {
+            let w = ui.available_width();
+            let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::PAGE_BAR), Sense::hover());
+            r
+        };
+        ui.painter().rect_filled(bar_rect, 0.0, p.surface_raised);
+        ui.painter().hline(bar_rect.x_range(), bar_rect.bottom() - 0.5, Stroke::new(stroke::HAIR, p.line));
+        // where the page sits: Knowledge base › its tab › the pages between the brief and it
+        let crumbs = self.page_crumbs(pid);
+        let save_err = self.temp.get("save_error").cloned();
+        let saved_word = if save_err.is_some() || self.view_state == ViewState::Error { "Not saved" } else if self.dirty { "Saving…" } else { "Saved" };
+        let mut tool: Option<PageTool> = None;
+        let mut bar = ui.new_child(egui::UiBuilder::new().max_rect(bar_rect.shrink2(egui::vec2(space::S24 + space::S4, 0.0))).layout(Layout::left_to_right(Align::Center)));
+        bar.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S6;
+            let last = crumbs.len().saturating_sub(1);
+            for (k, (label, go)) in crumbs.iter().enumerate() {
+                if k > 0 {
+                    ui.label(RichText::new("›").size(size::ROW_SMALL).color(p.dim));
                 }
-            }
-            let path: Vec<(Id, String, String)> = self.store.data.page_path(pid).iter().map(|x| (x.id.clone(), x.icon.clone(), x.title.clone())).collect();
-            for (i, (id, icon, title)) in path.iter().enumerate() {
-                if i > 0 {
-                    ui.label(RichText::new("/").color(p.faint));
-                }
-                let t = if title.is_empty() { "Untitled" } else { title };
-                if ghost_button(ui, RichText::new(format!("{icon} {t}")).size(13.5)).clicked() && id != pid {
-                    self.go(View::Page(id.clone()));
+                if k == last {
+                    ui.label(RichText::new(label).font(fs(size::ROW_SMALL)).color(p.text));
+                } else if ui.add(egui::Label::new(RichText::new(label).size(size::ROW_SMALL).color(p.dim)).sense(Sense::click())).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                    if let Some(v) = go.clone() {
+                        self.crumb_go(v);
+                    }
                 }
             }
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                ui.add_space(12.0);
-                ui.menu_button(RichText::new("⋯").size(17.0), |ui| {
+                ui.spacing_mut().item_spacing.x = space::S4;
+                let more = button(ui, p, ButtonKind::Secondary, "⋯", true, true).on_hover_text("More");
+                let menu_id = egui::Id::new(("page-more", pid));
+                if more.clicked() {
+                    ui.memory_mut(|m| m.toggle_popup(menu_id));
+                }
+                ui.add_space(space::S6);
+                ui.label(RichText::new(saved_word).size(size::ROW_SMALL).color(if saved_word == "Not saved" { p.orange } else { p.dim }));
+                ui.add_space(space::S6);
+                let (sep, _) = ui.allocate_exact_size(egui::vec2(stroke::HAIR, space::S22), Sense::hover());
+                ui.painter().rect_filled(sep, 0.0, p.line);
+                ui.add_space(space::S6);
+                for (glyph, hint, t) in [("⌗", "Numbered list", PageTool::Turn(BlockKind::Numbered)), ("☐", "To-do", PageTool::Turn(BlockKind::Todo)), ("•", "Bulleted list", PageTool::Turn(BlockKind::Bullet)), ("I", "Italic (select text first)", PageTool::Wrap("*")), ("B", "Bold (select text first)", PageTool::Wrap("**")), ("H2", "Heading 2", PageTool::Turn(BlockKind::H2)), ("H1", "Heading 1", PageTool::Turn(BlockKind::H1))] {
+                    if tool_button(ui, p, glyph).on_hover_text(hint).clicked() {
+                        tool = Some(t);
+                    }
+                }
+                egui::popup_below_widget(ui, menu_id, &more, egui::PopupCloseBehavior::CloseOnClickOutside, |ui| {
+                    ui.set_min_width(space::S40 * 6.0);
+                    let fav = if page.favorite { "★ Remove from favourites" } else { "☆ Add to favourites" };
+                    if ui.button(fav).clicked() {
+                        if let Some(pg) = self.store.data.page_mut(pid) {
+                            pg.favorite = !pg.favorite;
+                            pg.updated = now_ms();
+                        }
+                        self.touch();
+                        ui.memory_mut(|m| m.close_popup());
+                    }
+                    if ui.button("Change icon").clicked() {
+                        self.page_ui.emoji_open = !self.page_ui.emoji_open;
+                        ui.memory_mut(|m| m.close_popup());
+                    }
+                    if ui.button(if self.page_ui.ai_open { "✨ Close Ask AI" } else { "✨ Ask AI about this page" }).clicked() {
+                        self.page_ui.ai_open = !self.page_ui.ai_open;
+                        ui.memory_mut(|m| m.close_popup());
+                    }
+                    ui.separator();
                     if ui.button("📋 Copy as Markdown").clicked() {
                         let md = blocks_to_markdown(&page, &self.store.data);
                         ui.ctx().output_mut(|o| o.copied_text = md);
                         self.toast("Copied page as Markdown");
-                        ui.close_menu();
+                        ui.memory_mut(|m| m.close_popup());
                     }
                     if !page.template && ui.button("⧉ Save a copy as template").clicked() {
                         let mut tpl = page.clone();
@@ -213,16 +281,16 @@ impl App {
                         self.store.data.pages.push(tpl);
                         self.touch();
                         self.toast("Saved as a template. Use it from Pages → +");
-                        ui.close_menu();
+                        ui.memory_mut(|m| m.close_popup());
                     }
                     if ui.button("✔ Turn this page's to-dos into tasks").on_hover_text("Without AI: dates, times, p1-p4, #project and @labels written in each to-do are picked up. For smart sorting into projects use ✨ Ask AI → Organise my to-dos.").clicked() {
                         let n = self.page_todos_to_tasks(pid);
                         self.toast(format!("{n} to-dos are now tasks (ticking either ticks both)"));
-                        ui.close_menu();
+                        ui.memory_mut(|m| m.close_popup());
                     }
                     if ui.button("📄 Add sub-page").clicked() {
                         self.new_page(Some(pid.to_string()));
-                        ui.close_menu();
+                        ui.memory_mut(|m| m.close_popup());
                     }
                     ui.menu_button("↪ Move to…", |ui| {
                         egui::ScrollArea::vertical().max_height(300.0).show(ui, |ui| {
@@ -232,7 +300,7 @@ impl App {
                                     pg.updated = now_ms();
                                 }
                                 self.touch();
-                                ui.close_menu();
+                                ui.memory_mut(|m| m.close_popup());
                             }
                             let others: Vec<(Id, String)> = self.store.data.pages.iter().filter(|x| x.id != pid && !self.store.data.page_path(&x.id).iter().any(|a| a.id == pid)).map(|x| (x.id.clone(), format!("{} {}", x.icon, x.title))).collect();
                             for (id, t) in others {
@@ -243,7 +311,7 @@ impl App {
                                     }
                                     self.expanded.insert(id);
                                     self.touch();
-                                    ui.close_menu();
+                                    ui.memory_mut(|m| m.close_popup());
                                 }
                             }
                         });
@@ -251,25 +319,14 @@ impl App {
                     ui.separator();
                     if ui.button(RichText::new("🗑 Delete page").color(p.accent_text)).clicked() {
                         delete_page = true;
-                        ui.close_menu();
+                        ui.memory_mut(|m| m.close_popup());
                     }
                 });
-                let ai_label = if self.page_ui.ai_open { "✨ AI ✓" } else { "✨ AI" };
-                if ui.button(ai_label).on_hover_text("Local AI assistant (Ollama / LM Studio): free, runs on this PC").clicked() {
-                    self.page_ui.ai_open = !self.page_ui.ai_open;
-                }
-                let star = if page.favorite { RichText::new("★").color(p.accent).size(17.0) } else { RichText::new("☆").size(17.0).color(p.dim) };
-                if ghost_button(ui, star).on_hover_text("Favourite").clicked() {
-                    if let Some(pg) = self.store.data.page_mut(pid) {
-                        pg.favorite = !pg.favorite;
-                        pg.updated = now_ms();
-                    }
-                    self.touch();
-                }
-                let edited = chrono::DateTime::from_timestamp_millis(page.updated).map(|x| x.with_timezone(&chrono::Local).format("Edited %-d %b").to_string()).unwrap_or_default();
-                ui.label(RichText::new(edited).size(12.5).color(p.dim));
             });
         });
+        if let Some(t) = tool {
+            self.apply_page_tool(ui.ctx(), pid, t);
+        }
         if delete_page {
             let title = page.title.clone();
             { let pg = pid.to_string(); let name = self.store.data.page(&pg).map(|p| p.title.clone()).unwrap_or_default(); self.undoable(&format!("Deleted page \"{name}\""), "delete", |d| d.delete_page(&pg)); }
@@ -281,15 +338,58 @@ impl App {
 
         let mut acts: Vec<BAct> = vec![];
         let mut open: Option<View> = None;
+        // C-E16: the page's state; a new blank page shows how to start
+        let blank = page.title.trim().is_empty() && page.blocks.iter().all(|b| b.text.trim().is_empty()) && self.store.data.row_for_page(pid).is_none();
+        let state = match self.view_state {
+            ViewState::Full if save_err.is_some() => ViewState::Error,
+            ViewState::Full if blank => ViewState::Empty,
+            s => s,
+        };
+        let mut start: Option<StartWith> = None;
         egui::ScrollArea::vertical().id_salt(("page-scroll", pid)).auto_shrink([false, false]).show(ui, |ui| {
-            centered(ui, 760.0, |ui| {
-                ui.add_space(48.0);
-                // icon
-                let icon = if page.icon.is_empty() { "📄".to_string() } else { page.icon.clone() };
-                let ir = ui.add(egui::Label::new(RichText::new(&icon).size(60.0)).sense(Sense::click())).on_hover_text("Change icon");
-                if ir.clicked() {
-                    self.page_ui.emoji_open = !self.page_ui.emoji_open;
+            // the text column (720 at most, for reading) and the rail beside it, centred together
+            let avail = ui.available_width();
+            // centred when there is room; the blocks' gutter may reach into the side margin
+            let col0 = (avail - space::WORK_SIDE * 2.0 - space::PAGE_RAIL - space::PAGE_GAP).clamp(space::S40 * 8.0, space::PAGE_COL);
+            let left = ((avail - col0 - space::PAGE_GAP - space::PAGE_RAIL) / 2.0).max(space::WORK_SIDE);
+            let start_x = (left - space::PAGE_GUTTER).max(0.0);
+            let col = col0.min(avail - start_x - space::PAGE_GUTTER - space::PAGE_GAP - space::PAGE_RAIL - space::WORK_SIDE).max(space::S40 * 8.0);
+            let mut rail_ui: Option<egui::Rect> = None;
+            ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = 0.0;
+            ui.add_space(start_x);
+            ui.allocate_ui_with_layout(egui::vec2(col + space::PAGE_GUTTER, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(col + space::PAGE_GUTTER);
+                ui.spacing_mut().item_spacing.x = space::S8;
+                // everything but the blocks sits in from the blocks' gutter (their + and drag
+                // handle), so the text lines up with the title
+                ui.spacing_mut().indent = space::PAGE_GUTTER;
+                ui.add_space(space::S30);
+                if state == ViewState::Loading {
+                    egui::Frame::none().inner_margin(egui::Margin { left: space::PAGE_GUTTER, ..Default::default() }).show(ui, |ui| {
+                    ui.spacing_mut().item_spacing.y = space::S14;
+                    skeleton(ui, p, col * 0.3, space::S30);
+                    for k in 0..4 {
+                        skeleton(ui, p, if k == 3 { col * 0.5 } else { col * (0.9 - k as f32 * 0.1) }, space::S10);
+                    }
+                    ui.label(RichText::new("Opening the page…").size(size::SMALL).color(p.dim));
+                    });
+                    return;
                 }
+                if state == ViewState::Error {
+                    egui::Frame::none().inner_margin(egui::Margin { left: space::PAGE_GUTTER, ..Default::default() }).show(ui, |ui| {
+                    let body = format!("The page is still open with your text in it. Save now to try again, or copy the text somewhere safe first.{}", save_err.as_ref().map(|e| format!(" It said: {e}")).unwrap_or_default());
+                    let a = error_center_as(ui, p, "Your last changes aren't saved.", &body, "Save now", "Copy the text");
+                    if a.retry {
+                        start = Some(StartWith::SaveNow);
+                    }
+                    if a.manual {
+                        start = Some(StartWith::CopyText);
+                    }
+                    });
+                    return;
+                }
+                egui::Frame::none().inner_margin(egui::Margin { left: space::PAGE_GUTTER, ..Default::default() }).show(ui, |ui| {
                 if self.page_ui.emoji_open {
                     egui::Frame::popup(ui.style()).show(ui, |ui| {
                         ui.set_max_width(420.0);
@@ -307,11 +407,10 @@ impl App {
                         });
                     });
                 }
-                ui.add_space(6.0);
-                // title
+                // title (DM Serif)
                 let mut title = page.title.clone();
                 let tid = egui::Id::new(("page-title", pid));
-                let tr = ui.add(egui::TextEdit::multiline(&mut title).id(tid).hint_text("Untitled").font(fb(40.0)).frame(false).desired_rows(1).desired_width(f32::INFINITY));
+                let tr = ui.add(egui::TextEdit::multiline(&mut title).id(tid).hint_text(RichText::new("Untitled").color(p.faint)).font(fserif(size::HERO_TITLE_WIDE)).text_color(p.text).frame(false).desired_rows(1).desired_width(col));
                 if self.temp.get("focus_title").map(|s| s == pid).unwrap_or(false) {
                     tr.request_focus();
                     self.temp.remove("focus_title");
@@ -335,6 +434,7 @@ impl App {
                     ui.add_space(6.0);
                     self.row_properties(ui, p, &dbid, &rid);
                 }
+                });
                 ui.add_space(14.0);
                 // blocks
                 let n = page.blocks.len();
@@ -358,6 +458,40 @@ impl App {
                         self.touch();
                     }
                 }
+                if state == ViewState::Empty {
+                    // a new blank page: its first line says how to start; then two ways in
+                    ui.add_space(space::S10);
+                    egui::Frame::none().inner_margin(egui::Margin { left: space::PAGE_GUTTER, ..Default::default() }).show(ui, |ui| {
+                    ui.horizontal(|ui| {
+                        ui.spacing_mut().item_spacing.x = space::S8;
+                        let tpl = button(ui, p, ButtonKind::Secondary, "Use a template", false, true);
+                        let tmenu = egui::Id::new(("page-tpl", pid));
+                        if tpl.clicked() {
+                            ui.memory_mut(|m| m.toggle_popup(tmenu));
+                        }
+                        egui::popup_below_widget(ui, tmenu, &tpl, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                            ui.set_min_width(space::S40 * 6.0);
+                            for (i, t) in crate::templates::PAGE_TEMPLATES.iter().enumerate() {
+                                if ui.button(format!("{}  {}", t.name, t.about)).clicked() {
+                                    start = Some(StartWith::Builtin(i));
+                                }
+                            }
+                            let mine: Vec<(Id, String)> = self.store.data.pages.iter().filter(|x| x.template).map(|x| (x.id.clone(), x.title.clone())).collect();
+                            if !mine.is_empty() {
+                                ui.separator();
+                                for (id, t) in mine {
+                                    if ui.button(t).clicked() {
+                                        start = Some(StartWith::Mine(id));
+                                    }
+                                }
+                            }
+                        });
+                        if button(ui, p, ButtonKind::Secondary, "Import a file", false, true).on_hover_text(".md, .txt, .docx or .pdf: its text becomes this page").clicked() {
+                            start = Some(StartWith::File);
+                        }
+                    });
+                    });
+                }
                 // click below to add
                 let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), 60.0), Sense::click());
                 if resp.hovered() {
@@ -372,13 +506,230 @@ impl App {
                     }
                 }
                 // connections
-                self.page_connections(ui, p, pid, &mut open);
+                egui::Frame::none().inner_margin(egui::Margin { left: space::PAGE_GUTTER, ..Default::default() }).show(ui, |ui| self.page_connections(ui, p, pid, &mut open));
                 ui.add_space(80.0);
             });
+            ui.add_space(space::PAGE_GAP);
+            if state != ViewState::Loading && state != ViewState::Error {
+                ui.allocate_ui_with_layout(egui::vec2(space::PAGE_RAIL, 0.0), Layout::top_down(Align::Min), |ui| {
+                    ui.set_width(space::PAGE_RAIL);
+                    ui.spacing_mut().item_spacing = egui::vec2(space::S8, space::S12);
+                    ui.add_space(space::S30);
+                    rail_ui = Some(ui.max_rect());
+                    self.page_rail(ui, p, pid, &mut open);
+                });
+            }
+            });
+            let _ = rail_ui;
         });
         self.apply_block_acts(ui.ctx(), pid, acts);
+        if let Some(s) = start {
+            self.page_start(ui.ctx(), pid, s);
+        }
         if let Some(v) = open {
             self.go(v);
+        }
+    }
+
+    /// The breadcrumb for a page: "Knowledge base › Brief and documents › …" when it belongs to a
+    /// project (the pages between the project's brief and this one), else the page's own path.
+    /// Each entry: (label, where a click goes).
+    fn page_crumbs(&self, pid: &str) -> Vec<(String, Option<Crumb>)> {
+        let d = &self.store.data;
+        let path = d.page_path(pid);
+        let name = |pg: &Page| if pg.title.trim().is_empty() { "Untitled".to_string() } else { pg.title.clone() };
+        // the project whose brief is this page or one of its ancestors
+        let proj = d.projects.iter().find_map(|pr| {
+            let b = crate::ui::kb::brief_of(d, &pr.id)?;
+            path.iter().position(|x| x.id == b).map(|k| (pr.id.clone(), k))
+        });
+        let mut out = vec![];
+        match proj {
+            Some((prid, k)) => {
+                let research = d.page(pid).map_or(false, |x| x.tags.iter().any(|t| t == "research"));
+                out.push(("Knowledge base".to_string(), Some(Crumb::Knowledge(prid.clone(), 0))));
+                out.push((if research { "Research" } else { "Brief and documents" }.to_string(), Some(Crumb::Knowledge(prid, if research { 1 } else { 0 }))));
+                let from = if path.len() > k + 1 { k + 1 } else { k };
+                for x in &path[from..] {
+                    out.push((name(x), Some(Crumb::Page(x.id.clone()))));
+                }
+            }
+            None => {
+                for x in &path {
+                    out.push((name(x), Some(Crumb::Page(x.id.clone()))));
+                }
+            }
+        }
+        out
+    }
+
+    fn crumb_go(&mut self, c: Crumb) {
+        match c {
+            Crumb::Page(id) => self.go(View::Page(id)),
+            Crumb::Knowledge(prid, tab) => {
+                self.current_project = Some(prid);
+                self.resolve_ui.knowledge_tab = tab;
+                self.go(View::Sec(super::nav::Section::Knowledge));
+            }
+        }
+    }
+
+    /// The rail beside a page (C-E16): its to-dos and what it's linked to.
+    fn page_rail(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, open: &mut Option<View>) {
+        let d = &self.store.data;
+        let Some(page) = d.page(pid) else { return };
+        let todos = page.blocks.iter().filter(|b| b.kind == BlockKind::Todo).count();
+        let done = page.blocks.iter().filter(|b| b.kind == BlockKind::Todo && b.checked).count();
+        let tasks = d.tasks.iter().filter(|t| t.page_id.as_deref() == Some(pid)).count();
+        let line = if todos == 0 {
+            "No to-dos yet. Type [] or use ☐ above to add one.".to_string()
+        } else {
+            let mut s = format!("{todos} to-do{}, {done} done.", if todos == 1 { "" } else { "s" });
+            if tasks > 0 {
+                s.push_str(&format!(" {tasks} linked task{} show{} in Tasks.", if tasks == 1 { "" } else { "s" }, if tasks == 1 { "s" } else { "" }));
+            } else {
+                s.push_str(" Turn them into tasks from the ⋯ menu.");
+            }
+            s
+        };
+        // linked: records that link here, pages it links to, the page it sits under, projects it documents
+        let mut links: Vec<(String, View)> = vec![];
+        for r in d.records.iter().filter(|r| r.links.iter().any(|l| l == pid)) {
+            let (l, s) = super::frameworks::split_label(&r.title);
+            let view = match r.kind {
+                crate::resolve::Kind::Roadmap => View::Sec(super::nav::Section::Roadmap),
+                crate::resolve::Kind::Hypothesis | crate::resolve::Kind::Experiment => View::Sec(super::nav::Section::Frameworks),
+                _ => View::Sec(super::nav::Section::Knowledge),
+            };
+            links.push((if l.is_empty() { s } else { l }, view));
+        }
+        for t in page.wiki_links() {
+            if let Some(x) = d.page_by_title(&t) {
+                links.push((x.title.clone(), View::Page(x.id.clone())));
+            }
+        }
+        if let Some(par) = page.parent.as_ref().and_then(|x| d.page(x)) {
+            links.push((if par.title.trim().is_empty() { "Untitled".into() } else { par.title.clone() }, View::Page(par.id.clone())));
+        }
+        for pr in d.projects.iter().filter(|x| x.page_id.as_deref() == Some(pid)) {
+            links.push((pr.name.clone(), View::Project(pr.id.clone())));
+        }
+        white_card(ui, p, false, |ui| {
+            ui.spacing_mut().item_spacing.y = space::S6;
+            ui.label(RichText::new("To-dos on this page").font(fs(size::ROW_SMALL)).color(p.text));
+            ui.add(egui::Label::new(RichText::new(line).size(size::ROW_SMALL - 0.5).color(p.text)).wrap());
+        });
+        white_card(ui, p, false, |ui| {
+            ui.spacing_mut().item_spacing.y = space::S6;
+            ui.label(RichText::new("Linked").font(fs(size::ROW_SMALL)).color(p.text));
+            if links.is_empty() {
+                ui.add(egui::Label::new(RichText::new("Nothing linked yet. Type [[ to link a page.").size(size::ROW_SMALL - 0.5).color(p.dim)).wrap());
+            }
+            ui.horizontal_wrapped(|ui| {
+                ui.spacing_mut().item_spacing = egui::vec2(space::S6, space::S6);
+                for (label, v) in &links {
+                    if tag(ui, label, p.text, p.surface_raised).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                        *open = Some(v.clone());
+                    }
+                }
+            });
+        });
+        ui.add(egui::Label::new(RichText::new("Saved on this PC as you type. Type / for headings, lists, to-dos and more.").size(size::SMALL).color(p.dim)).wrap());
+    }
+
+    /// The toolbar (C-E16): turn the block you were last in into a heading or list, or wrap the
+    /// text you selected in it in bold or italic.
+    fn apply_page_tool(&mut self, ctx: &egui::Context, pid: &str, t: PageTool) {
+        let Some(i) = self.temp.get("pg_focus").and_then(|s| s.split_once('\t')).filter(|(p, _)| *p == pid).and_then(|(_, i)| i.parse::<usize>().ok()) else {
+            self.toast("Click into a line first, then pick how it should look.");
+            return;
+        };
+        let Some(b) = self.store.data.page(pid).and_then(|x| x.blocks.get(i).cloned()) else { return };
+        match t {
+            PageTool::Turn(k) => {
+                let k = if b.kind == k { BlockKind::Paragraph } else { k };
+                if let Some(x) = self.store.data.page_mut(pid).and_then(|pg| pg.blocks.get_mut(i)) {
+                    x.kind = k;
+                }
+                self.page_ui.focus = Some((pid.to_string(), i, b.text.chars().count()));
+            }
+            PageTool::Wrap(m) => {
+                let edit_id = egui::Id::new(("blk", pid, &b.id));
+                let (a, s) = cursor_of(ctx, edit_id).unwrap_or((b.text.chars().count(), b.text.chars().count()));
+                let (lo, hi) = (a.min(s), a.max(s));
+                let chars: Vec<char> = b.text.chars().collect();
+                let mut out: String = chars[..lo.min(chars.len())].iter().collect();
+                out.push_str(m);
+                out.extend(chars[lo.min(chars.len())..hi.min(chars.len())].iter());
+                out.push_str(m);
+                out.extend(chars[hi.min(chars.len())..].iter());
+                if let Some(x) = self.store.data.page_mut(pid).and_then(|pg| pg.blocks.get_mut(i)) {
+                    x.text = out;
+                }
+                self.page_ui.focus = Some((pid.to_string(), i, hi + m.chars().count() * if hi > lo { 2 } else { 1 }));
+            }
+        }
+        if let Some(pg) = self.store.data.page_mut(pid) {
+            pg.updated = now_ms();
+        }
+        self.touch();
+    }
+
+    /// A blank page's ways to start, and the error card's two buttons.
+    fn page_start(&mut self, ctx: &egui::Context, pid: &str, s: StartWith) {
+        let fill = |d: &mut WorkspaceData, title: Option<String>, icon: Option<String>, blocks: Vec<Block>| {
+            if let Some(pg) = d.page_mut(pid) {
+                if let Some(t) = title {
+                    if pg.title.trim().is_empty() {
+                        pg.title = t;
+                    }
+                }
+                if let Some(i) = icon {
+                    pg.icon = i;
+                }
+                pg.blocks = if blocks.is_empty() { vec![Block::new(BlockKind::Paragraph, "")] } else { blocks };
+                pg.updated = now_ms();
+            }
+        };
+        match s {
+            StartWith::Builtin(i) => {
+                let t = &crate::templates::PAGE_TEMPLATES[i];
+                let (_, blocks) = markdown_to_blocks(t.markdown);
+                let (name, icon) = (t.name.to_string(), t.icon.to_string());
+                self.undoable(&format!("Used the {} template", t.name), "edit", move |d| fill(d, Some(name), Some(icon), blocks));
+            }
+            StartWith::Mine(id) => {
+                let Some(tpl) = self.store.data.page(&id).cloned() else { return };
+                let blocks: Vec<Block> = tpl.blocks.iter().map(|b| Block { id: new_id(), ..b.clone() }).collect();
+                let name = tpl.title.trim_end_matches(" (template)").to_string();
+                let label = format!("Used the {name} template");
+                self.undoable(&label, "edit", move |d| fill(d, Some(name), Some(tpl.icon.clone()), blocks));
+            }
+            StartWith::File => {
+                let Some(path) = super::import_ui::pick_files().into_iter().next() else { return };
+                match crate::resolve::files::extract(&path) {
+                    Ok((title, text)) => {
+                        let (_, blocks) = markdown_to_blocks(&text);
+                        let blocks = if blocks.is_empty() { vec![Block::new(BlockKind::Paragraph, text)] } else { blocks };
+                        self.undoable(&format!("Imported \"{title}\" into this page"), "edit", move |d| fill(d, Some(title), None, blocks));
+                    }
+                    Err(e) => self.toast(format!("Couldn't read that file: {e}")),
+                }
+            }
+            StartWith::SaveNow => {
+                self.touch();
+                self.save_now();
+                if self.view_state == ViewState::Error && self.temp.get("save_error").is_none() {
+                    self.view_state = ViewState::Full;
+                }
+            }
+            StartWith::CopyText => {
+                if let Some(pg) = self.store.data.page(pid) {
+                    let md = blocks_to_markdown(pg, &self.store.data);
+                    ctx.copy_text(md);
+                    self.toast("Copied the page's text");
+                }
+            }
         }
     }
 
@@ -390,6 +741,10 @@ impl App {
         let pointer = ui.ctx().pointer_hover_pos();
         let hovered = prev_rect.map_or(false, |r| pointer.map_or(false, |pp| r.expand2(egui::vec2(60.0, 0.0)).contains(pp)));
         let has_focus = ui.memory(|m| m.has_focus(edit_id));
+        if has_focus {
+            // the toolbar acts on the line you were last in
+            self.temp.insert("pg_focus".into(), format!("{pid}\t{i}"));
+        }
         let ctx = ui.ctx().clone();
 
         // pending focus request

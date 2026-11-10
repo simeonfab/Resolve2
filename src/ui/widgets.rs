@@ -838,8 +838,18 @@ pub mod moves {
     pub const DIM: Timing = timing(240.0, 0.0, E_STD);
     /// Sidebar collapse: labels fade 120 e-std, then width 248 ↔ 64 in 320 e-out.
     pub const SIDEBAR_WIDTH: Timing = timing(320.0, 120.0, E_OUT);
-    /// Theme expands: height 360 e-spring.
+    /// Theme expands: height 360 e-spring (F3); collapses 240 e-in (F4).
     pub const EXPAND: Timing = timing(360.0, 0.0, E_SPRING);
+    pub const COLLAPSE: Timing = timing(240.0, 0.0, E_IN);
+    /// A theme lands in a new phase (F6): 520 e-out, sliding down into place.
+    pub const LAND: Timing = timing(520.0, 0.0, E_OUT);
+    pub const LAND_DROP: f32 = 24.0;
+    /// The whole picture (F5): dim 220 e-std; panel 380 e-spring at 40; cells 300 e-out at 200,
+    /// stagger 40 in reading order.
+    pub const WHOLE_DIM: Timing = timing(220.0, 0.0, E_STD);
+    pub const WHOLE_IN: Timing = timing(380.0, 40.0, E_SPRING);
+    pub const WHOLE_CELLS: Timing = timing(300.0, 200.0, E_OUT);
+    pub const WHOLE_CELLS_STAGGER: f32 = 40.0;
     /// Sidebar labels fade 120 e-std (before the width when collapsing, after it when expanding).
     pub const SIDEBAR_LABELS: Timing = timing(120.0, 0.0, E_STD);
     /// Ask bar rises 480 e-spring (y 30), at 460 on Home and 760 on Tasks.
@@ -1693,9 +1703,41 @@ pub fn empty_center(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &str, a
     clicked
 }
 
+/// The empty state with two actions side by side (the main one, then a secondary). Returns
+/// which was pressed.
+pub fn empty_center_two(ui: &mut Ui, p: &Pal, icon: Icon, title: &str, body: &str, main: &str, other: &str) -> (bool, bool) {
+    let mut out = (false, false);
+    ui.vertical_centered(|ui| {
+        ui.set_max_width(space::SEARCH_W - space::S40 * 5.5);
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S40 + space::S16, space::S40 + space::S16), Sense::hover());
+        ui.painter().rect(r, radius::HERO, if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, if p.dark { p.line } else { tok::AMBER_EDGE }));
+        paint_icon(ui.painter(), r.center(), icon, p.orange);
+        ui.add_space(space::S8);
+        ui.label(RichText::new(title).font(fserif(size::HERO_TITLE)).color(p.text));
+        ui.add(egui::Label::new(RichText::new(body).size(size::HERO_BODY).color(p.dim)).wrap());
+        ui.add_space(space::S8);
+        // centre the pair: measure, then pad
+        let font = fs(size::BUTTON);
+        let bw = |t: &str| ui.painter().layout_no_wrap(t.to_string(), font.clone(), p.text).size().x + 32.0;
+        let total = bw(main) + bw(other) + space::S10;
+        ui.horizontal(|ui| {
+            ui.add_space(((ui.available_width() - total) / 2.0).max(0.0));
+            ui.spacing_mut().item_spacing.x = space::S10;
+            out.0 = button(ui, p, ButtonKind::Primary, main, false, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, other, false, true).clicked();
+        });
+    });
+    out
+}
+
 /// A centred error card: what failed (serif 24), that nothing else was lost, Try again and a
 /// manual path.
 pub fn error_center(ui: &mut Ui, p: &Pal, title: &str, body: &str, manual: &str) -> ErrorAction {
+    error_center_as(ui, p, title, body, "Try again", manual)
+}
+
+/// The same card with its own wording for the retry ("Save again").
+pub fn error_center_as(ui: &mut Ui, p: &Pal, title: &str, body: &str, retry: &str, manual: &str) -> ErrorAction {
     let mut out = ErrorAction { retry: false, manual: false };
     ui.vertical_centered(|ui| {
         ui.set_max_width(space::SEARCH_W - space::S40 * 4.0);
@@ -1705,7 +1747,7 @@ pub fn error_center(ui: &mut Ui, p: &Pal, title: &str, body: &str, manual: &str)
             ui.add(egui::Label::new(RichText::new(body).size(size::ROW).color(p.dim)).wrap());
             ui.add_space(space::S8);
             ui.horizontal(|ui| {
-                out.retry = button(ui, p, ButtonKind::Dark, "Try again", false, true).clicked();
+                out.retry = button(ui, p, ButtonKind::Dark, retry, false, true).clicked();
                 out.manual = button(ui, p, ButtonKind::Secondary, manual, false, true).clicked();
             });
         });
@@ -1723,6 +1765,19 @@ pub fn screen_head(ui: &mut Ui, p: &Pal, title: &str, sub: &str, add_right: impl
             }
         });
         ui.with_layout(Layout::right_to_left(Align::Max), add_right);
+    });
+}
+
+/// A project section's head (Pack C): the project in terracotta over the section's title (DM
+/// Serif 32), with the buttons centred on the pair at the right.
+pub fn eyebrow_head(ui: &mut Ui, p: &Pal, eyebrow: &str, title: &str, add_right: impl FnOnce(&mut Ui)) {
+    ui.horizontal(|ui| {
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new(eyebrow).font(fs(size::ROW_SMALL)).color(p.orange));
+            ui.label(RichText::new(title).font(fserif(size::GREETING)).color(p.text));
+        });
+        ui.with_layout(Layout::right_to_left(Align::Center), add_right);
     });
 }
 
@@ -1915,6 +1970,44 @@ pub fn switch(ui: &mut Ui, p: &Pal, on: &mut bool) -> Response {
     let x = egui::lerp(rect.left() + r + 2.0..=rect.right() - r - 2.0, t);
     ui.painter().circle_filled(egui::pos2(x, rect.center().y), r, Color32::WHITE);
     resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A Resolve suggests row (Overview): ✦, the suggestion and →, on a light amber tint.
+pub fn suggest_row(ui: &mut Ui, p: &Pal, text: &str) -> Response {
+    let w = ui.available_width();
+    let pad = egui::vec2(space::S10, space::S8);
+    let text_w = w - pad.x * 2.0 - space::S18 * 2.0;
+    let g = ui.painter().layout(text.to_string(), fp(size::ROW_SMALL), p.text, text_w);
+    let h = g.size().y + pad.y * 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let fill = if p.dark { p.surface_raised } else if resp.hovered() { tok::AMBER_LIGHT } else { p.bg };
+    ui.painter().rect_filled(rect, radius::CHIP, fill);
+    ui.painter().text(egui::pos2(rect.left() + pad.x + space::S4, rect.top() + pad.y + space::S8), Align2::CENTER_CENTER, "✦", fp(size::ROW_SMALL), tok::AMBER);
+    ui.painter().galley(egui::pos2(rect.left() + pad.x + space::S18, rect.top() + pad.y), g, p.text);
+    ui.painter().text(egui::pos2(rect.right() - pad.x - space::S4, rect.center().y), Align2::CENTER_CENTER, "→", fp(size::ROW_SMALL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A column of the Overview's small Tasks board: a sunk box with "Now · 2" and white cards.
+/// A clicked card's task id goes into `open`.
+pub fn mini_column(ui: &mut Ui, p: &Pal, w: f32, head: &str, cards: &[(Id, String)], open: &mut Option<Id>) {
+    egui::Frame::none().fill(p.surface_sunk).rounding(Rounding::same(radius::CARD - 3.0)).inner_margin(egui::Margin::same(space::S10)).show(ui, |ui| {
+        ui.set_width(w - space::S10 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        ui.label(RichText::new(head).font(fs(size::SMALL)).color(p.text));
+        if cards.is_empty() {
+            ui.label(RichText::new("Nothing here.").size(size::SMALL).color(p.dim));
+        }
+        for (id, title) in cards {
+            let r = egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+                ui.set_width(ui.available_width());
+                ui.add(egui::Label::new(RichText::new(title).size(size::ROW_SMALL).color(p.text)).truncate());
+            });
+            if ui.interact(r.response.rect, ui.id().with(("mini-card", id)), Sense::click()).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                *open = Some(id.clone());
+            }
+        }
+    });
 }
 
 /// A small white card with a bold title and a line under it ("Tasks show here too").
@@ -2618,4 +2711,732 @@ pub fn frozen_row(ui: &mut Ui, p: &Pal, text: &str, done: bool) {
         Shape::Vec(Shape::dashed_line(&c, Stroke::new(stroke::HAIR, p.line), 4.0, 3.0))
     };
     ui.painter().set(bg_at, shape);
+}
+
+// ======================================================================================
+// Roadmap components (Phase 4, Pack C "Roadmap"): lanes, theme cards, the right rail and the
+// whole picture.
+// ======================================================================================
+
+/// A roadmap lane: a sunk box (radius 13, padding 10) headed by the phase (600 13.5) and its
+/// note (12.5), at least `min_h` high.
+pub fn lane_box<R>(ui: &mut Ui, p: &Pal, w: f32, min_h: f32, name: &str, note: &str, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none()
+        .fill(p.surface_sunk)
+        .rounding(Rounding::same(radius::CARD))
+        .inner_margin(egui::Margin::same(space::S10))
+        .show(ui, |ui| {
+            ui.set_width(w - space::S10 * 2.0);
+            ui.set_min_height((min_h - space::S10 * 2.0).max(0.0));
+            ui.spacing_mut().item_spacing.y = space::S10;
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S6;
+                ui.add_space(space::S4);
+                ui.label(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text));
+                ui.label(RichText::new(note).size(size::SMALL).color(p.dim));
+            });
+            add(ui)
+        })
+        .inner
+}
+
+/// A theme card: white, radius 10, padding 12, a hairline that turns amber while it is open.
+pub fn theme_frame<R>(ui: &mut Ui, p: &Pal, open: bool, add: impl FnOnce(&mut Ui) -> R) -> egui::InnerResponse<R> {
+    let edge = if open { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::new(stroke::HAIR, p.line) };
+    egui::Frame::none().fill(p.card).stroke(edge).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::same(space::RM_CARD_PAD)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        add(ui)
+    })
+}
+
+/// The small square that opens and closes a theme card (▾ / ▴).
+pub fn chevron_button(ui: &mut Ui, p: &Pal, open: bool) -> Response {
+    let d = space::RM_TOGGLE;
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+    ui.painter().rect_filled(r, radius::GATE, if resp.hovered() { p.track } else { p.surface_sunk });
+    let c = r.center();
+    let s = 3.5;
+    let pts = if open { vec![c + egui::vec2(-s, s * 0.6), c + egui::vec2(s, s * 0.6), c + egui::vec2(0.0, -s * 0.7)] } else { vec![c + egui::vec2(-s, -s * 0.6), c + egui::vec2(s, -s * 0.6), c + egui::vec2(0.0, s * 0.7)] };
+    ui.painter().add(Shape::convex_polygon(pts, p.text, Stroke::NONE));
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A basis tag with a capital ("Evidence", "Assumption", "Uncertain"), radius 6, 600 11.
+pub fn basis_chip(ui: &mut Ui, p: &Pal, basis: &str) -> Response {
+    let (fg, bg) = match basis {
+        "evidence" => (p.green_text, p.green_tint),
+        "uncertain" => (p.orange, p.orange_tint),
+        _ => (p.accent_text, p.accent_soft),
+    };
+    let mut c = basis.chars();
+    let label = c.next().map(|f| f.to_uppercase().collect::<String>() + c.as_str()).unwrap_or_default();
+    let g = ui.painter().layout_no_wrap(label, fs(size::TAG), fg);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(14.0, 6.0), Sense::hover());
+    ui.painter().rect_filled(r, radius::GATE, bg);
+    ui.painter().galley(r.min + egui::vec2(7.0, 3.0), g, fg);
+    resp
+}
+
+/// A terracotta box for what a theme is waiting on (600 12.5 on the terracotta tint).
+pub fn wait_box(ui: &mut Ui, p: &Pal, text: &str) {
+    egui::Frame::none().fill(p.orange_tint).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S8 + 1.0, space::S6 + 1.0)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.add(egui::Label::new(RichText::new(text).font(fs(size::SMALL)).color(p.orange)).wrap());
+    });
+}
+
+/// A task inside an open theme: a square check and its title (struck through when done).
+/// Returns the click on the check.
+pub fn theme_task(ui: &mut Ui, p: &Pal, title: &str, done: bool) -> Response {
+    let w = ui.available_width();
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S10;
+        let b = space::MARK - 2.0;
+        let (r, resp) = ui.allocate_exact_size(egui::vec2(b, size::ROW_SMALL * 1.3), Sense::click());
+        let bx = Rect::from_center_size(egui::pos2(r.center().x, r.top() + size::ROW_SMALL * 0.68), egui::vec2(b - 2.0, b - 2.0));
+        if done {
+            ui.painter().rect_filled(bx, radius::CHIP / 3.0, p.green);
+            let c = bx.center();
+            ui.painter().add(Shape::line(vec![c + egui::vec2(-3.2, 0.2), c + egui::vec2(-0.9, 2.5), c + egui::vec2(3.4, -2.3)], Stroke::new(stroke::ICON, Color32::WHITE)));
+        } else {
+            ui.painter().rect(bx, radius::CHIP / 3.0, p.card, Stroke::new(stroke::HAIR, if resp.hovered() { tok::AMBER } else { p.faint }));
+        }
+        let mut rt = RichText::new(title).size(size::ROW_SMALL - 0.5).color(if done { p.dim } else { p.text });
+        if done {
+            rt = rt.strikethrough();
+        }
+        ui.allocate_ui_with_layout(egui::vec2(w - b - space::S10, 0.0), Layout::top_down(Align::Min), |ui| {
+            ui.add(egui::Label::new(rt).wrap());
+        });
+        resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+    })
+    .inner
+}
+
+/// A rail card's title (600 14).
+pub fn rail_title(ui: &mut Ui, p: &Pal, title: &str) {
+    ui.label(RichText::new(title).font(fs(size::ROW)).color(p.text));
+    ui.add_space(space::S6);
+}
+
+/// A milestone: an amber diamond (filled when reached), the title and its date on the right.
+pub fn milestone_row(ui: &mut Ui, p: &Pal, title: &str, date: &str, reached: bool) {
+    let w = ui.available_width();
+    let dg = ui.painter().layout_no_wrap(date.to_string(), fp(size::SMALL + 0.5), p.dim);
+    let dw = dg.size().x;
+    ui.horizontal_top(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S8;
+        let (r, _) = ui.allocate_exact_size(egui::vec2(space::S12, size::ROW_SMALL * 1.3), Sense::hover());
+        let c = egui::pos2(r.center().x, r.top() + size::ROW_SMALL * 0.62);
+        let s = 5.0;
+        let pts = vec![c + egui::vec2(0.0, -s), c + egui::vec2(s, 0.0), c + egui::vec2(0.0, s), c + egui::vec2(-s, 0.0)];
+        if reached {
+            ui.painter().add(Shape::convex_polygon(pts, tok::AMBER, Stroke::NONE));
+        } else {
+            ui.painter().add(Shape::closed_line(pts, Stroke::new(stroke::ICON, tok::AMBER)));
+        }
+        let tw = (w - space::S12 - dw - space::S8 * 2.0).max(space::S40);
+        ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+            ui.set_width(tw);
+            ui.add(egui::Label::new(RichText::new(title).size(size::ROW_SMALL - 0.5).color(p.text)).wrap());
+        });
+        ui.label(RichText::new(date).size(size::SMALL + 0.5).color(p.dim));
+    });
+}
+
+/// One line of the rail with an optional bold end ("Mark the busiest months · **Fri 13 Nov**").
+pub fn rail_line(ui: &mut Ui, p: &Pal, text: &str, bold: &str) -> Response {
+    let mut job = egui::text::LayoutJob::default();
+    let f = |font: egui::FontId| egui::text::TextFormat { font_id: font, color: p.text, ..Default::default() };
+    job.append(text, 0.0, f(fp(size::ROW_SMALL - 0.5)));
+    if !bold.is_empty() {
+        job.append(" · ", 0.0, f(fp(size::ROW_SMALL - 0.5)));
+        job.append(bold, 0.0, f(fs(size::ROW_SMALL - 0.5)));
+    }
+    job.wrap.max_width = ui.available_width();
+    ui.add(egui::Label::new(job).sense(Sense::click()))
+}
+
+/// A theme in the "By theme" list: the phase tag, the title with its tags, the tasks under it
+/// and the count on the right. Returns the click on the row.
+pub fn theme_row(ui: &mut Ui, p: &Pal, id: egui::Id, phase: &str, title: &str, basis: &str, gate: Option<(&str, bool)>, sub: &str, count: &str, first: bool) -> Response {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let inner = egui::Frame::none().inner_margin(egui::Margin { left: space::S16, right: space::S16, top: space::S12 + 1.0, bottom: space::S12 + 1.0 }).show(ui, |ui| {
+        ui.set_width(w - space::S16 * 2.0);
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S14;
+            ui.allocate_ui_with_layout(egui::vec2(space::S40 + space::S16, 0.0), Layout::top_down(Align::Center), |ui| {
+                ui.set_width(space::S40 + space::S16);
+                phase_tag(ui, p, phase);
+            });
+            let cg = ui.painter().layout_no_wrap(count.to_string(), fp(size::SMALL + 0.5), p.dim);
+            let mid = ui.available_width() - cg.size().x - space::S24;
+            ui.allocate_ui_with_layout(egui::vec2(mid, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(mid);
+                ui.spacing_mut().item_spacing.y = space::S4;
+                ui.horizontal_wrapped(|ui| {
+                    ui.spacing_mut().item_spacing.x = space::S8;
+                    ui.label(RichText::new(title).font(fs(size::ROW + 0.5)).color(p.text));
+                    if !basis.is_empty() {
+                        basis_chip(ui, p, basis);
+                    }
+                    if let Some((g, open)) = gate {
+                        gate_chip(ui, g, open);
+                    }
+                });
+                ui.add(egui::Label::new(RichText::new(sub).size(size::ROW_SMALL - 0.5).color(p.dim)).wrap());
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                ui.label(RichText::new(count).size(size::SMALL + 0.5).color(p.dim));
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    if !first {
+        ui.painter().hline(rect.x_range(), rect.top(), Stroke::new(stroke::HAIR, p.divider));
+    }
+    let resp = ui.interact(rect, id, Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect.shrink(1.0), 0.0, p.hover.gamma_multiply(0.5));
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+// ======================================================================================
+// Frameworks components (Phase 4, Pack C "Frameworks"): the registry strip, the tree's rows
+// and the node editor's pieces.
+// ======================================================================================
+
+/// A registry card: the method's name (600 14.5) and a line under it. Selected: amber border;
+/// dashed: a slot for later.
+pub fn registry_card(ui: &mut Ui, p: &Pal, w: f32, title: &str, sub: &str, selected: bool, dashed: bool) -> Response {
+    let edge = if dashed { Stroke::NONE } else if selected { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::new(stroke::HAIR, p.line) };
+    let inner = egui::Frame::none().fill(if dashed { Color32::TRANSPARENT } else { p.card }).stroke(edge).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.vertical(|ui| {
+            ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+            ui.label(RichText::new(title).font(fs(size::HERO_BODY)).color(if dashed { p.dim } else { p.text }));
+            ui.label(RichText::new(sub).size(size::SMALL).color(p.dim));
+        });
+    });
+    let r = inner.response.rect;
+    if dashed {
+        let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+        let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+        for w2 in pts.windows(2) {
+            ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+        }
+    }
+    ui.interact(r, ui.id().with(("registry", title)), Sense::click())
+}
+
+/// How a row of the hypothesis tree is drawn.
+#[derive(Clone, Copy, PartialEq)]
+pub enum NodeStyle {
+    /// H0: a dark bar.
+    Root,
+    /// Hx: a white card with a hairline.
+    Hypothesis,
+    /// Ex and evidence: a raised fill.
+    Experiment,
+}
+
+/// One row of the hypothesis tree: the node's label (H1, E0), its statement, the line under it
+/// (the negation, or what the test holds on) and its status. Selected rows take the amber tint.
+pub fn tree_row(ui: &mut Ui, p: &Pal, id: egui::Id, style: NodeStyle, label: &str, title: &str, sub: &str, status: &str, selected: bool) -> Response {
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let bg_at = ui.painter().add(Shape::Noop);
+    let dark = style == NodeStyle::Root;
+    let (pill_fg, pill_bg) = if dark { (tok::TEXT_ON_DARK, tok::white_a(0.14)) } else { status_pair(status) };
+    let pg = ui.painter().layout_no_wrap(status.to_string(), fs(size::TAG), pill_fg);
+    let pill = pg.size() + egui::vec2(16.0, 6.0);
+    let pad = egui::vec2(space::S14, if dark { space::S10 + 1.0 } else { space::S10 });
+    let inner = egui::Frame::none().inner_margin(egui::Margin::symmetric(pad.x, pad.y)).show(ui, |ui| {
+        ui.set_width(w - pad.x * 2.0);
+        ui.horizontal_top(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            let lc = match style {
+                NodeStyle::Root => tok::AMBER,
+                NodeStyle::Hypothesis => p.orange,
+                NodeStyle::Experiment => p.dim,
+            };
+            ui.allocate_ui_with_layout(egui::vec2(space::FW_LABEL_W - space::S8, size::ROW * 1.4), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(space::FW_LABEL_W - space::S8);
+                ui.add_space(space::S4 / 2.0);
+                ui.label(RichText::new(label).font(fs(size::SMALL)).color(lc));
+            });
+            let tw = (ui.available_width() - pill.x - space::S8 * 2.0).max(space::S40);
+            ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+                ui.set_width(tw);
+                ui.spacing_mut().item_spacing.y = space::S4 / 2.0;
+                ui.add(egui::Label::new(RichText::new(title).font(fs(size::ROW_SMALL)).color(if dark { tok::TEXT_ON_DARK } else { p.text })).wrap());
+                if !sub.is_empty() {
+                    ui.add(egui::Label::new(RichText::new(sub).size(size::SMALL).color(if dark { tok::TEXT_ON_DARK_SOFT } else { p.dim })).wrap());
+                }
+            });
+            ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
+                let (r, _) = ui.allocate_exact_size(pill, Sense::hover());
+                let r = Rect::from_min_size(egui::pos2(r.min.x, r.min.y + space::S4 / 2.0), r.size());
+                ui.painter().rect_filled(r, radius::PILL, pill_bg);
+                ui.painter().galley(r.min + egui::vec2(8.0, 3.0), pg, pill_fg);
+            });
+        });
+    });
+    let rect = Rect::from_min_size(top, egui::vec2(w, inner.response.rect.height()));
+    let resp = ui.interact(rect, id, Sense::click());
+    let (fill, edge) = match style {
+        NodeStyle::Root => (tok::INK, Stroke::NONE),
+        NodeStyle::Hypothesis if selected => (if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, tok::AMBER)),
+        NodeStyle::Hypothesis => (p.card, Stroke::new(stroke::HAIR, if resp.hovered() { p.faint } else { p.line })),
+        NodeStyle::Experiment if selected => (if p.dark { p.callout } else { tok::AMBER_LIGHT }, Stroke::new(stroke::HAIR, tok::AMBER)),
+        NodeStyle::Experiment => (p.surface_raised, Stroke::new(stroke::HAIR, if resp.hovered() { p.line } else { p.surface_raised })),
+    };
+    let edge = if dark && selected { Stroke::new(stroke::HAIR * 2.0, tok::AMBER) } else { edge };
+    ui.painter().set(bg_at, Shape::rect_filled(rect, radius::BUTTON, fill));
+    if edge.width > 0.0 {
+        ui.painter().rect_stroke(rect, radius::BUTTON, edge);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A line with a bold lead ("**Prediction:** both accept…"), wrapping.
+pub fn lead_line(ui: &mut Ui, p: &Pal, lead: &str, text: &str) {
+    let mut job = egui::text::LayoutJob::default();
+    let f = |font: egui::FontId| egui::text::TextFormat { font_id: font, color: p.text, ..Default::default() };
+    job.append(lead, 0.0, f(fs(size::SMALL + 0.5)));
+    job.append(" ", 0.0, f(fp(size::SMALL + 0.5)));
+    job.append(text, 0.0, f(fp(size::SMALL + 0.5)));
+    job.wrap.max_width = ui.available_width();
+    ui.label(job);
+}
+
+/// A soft raised note in an editor ("Opens the gate on …").
+pub fn soft_note<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().fill(p.surface_raised).rounding(Rounding::same(radius::CHIP)).inner_margin(egui::Margin::symmetric(space::S10, space::S8)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        add(ui)
+    })
+    .inner
+}
+
+// ======================================================================================
+// Knowledge base components (Phase 4, Pack C "Knowledge"): tabs, the card library, the
+// grounding bar, the Add sheet's options, the preview panel and the New page dialog's tiles.
+// ======================================================================================
+
+/// A row of underlined tabs over a hairline. Returns the tab clicked.
+pub fn underline_tabs(ui: &mut Ui, p: &Pal, tabs: &[&str], selected: usize) -> Option<usize> {
+    let mut picked = None;
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let h = space::S40 - 2.0;
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S4;
+        for (i, t) in tabs.iter().enumerate() {
+            let sel = i == selected;
+            let g = ui.painter().layout_no_wrap(t.to_string(), if sel { fs(size::ROW + 0.5) } else { fp(size::ROW + 0.5) }, if sel { p.text } else { p.dim });
+            let (r, resp) = ui.allocate_exact_size(egui::vec2(g.size().x + space::S12 * 2.0, h), Sense::click());
+            let col = if sel || resp.hovered() { p.text } else { p.dim };
+            ui.painter().galley(egui::pos2(r.left() + space::S12, r.center().y - g.size().y / 2.0), g, col);
+            if sel {
+                ui.painter().rect_filled(Rect::from_min_max(egui::pos2(r.left(), r.bottom() - stroke::MARK), r.right_bottom()), 0.0, tok::AMBER);
+            }
+            if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !sel {
+                picked = Some(i);
+            }
+        }
+    });
+    ui.painter().hline(top.x..=top.x + w, top.y + h, Stroke::new(stroke::HAIR, p.line));
+    picked
+}
+
+/// "Find in this project": a white field with a magnifier.
+pub fn find_field(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &str, w: f32) -> Response {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::FIELD_H), Sense::hover());
+    ui.painter().rect(rect, radius::FIELD, p.card, Stroke::new(stroke::HAIR, p.line));
+    paint_icon(ui.painter(), rect.left_center() + egui::vec2(space::S18, 0.0), Icon::Search, p.dim);
+    let inner = Rect::from_min_max(rect.min + egui::vec2(space::S30 + space::S4, 0.0), rect.max - egui::vec2(space::S10, 0.0));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)));
+    child.add(egui::TextEdit::singleline(text).id(id).frame(false).font(fp(size::ROW_SMALL + 0.5)).text_color(p.text).hint_text(RichText::new(hint).color(p.faint)).desired_width(inner.width()))
+}
+
+/// What a library card shows.
+pub struct LibCard<'a> {
+    pub kind: &'a str,
+    pub meta: &'a str,
+    pub title: &'a str,
+    pub snippet: &'a str,
+    /// Just added: an amber outline (it lands first for 2 s, C-E13).
+    pub fresh: bool,
+    pub selected: bool,
+}
+
+/// A card in the Knowledge library: the kind tag and a note on the right, the title (600 15)
+/// and two lines of what it says. Fixed height, so the grid stays even.
+pub fn library_card(ui: &mut Ui, p: &Pal, id: egui::Id, w: f32, c: &LibCard) -> Response {
+    let h = space::LIB_CARD_H;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let edge = if c.fresh || c.selected { Stroke::new(stroke::HAIR * if c.fresh { 2.0 } else { 1.0 }, tok::AMBER) } else if resp.hovered() { Stroke::new(stroke::HAIR, p.faint) } else { Stroke::new(stroke::HAIR, p.line) };
+    ui.painter().rect(rect, radius::CARD, p.card, edge);
+    let pad = egui::vec2(space::S16, space::S14);
+    let (fg, bg) = kind_pair(c.kind);
+    let kg = ui.painter().layout_no_wrap(c.kind.to_string(), fs(size::TAG), fg);
+    let kr = Rect::from_min_size(rect.min + pad, kg.size() + egui::vec2(14.0, 6.0));
+    ui.painter().rect_filled(kr, radius::GATE, bg);
+    ui.painter().galley(kr.min + egui::vec2(7.0, 3.0), kg, fg);
+    ui.painter().text(egui::pos2(rect.right() - pad.x, kr.center().y), Align2::RIGHT_CENTER, c.meta, fp(size::SMALL), p.dim);
+    let tw = w - pad.x * 2.0;
+    let title = fit_text(ui.painter(), c.title, fs(size::ROW + 1.0), tw);
+    ui.painter().text(egui::pos2(rect.left() + pad.x, kr.bottom() + space::S10), Align2::LEFT_TOP, title, fs(size::ROW + 1.0), p.text);
+    let mut job = egui::text::LayoutJob::simple(c.snippet.to_string(), fp(size::ROW_SMALL), p.dim, tw);
+    job.wrap.max_rows = 2;
+    let g = ui.painter().layout_job(job);
+    ui.painter().galley(egui::pos2(rect.left() + pad.x, kr.bottom() + space::S10 + size::ROW * 1.7), g, p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The dashed tile at the end of the library ("+ New page, or drop files here").
+pub fn library_add_tile(ui: &mut Ui, p: &Pal, w: f32, text: &str) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::LIB_CARD_H), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, radius::CARD, p.surface_raised);
+    }
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.center(), Align2::CENTER_CENTER, text, fs(size::ROW_SMALL + 0.5), p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A dashed button the width of its column ("+ New database").
+pub fn dashed_button(ui: &mut Ui, p: &Pal, w: f32, text: &str) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H + 2.0), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, radius::NAV_ITEM, p.surface_raised);
+    }
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, text, fp(size::ROW_SMALL + 0.5), p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The grounding bar under the library: what Resolve searches when it answers, and a link.
+/// Returns the link's click.
+pub fn grounding_bar(ui: &mut Ui, p: &Pal, text: &str, link_text: &str) -> bool {
+    let mut clicked = false;
+    egui::Frame::none().fill(p.surface_raised).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S14, space::S8 + 1.0)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("✦").size(size::ROW_SMALL).color(tok::AMBER));
+            ui.add_space(space::S4);
+            ui.label(RichText::new(text).size(size::ROW_SMALL).color(p.text));
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                clicked = link(ui, p, link_text).clicked();
+            });
+        });
+    });
+    clicked
+}
+
+/// One option in the Add sheet: an icon tile, the title (600 14.5) and a line under it.
+pub fn add_option(ui: &mut Ui, p: &Pal, glyph: &str, title: &str, sub: &str) -> Response {
+    let w = ui.available_width();
+    let h = space::S40 + space::S16 + 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    ui.painter().rect(rect, radius::BUTTON, if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, if resp.hovered() { tok::AMBER } else { p.line }));
+    let tile = Rect::from_center_size(egui::pos2(rect.left() + space::S14 + space::S16 + 1.0, rect.center().y), egui::vec2(space::S32 + 2.0, space::S32 + 2.0));
+    ui.painter().rect_filled(tile, radius::SMALL_BUTTON, if p.dark { p.callout } else { tok::AMBER_LIGHT });
+    ui.painter().text(tile.center(), Align2::CENTER_CENTER, glyph, fs(size::ROW), p.orange);
+    let x = tile.right() + space::S12;
+    ui.painter().text(egui::pos2(x, rect.center().y - 1.0), Align2::LEFT_BOTTOM, title, fs(size::HERO_BODY), p.text);
+    ui.painter().text(egui::pos2(x, rect.center().y + 1.0), Align2::LEFT_TOP, sub, fp(size::ROW_SMALL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A dashed note in a sheet ("Or drop .md, .txt, .docx or .pdf files anywhere on this window").
+pub fn dashed_note(ui: &mut Ui, p: &Pal, text: &str) {
+    let w = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::S40 + space::S6), Sense::hover());
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.center(), Align2::CENTER_CENTER, text, fp(size::ROW_SMALL), p.dim);
+}
+
+/// A tile in the New page dialog: name (600 14) and what it's for; the picked one amber.
+pub fn template_tile(ui: &mut Ui, p: &Pal, w: f32, name: &str, about: &str, picked: bool) -> Response {
+    let tw = w - space::S14 * 2.0;
+    let g = ui.painter().layout(about.to_string(), fp(size::SMALL + 0.5), p.dim, tw);
+    let h = (space::S14 * 2.0 + size::ROW * 1.4 + g.size().y + space::S4).max(space::S40 * 2.0 - 2.0);
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let (fill, edge) = if picked { (if p.dark { p.callout } else { tok::AMBER_LIGHT }, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.faint) } else { (p.card, p.line) };
+    ui.painter().rect(rect, radius::BUTTON, fill, Stroke::new(stroke::HAIR, edge));
+    ui.painter().text(rect.min + egui::vec2(space::S14, space::S14), Align2::LEFT_TOP, name, fs(size::ROW), p.text);
+    ui.painter().galley(rect.min + egui::vec2(space::S14, space::S14 + size::ROW * 1.4 + space::S4), g, p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+// ======================================================================================
+// Proposal editor components (Phase 4, Pack C "ProposalEditor").
+// ======================================================================================
+
+/// A toolbar button in the page editor (H1, H2, B, I, •, ☐): 30 square, no box until pointed at.
+pub fn tool_button(ui: &mut Ui, p: &Pal, glyph: &str) -> Response {
+    let d = space::S30;
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(d, d), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(r, radius::SMALL_BUTTON, p.hover);
+    }
+    let font = if glyph == "I" { fserif(size::ROW + 1.0) } else { fs(size::ROW_SMALL) };
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, glyph, font, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The editor's top bar: white, 60 high, a hairline under it.
+pub fn editor_bar(ui: &mut Ui, p: &Pal, rect: Rect, add: impl FnOnce(&mut Ui)) {
+    ui.painter().rect_filled(rect, 0.0, p.card);
+    ui.painter().hline(rect.x_range(), rect.bottom() - 0.5, Stroke::new(stroke::HAIR, p.line));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(rect.shrink2(egui::vec2(space::S30 - 2.0, 0.0))).layout(Layout::left_to_right(Align::Center)));
+    add(&mut child);
+}
+
+/// One entry of the editor's section list: the name and its count; the current one sits on white.
+pub fn section_item(ui: &mut Ui, p: &Pal, w: f32, name: &str, count: Option<usize>, selected: bool) -> Response {
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H + 2.0), Sense::click());
+    if selected {
+        ui.painter().rect_filled(r, radius::NAV_ITEM, p.card);
+    } else if resp.hovered() {
+        ui.painter().rect_filled(r, radius::NAV_ITEM, p.hover);
+    }
+    ui.painter().text(r.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, name, if selected { fs(size::ROW_SMALL) } else { fp(size::ROW_SMALL + 0.5) }, p.text);
+    if let Some(n) = count {
+        ui.painter().text(r.right_center() - egui::vec2(space::S10, 0.0), Align2::RIGHT_CENTER, n.to_string(), fp(size::ROW_SMALL), p.dim);
+    }
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// Text you edit where it stands ("Click any text to edit it"): no box until you point at it
+/// (a hairline) or type in it (amber).
+pub fn inline_edit(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, font: egui::FontId, color: Color32, width: f32, hint: &str, multiline: bool) -> Response {
+    let te = if multiline { egui::TextEdit::multiline(text).desired_rows(1) } else { egui::TextEdit::singleline(text) };
+    // a frameless TextEdit still keeps 4 px of margin each side: stay inside `width`
+    let r = ui.add(te.id(id).frame(false).font(font).text_color(color).desired_width((width - space::S8).max(space::S8)).hint_text(RichText::new(hint).color(p.faint)));
+    let edge = if r.has_focus() { Some(tok::AMBER) } else if r.hovered() { Some(p.line) } else { None };
+    if let Some(c) = edge {
+        ui.painter().rect_stroke(r.rect.expand(space::S4 - 1.0), radius::GATE, Stroke::new(stroke::HAIR, c));
+    }
+    r
+}
+
+/// A row in an editor card: a hairline box, radius 10, padding 12 / 10.
+pub fn edit_row<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
+    egui::Frame::none().stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S12, space::S10)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        add(ui)
+    })
+    .inner
+}
+
+/// The small × that removes a row.
+pub fn remove_x(ui: &mut Ui, p: &Pal) -> Response {
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(space::S22, space::S22), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(r, radius::GATE, p.hover);
+    }
+    ui.painter().text(r.center(), Align2::CENTER_CENTER, "×", fp(size::ROW + 2.0), if resp.hovered() { p.text } else { p.dim });
+    resp.on_hover_text("Remove").on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+// ======================================================================================
+// AI Team and Handoffs components (Phase 4, Pack C "AITeam", "Handoffs").
+// ======================================================================================
+
+/// A role card: a square avatar (dark when picked), the name and what it does; picked takes the
+/// amber tint and edge.
+pub fn role_card(ui: &mut Ui, p: &Pal, glyph: &str, name: &str, sub: &str, picked: bool) -> Response {
+    let w = ui.available_width();
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::S40 + space::S16), Sense::click());
+    let (fill, edge) = if picked { (if p.dark { p.callout } else { tok::AMBER_LIGHT }, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.faint) } else { (p.card, p.line) };
+    ui.painter().rect(rect, radius::BUTTON, fill, Stroke::new(stroke::HAIR, edge));
+    let a = Rect::from_center_size(egui::pos2(rect.left() + space::S12 + space::S16 + 1.0, rect.center().y), egui::vec2(space::S32 + 2.0, space::S32 + 2.0));
+    ui.painter().rect_filled(a, radius::SMALL_BUTTON, if picked { tok::INK } else { p.surface_raised });
+    ui.painter().text(a.center(), Align2::CENTER_CENTER, glyph, fserif(size::ROW + 1.0), if picked { tok::AMBER } else { p.text });
+    let x = a.right() + space::S12;
+    ui.painter().text(egui::pos2(x, rect.center().y - 1.0), Align2::LEFT_BOTTOM, name, fs(size::ROW_SMALL + 0.5), p.text);
+    ui.painter().text(egui::pos2(x, rect.center().y + 1.0), Align2::LEFT_TOP, fit_text(ui.painter(), sub, fp(size::SMALL + 0.5), rect.right() - x - space::S10), fp(size::SMALL + 0.5), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A chat message: yours dark on the right, the role's on a raised fill on the left.
+pub fn chat_bubble(ui: &mut Ui, p: &Pal, text: &str, mine: bool, w: f32) {
+    let max = w * 0.82;
+    let layout = if mine { Layout::right_to_left(Align::Min) } else { Layout::left_to_right(Align::Min) };
+    ui.allocate_ui_with_layout(egui::vec2(w, 0.0), layout, |ui| {
+        let g = ui.painter().layout(text.to_string(), fp(size::ROW + 0.5), if mine { tok::TEXT_ON_DARK } else { p.text }, max - space::S16 * 2.0);
+        let size = g.size() + egui::vec2(space::S16 * 2.0, space::S12 * 2.0);
+        let (r, _) = ui.allocate_exact_size(size, Sense::hover());
+        ui.painter().rect_filled(r, radius::CARD + 1.0, if mine { tok::INK } else { p.surface_raised });
+        ui.painter().galley(r.min + egui::vec2(space::S16, space::S12), g, p.text);
+    });
+}
+
+/// The role is working: three amber dots and what it's doing.
+pub fn thinking_line(ui: &mut Ui, p: &Pal, text: &str) {
+    ui.horizontal(|ui| {
+        let ph = motion::loop_phase(ui.ctx(), 1200.0);
+        for k in 0..3 {
+            let (r, _) = ui.allocate_exact_size(egui::vec2(space::S8, space::S8), Sense::hover());
+            let on = ((ph * 3.0) as usize) % 3 == k;
+            ui.painter().circle_filled(r.center(), 3.0, if on { tok::AMBER } else { tok::amber_a(0.35) });
+        }
+        ui.add_space(space::S4);
+        ui.label(RichText::new(text).size(size::ROW_SMALL).color(p.dim));
+    });
+}
+
+/// A proposed change from a role: PROPOSED CHANGE, what it adds and to what, Add it / Not now.
+/// Returns Some(true) for Add it, Some(false) for Not now.
+pub fn pr_card(ui: &mut Ui, p: &Pal, pr: &crate::resolve::team::Proposed, w: f32) -> Option<bool> {
+    let mut out = None;
+    let what = match pr.kind.as_str() {
+        "task" => "a task",
+        "evidence" => "evidence",
+        "assumption" => "an assumption",
+        _ => "an open question",
+    };
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, if pr.decided.is_empty() { tok::AMBER } else { p.line })).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        let head = match pr.decided.as_str() {
+            "ADDED" => "ADDED",
+            "SKIPPED" => "NOT ADDED",
+            _ => "PROPOSED CHANGE",
+        };
+        ui.label(RichText::new(head).font(fs(size::SMALL)).color(p.accent_text));
+        let mut job = egui::text::LayoutJob::default();
+        let (lead, body) = if pr.kind == "page" {
+            let preview: String = pr.text.replace(" / ", " ").chars().take(160).collect();
+            (format!("Save a page, {}: ", if pr.on.is_empty() { "Untitled" } else { &pr.on }), if preview.len() < pr.text.len() { format!("{preview}…") } else { preview })
+        } else if pr.on.is_empty() {
+            (format!("Add {what}: "), pr.text.clone())
+        } else {
+            (format!("Add {what} to {}: ", pr.on), pr.text.clone())
+        };
+        job.append(&lead, 0.0, egui::text::TextFormat { font_id: fp(size::ROW + 0.5), color: p.text, ..Default::default() });
+        job.append(&body, 0.0, egui::text::TextFormat { font_id: if pr.kind == "page" { fp(size::ROW + 0.5) } else { fs(size::ROW + 0.5) }, color: p.text, ..Default::default() });
+        job.wrap.max_width = ui.available_width();
+        ui.label(job);
+        if pr.decided.is_empty() {
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S8;
+                if button(ui, p, ButtonKind::Dark, "Add it", true, true).clicked() {
+                    out = Some(true);
+                }
+                if button(ui, p, ButtonKind::Secondary, "Not now", true, true).clicked() {
+                    out = Some(false);
+                }
+                ui.label(RichText::new("↶ in the sidebar undoes it").size(size::SMALL).color(p.dim));
+            });
+        }
+    });
+    out
+}
+
+/// The AI's limit or budget, in the chat: what happened, Open Settings and Copy my question.
+pub fn budget_card(ui: &mut Ui, p: &Pal, text: &str, w: f32) -> (bool, bool) {
+    let mut out = (false, false);
+    egui::Frame::none().fill(p.orange_tint).stroke(Stroke::new(stroke::HAIR, p.orange.gamma_multiply(0.4))).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(w - space::S14 * 2.0);
+        ui.spacing_mut().item_spacing.y = space::S8;
+        ui.add(egui::Label::new(RichText::new(format!("{} Your question is kept.", text.trim())).size(size::ROW_SMALL).color(p.orange)).wrap());
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            out.0 = button(ui, p, ButtonKind::Dark, "Open Settings", true, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, "Copy my question", true, true).clicked();
+        });
+    });
+    out
+}
+
+/// The AI didn't write a handoff: a plain brief is there instead. Returns (Try again, Use the
+/// plain brief).
+pub fn handoff_fallback_card(ui: &mut Ui, p: &Pal) -> (bool, bool) {
+    let mut out = (false, false);
+    egui::Frame::none().fill(p.orange_tint).stroke(Stroke::new(stroke::HAIR, p.orange.gamma_multiply(0.4))).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin::symmetric(space::S14, space::S12)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.spacing_mut().item_spacing.y = space::S8;
+        let mut job = egui::text::LayoutJob::default();
+        job.append("The AI didn't reply. ", 0.0, egui::text::TextFormat { font_id: fs(size::ROW_SMALL), color: p.orange, ..Default::default() });
+        job.append("You have a plain brief made from the project instead. It's usable, just less polished. Try again for the rewritten one.", 0.0, egui::text::TextFormat { font_id: fp(size::ROW_SMALL), color: p.text, ..Default::default() });
+        job.wrap.max_width = ui.available_width();
+        ui.label(job);
+        ui.horizontal(|ui| {
+            ui.spacing_mut().item_spacing.x = space::S8;
+            out.0 = button(ui, p, ButtonKind::Dark, "Try again", true, true).clicked();
+            out.1 = button(ui, p, ButtonKind::Secondary, "Use the plain brief", true, true).clicked();
+        });
+    });
+    out
+}
+
+/// A suggestion above the chat box (a pill with a hairline).
+pub fn suggestion_chip(ui: &mut Ui, p: &Pal, text: &str) -> Response {
+    let g = ui.painter().layout_no_wrap(text.to_string(), fp(size::ROW_SMALL), p.text);
+    let (r, resp) = ui.allocate_exact_size(g.size() + egui::vec2(space::S12 * 2.0, space::S8 * 2.0), Sense::click());
+    ui.painter().rect(r, radius::PILL, if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, p.line));
+    ui.painter().galley(r.min + egui::vec2(space::S12, space::S8), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The chat box: the field, the mic (Windows voice typing, C-E24) and the amber send button.
+/// Returns true when send is pressed.
+pub fn chat_box(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &str, can_send: bool) -> bool {
+    let mut send = false;
+    egui::Frame::none().fill(p.card).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::CARD)).inner_margin(egui::Margin { left: space::S16, right: space::S6, top: space::S6, bottom: space::S6 }).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal(|ui| {
+            let w = ui.available_width() - space::MIC * 2.0 - space::S10;
+            ui.add(egui::TextEdit::multiline(text).id(id).frame(false).font(fp(size::ROW + 0.5)).text_color(p.text).hint_text(RichText::new(hint).color(p.faint)).desired_rows(1).desired_width(w));
+            mic_for(ui, p, id, false);
+            let (r, resp) = ui.allocate_exact_size(egui::vec2(space::MIC, space::MIC), if can_send { Sense::click() } else { Sense::hover() });
+            ui.painter().circle_filled(r.center(), space::MIC / 2.0, if can_send { tok::AMBER } else { p.track });
+            ui.painter().text(r.center(), Align2::CENTER_CENTER, "↑", fs(size::ROW + 1.0), tok::INK);
+            send = can_send && resp.on_hover_text("Send (Enter)").on_hover_cursor(egui::CursorIcon::PointingHand).clicked();
+        });
+    });
+    send
+}
+
+/// A column head on the whole picture: dark for Now, sunk for the others.
+pub fn whole_head(ui: &mut Ui, p: &Pal, w: f32, name: &str, now: bool) {
+    let (r, _) = ui.allocate_exact_size(egui::vec2(w, space::S26), Sense::hover());
+    ui.painter().rect_filled(r, radius::GATE, if now { tok::INK } else { p.surface_sunk });
+    ui.painter().text(r.left_center() + egui::vec2(space::S10, 0.0), Align2::LEFT_CENTER, name, fs(size::SMALL + 0.5), if now { tok::TEXT_ON_DARK } else { p.text });
+}
+
+/// A cell of the whole picture: a theme in its phase, "◇" when it waits on that hypothesis.
+/// Amber-light in Now, raised in the others. Returns the click.
+pub fn whole_cell(ui: &mut Ui, p: &Pal, w: f32, min_h: f32, text: &str, gated: bool, now: bool) -> Response {
+    let label = if gated { format!("◇ {text}") } else { text.to_string() };
+    let g = ui.painter().layout(label, fp(size::SMALL + 0.5), p.text, w - space::S10 * 2.0);
+    let h = (g.size().y + space::S10 * 2.0).max(min_h);
+    let (r, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let fill = if p.dark { p.surface_raised } else if now { tok::AMBER_LIGHT } else { p.surface_raised };
+    let edge = if resp.hovered() { Stroke::new(stroke::HAIR, tok::AMBER) } else { Stroke::NONE };
+    ui.painter().rect(r, radius::GATE, fill, edge);
+    ui.painter().galley(r.min + egui::vec2(space::S10, space::S10), g, p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }

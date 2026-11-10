@@ -1000,13 +1000,22 @@ fn run(store: &mut Store, name: &str, a: &Value) -> Result<Value, String> {
                 if let Some(i) = arg_str(item, "icon") {
                     page.icon = i;
                 }
-                if let Some(pt) = arg_str(item, "parent_title") {
+                // C-E15: a parent that can't be found is reported for that page, not dropped
+                let mut note: Option<String> = None;
+                if let Some(pt) = arg_str(item, "parent_title").filter(|x| !x.trim().is_empty()) {
                     page.parent = d.page_by_title(&pt).map(|p| p.id.clone());
+                    if page.parent.is_none() {
+                        note = Some(format!("parent \"{pt}\" not found, added at the top level"));
+                    }
                 }
-                made.push(json!({"id": page.id, "title": title}));
+                match note {
+                    Some(n) => made.push(json!({"id": page.id, "title": title, "note": n})),
+                    None => made.push(json!({"id": page.id, "title": title})),
+                }
                 d.pages.push(page);
             }
-            Ok(json!({"imported_pages": made}))
+            let notes = made.iter().filter(|m| m.get("note").is_some()).count();
+            Ok(json!({"imported_pages": made, "pages_with_notes": notes}))
         }
         "import_tasks" => {
             let Some(Value::Array(list)) = a.get("lines") else { return Err("lines must be a list".into()) };

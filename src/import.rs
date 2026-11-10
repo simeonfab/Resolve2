@@ -400,6 +400,170 @@ pub fn import_notion(path: &Path, d: &mut WorkspaceData) -> Result<ImportReport,
     Ok(rep)
 }
 
+// ---------------------------------------------------------------- the CSV import dialog (C-E18)
+
+/// A CSV read for the import dialog: its header, its rows, and a type guessed for each column.
+#[derive(Clone, Debug, Default)]
+pub struct CsvPlan {
+    pub header: Vec<String>,
+    pub rows: Vec<Vec<String>>,
+    pub kinds: Vec<ColKind>,
+    /// The options of the columns guessed as Select.
+    pub options: Vec<Vec<String>>,
+}
+
+/// A column's type when most of its values fit it (4 in 5), so the few that don't can be listed
+/// as failed rows rather than turning the whole column into text.
+fn infer_mostly(values: &[&str]) -> (ColKind, Vec<String>) {
+    let non_empty: Vec<&str> = values.iter().copied().filter(|v| !v.trim().is_empty()).collect();
+    if non_empty.len() >= 3 {
+        let share = |ok: usize| ok * 5 >= non_empty.len() * 4;
+        let nums = non_empty.iter().filter(|v| v.replace(',', "").parse::<f64>().is_ok()).count();
+        if share(nums) && nums < non_empty.len() {
+            return (ColKind::Number, vec![]);
+        }
+        let dates = non_empty.iter().filter(|v| parse_loose_date(v).is_some()).count();
+        if share(dates) && dates < non_empty.len() {
+            return (ColKind::Date, vec![]);
+        }
+    }
+    infer_kind(values)
+}
+
+pub fn csv_plan(text: &str) -> Result<CsvPlan, String> {
+    let rows = parse_csv(text.trim_start_matches('\u{feff}'));
+    let Some(header) = rows.first().cloned() else { return Err("The file is empty.".into()) };
+    let body: Vec<Vec<String>> = rows.into_iter().skip(1).filter(|r| r.iter().any(|c| !c.trim().is_empty())).collect();
+    let mut kinds = vec![];
+    let mut options = vec![];
+    for ci in 0..header.len() {
+        let vals: Vec<&str> = body.iter().map(|r| r.get(ci).map(|s| s.as_str()).unwrap_or("")).collect();
+        let (k, o) = infer_mostly(&vals);
+        kinds.push(k);
+        options.push(o);
+    }
+    let header = header.iter().enumerate().map(|(i, h)| if h.trim().is_empty() { format!("Column {}", i + 1) } else { h.trim().to_string() }).collect();
+    Ok(CsvPlan { header, rows: body, kinds, options })
+}
+
+/// Which rows import, and which fail and why (the rule from the Phase 4 checks: a row fails when
+/// it has more cells than the header has columns, or when a value in a date or number column
+/// can't be read as one). Failed rows are numbered as lines of the file (the header is line 1).
+pub fn csv_check(plan: &CsvPlan, kinds: &[ColKind]) -> (Vec<usize>, Vec<(usize, String)>) {
+    let (mut ok, mut failed) = (vec![], vec![]);
+    for (i, r) in plan.rows.iter().enumerate() {
+        let line = i + 2;
+        if r.len() > plan.header.len() {
+            failed.push((line, format!("it has {} cells but the file has {} columns", r.len(), plan.header.len())));
+            continue;
+        }
+        let mut why = None;
+        for (ci, raw) in r.iter().enumerate() {
+            let raw = raw.trim();
+            if raw.is_empty() {
+                continue;
+            }
+            let name = plan.header.get(ci).cloned().unwrap_or_default();
+            match kinds.get(ci) {
+                Some(ColKind::Number) if raw.replace(',', "").parse::<f64>().is_err() => why = Some(format!("\"{raw}\" in {name} isn't a number")),
+                Some(ColKind::Date) if parse_loose_date(raw).is_none() => why = Some(format!("\"{raw}\" in {name} isn't a date")),
+                _ => {}
+            }
+            if why.is_some() {
+                break;
+            }
+        }
+        match why {
+            Some(w) => failed.push((line, w)),
+            None => ok.push(i),
+        }
+    }
+    (ok, failed)
+}
+
+/// A cell as stored. `lenient` keeps a value that doesn't fit its column as text (Import them
+/// anyway) instead of storing it empty.
+pub fn csv_cell(kind: ColKind, raw: &str, lenient: bool) -> String {
+    match kind {
+        ColKind::Checkbox => (matches!(raw.trim().to_lowercase().as_str(), "yes" | "true")).to_string(),
+        ColKind::Date => parse_loose_date(raw).map(|d| d.to_string()).unwrap_or_else(|| if lenient { raw.trim().to_string() } else { String::new() }),
+        ColKind::Number => {
+            let v = raw.trim().replace(',', "");
+            if v.parse::<f64>().is_ok() || lenient {
+                if v.parse::<f64>().is_ok() {
+                    v
+                } else {
+                    raw.trim().to_string()
+                }
+            } else {
+                String::new()
+            }
+        }
+        _ => raw.to_string(),
+    }
+}
+
+/// A new database from the plan's rows `take`.
+pub fn csv_new_database(name: &str, plan: &CsvPlan, kinds: &[ColKind], take: &[usize], lenient: bool) -> Database {
+    let columns: Vec<Column> = plan
+        .header
+        .iter()
+        .enumerate()
+        .map(|(ci, h)| {
+            let kind = kinds.get(ci).copied().unwrap_or(ColKind::Text);
+            let options = if kind == ColKind::Select {
+                let mut o: Vec<String> = plan.options.get(ci).cloned().unwrap_or_default();
+                for r in &plan.rows {
+                    if let Some(v) = r.get(ci).map(|s| s.trim().to_string()).filter(|s| !s.is_empty()) {
+                        if !o.contains(&v) {
+                            o.push(v);
+                        }
+                    }
+                }
+                o
+            } else {
+                vec![]
+            };
+            Column { id: new_id(), name: h.clone(), kind, options, width: if ci == 0 { 220.0 } else { 150.0 }, target: String::new() }
+        })
+        .collect();
+    let mut db = Database { id: new_id(), name: name.to_string(), icon: "▦".into(), columns, rows: vec![], view: DbView::Table, group_by: None, updated: now_ms(), ..Default::default() };
+    csv_append(&mut db, plan, kinds, take, lenient);
+    db.group_by = db.columns.iter().find(|c| c.kind == ColKind::Select).map(|c| c.id.clone());
+    db
+}
+
+/// Add the plan's rows `take` to a database, matching columns by name; a column it doesn't have
+/// is added. Returns how many rows were added.
+pub fn csv_append(db: &mut Database, plan: &CsvPlan, kinds: &[ColKind], take: &[usize], lenient: bool) -> usize {
+    let mut ids = vec![];
+    for (ci, h) in plan.header.iter().enumerate() {
+        let id = match db.columns.iter().find(|c| c.name.eq_ignore_ascii_case(h)) {
+            Some(c) => c.id.clone(),
+            None => {
+                let c = Column { id: new_id(), name: h.clone(), kind: kinds.get(ci).copied().unwrap_or(ColKind::Text), options: vec![], width: 150.0, target: String::new() };
+                let id = c.id.clone();
+                db.columns.push(c);
+                id
+            }
+        };
+        ids.push(id);
+    }
+    let mut n = 0;
+    for &i in take {
+        let Some(r) = plan.rows.get(i) else { continue };
+        let mut cells = BTreeMap::new();
+        for (ci, cid) in ids.iter().enumerate() {
+            let kind = db.columns.iter().find(|c| &c.id == cid).map(|c| c.kind).unwrap_or(ColKind::Text);
+            cells.insert(cid.clone(), csv_cell(kind, r.get(ci).map(|s| s.as_str()).unwrap_or(""), lenient));
+        }
+        db.rows.push(Row { id: new_id(), cells, page_id: None });
+        n += 1;
+    }
+    db.updated = now_ms();
+    n
+}
+
 /// Turn CSV text (first row = headers) into a database with inferred column types.
 pub fn csv_to_database(name: &str, text: &str) -> Result<Database, String> {
     let rows = parse_csv(text.trim_start_matches('\u{feff}'));
