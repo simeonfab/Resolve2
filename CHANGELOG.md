@@ -2,7 +2,7 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
-## 0.6.0 (10 November 2026, waiting for your review, not merged yet)
+## 0.6.0 (10 November 2026)
 
 Redesign Phase 5: Settings and Help, rebuilt to the Pack C canvases (branch `nav/p5-settings-help`).
 
@@ -18,7 +18,8 @@ Redesign Phase 5: Settings and Help, rebuilt to the Pack C canvases (branch `nav
 - The line under each theme on Does this belong on your roadmap? says why the theme belongs on your roadmap, in one sentence, instead of describing the work. One real run on Claude Code gave a reason for all six themes.
 
 **What was fixed**
-- The monthly budget no longer counts Ollama's tokens as a cost.
+- The monthly budget no longer counts Ollama's tokens as a cost (confirmed: only pay-per-use API keys count).
+- The MCP setup names on AI and MCP stay on one line (Codex was cut off at 1280).
 
 **Known differences and open items**
 - Mobile is out of scope: the phone page and pairing stay as they are.

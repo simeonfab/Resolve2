@@ -3506,9 +3506,10 @@ pub fn mini_row(ui: &mut Ui, p: &Pal, w: f32, name: &str, action: &str) -> bool 
         ui.horizontal(|ui| {
             let bw = ui.painter().layout_no_wrap(action.to_string(), fs(size::SMALL), p.text).size().x + 20.0;
             let tw = ui.available_width() - bw - space::S8;
-            ui.allocate_ui_with_layout(egui::vec2(tw, 0.0), Layout::top_down(Align::Min), |ui| {
+            // one line: a long name ends in an ellipsis rather than wrapping under the button
+            ui.allocate_ui_with_layout(egui::vec2(tw, space::BUTTON_H_SMALL), Layout::left_to_right(Align::Center), |ui| {
                 ui.set_width(tw);
-                ui.add(egui::Label::new(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text)).wrap());
+                ui.add(egui::Label::new(RichText::new(name).font(fs(size::ROW_SMALL)).color(p.text)).truncate());
             });
             ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
                 clicked = button(ui, p, ButtonKind::Secondary, action, true, true).clicked();

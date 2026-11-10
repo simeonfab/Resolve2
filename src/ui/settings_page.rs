@@ -257,7 +257,7 @@ impl App {
         let snippets = [
             ("Claude Desktop", format!("{{\n  \"mcpServers\": {{\n    \"{sname}\": {{\n      \"command\": {},\n      \"args\": [\"--mcp\", \"--workspace\", \"{ws}\"]\n    }}\n  }}\n}}", serde_json::to_string(&exe).unwrap_or_default())),
             ("Claude Code", format!("claude mcp add --scope user {sname} -- \"{exe}\" --mcp --workspace {ws}")),
-            ("Codex (CLI or IDE)", format!("# ~/.codex/config.toml\n[mcp_servers.{sname}]\ncommand = '{exe}'\nargs = [\"--mcp\", \"--workspace\", \"{ws}\"]")),
+            ("Codex", format!("# ~/.codex/config.toml\n[mcp_servers.{sname}]\ncommand = '{exe}'\nargs = [\"--mcp\", \"--workspace\", \"{ws}\"]")),
             ("ChatGPT", format!("https://<your-tunnel-address>/mcp?token={}", self.store.settings.token)),
         ];
         let mut copied: Option<&str> = None;
