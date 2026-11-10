@@ -148,7 +148,7 @@ pub const FRAMEWORKS: &[Framework] = &[Framework {
 }];
 
 /// The parts of Knowledge, as tabs on the Knowledge screen.
-pub const KNOWLEDGE_TABS: &[(&str, &str)] = &[("Brief & documents", "📄"), ("Research", "🔎"), ("Cut list", "✂"), ("Evidence & Records", "◆"), ("Advanced: databases", "▦")];
+pub const KNOWLEDGE_TABS: &[(&str, &str)] = &[("Brief and documents", "📄"), ("Research", "🔎"), ("Cut list", "✂"), ("Evidence and Records", "◆"), ("Advanced: databases", "▦")];
 
 impl App {
     /// The nav item a view belongs to (for highlighting and Ask Resolve wording).

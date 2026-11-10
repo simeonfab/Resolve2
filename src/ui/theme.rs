@@ -297,6 +297,16 @@ pub mod space {
     pub const PE_BAR: f32 = 60.0;
     pub const PE_LIST: f32 = 210.0;
     pub const PE_GAP: f32 = 24.0;
+    /// Knowledge base (Pack C): library cards 120 high and 12 apart, 3 across (4 from a 1200
+    /// wide library), the find field 240, the Add sheet 620, the preview panel 520, the New page
+    /// dialog 684.
+    pub const LIB_CARD_H: f32 = 120.0;
+    pub const LIB_GAP: f32 = 12.0;
+    pub const LIB_FOUR_FROM: f32 = 1200.0;
+    pub const FIND_W: f32 = 240.0;
+    pub const ADD_SHEET_W: f32 = 620.0;
+    pub const PREVIEW_W: f32 = 520.0;
+    pub const NEW_PAGE_W: f32 = 684.0;
     /// Sidebar.
     pub const SIDEBAR: f32 = 248.0;
     pub const SIDEBAR_COLLAPSED: f32 = 64.0;

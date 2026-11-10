@@ -93,6 +93,30 @@ pub fn run(t: &mut T) {
     dr.status = "Supported".into();
     dr.statement = "Café clients want a flat monthly fee over hourly billing".into();
     let ok = save_node(&mut d8, &dr).unwrap_or_default();
+    // ---- Knowledge base (C-E12 to C-E15)
+    use crate::ui::kb::{kb_counts, kb_items, KbTarget};
+    let docs = kb_items(&d, &pid, 0, today);
+    t.check("C-E12: Brief and documents lists the project brief, pinned, then the pages under it", docs.iter().any(|i| i.title == "Project brief" && i.meta == "Pinned") && docs.iter().any(|i| i.title == "Plan" && i.kind == "Page"), format!("{:?}", docs.iter().map(|i| (&i.title, &i.meta)).collect::<Vec<_>>()));
+    let recs = kb_items(&d, &pid, 3, today);
+    let hyps: Vec<&crate::ui::kb::KbItem> = recs.iter().filter(|i| i.record_kind == Some(crate::resolve::Kind::Hypothesis)).collect();
+    t.check("C-E12: Evidence and Records counts each kind and names hypotheses with their tests", hyps.len() == 5 && hyps.iter().any(|i| i.title == "H0 · A fixed-price package works" && i.snippet == "Unresolved · 4 under it") && hyps.iter().any(|i| i.title.starts_with("H3 ·") && i.snippet.ends_with("no test yet")), format!("{:?}", hyps.iter().map(|i| (&i.title, &i.snippet)).collect::<Vec<_>>()));
+    let (np, nr) = kb_counts(&d, &pid);
+    t.check("C-E12: the grounding bar's numbers are the project's pages and records", np == docs.len() + kb_items(&d, &pid, 1, today).len() && nr == recs.len(), format!("{np} {nr}"));
+    t.check("C-E12: every card opens something real", docs.iter().all(|i| matches!(&i.target, KbTarget::Page(x) if d.page(x).is_some())) && recs.iter().all(|i| matches!(&i.target, KbTarget::Record(x) if d.record(x).is_some())), "");
+    {
+        let mut reg = crate::store::Registry::load();
+        let ws = reg.create("Phase 4 checks", [200, 160, 64]);
+        let mut s = crate::store::Store::open(ws.clone());
+        // a scratch workspace: taken off the list again so the later checks see the list as before
+        reg.workspaces.retain(|w| w.id != ws.id);
+        reg.save();
+        let out = crate::mcp::call(&mut s, "import_pages", &serde_json::json!({"pages": [{"title": "Parent page"}, {"title": "Child", "parent_title": "Parent page"}, {"title": "Stray", "parent_title": "No such page"}]})).unwrap_or_default();
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap_or_default();
+        let stray = v["imported_pages"].as_array().and_then(|a| a.iter().find(|x| x["title"] == "Stray")).cloned().unwrap_or_default();
+        let child_ok = s.data.pages.iter().find(|x| x.title == "Child").and_then(|x| x.parent.clone()).is_some();
+        t.check("C-E15: import_pages reports a parent it can't find for that page and files the rest", child_ok && stray["note"].as_str().map_or(false, |n| n.contains("\"No such page\" not found")) && v["pages_with_notes"] == 1, &out);
+    }
+
     // ---- Proposal editor (C-E11)
     let full = crate::seed::cafe_proposal();
     let thin = crate::resolve::journey::Proposal { name: full.name.clone(), outcome: full.outcome.clone(), ..Default::default() };

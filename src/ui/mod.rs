@@ -27,6 +27,7 @@ mod pages;
 pub mod overview;
 pub mod roadmap;
 pub mod frameworks;
+pub mod kb;
 pub mod proposal_editor;
 pub(crate) mod settings;
 pub mod tasks;
@@ -604,6 +605,26 @@ impl App {
                 app.temp.insert("rm_whole".into(), "1".into());
             }
             Some("by-theme") => app.resolve_ui.roadmap_by_theme = true,
+            // the Knowledge base: a tab, the Add sheet, a card's preview, the New page dialog
+            Some(o) if o.starts_with("kbtab:") => {
+                app.resolve_ui.knowledge_tab = o.split(':').nth(1).and_then(|n| n.parse().ok()).unwrap_or(0);
+                if let Some(k) = o.split(':').nth(2) {
+                    app.resolve_ui.kind_filter = crate::resolve::Kind::ALL.iter().copied().find(|x| x.plural() == k);
+                }
+            }
+            Some("kb-add") => {
+                app.temp.insert("kb_add".into(), "-10".into());
+            }
+            Some("new-page") => {
+                app.temp.insert("new_page_dialog".into(), String::new());
+            }
+            Some(o) if o.starts_with("kb-preview:") => {
+                let t = &o["kb-preview:".len()..];
+                if let Some(pg) = app.store.data.pages.iter().find(|x| x.title == t) {
+                    app.temp.insert("kb_preview".into(), format!("page:{}", pg.id));
+                    app.temp.insert("kb_preview_t".into(), "-10".into());
+                }
+            }
             // node:<title start>: that hypothesis or experiment open in Frameworks (screenshots)
             Some(o) if o.starts_with("node:") => {
                 let pid = app.current_project.clone();
@@ -907,9 +928,14 @@ impl App {
     }
 
     pub fn page_from_builtin(&mut self, i: usize) {
+        self.page_from_builtin_in(i, None);
+    }
+
+    /// A page from a built-in template, under `parent` (a project's brief, from the Knowledge base).
+    pub fn page_from_builtin_in(&mut self, i: usize, parent: Option<Id>) -> Id {
         let t = &crate::templates::PAGE_TEMPLATES[i];
         let (_, blocks) = markdown_to_blocks(t.markdown);
-        let id = self.new_page(None);
+        let id = self.new_page(parent);
         if let Some(pg) = self.store.data.page_mut(&id) {
             pg.icon = t.icon.to_string();
             pg.blocks = blocks;
@@ -917,17 +943,23 @@ impl App {
                 pg.title = format!("{} ({})", t.name, today().format("%-d %b %Y"));
             }
         }
+        id
     }
 
     pub fn page_from_template(&mut self, tid: &str) {
-        let Some(tpl) = self.store.data.page(tid).cloned() else { return };
-        let id = self.new_page(None);
+        self.page_from_template_in(tid, None);
+    }
+
+    pub fn page_from_template_in(&mut self, tid: &str, parent: Option<Id>) -> Id {
+        let Some(tpl) = self.store.data.page(tid).cloned() else { return String::new() };
+        let id = self.new_page(parent);
         if let Some(pg) = self.store.data.page_mut(&id) {
             pg.icon = tpl.icon.clone();
             pg.title = tpl.title.trim_end_matches(" (template)").to_string();
             pg.blocks = tpl.blocks.iter().map(|b| Block { id: new_id(), ..b.clone() }).collect();
         }
         self.temp.remove("focus_title");
+        id
     }
 
     pub fn new_database(&mut self) -> Id {
@@ -1573,6 +1605,7 @@ impl eframe::App for App {
         if !full_screen {
             self.ask_sheet(ctx, &p);
             self.plan_sheet(ctx, &p);
+            self.kb_overlays(ctx, &p);
         }
         self.quick_window(ctx, &p);
         self.search_palette(ctx, &p);

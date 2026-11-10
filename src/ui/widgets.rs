@@ -1747,7 +1747,7 @@ pub fn error_center_as(ui: &mut Ui, p: &Pal, title: &str, body: &str, retry: &st
             ui.add(egui::Label::new(RichText::new(body).size(size::ROW).color(p.dim)).wrap());
             ui.add_space(space::S8);
             ui.horizontal(|ui| {
-                out.retry = button(ui, p, ButtonKind::Dark, "Try again", false, true).clicked();
+                out.retry = button(ui, p, ButtonKind::Dark, retry, false, true).clicked();
                 out.manual = button(ui, p, ButtonKind::Secondary, manual, false, true).clicked();
             });
         });
@@ -3020,6 +3020,157 @@ pub fn soft_note<R>(ui: &mut Ui, p: &Pal, add: impl FnOnce(&mut Ui) -> R) -> R {
         add(ui)
     })
     .inner
+}
+
+// ======================================================================================
+// Knowledge base components (Phase 4, Pack C "Knowledge"): tabs, the card library, the
+// grounding bar, the Add sheet's options, the preview panel and the New page dialog's tiles.
+// ======================================================================================
+
+/// A row of underlined tabs over a hairline. Returns the tab clicked.
+pub fn underline_tabs(ui: &mut Ui, p: &Pal, tabs: &[&str], selected: usize) -> Option<usize> {
+    let mut picked = None;
+    let w = ui.available_width();
+    let top = ui.cursor().min;
+    let h = space::S40 - 2.0;
+    ui.horizontal(|ui| {
+        ui.spacing_mut().item_spacing.x = space::S4;
+        for (i, t) in tabs.iter().enumerate() {
+            let sel = i == selected;
+            let g = ui.painter().layout_no_wrap(t.to_string(), if sel { fs(size::ROW + 0.5) } else { fp(size::ROW + 0.5) }, if sel { p.text } else { p.dim });
+            let (r, resp) = ui.allocate_exact_size(egui::vec2(g.size().x + space::S12 * 2.0, h), Sense::click());
+            let col = if sel || resp.hovered() { p.text } else { p.dim };
+            ui.painter().galley(egui::pos2(r.left() + space::S12, r.center().y - g.size().y / 2.0), g, col);
+            if sel {
+                ui.painter().rect_filled(Rect::from_min_max(egui::pos2(r.left(), r.bottom() - stroke::MARK), r.right_bottom()), 0.0, tok::AMBER);
+            }
+            if resp.on_hover_cursor(egui::CursorIcon::PointingHand).clicked() && !sel {
+                picked = Some(i);
+            }
+        }
+    });
+    ui.painter().hline(top.x..=top.x + w, top.y + h, Stroke::new(stroke::HAIR, p.line));
+    picked
+}
+
+/// "Find in this project": a white field with a magnifier.
+pub fn find_field(ui: &mut Ui, p: &Pal, id: egui::Id, text: &mut String, hint: &str, w: f32) -> Response {
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::FIELD_H), Sense::hover());
+    ui.painter().rect(rect, radius::FIELD, p.card, Stroke::new(stroke::HAIR, p.line));
+    paint_icon(ui.painter(), rect.left_center() + egui::vec2(space::S18, 0.0), Icon::Search, p.dim);
+    let inner = Rect::from_min_max(rect.min + egui::vec2(space::S30 + space::S4, 0.0), rect.max - egui::vec2(space::S10, 0.0));
+    let mut child = ui.new_child(egui::UiBuilder::new().max_rect(inner).layout(Layout::left_to_right(Align::Center)));
+    child.add(egui::TextEdit::singleline(text).id(id).frame(false).font(fp(size::ROW_SMALL + 0.5)).text_color(p.text).hint_text(RichText::new(hint).color(p.faint)).desired_width(inner.width()))
+}
+
+/// What a library card shows.
+pub struct LibCard<'a> {
+    pub kind: &'a str,
+    pub meta: &'a str,
+    pub title: &'a str,
+    pub snippet: &'a str,
+    /// Just added: an amber outline (it lands first for 2 s, C-E13).
+    pub fresh: bool,
+    pub selected: bool,
+}
+
+/// A card in the Knowledge library: the kind tag and a note on the right, the title (600 15)
+/// and two lines of what it says. Fixed height, so the grid stays even.
+pub fn library_card(ui: &mut Ui, p: &Pal, id: egui::Id, w: f32, c: &LibCard) -> Response {
+    let h = space::LIB_CARD_H;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let edge = if c.fresh || c.selected { Stroke::new(stroke::HAIR * if c.fresh { 2.0 } else { 1.0 }, tok::AMBER) } else if resp.hovered() { Stroke::new(stroke::HAIR, p.faint) } else { Stroke::new(stroke::HAIR, p.line) };
+    ui.painter().rect(rect, radius::CARD, p.card, edge);
+    let pad = egui::vec2(space::S16, space::S14);
+    let (fg, bg) = kind_pair(c.kind);
+    let kg = ui.painter().layout_no_wrap(c.kind.to_string(), fs(size::TAG), fg);
+    let kr = Rect::from_min_size(rect.min + pad, kg.size() + egui::vec2(14.0, 6.0));
+    ui.painter().rect_filled(kr, radius::GATE, bg);
+    ui.painter().galley(kr.min + egui::vec2(7.0, 3.0), kg, fg);
+    ui.painter().text(egui::pos2(rect.right() - pad.x, kr.center().y), Align2::RIGHT_CENTER, c.meta, fp(size::SMALL), p.dim);
+    let tw = w - pad.x * 2.0;
+    let title = fit_text(ui.painter(), c.title, fs(size::ROW + 1.0), tw);
+    ui.painter().text(egui::pos2(rect.left() + pad.x, kr.bottom() + space::S10), Align2::LEFT_TOP, title, fs(size::ROW + 1.0), p.text);
+    let mut job = egui::text::LayoutJob::simple(c.snippet.to_string(), fp(size::ROW_SMALL), p.dim, tw);
+    job.wrap.max_rows = 2;
+    let g = ui.painter().layout_job(job);
+    ui.painter().galley(egui::pos2(rect.left() + pad.x, kr.bottom() + space::S10 + size::ROW * 1.7), g, p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The dashed tile at the end of the library ("+ New page, or drop files here").
+pub fn library_add_tile(ui: &mut Ui, p: &Pal, w: f32, text: &str) -> Response {
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, space::LIB_CARD_H), Sense::click());
+    if resp.hovered() {
+        ui.painter().rect_filled(rect, radius::CARD, p.surface_raised);
+    }
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.center(), Align2::CENTER_CENTER, text, fs(size::ROW_SMALL + 0.5), p.text);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// The grounding bar under the library: what Resolve searches when it answers, and a link.
+/// Returns the link's click.
+pub fn grounding_bar(ui: &mut Ui, p: &Pal, text: &str, link_text: &str) -> bool {
+    let mut clicked = false;
+    egui::Frame::none().fill(p.surface_raised).stroke(Stroke::new(stroke::HAIR, p.line)).rounding(Rounding::same(radius::BUTTON)).inner_margin(egui::Margin::symmetric(space::S14, space::S8 + 1.0)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("✦").size(size::ROW_SMALL).color(tok::AMBER));
+            ui.add_space(space::S4);
+            ui.label(RichText::new(text).size(size::ROW_SMALL).color(p.text));
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                clicked = link(ui, p, link_text).clicked();
+            });
+        });
+    });
+    clicked
+}
+
+/// One option in the Add sheet: an icon tile, the title (600 14.5) and a line under it.
+pub fn add_option(ui: &mut Ui, p: &Pal, glyph: &str, title: &str, sub: &str) -> Response {
+    let w = ui.available_width();
+    let h = space::S40 + space::S16 + 2.0;
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    ui.painter().rect(rect, radius::BUTTON, if resp.hovered() { p.surface_raised } else { p.card }, Stroke::new(stroke::HAIR, if resp.hovered() { tok::AMBER } else { p.line }));
+    let tile = Rect::from_center_size(egui::pos2(rect.left() + space::S14 + space::S16 + 1.0, rect.center().y), egui::vec2(space::S32 + 2.0, space::S32 + 2.0));
+    ui.painter().rect_filled(tile, radius::SMALL_BUTTON, if p.dark { p.callout } else { tok::AMBER_LIGHT });
+    ui.painter().text(tile.center(), Align2::CENTER_CENTER, glyph, fs(size::ROW), p.orange);
+    let x = tile.right() + space::S12;
+    ui.painter().text(egui::pos2(x, rect.center().y - 1.0), Align2::LEFT_BOTTOM, title, fs(size::HERO_BODY), p.text);
+    ui.painter().text(egui::pos2(x, rect.center().y + 1.0), Align2::LEFT_TOP, sub, fp(size::ROW_SMALL), p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
+}
+
+/// A dashed note in a sheet ("Or drop .md, .txt, .docx or .pdf files anywhere on this window").
+pub fn dashed_note(ui: &mut Ui, p: &Pal, text: &str) {
+    let w = ui.available_width();
+    let (rect, _) = ui.allocate_exact_size(egui::vec2(w, space::S40 + space::S6), Sense::hover());
+    let r = rect.shrink(0.5);
+    let col = if p.dark { p.line } else { tok::DASHED_EDGE };
+    let pts = [r.left_top(), r.right_top(), r.right_bottom(), r.left_bottom(), r.left_top()];
+    for w2 in pts.windows(2) {
+        ui.painter().extend(Shape::dashed_line(&[w2[0], w2[1]], Stroke::new(stroke::HAIR, col), space::S6, space::S4));
+    }
+    ui.painter().text(rect.center(), Align2::CENTER_CENTER, text, fp(size::ROW_SMALL), p.dim);
+}
+
+/// A tile in the New page dialog: name (600 14) and what it's for; the picked one amber.
+pub fn template_tile(ui: &mut Ui, p: &Pal, w: f32, name: &str, about: &str, picked: bool) -> Response {
+    let tw = w - space::S14 * 2.0;
+    let g = ui.painter().layout(about.to_string(), fp(size::SMALL + 0.5), p.dim, tw);
+    let h = (space::S14 * 2.0 + size::ROW * 1.4 + g.size().y + space::S4).max(space::S40 * 2.0 - 2.0);
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::click());
+    let (fill, edge) = if picked { (if p.dark { p.callout } else { tok::AMBER_LIGHT }, tok::AMBER) } else if resp.hovered() { (p.surface_raised, p.faint) } else { (p.card, p.line) };
+    ui.painter().rect(rect, radius::BUTTON, fill, Stroke::new(stroke::HAIR, edge));
+    ui.painter().text(rect.min + egui::vec2(space::S14, space::S14), Align2::LEFT_TOP, name, fs(size::ROW), p.text);
+    ui.painter().galley(rect.min + egui::vec2(space::S14, space::S14 + size::ROW * 1.4 + space::S4), g, p.dim);
+    resp.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
 // ======================================================================================
