@@ -1,0 +1,475 @@
+{
+ "v": 3,
+ "createdOnFiles": {
+  "v": 1,
+  "at": "2026-11-10T04:54:32Z"
+ },
+ "title": "Resolve Careers",
+ "launch": {
+  "view": "canvas"
+ },
+ "pages": [],
+ "boards": {
+  "Intake01.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 01 \u00b7 Name",
+   "expand": "fill"
+  },
+  "Intake02a.dc.html": {
+   "x": 1360,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 02a \u00b7 Welcome",
+   "expand": "fill"
+  },
+  "Intake02b.dc.html": {
+   "x": 2720,
+   "y": 0,
+   "w": 1280,
+   "h": 860,
+   "title": "Intake 02b \u00b7 Bring it in",
+   "expand": "fill"
+  },
+  "Intake02c.dc.html": {
+   "x": 4080,
+   "y": 0,
+   "w": 1280,
+   "h": 900,
+   "title": "Intake 02c \u00b7 Pull-in panel",
+   "expand": "fill"
+  },
+  "Intake03.dc.html": {
+   "x": 5440,
+   "y": 0,
+   "w": 1280,
+   "h": 820,
+   "title": "Intake 03 \u00b7 Questions",
+   "expand": "fill"
+  },
+  "Intake04.dc.html": {
+   "x": 6800,
+   "y": 0,
+   "w": 1280,
+   "h": 960,
+   "title": "Intake 04 \u00b7 Confirm",
+   "expand": "fill"
+  },
+  "Intake04b.dc.html": {
+   "x": 8160,
+   "y": 0,
+   "w": 1280,
+   "h": 960,
+   "title": "Intake 04b \u00b7 Edit mode",
+   "expand": "fill"
+  },
+  "Intake05.dc.html": {
+   "x": 9520,
+   "y": 0,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 05 \u00b7 No clear outcome",
+   "expand": "fill"
+  },
+  "Intake06.dc.html": {
+   "x": 0,
+   "y": 1320,
+   "w": 1280,
+   "h": 820,
+   "title": "Intake 06 \u00b7 Next move",
+   "expand": "fill"
+  },
+  "Intake07.dc.html": {
+   "x": 1360,
+   "y": 1320,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 07 \u00b7 Gates",
+   "expand": "fill"
+  },
+  "Intake08.dc.html": {
+   "x": 2720,
+   "y": 1320,
+   "w": 1280,
+   "h": 820,
+   "title": "Intake 08 \u00b7 First week",
+   "expand": "fill"
+  },
+  "Intake09.dc.html": {
+   "x": 4080,
+   "y": 1320,
+   "w": 1280,
+   "h": 860,
+   "title": "Intake 09 \u00b7 Your kit",
+   "expand": "fill"
+  },
+  "ProposalEditor.dc.html": {
+   "x": 5440,
+   "y": 1320,
+   "w": 1280,
+   "h": 860,
+   "title": "Proposal editor \u00b7 CV templates",
+   "expand": "fill"
+  },
+  "Intake10.dc.html": {
+   "x": 6800,
+   "y": 1320,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 10 \u00b7 Bridge",
+   "expand": "fill"
+  },
+  "Intake11.dc.html": {
+   "x": 8160,
+   "y": 1320,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 11 \u00b7 Reveal",
+   "expand": "fill"
+  },
+  "Intake12.dc.html": {
+   "x": 9520,
+   "y": 1320,
+   "w": 1280,
+   "h": 800,
+   "title": "Intake 12 \u00b7 AI limit",
+   "expand": "fill"
+  },
+  "Main.dc.html": {
+   "x": 0,
+   "y": 2540,
+   "w": 1280,
+   "h": 1040,
+   "title": "Home",
+   "expand": "fill"
+  },
+  "Switcher.dc.html": {
+   "x": 1360,
+   "y": 2540,
+   "w": 1280,
+   "h": 1040,
+   "title": "Workspace switcher \u00b7 mode labels",
+   "expand": "fill"
+  },
+  "Projects.dc.html": {
+   "x": 2720,
+   "y": 2540,
+   "w": 1280,
+   "h": 800,
+   "title": "Projects",
+   "expand": "fill"
+  },
+  "Pipeline.dc.html": {
+   "x": 4080,
+   "y": 2540,
+   "w": 1280,
+   "h": 860,
+   "title": "Pipeline \u00b7 Board",
+   "expand": "fill"
+  },
+  "PipelineList.dc.html": {
+   "x": 5440,
+   "y": 2540,
+   "w": 1280,
+   "h": 860,
+   "title": "Pipeline \u00b7 List",
+   "expand": "fill"
+  },
+  "PipelineClosed.dc.html": {
+   "x": 6800,
+   "y": 2540,
+   "w": 1280,
+   "h": 800,
+   "title": "Pipeline \u00b7 Closed",
+   "expand": "fill"
+  },
+  "Record.dc.html": {
+   "x": 8160,
+   "y": 2540,
+   "w": 1280,
+   "h": 1160,
+   "title": "Pipeline \u00b7 Record",
+   "expand": "fill"
+  },
+  "MyCV.dc.html": {
+   "x": 9520,
+   "y": 2540,
+   "w": 1280,
+   "h": 1360,
+   "title": "My CV \u00b7 Overview",
+   "expand": "fill"
+  },
+  "Stats.dc.html": {
+   "x": 10880,
+   "y": 2540,
+   "w": 1280,
+   "h": 1080,
+   "title": "Stats",
+   "expand": "fill"
+  },
+  "Tasks.dc.html": {
+   "x": 0,
+   "y": 4260,
+   "w": 1280,
+   "h": 1080,
+   "title": "Tasks \u00b7 Add from a template",
+   "expand": "fill"
+  },
+  "Calendar.dc.html": {
+   "x": 1360,
+   "y": 4260,
+   "w": 1280,
+   "h": 860,
+   "title": "Calendar \u00b7 Event from Gmail",
+   "expand": "fill"
+  },
+  "RecorderPrep.dc.html": {
+   "x": 2720,
+   "y": 4260,
+   "w": 1280,
+   "h": 900,
+   "title": "Interview recorder \u00b7 Prep",
+   "expand": "fill"
+  },
+  "RecorderRecording.dc.html": {
+   "x": 4080,
+   "y": 4260,
+   "w": 1280,
+   "h": 860,
+   "title": "Interview recorder \u00b7 Recording",
+   "expand": "fill"
+  },
+  "Recorder.dc.html": {
+   "x": 5440,
+   "y": 4260,
+   "w": 1280,
+   "h": 1000,
+   "title": "Interview recorder \u00b7 Analysis",
+   "expand": "fill"
+  },
+  "Frameworks.dc.html": {
+   "x": 6800,
+   "y": 4260,
+   "w": 1280,
+   "h": 900,
+   "title": "Frameworks \u00b7 Gates",
+   "expand": "fill"
+  },
+  "Knowledge.dc.html": {
+   "x": 8160,
+   "y": 4260,
+   "w": 1280,
+   "h": 860,
+   "title": "Knowledge base \u00b7 Evidence bank",
+   "expand": "fill"
+  },
+  "Team.dc.html": {
+   "x": 9520,
+   "y": 4260,
+   "w": 1280,
+   "h": 880,
+   "title": "AI Team",
+   "expand": "fill"
+  },
+  "SettingsAI.dc.html": {
+   "x": 0,
+   "y": 5700,
+   "w": 1280,
+   "h": 800,
+   "title": "Settings \u00b7 AI and MCP",
+   "expand": "fill"
+  },
+  "SettingsWorkspaces.dc.html": {
+   "x": 1360,
+   "y": 5700,
+   "w": 1280,
+   "h": 800,
+   "title": "Settings \u00b7 Workspaces",
+   "expand": "fill"
+  },
+  "Help.dc.html": {
+   "x": 2720,
+   "y": 5700,
+   "w": 1280,
+   "h": 820,
+   "title": "Help \u00b7 Careers guide",
+   "expand": "fill"
+  },
+  "StateHomeEmpty.dc.html": {
+   "x": 0,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Home \u00b7 Empty",
+   "expand": "fill"
+  },
+  "StateHomeLoading.dc.html": {
+   "x": 1360,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Home \u00b7 Loading",
+   "expand": "fill"
+  },
+  "StateHomeError.dc.html": {
+   "x": 2720,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Home \u00b7 Error",
+   "expand": "fill"
+  },
+  "StatePipelineEmpty.dc.html": {
+   "x": 4080,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Pipeline \u00b7 Empty",
+   "expand": "fill"
+  },
+  "StateCVEmpty.dc.html": {
+   "x": 5440,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "My CV \u00b7 Empty",
+   "expand": "fill"
+  },
+  "StateStatsEmpty.dc.html": {
+   "x": 6800,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Stats \u00b7 Empty",
+   "expand": "fill"
+  },
+  "StateStatsError.dc.html": {
+   "x": 8160,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Stats \u00b7 Error in one card",
+   "expand": "fill"
+  },
+  "StateRecorderEmpty.dc.html": {
+   "x": 9520,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Interview recorder \u00b7 Empty",
+   "expand": "fill"
+  },
+  "StateRecorderLoading.dc.html": {
+   "x": 10880,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Interview recorder \u00b7 Loading",
+   "expand": "fill"
+  },
+  "StateRecorderError.dc.html": {
+   "x": 12240,
+   "y": 6880,
+   "w": 1280,
+   "h": 800,
+   "title": "Interview recorder \u00b7 Error",
+   "expand": "fill"
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Intake01.dc.html",
+  "Intake02a.dc.html",
+  "Intake02b.dc.html",
+  "Intake02c.dc.html",
+  "Intake03.dc.html",
+  "Intake04.dc.html",
+  "Intake04b.dc.html",
+  "Intake05.dc.html",
+  "Intake06.dc.html",
+  "Intake07.dc.html",
+  "Intake08.dc.html",
+  "Intake09.dc.html",
+  "ProposalEditor.dc.html",
+  "Intake10.dc.html",
+  "Intake11.dc.html",
+  "Intake12.dc.html",
+  "Switcher.dc.html",
+  "Projects.dc.html",
+  "Pipeline.dc.html",
+  "PipelineList.dc.html",
+  "PipelineClosed.dc.html",
+  "Record.dc.html",
+  "MyCV.dc.html",
+  "Stats.dc.html",
+  "Tasks.dc.html",
+  "Calendar.dc.html",
+  "RecorderPrep.dc.html",
+  "RecorderRecording.dc.html",
+  "Recorder.dc.html",
+  "Frameworks.dc.html",
+  "Knowledge.dc.html",
+  "Team.dc.html",
+  "SettingsAI.dc.html",
+  "SettingsWorkspaces.dc.html",
+  "Help.dc.html",
+  "StateHomeEmpty.dc.html",
+  "StateHomeLoading.dc.html",
+  "StateHomeError.dc.html",
+  "StatePipelineEmpty.dc.html",
+  "StateCVEmpty.dc.html",
+  "StateStatsEmpty.dc.html",
+  "StateStatsError.dc.html",
+  "StateRecorderEmpty.dc.html",
+  "StateRecorderLoading.dc.html",
+  "StateRecorderError.dc.html"
+ ],
+ "notes": {
+  "intake": {
+   "x": 0,
+   "y": -240,
+   "text": "Entry and Careers intake: 01 to 05",
+   "kind": "title1",
+   "maxW": 10800
+  },
+  "intake2": {
+   "x": 0,
+   "y": 1080,
+   "text": "Careers intake: 06 to 12",
+   "kind": "title1",
+   "maxW": 10800
+  },
+  "daily": {
+   "x": 0,
+   "y": 2300,
+   "text": "Daily screens and the Pipeline",
+   "kind": "title1",
+   "maxW": 12160
+  },
+  "tools": {
+   "x": 0,
+   "y": 4020,
+   "text": "Tasks, Calendar, Interview recorder, Frameworks, Knowledge base, AI Team",
+   "kind": "title1",
+   "maxW": 10800
+  },
+  "settings": {
+   "x": 0,
+   "y": 5460,
+   "text": "Settings and Help",
+   "kind": "title1",
+   "maxW": 4000
+  },
+  "states": {
+   "x": 0,
+   "y": 6640,
+   "text": "Empty, loading and error states",
+   "kind": "title1",
+   "maxW": 13520
+  }
+ },
+ "designSystems": []
+}
