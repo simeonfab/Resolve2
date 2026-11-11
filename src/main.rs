@@ -40,6 +40,7 @@ mod selftest_p3;
 mod selftest_p4;
 mod selftest_p5;
 mod selftest_modes;
+mod selftest_careers;
 mod server;
 mod store;
 mod templates;
@@ -54,6 +55,17 @@ fn arg_value(args: &[String], flag: &str) -> Option<String> {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let testlab = args.iter().any(|a| a == "--testlab");
+    // a preview build: its own data folder, and never the real one
+    if store::PREVIEW.is_some() {
+        match arg_value(&args, "--data-dir") {
+            Some(d) if store::is_real_root(std::path::Path::new(&d)) => {
+                eprintln!("Refused: Resolve 2 Preview never opens the real data folder ({d}).");
+                std::process::exit(2);
+            }
+            Some(_) => {}
+            None => store::set_root(store::preview_root()),
+        }
+    }
     if let Some(d) = arg_value(&args, "--data-dir") {
         let p = PathBuf::from(d);
         let p = if p.is_absolute() { p } else { std::env::current_dir().map(|c| c.join(&p)).unwrap_or(p) };
@@ -62,13 +74,57 @@ fn main() {
         // Test Intake never touches the real data folder
         store::set_root(resolve::testlab::default_root());
     }
+    if store::PREVIEW.is_some() && store::is_real_root(&store::root()) {
+        eprintln!("Refused: Resolve 2 Preview never opens the real data folder ({}).", store::root().display());
+        std::process::exit(2);
+    }
+    // resolve2 --seed-sample: add the café sample workspace to this data folder (the preview
+    // script uses it); refused in the real data folder
+    if args.iter().any(|a| a == "--seed-sample") {
+        if store::is_real_root(&store::root()) {
+            eprintln!("Refused: the sample goes in a preview or sandbox folder, never the real one.");
+            std::process::exit(2);
+        }
+        let mut reg = store::Registry::load();
+        let meta = match reg.find("Café sample").cloned() {
+            Some(m) => m,
+            None => reg.create("Café sample", [200, 160, 64]),
+        };
+        let mut st = store::Store::open(meta);
+        let mut d = model::WorkspaceData::default();
+        seed::seed_canvas(&mut d);
+        st.data = d;
+        match st.save() {
+            Ok(_) => println!("café sample workspace ready in {}", store::root().display()),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }
+        return;
+    }
     // standing rule: screenshots run only in a sandbox folder, never the real data folder. This
     // runs before anything opens a workspace. With no --data-dir, a screenshot gets a fresh sandbox
     // folder of its own under %TEMP% (Craft Anything's build check runs it that way); pointed at
     // the real folder, it's refused.
     if args.iter().any(|a| a == "--screenshot") {
+        // a preview's screenshot needs its own sandbox: its data folder holds a copy of yours
+        if store::PREVIEW.is_some() && arg_value(&args, "--data-dir").is_none() {
+            eprintln!("Refused: a preview screenshot needs --data-dir with a sandbox folder.");
+            std::process::exit(2);
+        }
         if arg_value(&args, "--data-dir").is_none() && !testlab {
             store::set_root(std::env::temp_dir().join(format!("resolve2-shot-{}", std::process::id())).join("data"));
+            // the sandbox holds the café sample workspace, set up and past Connect your AI, so
+            // the build check's picture is a workspace, not the first-run screen
+            let mut reg = store::Registry::load();
+            reg.settings.ai_setup_done = true;
+            reg.save();
+            let mut st = store::Store::open(reg.workspaces[0].clone());
+            let mut d = model::WorkspaceData::default();
+            seed::seed_canvas(&mut d);
+            st.data = d;
+            let _ = st.save();
         }
         if store::is_real_root(&store::root()) {
             eprintln!("Refused: a screenshot runs only in a sandbox folder, never the real data folder ({}).", store::root().display());
@@ -230,17 +286,28 @@ fn main() {
         let max_q = arg_value(&args, "--max-q").and_then(|n| n.parse().ok()).unwrap_or(9);
         let t0 = std::time::Instant::now();
         let mut run = resolve::testlab::headless_run(&scn, &provider, max_q, false, &mut |s| println!("{s}"));
-        let reg = store::Registry::load();
-        let meta = reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone());
-        let mut st = store::Store::open(meta);
-        let rid = run.id.clone();
+        let mut reg = store::Registry::load();
         let adopt = args.iter().any(|a| a == "--adopt");
-        if adopt && run.proposal.is_some() {
+        // a Careers run adopts into a new workspace in Careers mode, as the app does
+        let careers_new = adopt && run.mode == model::Mode::Careers && run.career.as_ref().map_or(false, |c| c.kit.is_some());
+        let search = run.career.as_ref().and_then(|c| c.kit.as_ref()).map(|k| k.search_name.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "Job search".into());
+        let meta = if careers_new { reg.create(&search, [94, 125, 79]) } else { reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone()) };
+        let mut st = store::Store::open(meta);
+        if careers_new {
+            st.data.mode = model::Mode::Careers;
+        }
+        let rid = run.id.clone();
+        if adopt && (run.proposal.is_some() || careers_new) {
             run.stage = "bridge".into();
         }
         st.data.intakes.push(run);
         if adopt {
             match resolve::journey::adopt_all(&mut st.data, &rid) {
+                Ok(pid) if careers_new => {
+                    let (g, t, p) = resolve::careers::reveal_counts(&st.data, &pid);
+                    let tasks = st.data.tasks.iter().filter(|x| x.project_id.as_deref() == Some(pid.as_str())).count();
+                    println!("adopted → workspace \"{}\" (mode {}), search \"{}\": {g} gates, {t} templates, {p} proof points, {tasks} tasks", st.meta.name, st.data.mode.label(), st.data.project(&pid).map(|x| x.name.clone()).unwrap_or_default());
+                }
                 Ok(pid) => println!("adopted → project {pid}"),
                 Err(e) => println!("adopt failed: {e}"),
             }
@@ -414,7 +481,11 @@ fn main() {
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             // the version in the title (CHANGELOG.md has what each one changed)
-            .with_title(if testlab { format!("Resolve 2 {}: Test Intake (sandbox)", env!("CARGO_PKG_VERSION")) } else { format!("Resolve 2 {}", env!("CARGO_PKG_VERSION")) })
+            .with_title(match (testlab, store::PREVIEW) {
+                (true, _) => format!("Resolve 2 {}: Test Intake (sandbox)", env!("CARGO_PKG_VERSION")),
+                (false, Some(b)) => format!("Resolve 2 Preview: {b}, {}", env!("CARGO_PKG_VERSION")),
+                _ => format!("Resolve 2 {}", env!("CARGO_PKG_VERSION")),
+            })
             // --size WxH (screenshots at a given window width)
             .with_inner_size(arg_value(&args, "--size").and_then(|s| s.split_once('x').and_then(|(w, h)| Some([w.parse::<f32>().ok()?, h.parse::<f32>().ok()?]))).unwrap_or([1600.0, 900.0]))
             .with_min_inner_size([960.0, 600.0]),

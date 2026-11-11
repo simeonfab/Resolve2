@@ -26,3 +26,6 @@ ai-usage.jsonl
 secrets*
 /target-rel/
 /dist/
+
+# your own test files (a LinkedIn export is personal data): never committed
+/docs/test-files/

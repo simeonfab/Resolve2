@@ -9,6 +9,7 @@ mod cockpit;
 pub mod connect;
 mod import_ui;
 mod intake;
+mod intake_careers;
 mod intake_ending;
 mod intake_review;
 mod intake_steps;
@@ -602,6 +603,18 @@ impl App {
                         app.intake_shot_state(&id, opts.open.as_deref());
                     }
                 }
+                // --view careers-<screen>[-<n>]: the Careers intake on that screen with the Careers
+                // canvases' sample, in the --state asked for (screenshots; in memory only)
+                Some(v) if v.starts_with("careers-") && app.shot.is_some() => {
+                    let rest = &v["careers-".len()..];
+                    let (stage, step) = match rest.rsplit_once('-') {
+                        Some((s, n)) if n.parse::<u8>().is_ok() => (s.to_string(), n.parse::<u8>().ok()),
+                        _ => (rest.to_string(), None),
+                    };
+                    let id = crate::seed::careers_sample(&mut app.store.data);
+                    app.careers_shot(&id, &stage, step, opts.open.as_deref());
+                    app.view = View::Intake(id);
+                }
                 _ => {}
             }
         }
@@ -859,6 +872,9 @@ impl App {
 
     /// Sync with the always-on hub every minute (or now, when `force`), off the UI thread.
     pub fn hub_tick(&mut self, force: bool) {
+        if crate::store::PREVIEW.is_some() {
+            return;
+        }
         if let Some(rx) = &self.hub_rx {
             match rx.try_recv() {
                 Ok(Ok(merged)) => {
@@ -893,7 +909,8 @@ impl App {
     }
 
     pub fn ensure_server(&mut self) {
-        let want = self.store.settings.server_enabled;
+        // a preview runs no server (it would share the real app's port and MCP name)
+        let want = self.store.settings.server_enabled && crate::store::PREVIEW.is_none();
         let port = self.store.settings.server_port;
         let matches = self.server.as_ref().map_or(false, |s| s.port == port && s.workspace_id == self.store.meta.id);
         if want && !matches {
@@ -1795,6 +1812,196 @@ impl App {
     /// Screenshots of the intake's states (`--view intake-<step> --open …`), on the sample in
     /// memory: wait (ST1), wait:<seconds> (ST3), handoff (ST2), error (ST4), resume (ST5),
     /// edit (04b), pull (02c), template (02b), limit (12: the real budget stop runs).
+    /// A Careers intake screen in one of its four states, for screenshots (in memory only).
+    fn careers_shot(&mut self, id: &str, stage: &str, step: Option<u8>, open: Option<&str>) {
+        use crate::resolve::{careers, journey};
+        let st = self.view_state;
+        let (empty, loading, error) = (st == ViewState::Empty, st == ViewState::Loading, st == ViewState::Error);
+        let id = id.to_string();
+        let mut job: Option<&'static str> = None;
+        let mut bg_cv = false;
+        let mut show_import = false;
+        let mut temp: Vec<(String, String)> = vec![];
+        {
+            let Some(i) = self.store.data.intakes.iter_mut().find(|i| i.id == id) else { return };
+            let c = i.career.get_or_insert_with(Default::default);
+            match stage {
+                "name" => {
+                    i.stage = "name".into();
+                    if empty {
+                        i.name.clear();
+                    }
+                }
+                "welcome" => {
+                    i.stage = "welcome".into();
+                    if empty {
+                        // nothing chosen yet
+                        i.mode = Mode::Pm;
+                    }
+                }
+                "bring" | "pull" => {
+                    i.stage = "bring".into();
+                    i.qas.clear();
+                    i.heard.clear();
+                    if stage == "pull" {
+                        show_import = true;
+                        i.attachments.clear();
+                        i.input = if empty { String::new() } else { careers::pull_prompt().replace("I want:\n", "I want: Head of Product, identity or platform\n") };
+                    } else if empty {
+                        i.input.clear();
+                        i.attachments.clear();
+                    } else if error {
+                        // a PDF Resolve couldn't read: the message and the paste box
+                        i.attachments.truncate(1);
+                        i.attachments.push(crate::resolve::intake::Attachment { name: "Profile.pdf".into(), place: "cv".into(), how: "you".into(), unreadable: true, ..Default::default() });
+                    }
+                }
+                "questions" => {
+                    i.stage = "questions".into();
+                    if empty {
+                        i.qas.truncate(1);
+                        i.qas[0].answer.clear();
+                        i.qas[0].classified.clear();
+                        i.heard.clear();
+                        i.cursor = 0;
+                    } else if loading {
+                        journey::note_progress(&id, "sorted");
+                        journey::note_progress(&id, "asked");
+                        job = Some("next");
+                    } else if error {
+                        // ST2: the AI took over 15 s, so this question is from Resolve's own list
+                        let mut q = careers::offline_next(i).unwrap_or_default();
+                        q.why = format!("Fixed question set: covers \"{}\".", journey::target_label(&q.target));
+                        i.qas.push(q);
+                        i.cursor = i.qas.len() - 1;
+                        i.last_error = "The AI took longer than 15 s, so this question comes from Resolve's own list.".into();
+                    }
+                }
+                "confirm" | "edit" => {
+                    i.stage = "confirm".into();
+                    i.editing = stage == "edit";
+                    if empty {
+                        c.cards = Some(Default::default());
+                    } else if loading {
+                        c.cards = None;
+                        journey::note_progress(&id, "reading");
+                        job = Some("cards");
+                    } else if error {
+                        c.cards = None;
+                        i.last_error = "The AI's answer didn't come back in the right shape, even after one retry (The model didn't return JSON). Try again, or pick a stronger model.".into();
+                    }
+                }
+                "outcome" => {
+                    i.stage = "outcome".into();
+                    if let Some(x) = c.cards.as_mut() {
+                        x.broad = true;
+                    }
+                    if !empty {
+                        i.outcome_reply = if error { "Product, ops, or anything really".into() } else { "Head of Product at an identity or platform scale-up".into() };
+                    }
+                    if error {
+                        temp.push((format!("outcome_fail:{id}"), "That still covers several jobs. Name the one you'd most like to have.".into()));
+                    }
+                }
+                "proposal" | "editor" => {
+                    i.stage = "proposal".into();
+                    i.ending = step.unwrap_or(if stage == "editor" { 3 } else { 0 });
+                    i.theme_ix = if i.ending == 1 { 3 } else { 0 };
+                    i.editor = stage == "editor";
+                    if stage == "editor" {
+                        c.page = open.and_then(|o| o.strip_prefix("editor:")).unwrap_or("CV templates").to_string();
+                    }
+                    if loading && stage == "editor" {
+                        c.page = "CV templates".into();
+                        bg_cv = true;
+                    } else if error && stage == "editor" {
+                        c.page = "CV templates".into();
+                        temp.push((format!("cv_error:{id}"), "The AI's answer didn't come back in the right shape, even after one retry. Try again, or paste your CV here.".into()));
+                    } else if loading {
+                        c.kit = None;
+                        c.kit_from.clear();
+                        journey::note_progress(&id, "first-part");
+                        journey::note_progress(&id, "second-part");
+                        job = Some("kit");
+                    } else if error {
+                        c.kit = None;
+                        c.kit_from.clear();
+                        i.last_error = "The AI's answer didn't come back in the right shape, even after one retry (The model didn't return JSON). Try again, or pick a stronger model.".into();
+                    } else if empty {
+                        if let Some(k) = c.kit.as_mut() {
+                            match (stage, i.ending) {
+                                ("proposal", 0) => {
+                                    k.do_first.clear();
+                                    k.why.clear();
+                                }
+                                ("proposal", 1) => k.gates.clear(),
+                                _ => {
+                                    // the kit made without AI: their own words, little else
+                                    k.templates = vec![careers::CvTemplate { name: "General".into(), suits: "the roles you're applying for".into(), headline: String::new(), default: true }];
+                                    k.evidence.clear();
+                                    k.linkedin = vec![careers::LinkedinFix { area: "Headline".into(), fix: String::new() }];
+                                    k.letter.clear();
+                                    k.offline = true;
+                                }
+                            }
+                        }
+                    }
+                }
+                "bridge" => i.stage = "bridge".into(),
+                "limit" => {
+                    i.stage = "confirm".into();
+                    c.cards = None;
+                    i.limit_at = "understanding".into();
+                    i.limit_done = vec!["reading".into(), "understood".into()];
+                    i.last_error = "Usage limit reached for now. Try again later.".into();
+                }
+                _ => {}
+            }
+        }
+        if stage == "reveal" {
+            let _ = crate::resolve::journey::adopt_all(&mut self.store.data, &id);
+        }
+        for (k, v) in temp {
+            self.temp.insert(k, v);
+        }
+        self.resolve_ui.show_import = show_import;
+        let now = self.now;
+        match job {
+            Some("next") => {
+                let i2 = id.clone();
+                self.spawn_job_kind("Thinking about what to ask next…", &id, "next", move || {
+                    std::thread::sleep(std::time::Duration::from_secs(600));
+                    resolve::JobOut::Answer(i2, crate::resolve::journey::AnswerOut::default())
+                });
+                self.resolve_ui.busy_since = now - 4.0;
+            }
+            Some("cards") => {
+                let i2 = id.clone();
+                self.spawn_job("Reading your answers and your files…", move || {
+                    std::thread::sleep(std::time::Duration::from_secs(600));
+                    resolve::JobOut::CareerCards(i2, 0, Err(String::new()), vec![])
+                });
+                self.resolve_ui.busy_since = now - 6.0;
+            }
+            Some(_) => {
+                let i2 = id.clone();
+                self.spawn_job("Building your kit…", move || {
+                    std::thread::sleep(std::time::Duration::from_secs(600));
+                    resolve::JobOut::CareerKit(i2, String::new(), Err(String::new()), vec![])
+                });
+                self.resolve_ui.busy_since = now - 24.0;
+            }
+            None => {}
+        }
+        if bg_cv {
+            let i2 = id.clone();
+            self.spawn_bg("rebuilding the CV", move || {
+                std::thread::sleep(std::time::Duration::from_secs(600));
+                resolve::JobOut::CareerCv(i2, Err(String::new()), vec![])
+            });
+        }
+    }
+
     fn intake_shot_state(&mut self, id: &str, open: Option<&str>) {
         use crate::resolve::journey;
         let Some(open) = open else { return };

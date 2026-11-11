@@ -120,7 +120,8 @@ impl App {
                 "confirm" | "outcome" => 3,
                 _ => 4,
             };
-            let whole = stage == "proposal" && it.ending >= 3 && !it.editor && it.limit_at.is_empty();
+            let careers = it.mode == Mode::Careers;
+            let whole = !careers && stage == "proposal" && it.ending >= 3 && !it.editor && it.limit_at.is_empty();
             let narrow = stage == "questions" || whole;
             let pct = match stage.as_str() {
                 "name" => 0.04,
@@ -130,7 +131,7 @@ impl App {
                 "confirm" | "outcome" => 0.62,
                 _ => 0.70 + 0.07 * it.ending.min(3) as f32,
             };
-            let bar = intake_topbar(ui, pct, !front, true);
+            let bar = intake_topbar_labelled(ui, pct, !front, true, if careers { "Careers" } else { "" });
             exit |= bar.exit;
             restart |= bar.restart;
             let body = ui.available_rect_before_wrap();
@@ -166,15 +167,23 @@ impl App {
                                 ui.set_max_width(col);
                                 // get the next screen ready while the person reads or types
                                 if !busy {
-                                    self.ij_precompute(&it);
+                                    if careers {
+                                        self.ic_precompute(&it);
+                                    } else {
+                                        self.ij_precompute(&it);
+                                    }
                                 }
-                                match stage.as_str() {
-                                    "welcome" => self.ij_welcome(ui, p, &mut it),
-                                    "bring" => self.ij_bring(ui, p, &mut it),
-                                    "questions" => self.ij_question(ui, p, &mut it),
-                                    "confirm" => self.ij_confirm(ui, p, &mut it),
-                                    "outcome" => self.ij_outcome(ui, p, &mut it),
-                                    _ => self.ij_proposal(ui, p, &mut it),
+                                match (stage.as_str(), careers) {
+                                    ("welcome", _) => self.ij_welcome(ui, p, &mut it),
+                                    ("bring", false) => self.ij_bring(ui, p, &mut it),
+                                    ("bring", true) => self.ic_bring(ui, p, &mut it),
+                                    ("questions", _) => self.ij_question(ui, p, &mut it),
+                                    ("confirm", false) => self.ij_confirm(ui, p, &mut it),
+                                    ("confirm", true) => self.ic_confirm(ui, p, &mut it),
+                                    ("outcome", false) => self.ij_outcome(ui, p, &mut it),
+                                    ("outcome", true) => self.ic_outcome(ui, p, &mut it),
+                                    (_, false) => self.ij_proposal(ui, p, &mut it),
+                                    (_, true) => self.ic_proposal(ui, p, &mut it),
                                 }
                             });
                             if stage == "questions" {
@@ -200,7 +209,8 @@ impl App {
                         let focus_qa = self.resolve_ui.focus_qa.clone();
                         self.intake_ghosting = true;
                         let gs = g.stage.clone();
-                        let gwhole = gs == "proposal" && g.ending >= 3 && !g.editor && g.limit_at.is_empty();
+                        let gc_mode = g.mode == Mode::Careers;
+                        let gwhole = !gc_mode && gs == "proposal" && g.ending >= 3 && !g.editor && g.limit_at.is_empty();
                         let (gcol, gleft, gheard) = pane_layout(&gs, gwhole, pane.width(), wide);
                         let off = egui::vec2(-(space::S24) * gdir * fo.t, 0.0);
                         let mut gc = ui.new_child(egui::UiBuilder::new().max_rect(pane.translate(off)).layout(Layout::top_down(Align::Min)));
@@ -212,13 +222,17 @@ impl App {
                                 ui.vertical(|ui| {
                                     ui.set_width(gcol);
                                     ui.set_max_width(gcol);
-                                    match gs.as_str() {
-                                        "welcome" => self.ij_welcome(ui, p, &mut g),
-                                        "bring" => self.ij_bring(ui, p, &mut g),
-                                        "questions" => self.ij_question(ui, p, &mut g),
-                                        "confirm" => self.ij_confirm(ui, p, &mut g),
-                                        "outcome" => self.ij_outcome(ui, p, &mut g),
-                                        "proposal" => self.ij_proposal(ui, p, &mut g),
+                                    match (gs.as_str(), gc_mode) {
+                                        ("welcome", _) => self.ij_welcome(ui, p, &mut g),
+                                        ("bring", false) => self.ij_bring(ui, p, &mut g),
+                                        ("bring", true) => self.ic_bring(ui, p, &mut g),
+                                        ("questions", _) => self.ij_question(ui, p, &mut g),
+                                        ("confirm", false) => self.ij_confirm(ui, p, &mut g),
+                                        ("confirm", true) => self.ic_confirm(ui, p, &mut g),
+                                        ("outcome", false) => self.ij_outcome(ui, p, &mut g),
+                                        ("outcome", true) => self.ic_outcome(ui, p, &mut g),
+                                        ("proposal", false) => self.ij_proposal(ui, p, &mut g),
+                                        ("proposal", true) => self.ic_proposal(ui, p, &mut g),
                                         _ => {}
                                     }
                                 });

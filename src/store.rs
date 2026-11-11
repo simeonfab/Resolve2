@@ -23,6 +23,16 @@ pub fn set_root(p: PathBuf) {
     let _ = ROOT.set(p);
 }
 
+/// A preview build's branch (set at build time by scripts/preview.ps1 through RESOLVE2_PREVIEW).
+/// A preview only ever uses its own data folder, `%APPDATA%\Resolve2-Preview`, never the real one,
+/// and runs no sync, hub or server (they could reach real data).
+pub const PREVIEW: Option<&str> = option_env!("RESOLVE2_PREVIEW");
+
+/// The preview's own data folder.
+pub fn preview_root() -> PathBuf {
+    std::env::var("APPDATA").map(PathBuf::from).unwrap_or_else(|_| std::env::temp_dir()).join("Resolve2-Preview")
+}
+
 /// The real data folder: where the app keeps your workspaces when nothing points it elsewhere.
 pub fn real_root() -> Option<PathBuf> {
     if let Ok(a) = std::env::var("APPDATA") {
@@ -379,6 +389,12 @@ impl Store {
             .ok()
             .and_then(|s| serde_json::from_str(&s).ok())
             .unwrap_or_default();
+        if PREVIEW.is_some() {
+            // a preview's copy of your data never syncs, never reaches the hub and runs no server
+            settings.sync_dir.clear();
+            settings.hub_url.clear();
+            settings.server_enabled = false;
+        }
         if settings.token.is_empty() {
             settings.token = new_token();
             let _ = write_json_atomic(&dir.join("settings.json"), &settings);
@@ -547,6 +563,9 @@ impl Store {
 
     /// Two-way sync through a shared folder (Syncthing, OneDrive, Google Drive, a USB stick...).
     pub fn sync(&mut self) -> Result<String, String> {
+        if PREVIEW.is_some() {
+            return Err("The preview doesn't sync".into());
+        }
         let Some(file) = self.sync_file() else { return Err("No sync folder chosen".into()) };
         let dir = file.parent().unwrap().to_path_buf();
         if !dir.exists() {

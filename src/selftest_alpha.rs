@@ -103,7 +103,7 @@ pub fn run(t: &mut T, base: &std::path::Path) {
 
     // ---- intake attachments feed the questions and the proposal like typed text
     let mut it = Intake { id: new_id(), input: "My bookkeeping idea.".into(), ..Default::default() };
-    it.attachments.push(Attachment { name: "Brief".into(), text: "Cafés pay £150 a month.".into(), place: "brief".into(), how: "guess".into(), why: String::new() });
+    it.attachments.push(Attachment { name: "Brief".into(), text: "Cafés pay £150 a month.".into(), place: "brief".into(), how: "guess".into(), why: String::new(), unreadable: false });
     let tr = it.transcript();
     t.check("an attached file is part of what the AI reads", tr.contains("Cafés pay £150") && tr.contains("evidence only where the file states it as a fact"), &tr);
 

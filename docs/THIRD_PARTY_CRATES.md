@@ -1,9 +1,6 @@
 ﻿# Third-party Rust crates (generated)
 
-Generated from `cargo metadata --locked` on 
-2026-11-05
-. Regenerate with `scripts/licenses.ps1` after changing dependencies.
-All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0); see docs/LICENSING.md for obligations.
+Generated from `cargo metadata --locked` on 2026-11-11.
 
 | Crate | Version | Licence |
 |---|---|---|
@@ -17,6 +14,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | accesskit_windows | 0.23.2 | MIT OR Apache-2.0 |
 | accesskit_winit | 0.22.4 | Apache-2.0 |
 | adler2 | 2.0.1 | 0BSD OR MIT OR Apache-2.0 |
+| adobe-cmap-parser | 0.4.1 | MIT |
 | ahash | 0.8.12 | MIT OR Apache-2.0 |
 | android_system_properties | 0.1.6 | MIT OR Apache-2.0 |
 | android-activity | 0.6.1 | MIT OR Apache-2.0 |
@@ -70,6 +68,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | clipboard-win | 5.4.3 | BSL-1.0 |
 | combine | 4.6.9 | MIT |
 | concurrent-queue | 2.5.0 | Apache-2.0 OR MIT |
+| core_detect | 1.0.0 | MIT/Apache-2.0 |
 | core-foundation | 0.9.4 | MIT OR Apache-2.0 |
 | core-foundation-sys | 0.8.7 | MIT OR Apache-2.0 |
 | core-graphics | 0.23.2 | MIT OR Apache-2.0 |
@@ -79,6 +78,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | crossbeam-utils | 0.8.23 | MIT OR Apache-2.0 |
 | crypto-common | 0.1.7 | MIT OR Apache-2.0 |
 | cursor-icon | 1.2.0 | MIT OR Apache-2.0 OR Zlib |
+| deranged | 0.5.9 | MIT OR Apache-2.0 |
 | derive_arbitrary | 1.5.0 | MIT OR Apache-2.0 |
 | digest | 0.10.7 | MIT OR Apache-2.0 |
 | dispatch | 0.2.0 | MIT |
@@ -95,6 +95,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | egui_glow | 0.29.1 | MIT OR Apache-2.0 |
 | egui-winit | 0.29.1 | MIT OR Apache-2.0 |
 | emath | 0.29.1 | MIT OR Apache-2.0 |
+| encoding_rs | 0.8.44 | (Apache-2.0 OR MIT) AND BSD-3-Clause |
 | endi | 1.1.1 | MIT |
 | enumflags2 | 0.7.12 | MIT OR Apache-2.0 |
 | enumflags2_derive | 0.7.12 | MIT OR Apache-2.0 |
@@ -105,6 +106,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | equivalent | 1.0.3 | Apache-2.0 OR MIT |
 | errno | 0.3.14 | MIT OR Apache-2.0 |
 | error-code | 3.4.0 | BSL-1.0 |
+| euclid | 0.20.14 | MIT / Apache-2.0 |
 | event-listener | 5.4.2 | Apache-2.0 OR MIT |
 | event-listener-strategy | 0.5.4 | Apache-2.0 OR MIT |
 | fastrand | 2.5.0 | Apache-2.0 OR MIT |
@@ -173,19 +175,25 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | litrs | 1.0.1 | MIT OR Apache-2.0 |
 | lock_api | 0.4.14 | MIT OR Apache-2.0 |
 | log | 0.4.35 | MIT OR Apache-2.0 |
+| lopdf | 0.34.0 | MIT |
+| md-5 | 0.10.6 | MIT OR Apache-2.0 |
 | memchr | 2.8.3 | Unlicense OR MIT |
 | memmap2 | 0.9.12 | MIT OR Apache-2.0 |
 | memoffset | 0.9.1 | MIT |
+| minimal-lexical | 0.2.1 | MIT/Apache-2.0 |
 | miniz_oxide | 0.8.9 | MIT OR Zlib OR Apache-2.0 |
 | miniz_oxide | 0.9.1 | MIT OR Zlib OR Apache-2.0 |
 | moxcms | 0.8.1 | BSD-3-Clause OR Apache-2.0 |
+| multiversion_no_op | 1.0.0 | Apache-2.0 OR MIT |
 | ndk | 0.9.0 | MIT OR Apache-2.0 |
 | ndk-context | 0.1.1 | MIT OR Apache-2.0 |
 | ndk-sys | 0.6.0+11769913 | MIT OR Apache-2.0 |
 | nix | 0.29.0 | MIT |
 | nohash-hasher | 0.2.0 | Apache-2.0 OR MIT |
+| nom | 7.1.3 | MIT |
 | num_enum | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
 | num_enum_derive | 0.7.6 | BSD-3-Clause OR MIT OR Apache-2.0 |
+| num-conv | 0.2.2 | MIT OR Apache-2.0 |
 | num-traits | 0.2.19 | MIT OR Apache-2.0 |
 | objc2 | 0.5.3 | MIT |
 | objc2 | 0.6.5 | MIT |
@@ -216,6 +224,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | parking_lot | 0.12.3 | MIT OR Apache-2.0 |
 | parking_lot_core | 0.9.10 | MIT OR Apache-2.0 |
 | paste | 1.0.15 | MIT OR Apache-2.0 |
+| pdf-extract | 0.7.12 | MIT |
 | percent-encoding | 2.3.2 | MIT OR Apache-2.0 |
 | pin-project | 1.1.13 | Apache-2.0 OR MIT |
 | pin-project-internal | 1.1.13 | Apache-2.0 OR MIT |
@@ -225,7 +234,10 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | plain | 0.2.3 | MIT/Apache-2.0 |
 | png | 0.18.1 | MIT OR Apache-2.0 |
 | polling | 3.11.0 | Apache-2.0 OR MIT |
+| pom | 1.1.0 | MIT |
+| postscript | 0.14.1 | Apache-2.0/MIT |
 | potential_utf | 0.1.6 | Unicode-3.0 |
+| powerfmt | 0.2.1 | MIT OR Apache-2.0 |
 | ppv-lite86 | 0.2.21 | MIT OR Apache-2.0 |
 | proc-macro2 | 1.0.107 | MIT OR Apache-2.0 |
 | proc-macro-crate | 3.5.0 | MIT OR Apache-2.0 |
@@ -236,6 +248,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | rand | 0.8.8 | MIT OR Apache-2.0 |
 | rand_chacha | 0.3.1 | MIT OR Apache-2.0 |
 | rand_core | 0.6.4 | MIT OR Apache-2.0 |
+| rangemap | 1.8.0 | MIT/Apache-2.0 |
 | raw-window-handle | 0.6.2 | MIT OR Apache-2.0 OR Zlib |
 | redox_syscall | 0.4.1 | MIT |
 | redox_syscall | 0.5.18 | MIT |
@@ -279,8 +292,12 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | thiserror | 2.0.21 | MIT OR Apache-2.0 |
 | thiserror-impl | 1.0.69 | MIT OR Apache-2.0 |
 | thiserror-impl | 2.0.21 | MIT OR Apache-2.0 |
+| time | 0.3.55 | MIT OR Apache-2.0 |
+| time-core | 0.1.9 | MIT OR Apache-2.0 |
+| time-macros | 0.2.32 | MIT OR Apache-2.0 |
 | tiny_http | 0.12.0 | MIT OR Apache-2.0 |
 | tinystr | 0.8.5 | Unicode-3.0 |
+| tinyvec | 1.13.3 | Zlib OR Apache-2.0 OR MIT |
 | tokio | 1.54.1 | MIT |
 | toml_datetime | 1.1.2+spec-1.1.0 | MIT OR Apache-2.0 |
 | toml_edit | 0.25.18+spec-1.1.0 | MIT OR Apache-2.0 |
@@ -289,9 +306,11 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | tracing-attributes | 0.1.31 | MIT |
 | tracing-core | 0.1.36 | MIT |
 | ttf-parser | 0.25.1 | MIT OR Apache-2.0 |
+| type1-encoding-parser | 0.1.1 | MIT |
 | typenum | 1.20.1 | MIT OR Apache-2.0 |
 | uds_windows | 1.2.1 | MIT |
 | unicode-ident | 1.0.27 | (MIT OR Apache-2.0) AND Unicode-3.0 |
+| unicode-normalization | 0.1.26 | (MIT OR Apache-2.0) AND Unicode-3.0 |
 | unicode-segmentation | 1.13.3 | MIT OR Apache-2.0 |
 | ureq | 2.12.1 | MIT OR Apache-2.0 |
 | url | 2.5.8 | MIT OR Apache-2.0 |
@@ -320,6 +339,7 @@ All are permissive (MIT / Apache-2.0 / BSD / Zlib / ISC / Unicode-3.0 / BSL-1.0)
 | webbrowser | 1.0.1 | MIT OR Apache-2.0 |
 | web-sys | 0.3.107 | MIT OR Apache-2.0 |
 | web-time | 1.1.0 | MIT OR Apache-2.0 |
+| weezl | 0.1.12 | MIT OR Apache-2.0 |
 | winapi | 0.3.9 | MIT/Apache-2.0 |
 | winapi-i686-pc-windows-gnu | 0.4.0 | MIT/Apache-2.0 |
 | winapi-util | 0.1.11 | Unlicense OR MIT |

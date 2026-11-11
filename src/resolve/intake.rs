@@ -188,6 +188,9 @@ pub struct Attachment {
     pub how: String,
     #[serde(default)]
     pub why: String,
+    /// A PDF Resolve couldn't read: the person pastes its text (into `text`) instead.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub unreadable: bool,
 }
 
 /// One intake session. Saved after every step, so closing the app mid-way loses nothing.
@@ -307,6 +310,9 @@ pub struct Intake {
     pub limit_at: String,
     #[serde(default, skip_serializing_if = "Vec::is_empty")]
     pub limit_done: Vec<String>,
+    /// The Careers intake's cards, kit and rebuilt CV (Careers mode only; see resolve/careers.rs).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub career: Option<super::careers::Career>,
     pub created: i64,
     pub updated: i64,
 }

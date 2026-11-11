@@ -2,6 +2,41 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.8.2 (11 November 2026)
+
+Careers Step 2, reviewed (branch `careers/s2-intake`).
+
+**What changed**
+- The Careers intake's steps each have a short line, as the project intake does: "Tell Resolve what job you want", "Your notes, CVs and LinkedIn", "Check what Resolve understood", "Gates, templates and your first move".
+- The search name on "Here's your kit." also names the new workspace. The separate workspace name field in the full proposal is gone.
+- Your LinkedIn PDF export reads as clean text (checked by the self-test).
+
+## 0.8.1 (11 November 2026)
+
+Careers Step 2, continued (branch `careers/s2-intake`). Waiting for your review in the preview, not merged yet.
+
+**What changed**
+- PDFs read properly: CVs, LinkedIn exports and documents saved from Google Docs come in as clean text. If a PDF still can't be read, Resolve says "Resolve couldn't read this PDF. Paste the text instead." and gives you a box to paste it into.
+- Resolve 2 Preview: a separate app on your desktop for trying a branch before it's merged. It has its own copy of your data plus the café sample, never touches your real workspaces, and its sidebar says "Preview" with the branch and version.
+
+## 0.8.0 (10 November 2026)
+
+Careers Step 2: the Careers intake (branch `careers/s2-intake`). Waiting for review, not merged yet.
+
+**What changed**
+- "What do you need help with?" has a fourth path, "I'm looking for a job", marked New. Choosing it runs the Careers intake in the same frame, with "Careers" on the top bar.
+- Tell Resolve what job you're looking for: eight headings with Use a template, Try an example, and a prompt to bring a job search in from another AI chat. Attach your CVs and LinkedIn.
+- Up to 8 questions that build your gates. Anything your notes already answer is skipped, and the screen says how many. A broad answer gets one push: "That covers a lot. Which one first?" What Resolve heard is labelled Hard gate, Preference or Question.
+- Here's what Resolve understood: the job you want, your hard gates, your preferences, what a win looks like, and your CV and LinkedIn (strengths, gaps, what to fix). Edit changes any card. Rebuild my CV opens your CV in the full proposal; the rebuilt CV saves into My CV.
+- If your target still covers many jobs, one question first: what job do you have in three months?
+- Your kit: do this first, your gates one at a time (keep it, not quite, or make it a preference), five tasks for your first week, then the kit itself with its search name. The full proposal edits the target, gates, CV templates, cover letter, evidence bank, LinkedIn fixes and first week.
+- Adopt creates a new workspace in Careers mode, named Job search unless you change it, with your gates, CV templates, cover letter template, evidence bank, LinkedIn fixes, weekly target and first tasks. Open my job search lands on Home. Inside a Careers workspace, + New project starts a second search with its own gates.
+- With no AI connected, a fixed set of Careers questions runs, and the cards and kit use only your own words.
+- Build checks now take their picture of the café sample's Home, in a sandbox, instead of the first-run screen.
+
+**Known differences and open items**
+- A PDF exported by most modern tools didn't read cleanly. Fixed in 0.8.1.
+
 ## 0.7.1 (10 November 2026)
 
 A fix to the sandbox rule from 0.7.0 (branch `careers/s1-shot-sandbox`).

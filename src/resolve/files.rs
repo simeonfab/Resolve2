@@ -82,10 +82,76 @@ fn docx_text(bytes: &[u8]) -> Result<String, String> {
     Ok(out)
 }
 
-/// PDF: the text drawn by the page content streams (Tj / TJ strings). Works for ordinary PDFs
-/// saved from Word, Google Docs and the like; scanned PDFs and unusual font encodings have no
-/// readable text, and Resolve says so instead of importing nonsense.
+/// What Resolve says when a PDF has no text it can read (the person pastes it instead).
+pub const UNREADABLE_PDF: &str = "Resolve couldn't read this PDF. Paste the text instead.";
+
+/// Does this look like text a person wrote: enough words, mostly real words, few stray bytes?
+/// (Image data, colour profiles and fonts read as text fail this.)
+pub fn readable(text: &str) -> bool {
+    let toks: Vec<&str> = text.split_whitespace().collect();
+    if toks.len() < 6 {
+        return false;
+    }
+    let mut wordlike = 0;
+    let mut single = 0;
+    for t in &toks {
+        let w = t.trim_matches(|c: char| !c.is_alphanumeric());
+        let n = w.chars().count();
+        if n == 1 {
+            single += 1;
+        }
+        let letters = n >= 1 && n <= 24 && w.chars().all(|c| c.is_alphabetic() || c == '\'' || c == '-' || c == '\u{2019}');
+        if letters && (n <= 3 || w.chars().any(|c| "aeiouyAEIOUY".contains(c))) {
+            wordlike += 1;
+        }
+    }
+    let all = text.chars().count().max(1);
+    let odd = text.chars().filter(|c| (c.is_control() && !c.is_whitespace()) || *c == '\u{FFFD}').count();
+    wordlike * 100 >= toks.len() * 55 && single * 100 <= toks.len() * 30 && odd * 100 <= all
+}
+
+/// PDF: first the pdf-extract library (pure Rust: fonts, encodings and compressed streams), then
+/// Resolve's own reader of the page content streams. If neither gives readable text (a scan, or
+/// fonts without a text map), Resolve says so instead of importing nonsense.
 fn pdf_text(bytes: &[u8]) -> Result<String, String> {
+    // the library can panic on odd files: that counts as "couldn't read", never a crash
+    let quiet = std::panic::take_hook();
+    std::panic::set_hook(Box::new(|_| {}));
+    let lib = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| pdf_extract::extract_text_from_mem(bytes))).ok().and_then(|r| r.ok()).unwrap_or_default();
+    std::panic::set_hook(quiet);
+    let lib = tidy_lines(&lib);
+    if readable(&lib) {
+        return Ok(lib);
+    }
+    let own = own_pdf_text(bytes);
+    if readable(&own) {
+        return Ok(own);
+    }
+    Err(UNREADABLE_PDF.into())
+}
+
+/// No runs of blank lines, no trailing spaces.
+fn tidy_lines(s: &str) -> String {
+    let mut out = String::new();
+    let mut blank = 0;
+    for l in s.lines() {
+        let l = l.trim_end();
+        if l.trim().is_empty() {
+            blank += 1;
+            if blank == 1 && !out.is_empty() {
+                out.push('\n');
+            }
+            continue;
+        }
+        blank = 0;
+        out.push_str(l);
+        out.push('\n');
+    }
+    out
+}
+
+/// Resolve's own reader: the strings the page content streams draw (Tj / TJ).
+fn own_pdf_text(bytes: &[u8]) -> String {
     let mut out = String::new();
     let mut pos = 0;
     while let Some(i) = find(bytes, b"stream", pos) {
@@ -126,12 +192,7 @@ fn pdf_text(bytes: &[u8]) -> Result<String, String> {
         }
         pos = end + 9;
     }
-    let letters = out.chars().filter(|c| c.is_alphabetic()).count();
-    let printable = out.chars().filter(|c| !c.is_whitespace()).count().max(1);
-    if letters < 40 || letters * 10 < printable * 6 {
-        return Err("This PDF's text couldn't be read (it may be a scan, or use unusual fonts). Copy its text into a .txt or .docx file and add that instead.".into());
-    }
-    Ok(out)
+    out
 }
 
 fn find(hay: &[u8], needle: &[u8], from: usize) -> Option<usize> {

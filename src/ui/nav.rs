@@ -443,6 +443,14 @@ impl App {
                     if icons_only {
                         side_tip(ui, &r, &status);
                     }
+                    // which app this is: a preview names its branch and version
+                    if let Some(b) = crate::store::PREVIEW {
+                        let line = format!("Preview: {b}, {}", env!("CARGO_PKG_VERSION"));
+                        let r = preview_note(ui, &line, labels);
+                        if icons_only {
+                            side_tip(ui, &r, &line);
+                        }
+                    }
                 });
                 egui::CentralPanel::default().frame(egui::Frame::none()).show_inside(ui, |ui| {
                     egui::ScrollArea::vertical().auto_shrink([false, false]).scroll_bar_visibility(egui::scroll_area::ScrollBarVisibility::VisibleWhenNeeded).show(ui, |ui| {

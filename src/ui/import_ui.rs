@@ -139,10 +139,15 @@ impl App {
                 if let Some(it) = self.store.data.intakes.iter_mut().find(|x| x.id == iid) {
                     for r in &results {
                         match &r.error {
+                            // a PDF with no readable text: kept, with a box to paste its text
+                            Some(e) if e == crate::resolve::files::UNREADABLE_PDF => {
+                                it.attachments.retain(|a| a.name != r.title);
+                                it.attachments.push(crate::resolve::intake::Attachment { name: r.title.clone(), place: "cv".into(), how: "you".into(), unreadable: true, ..Default::default() });
+                            }
                             Some(e) => notes.push(format!("⚠ {}: {e}", r.title)),
                             None => {
                                 it.attachments.retain(|a| a.name != r.title);
-                                it.attachments.push(crate::resolve::intake::Attachment { name: r.title.clone(), text: r.text.clone(), place: r.place.clone(), how: r.how.clone(), why: r.why.clone() });
+                                it.attachments.push(crate::resolve::intake::Attachment { name: r.title.clone(), text: r.text.clone(), place: r.place.clone(), how: r.how.clone(), why: r.why.clone(), unreadable: false });
                             }
                         }
                     }
@@ -232,22 +237,41 @@ impl App {
     /// The intake's "Attach a brief or notes" row.
     pub(super) fn attach_row(&mut self, ui: &mut egui::Ui, p: &Pal, it: &mut crate::resolve::Intake) {
         ui.horizontal_wrapped(|ui| {
-            if ui.add_enabled(self.import.job.is_none(), egui::Button::new("📎 Attach a brief or notes")).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
+            let careers = it.mode == Mode::Careers;
+            if ui.add_enabled(self.import.job.is_none(), egui::Button::new(if careers { "📎 Attach" } else { "📎 Attach a brief or notes" })).on_hover_text(".md, .txt, .docx or .pdf, or drag files onto the window").clicked() {
                 let paths = pick_files();
                 self.import_files(ImportTarget::Intake(it.id.clone()), paths);
             }
             if self.import.job.is_some() {
                 ui.spinner();
                 ui.label(RichText::new("Reading…").size(size::SMALL).color(p.dim));
-            } else {
+            } else if !careers {
                 ui.label(RichText::new("Resolve reads them like your own words; a claim counts as evidence only when the file states it as fact.").size(size::TINY).color(p.faint));
             }
         });
         let mut remove: Option<usize> = None;
-        for (i, a) in it.attachments.iter().enumerate() {
+        let mut pasted = false;
+        for (i, a) in it.attachments.iter_mut().enumerate() {
+            if a.unreadable {
+                // Resolve couldn't read it: say so, and take the text pasted in its place
+                ui.horizontal_wrapped(|ui| {
+                    chip(ui, &format!("📎 {}", a.name), p.blue);
+                    if ui.small_button("×").on_hover_text("Remove").clicked() {
+                        remove = Some(i);
+                    }
+                });
+                ui.label(RichText::new(crate::resolve::files::UNREADABLE_PDF).size(size::ROW_SMALL).color(p.orange));
+                let before = a.text.clone();
+                answer_box(ui, p, egui::Id::new(("paste-pdf", &a.name)), &mut a.text, "Paste the PDF's text here", space::S40 * 2.4, false);
+                pasted |= a.text != before;
+                ui.add_space(space::S6);
+                continue;
+            }
             ui.horizontal_wrapped(|ui| {
                 chip(ui, &format!("📎 {}", a.name), p.blue);
-                ui.label(RichText::new(format!("{} words · will go to {}", a.text.split_whitespace().count(), files::label(&a.place))).size(size::TINY).color(p.faint));
+                // Careers keeps them as your CV files (a PM intake files them in Knowledge)
+                let place = if it.mode == Mode::Careers { "kept with your CV".to_string() } else { format!("will go to {}", files::label(&a.place)) };
+                ui.label(RichText::new(format!("{} words · {place}", a.text.split_whitespace().count())).size(size::TINY).color(p.faint));
                 if ui.small_button("×").on_hover_text("Remove").clicked() {
                     remove = Some(i);
                 }
@@ -255,6 +279,8 @@ impl App {
         }
         if let Some(i) = remove {
             it.attachments.remove(i);
+            it.touch();
+        } else if pasted {
             it.touch();
         }
     }
