@@ -2,6 +2,15 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.8.2 (11 November 2026)
+
+Careers Step 2, reviewed (branch `careers/s2-intake`).
+
+**What changed**
+- The Careers intake's steps each have a short line, as the project intake does: "Tell Resolve what job you want", "Your notes, CVs and LinkedIn", "Check what Resolve understood", "Gates, templates and your first move".
+- The search name on "Here's your kit." also names the new workspace. The separate workspace name field in the full proposal is gone.
+- Your LinkedIn PDF export reads as clean text (checked by the self-test).
+
 ## 0.8.1 (11 November 2026)
 
 Careers Step 2, continued (branch `careers/s2-intake`). Waiting for your review in the preview, not merged yet.

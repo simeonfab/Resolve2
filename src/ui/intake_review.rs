@@ -291,7 +291,9 @@ impl App {
             crate::resolve::careers::finish(k);
         }
         if !here {
-            let want = if c.workspace.trim().is_empty() { "Job search".to_string() } else { c.workspace.trim().to_string() };
+            // the search name on 09 names the workspace too
+            let search = c.kit.as_ref().map(|k| k.search_name.trim().to_string()).unwrap_or_default();
+            let want = if search.is_empty() { "Job search".to_string() } else { search };
             // a free name: "Job search", then "Job search 2"…
             let mut name = want.clone();
             let mut n = 2;

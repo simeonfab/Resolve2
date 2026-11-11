@@ -174,8 +174,8 @@ pub struct Career {
     /// fixes, First week).
     #[serde(default)]
     pub page: String,
-    /// The workspace name Adopt creates (default "Job search").
-    #[serde(default)]
+    /// No longer used: the search name on 09 names the workspace (kept so older intakes load).
+    #[serde(default, skip_serializing_if = "String::is_empty")]
     pub workspace: String,
     /// Adopt into the current (Careers) workspace: a second search from + New project.
     #[serde(default)]

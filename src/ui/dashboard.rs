@@ -77,8 +77,13 @@ pub const RAIL_STEPS: [(&str, &str); 4] = [
     ("Your next move", "One clear recommended action and a roadmap built from your project"),
 ];
 
-/// Careers mode's rail steps (Careers brief, "Careers intake"). The canvas rail shows names only.
-pub const RAIL_STEPS_CAREERS: [(&str, &str); 4] = [("Get started", ""), ("Bring it in", ""), ("Confirm understanding", ""), ("Your kit", "")];
+/// Careers mode's rail steps, each with its line as PM has (lines confirmed 11 Nov 2026).
+pub const RAIL_STEPS_CAREERS: [(&str, &str); 4] = [
+    ("Get started", "Tell Resolve what job you want"),
+    ("Bring it in", "Your notes, CVs and LinkedIn"),
+    ("Confirm understanding", "Check what Resolve understood"),
+    ("Your kit", "Gates, templates and your first move"),
+];
 
 /// Everything Home shows, from the workspace alone (no AI). `now` is the app's clock;
 /// `real_ms` the real time, for ages and "since Monday" (edit times are real).

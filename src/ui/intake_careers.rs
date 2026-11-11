@@ -993,13 +993,7 @@ impl App {
                             field(ui, "Search name", &mut k.search_name, ("search", 0));
                         });
                         if !here {
-                            if c.workspace.trim().is_empty() {
-                                c.workspace = "Job search".into();
-                            }
-                            edit_card(ui, false, &mut |ui| {
-                                field(ui, "Workspace name", &mut c.workspace, ("workspace", 0));
-                                ui.label(RichText::new("Adopt creates this workspace, in Careers mode.").size(size::SMALL).color(p.dim));
-                            });
+                            ui.label(RichText::new("Adopt creates a workspace with this name, in Careers mode.").size(size::SMALL).color(p.dim));
                         }
                     }
                     "Gates" => {

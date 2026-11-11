@@ -777,7 +777,7 @@ pub fn careers_sample(d: &mut WorkspaceData) -> Id {
         offline: false,
     };
     careers::finish(&mut kit);
-    let mut c = Career { cards: Some(cards), kit: Some(kit), workspace: "Job search".into(), ..Default::default() };
+    let mut c = Career { cards: Some(cards), kit: Some(kit), ..Default::default() };
     c.cards_n = i.qas.iter().filter(|q| !q.answer.trim().is_empty()).count() + 1;
     c.kit_from = c.cards_key();
     i.career = Some(c);

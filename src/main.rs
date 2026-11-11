@@ -290,7 +290,8 @@ fn main() {
         let adopt = args.iter().any(|a| a == "--adopt");
         // a Careers run adopts into a new workspace in Careers mode, as the app does
         let careers_new = adopt && run.mode == model::Mode::Careers && run.career.as_ref().map_or(false, |c| c.kit.is_some());
-        let meta = if careers_new { reg.create("Job search", [94, 125, 79]) } else { reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone()) };
+        let search = run.career.as_ref().and_then(|c| c.kit.as_ref()).map(|k| k.search_name.trim().to_string()).filter(|n| !n.is_empty()).unwrap_or_else(|| "Job search".into());
+        let meta = if careers_new { reg.create(&search, [94, 125, 79]) } else { reg.find("Personal").cloned().unwrap_or_else(|| reg.workspaces[0].clone()) };
         let mut st = store::Store::open(meta);
         if careers_new {
             st.data.mode = model::Mode::Careers;
