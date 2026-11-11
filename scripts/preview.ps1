@@ -6,7 +6,7 @@
 #    %APPDATA%\Resolve2-Preview, refuses the real folder, and runs no sync, hub or server.
 # 2. Installed as %LOCALAPPDATA%\Resolve2-Preview\Resolve2-Preview.exe, replacing the last one.
 # 3. %APPDATA%\Resolve2-Preview: a fresh COPY of the real data (read only, never moved; backups
-#    left out), plus the café sample workspace.
+#    left out), plus the cafe sample workspace.
 # 4. A "Resolve 2 Preview" shortcut on the desktop.
 # It never writes to %APPDATA%\Resolve2, and stops if it can't confirm that.
 $ErrorActionPreference = "Stop"
@@ -30,11 +30,13 @@ if (Get-Process -Name "Resolve2-Preview" -ErrorAction SilentlyContinue) {
     throw "Resolve 2 Preview is open. Close it, then run this again (its data is replaced each time)."
 }
 
-"1/4 release build of $branch ($version)…"
+"1/4 release build of $branch ($version)..."
 $env:RESOLVE2_PREVIEW = $branch
 try {
-    cargo build --release --target-dir target-preview 2>&1 | Select-String "^error" -Context 0,6
-    if ($LASTEXITCODE -ne 0) { throw "The release build failed." }
+    # cargo writes progress to stderr: keep it in a log, and judge by the exit code
+    $log = Join-Path $env:TEMP "resolve2-preview-build.log"
+    cmd /c "cargo build --release --target-dir target-preview > ""$log"" 2>&1"
+    if ($LASTEXITCODE -ne 0) { Get-Content $log -Tail 30; throw "The release build failed (log: $log)." }
 } finally {
     Remove-Item Env:\RESOLVE2_PREVIEW
 }
@@ -50,8 +52,9 @@ if (Test-Path $real) {
     robocopy $real $data /E /XD backups /XF *.tmp* /R:1 /W:1 /NFL /NDL /NJH /NJS /NP | Out-Null
     if ($LASTEXITCODE -ge 8) { throw "Copying your data failed (robocopy $LASTEXITCODE)." }
 }
-& $exe --seed-sample
-if ($LASTEXITCODE -ne 0) { throw "Adding the café sample failed." }
+# the app is a window program: wait for it and read its own exit code
+$seed = Start-Process -FilePath $exe -ArgumentList "--seed-sample" -NoNewWindow -Wait -PassThru
+if ($seed.ExitCode -ne 0) { throw "Adding the cafe sample failed (exit $($seed.ExitCode))." }
 
 "4/4 desktop shortcut"
 $desk = [Environment]::GetFolderPath("Desktop")

@@ -108,6 +108,11 @@ fn main() {
     // folder of its own under %TEMP% (Craft Anything's build check runs it that way); pointed at
     // the real folder, it's refused.
     if args.iter().any(|a| a == "--screenshot") {
+        // a preview's screenshot needs its own sandbox: its data folder holds a copy of yours
+        if store::PREVIEW.is_some() && arg_value(&args, "--data-dir").is_none() {
+            eprintln!("Refused: a preview screenshot needs --data-dir with a sandbox folder.");
+            std::process::exit(2);
+        }
         if arg_value(&args, "--data-dir").is_none() && !testlab {
             store::set_root(std::env::temp_dir().join(format!("resolve2-shot-{}", std::process::id())).join("data"));
             // the sandbox holds the café sample workspace, set up and past Connect your AI, so
