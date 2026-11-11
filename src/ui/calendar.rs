@@ -812,6 +812,7 @@ impl App {
         let mut keep = true;
         let mut save = false;
         let mut delete = false;
+        let mut gmail_go: Option<View> = None;
         let mut open_page: Option<Id> = None;
         let mut new_doc = false;
         // The event editor (B-E12, Pack B "Calendar: event"): a 520 dialog over a dimmed screen;
@@ -900,6 +901,25 @@ impl App {
                             ui.selectable_value(&mut dr.recurrence, Recurrence::EveryWeeks(2), "Every 2 weeks");
                         });
                     });
+                    // Careers: an event the tracker added says so; an interview offers prep and the
+                    // recorder (Careers brief, "Calendar")
+                    let from_gmail = dr.id.as_deref().and_then(|id| self.store.data.events.iter().find(|e| e.id == id)).map_or(false, |e| e.source == "gmail");
+                    if from_gmail {
+                        let interview = self.store.data.calendar(&dr.calendar_id).map_or(false, |c| c.name == "Interviews");
+                        ui.horizontal(|ui| {
+                            ui.spacing_mut().item_spacing.x = space::S8;
+                            tag(ui, "Added from Gmail", p.green_text, p.green_tint);
+                            if interview {
+                                if button(ui, p, ButtonKind::Secondary, "Prep me", false, true).on_hover_text("Coach preps you for this interview").clicked() {
+                                    self.resolve_ui.agent = "coach".into();
+                                    gmail_go = Some(View::Sec(super::nav::Section::AiTeam));
+                                }
+                                if button(ui, p, ButtonKind::Secondary, "Open in recorder", false, true).clicked() {
+                                    gmail_go = Some(View::Sec(super::nav::Section::Recorder));
+                                }
+                            }
+                        });
+                    }
                     ui.horizontal(|ui| {
                         label(ui, "Calendar");
                         let (cname, ccol) = self.store.data.calendar(&dr.calendar_id).map(|c| (c.name.clone(), rgb(c.color))).unwrap_or_default();
@@ -1050,6 +1070,10 @@ impl App {
         if let Some(pg) = open_page {
             keep = false;
             self.go(View::Page(pg));
+        }
+        if let Some(v) = gmail_go {
+            keep = false;
+            self.go(v);
         }
         if keep {
             self.event_edit = Some(dr);

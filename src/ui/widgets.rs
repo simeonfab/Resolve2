@@ -1273,6 +1273,23 @@ pub fn side_status(ui: &mut Ui, text: &str, ok: bool, labels: f32) -> Response {
     resp
 }
 
+/// "From a template" in Careers' + Add task menu: a tinted group of the seven templates and the
+/// footnote. Sets `pick` to the template chosen.
+pub fn template_menu(ui: &mut Ui, p: &Pal, pick: &mut Option<usize>) {
+    ui.add_space(space::S4);
+    egui::Frame::none().fill(tok::AMBER_LIGHT).rounding(Rounding::same(radius::FIELD)).inner_margin(egui::Margin::symmetric(space::S8, space::S6)).show(ui, |ui| {
+        ui.set_width(ui.available_width());
+        ui.label(RichText::new("From a template").font(fs(size::SMALL)).color(p.accent_text));
+        for (k, (name, _)) in crate::resolve::careers::TASK_TEMPLATES.iter().enumerate() {
+            if ui.add(egui::Button::new(RichText::new(*name).size(size::ROW_SMALL).color(p.text)).frame(false)).clicked() {
+                *pick = Some(k);
+            }
+        }
+    });
+    ui.add_space(space::S4);
+    ui.add(egui::Label::new(RichText::new("Each task made from a template links to its Pipeline record.").size(size::TINY).color(p.dim)).wrap());
+}
+
 /// A small mode label on the dark sidebar ("Careers"), its left edge at `left_center`. Returns
 /// its width.
 pub fn mode_chip_at(painter: &egui::Painter, left_center: Pos2, label: &str, alpha: f32) -> f32 {

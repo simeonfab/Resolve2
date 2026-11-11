@@ -379,6 +379,8 @@ impl App {
     fn project_tasks(&mut self, ui: &mut egui::Ui, p: &Pal, pid: &str, acts: &mut Vec<TAct>) {
         let Some(pr) = self.store.data.project(pid).cloned() else { return };
         let t0 = today();
+        let careers = self.store.data.mode == Mode::Careers;
+        let mut template: Option<usize> = None;
         let m = project_tasks_model(&self.store.data, pid, now_ms(), now_local());
         let state = match self.view_state {
             ViewState::Full if m.open == 0 && m.done_week == 0 && m.waiting.is_empty() => ViewState::Empty,
@@ -425,7 +427,21 @@ impl App {
                                 ui.close_menu();
                             }
                         });
-                        if button(ui, p, ButtonKind::Dark, "+ Add task", false, true).clicked() {
+                        let r = button(ui, p, ButtonKind::Dark, "+ Add task", false, true);
+                        if careers {
+                            // Careers: Blank task, then the templates (Careers brief, "Tasks")
+                            let menu = egui::Id::new(("careers-add-task", pid));
+                            if r.clicked() {
+                                ui.memory_mut(|mm| mm.toggle_popup(menu));
+                            }
+                            egui::popup_below_widget(ui, menu, &r, egui::PopupCloseBehavior::CloseOnClick, |ui| {
+                                ui.set_min_width(space::S40 * 7.0);
+                                if ui.button("Blank task").clicked() {
+                                    add = true;
+                                }
+                                template_menu(ui, p, &mut template);
+                            });
+                        } else if r.clicked() {
                             add = true;
                         }
                         if button(ui, p, ButtonKind::Secondary, "✦ Organise", false, true).on_hover_text("Moves the to-dos in your pages into tasks, with dates").clicked() {
@@ -521,10 +537,11 @@ impl App {
                             group(ui, tok::AMBER, "Now", &format!("{} active", now_rows.len()), now_rows, acts, false);
                             let wait_rows: Vec<(Id, TaskLineOwned)> = m.waiting.iter().map(|(id, title, age, th, _)| (id.clone(), TaskLineOwned { title: title.clone(), notes: String::new(), when: age.clone(), urgent: false, theme: th.clone(), basis: String::new(), done: false })).collect();
                             let nw = wait_rows.len();
-                            group(ui, p.orange, "Waiting on", &format!("{nw} stalled"), wait_rows, acts, true);
+                            group(ui, p.orange, if careers { "Waiting to hear back" } else { "Waiting on" }, &format!("{nw} stalled"), wait_rows, acts, true);
                             let up_rows: Vec<(Id, TaskLineOwned)> = m.upcoming.iter().filter_map(|(id, th, ph)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ph), t)))).collect();
                             let nu = up_rows.len();
-                            group(ui, p.faint, "Upcoming from roadmap", &format!("{nu} queued"), up_rows, acts, false);
+                            // Careers has no roadmap: plain Upcoming
+                            group(ui, p.faint, if careers { "Upcoming" } else { "Upcoming from roadmap" }, &format!("{nu} queued"), up_rows, acts, false);
                             for (sec, rows) in &m.other {
                                 let rows: Vec<(Id, TaskLineOwned)> = rows.iter().filter_map(|(id, th)| d.task(id).map(|t| (id.clone(), TaskLineOwned::from(line(t, th, ""), t)))).collect();
                                 let k = rows.len();
@@ -600,6 +617,17 @@ impl App {
         }
         if add {
             self.open_quick(QuickKind::Task);
+        }
+        if let Some(k) = template {
+            let (title, days) = crate::resolve::careers::TASK_TEMPLATES[k];
+            let mut t = Task::new(title.to_string());
+            t.project_id = Some(pid.to_string());
+            t.section = "Now".into();
+            t.due = days.and_then(|n| today().checked_add_days(chrono::Days::new(n)));
+            t.labels = vec!["template".into()];
+            // record_id links it to its Pipeline role once Pipeline exists (Step 4)
+            t.order = now_ms();
+            self.undoable(&format!("Added \"{title}\""), "add", move |d| d.tasks.push(t));
         }
         if open_roadmap {
             self.go(View::Sec(super::nav::Section::Roadmap));

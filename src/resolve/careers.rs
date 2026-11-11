@@ -45,6 +45,18 @@ pub const PUSH: &str = "That covers a lot. Which one first?";
 /// 05: the one question when the target is still broad.
 pub const THREE_MONTHS: &str = "If Resolve does its job, what job do you have in three months?";
 
+/// Tasks' "From a template" (Careers brief, "Tasks"): each template and, where it has one, how
+/// many days from today it falls due.
+pub const TASK_TEMPLATES: [(&str, Option<u64>); 7] = [
+    ("Follow up on an application", Some(7)),
+    ("Prepare for an interview", None),
+    ("Send a thank-you note", None),
+    ("Chase a recruiter", None),
+    ("Fix a LinkedIn item", None),
+    ("Practise a drill", None),
+    ("Prepare an offer response", None),
+];
+
 /// 10: the bridge's build checklist, one line per real Adopt step.
 pub const ADOPT_STEPS: [&str; 6] = ["Creating your job search", "Saving your gates", "Building your CV and cover letter templates", "Starting your evidence bank", "Adding your first tasks", "Saving the intake transcript"];
 
