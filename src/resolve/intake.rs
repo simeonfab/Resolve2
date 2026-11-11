@@ -188,6 +188,9 @@ pub struct Attachment {
     pub how: String,
     #[serde(default)]
     pub why: String,
+    /// A PDF Resolve couldn't read: the person pastes its text (into `text`) instead.
+    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
+    pub unreadable: bool,
 }
 
 /// One intake session. Saved after every step, so closing the app mid-way loses nothing.

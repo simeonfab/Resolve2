@@ -713,8 +713,8 @@ pub fn careers_sample(d: &mut WorkspaceData) -> Id {
     i.greeted = true;
     i.input = careers::EXAMPLE.into();
     i.attachments = vec![
-        Attachment { name: "Simeon_CV_2026.pdf".into(), text: "Senior Product Owner, Capgemini. Senior PM, OneAdvanced: owned the managed services portfolio end to end. Partner Manager, OneAdvanced: achieved both Microsoft Solution Partner designations, in both years.".into(), place: "cv".into(), how: "you".into(), why: String::new() },
-        Attachment { name: "LinkedIn.pdf".into(), text: "Headline: Senior Product Owner.".into(), place: "cv".into(), how: "you".into(), why: String::new() },
+        Attachment { name: "Simeon_CV_2026.pdf".into(), text: "Senior Product Owner, Capgemini. Senior PM, OneAdvanced: owned the managed services portfolio end to end. Partner Manager, OneAdvanced: achieved both Microsoft Solution Partner designations, in both years.".into(), place: "cv".into(), how: "you".into(), why: String::new(), unreadable: false },
+        Attachment { name: "LinkedIn.pdf".into(), text: "Headline: Senior Product Owner.".into(), place: "cv".into(), how: "you".into(), why: String::new(), unreadable: false },
     ];
     i.stage = "questions".into();
     i.ai_covered = vec!["role".into(), "company".into()];

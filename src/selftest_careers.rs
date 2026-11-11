@@ -53,6 +53,29 @@ pub fn run(t: &mut T, port: u16) {
     t.check("03 skips what 02b answered (the example answers role, location, travel, company, timeline; its pay is a placeholder)", covered.contains(&"role".to_string()) && covered.contains(&"location".to_string()) && !covered.contains(&"pay".to_string()), format!("{covered:?}"));
     t.check("the Careers record kinds never appear in PM's lists", Kind::CAREERS.iter().all(|k| !Kind::ALL.contains(k)) && Kind::parse("gate") == Some(Kind::Gate), "");
 
+    // ---- PDFs (CVs and LinkedIn exports): read with the PDF library, or refused, never garbage
+    use crate::resolve::files;
+    let here = std::path::Path::new(env!("CARGO_MANIFEST_DIR"));
+    let brief = files::extract(&here.join("docs/briefs/2026-11-10-careers/build-brief.pdf"));
+    t.check("a Google Docs PDF (the Careers brief) reads as clean text", brief.as_ref().map_or(false, |(_, x)| files::readable(x) && x.contains("Resolve Careers is a second mode")), brief.as_ref().map(|(_, x)| x.chars().take(80).collect::<String>()).unwrap_or_else(|e| e.clone()));
+    let junk = std::env::temp_dir().join(format!("resolve2-junk-{}.pdf", std::process::id()));
+    let _ = std::fs::write(&junk, b"%PDF-1.4\n1 0 obj << /Length 40 /Filter /DCTDecode >> stream\n\xff\xd8\xff\xe0 not text at all \x01\x02\nendstream endobj\n%%EOF");
+    let r = files::extract(&junk);
+    let _ = std::fs::remove_file(&junk);
+    t.check("a PDF with no readable text says \"Resolve couldn't read this PDF. Paste the text instead.\"", r.as_ref().err().map(|e| e.as_str()) == Some(files::UNREADABLE_PDF), format!("{r:?}").chars().take(120).collect::<String>());
+    t.check("text made of stray bytes (a colour profile read as text) doesn't count as readable", !files::readable("gTRC (bTRC (cprt <mluc enUS X G o o g l e / S k i a / 7 C 5 F A 2 1 5 1 3 9 7 4 òíäòíäòíäòíä 93 93 93 93 93 93 93 93 93 93 ÈÈ@È@È@") && files::readable(&"I led a team of six and grew partner revenue by forty percent in two years. ".repeat(3)), "");
+    // your own LinkedIn export, if it's in docs/test-files/ (never committed)
+    let linkedin: Vec<std::path::PathBuf> = std::fs::read_dir(here.join("docs/test-files")).map(|rd| rd.flatten().map(|e| e.path()).filter(|p| p.extension().map_or(false, |x| x.eq_ignore_ascii_case("pdf"))).collect()).unwrap_or_default();
+    if linkedin.is_empty() {
+        println!("      (no PDF in docs/test-files yet: the LinkedIn export check is unverified)");
+    }
+    for f in &linkedin {
+        let r = files::extract(f);
+        let name = f.file_name().map(|n| n.to_string_lossy().to_string()).unwrap_or_default();
+        t.check(&format!("your PDF {name} reads as clean text, or is refused with the paste message"), r.as_ref().map_or_else(|e| e == files::UNREADABLE_PDF, |(_, x)| files::readable(x)), match &r { Ok((_, x)) => format!("read: {} words", x.split_whitespace().count()), Err(e) => e.clone() });
+        println!("      {name}: {}", match &r { Ok((_, x)) => format!("read, {} words", x.split_whitespace().count()), Err(e) => e.clone() });
+    }
+
     // ---- no AI: the fixed Careers question set, then cards and kit from their own words
     let mut off = Intake::new();
     off.mode = Mode::Careers;

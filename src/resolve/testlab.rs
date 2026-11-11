@@ -73,7 +73,7 @@ pub fn new_run(scn: Option<&Scenario>, provider: &str) -> Intake {
             i.mode = Mode::Careers;
             i.situation = "job_search".into();
             if !s.cv.trim().is_empty() {
-                i.attachments.push(super::intake::Attachment { name: "test-cv.md".into(), text: s.cv.clone(), place: "cv".into(), how: "you".into(), why: String::new() });
+                i.attachments.push(super::intake::Attachment { name: "test-cv.md".into(), text: s.cv.clone(), place: "cv".into(), how: "you".into(), why: String::new(), unreadable: false });
             }
             i.ai_covered = super::careers::covered_by_bring(&i.input);
         }
