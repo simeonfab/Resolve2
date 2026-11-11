@@ -758,14 +758,28 @@ pub struct AdoptState {
     pub transcript: Option<Id>,
 }
 
-/// The next date that is `day` ("Mon", "Thu to Fri"…), today included.
-fn due_for(day: &str) -> Option<chrono::NaiveDate> {
+/// The first date on or after `from` that is `day` ("Mon", "Thu to Fri"…).
+fn due_for(day: &str, from: chrono::NaiveDate) -> Option<chrono::NaiveDate> {
     use chrono::Datelike;
     let first = day.split_whitespace().next().unwrap_or("");
     let want = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].iter().position(|d| first.starts_with(d))? as i64;
-    let t = today();
-    let now = t.weekday().num_days_from_monday() as i64;
-    t.checked_add_days(chrono::Days::new(((want - now + 7) % 7) as u64))
+    let now = from.weekday().num_days_from_monday() as i64;
+    from.checked_add_days(chrono::Days::new(((want - now + 7) % 7) as u64))
+}
+
+/// The first week's dates, in order: the first task's day from today, each next one on or after
+/// the one before (Mon, Tue, Tue, Wed, Thu to Fri is one week, never Thursday before Monday).
+pub fn week_dates(week: &[WeekTask], start: chrono::NaiveDate) -> Vec<Option<chrono::NaiveDate>> {
+    let mut from = start;
+    week.iter()
+        .map(|w| {
+            let d = due_for(&w.day, from);
+            if let Some(x) = d {
+                from = x;
+            }
+            d
+        })
+        .collect()
 }
 
 /// Run one Careers adopt step into `d` (the Careers workspace). Returns Ok(true) after the last.
@@ -850,12 +864,13 @@ pub fn adopt_step(d: &mut WorkspaceData, intake_id: &str, step: usize, st: &mut 
             }
         }
         4 => {
+            let dates = week_dates(&k.week, today());
             for (n, w) in k.week.iter().enumerate() {
                 let mut task = Task::new(w.title.clone());
                 task.project_id = Some(pid.clone());
                 task.section = "Now".into();
                 task.priority = if n == 0 { 1 } else { 2 };
-                task.due = due_for(&w.day);
+                task.due = dates.get(n).copied().flatten();
                 task.order = t + n as i64;
                 if n == 0 {
                     st.first_task = Some(task.id.clone());

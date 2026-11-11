@@ -477,6 +477,7 @@ fn main() {
         reduced_motion: args.iter().any(|a| a == "--reduced-motion"),
         scroll: arg_value(&args, "--scroll").and_then(|s| s.parse().ok()),
         collapsed: args.iter().any(|a| a == "--collapsed"),
+        careers: args.iter().any(|a| a == "--careers"),
         motion_at: arg_value(&args, "--motion-at").and_then(|v| v.parse().ok()),
         open: arg_value(&args, "--open"),
         project: arg_value(&args, "--project"),

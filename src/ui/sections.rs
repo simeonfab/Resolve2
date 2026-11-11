@@ -227,11 +227,25 @@ impl App {
         let mut new_project = false;
         let el = ((self.now - self.view_since) * 1000.0) as f32;
         let reduced = super::motion::reduced();
+        // Careers: each search is a card (Careers brief, "Projects"); applied and the stage strip
+        // come from Pipeline records (Step 4), 0 until then
+        let careers = self.store.data.mode == Mode::Careers;
+        let week = super::dashboard::careers_week(&self.store.data, today());
+        let applied = format!("{} of {} applied this week", week.applied, week.target);
+        const STAGES: [(&str, usize); 5] = [("Sourced", 0), ("Applied", 0), ("Screen", 0), ("Interview", 0), ("Offer", 0)];
+        let careers_next: std::collections::HashMap<Id, (String, String)> = if careers {
+            cards.iter().map(|m| {
+                let c = self.store.data.context_for(&m.id);
+                (m.id.clone(), (c.map(|c| c.understanding.goal.clone()).unwrap_or_default(), c.map(|c| c.recommendation.recommended_action.clone()).filter(|s| !s.is_empty()).unwrap_or_else(|| m.next.clone())))
+            }).collect()
+        } else {
+            Default::default()
+        };
         egui::ScrollArea::vertical().auto_shrink([false, false]).show(ui, |ui| {
             egui::Frame::none().inner_margin(egui::Margin { left: space::WORK_SIDE, right: space::WORK_SIDE, top: space::WORK_TOP, bottom: space::S24 }).show(ui, |ui| {
                 capped(ui, space::CAP_DEFAULT, |ui| {
-                    screen_head(ui, p, "Projects", "Each project has its own overview, roadmap, tasks, frameworks and knowledge.", |ui| {
-                        if button(ui, p, ButtonKind::Primary, "+ New project", false, true).clicked() {
+                    screen_head(ui, p, "Projects", if careers { "Each search has its own pipeline, CV, tasks and gates." } else { "Each project has its own overview, roadmap, tasks, frameworks and knowledge." }, |ui| {
+                        if button(ui, p, ButtonKind::Primary, if careers { "+ New search" } else { "+ New project" }, false, true).clicked() {
                             new_project = true;
                         }
                     });
@@ -278,14 +292,18 @@ impl App {
                                             ui.set_max_width(w);
                                             super::motion::fade_in(ui, f, egui::vec2(0.0, space::S18), |ui| {
                                                 if i == cards.len() {
-                                                    if dashed_add_card(ui, p, "New project", "Opens the intake. About ten minutes.", space::S40 * 5.5).clicked() {
+                                                    let (t, l) = if careers { ("+ New search", "Opens the intake.") } else { ("New project", "Opens the intake. About ten minutes.") };
+                                                    if dashed_add_card(ui, p, t, l, space::S40 * 5.5).clicked() {
                                                         new_project = true;
                                                     }
                                                     return;
                                                 }
                                                 let m = &cards[i];
                                                 let pills = [m.now.as_str(), m.next_n.as_str(), m.later.as_str(), m.open.as_str()];
-                                                let view = ProjectCardView { name: &m.name, dot: rgb(m.color), outcome: &m.outcome, next: &m.next, frac: m.frac, done: &m.done, pills, updated: &m.updated };
+                                                let view = match careers_next.get(&m.id) {
+                                                    Some((target, next)) => ProjectCardView { name: &m.name, dot: rgb(m.color), outcome: target, next, frac: 0.0, done: &applied, pills, updated: &m.updated, strip: &STAGES },
+                                                    None => ProjectCardView { name: &m.name, dot: rgb(m.color), outcome: &m.outcome, next: &m.next, frac: m.frac, done: &m.done, pills, updated: &m.updated, strip: &[] },
+                                                };
                                                 let popup = egui::Id::new(("project-menu", &m.id));
                                                 let open = ui.memory(|mem| mem.is_popup_open(popup));
                                                 let (card, menu) = project_card(ui, p, &view, open);
@@ -343,7 +361,8 @@ impl App {
         match act {
             Some((0, id)) => {
                 self.select_project(Some(id));
-                self.go(View::Sec(Section::Overview));
+                // a search card opens that search's Pipeline
+                self.go(View::Sec(if careers { Section::Pipeline } else { Section::Overview }));
             }
             Some((1, id)) => {
                 let name = self.store.data.project(&id).map(|x| x.name.clone()).unwrap_or_default();

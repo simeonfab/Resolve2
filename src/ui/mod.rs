@@ -193,6 +193,8 @@ pub struct Shot {
 }
 
 pub struct StartOpts {
+    /// Screenshots: a Careers sample workspace in place of the café one (in memory only).
+    pub careers: bool,
     pub screenshot: Option<PathBuf>,
     pub workspace: Option<String>,
     pub view: Option<String>,
@@ -434,6 +436,11 @@ impl App {
                     app.store.data = d;
                 }
                 _ => {}
+            }
+            if opts.careers {
+                app.store.data = crate::seed::careers_workspace(opts.state.as_deref() != Some("empty"));
+                app.store.meta.name = "Job search".into();
+                app.current_project = app.store.data.projects.first().map(|x| x.id.clone());
             }
         }
         // --collapsed: in memory only

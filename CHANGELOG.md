@@ -2,6 +2,24 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.9.0 (11 November 2026)
+
+Careers Step 3: the shell and daily screens in Careers mode (branch `careers/s3-daily`). Waiting for your review in the preview, not merged yet.
+
+**What changed**
+- The workspace switcher shows each workspace's mode, PM or Careers. A Careers workspace shows "Careers" beside its name at the top of the sidebar.
+- In a Careers workspace the picker chooses your search ("All searches", "+ New search"). Pipeline, My CV, Stats, Interview recorder, Frameworks and Knowledge base say which step builds them.
+- Home in a Careers workspace: the counts line (applied this week against your target, interviews, closing soon), Add a job above your first move, Today with each event in its calendar's colour, and THIS WEEK, WAITING TO HEAR BACK, PIPELINE, NEW FROM SCOUT and NEEDS A CHECK. The cards that need Pipeline say so until it's built.
+- Projects shows each search as a card: its target, next move, applied this week and the stages. "+ New search" opens the intake.
+- Tasks: Now, Waiting to hear back and Upcoming. "+ Add task" offers a blank task or one of seven templates.
+- A new Careers workspace starts with four calendars: Interviews, Closing dates, Follow-ups and Offer deadlines. An event the tracker adds will say "Added from Gmail", with Prep me and Open in recorder for interviews.
+
+**What was fixed**
+- The first week's tasks are dated in order (Thursday's task no longer lands before Monday's).
+
+**Known differences and open items**
+- In a Careers workspace the top row has no Undo and Redo buttons, as the canvas draws it. Ctrl+Z, Ctrl+Y and every Undo toast still work.
+
 ## 0.8.2 (11 November 2026)
 
 Careers Step 2, reviewed (branch `careers/s2-intake`).

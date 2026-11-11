@@ -515,8 +515,11 @@ impl App {
             resp
         } else {
             let mut resp = None;
+            let careers_top = self.store.data.mode == Mode::Careers;
             ui.horizontal(|ui| {
-                let right_w = (space::NAV_ICON + space::S10) * 3.0 + space::S4 * 2.0;
+                // Careers: no Undo and Redo here (Ctrl+Z, Ctrl+Y and every Undo toast still work), so
+                // the name and its Careers label fit, as the canvas draws the row
+                let right_w = if careers_top { space::NAV_ICON + space::S10 } else { (space::NAV_ICON + space::S10) * 3.0 + space::S4 * 2.0 };
                 let w = (ui.available_width() - right_w).max(space::NAV_TILE);
                 let (rect, r) = ui.allocate_exact_size(egui::vec2(w, space::NAV_ITEM_H), egui::Sense::click());
                 if r.hovered() {
@@ -526,7 +529,7 @@ impl App {
                 ws_tile(ui.painter(), tile, &initial);
                 // a Careers workspace shows its mode beside the name (Careers brief, "Sidebar")
                 let careers = self.store.data.mode == Mode::Careers;
-                let chip_w = if careers { space::S40 * 1.6 } else { 0.0 };
+                let chip_w = if careers { ui.painter().layout_no_wrap(Mode::Careers.label().to_string(), fs(size::TAG), tok::TEXT_ON_DARK).size().x + space::S8 * 2.0 + space::S6 } else { 0.0 };
                 let room = rect.width() - space::NAV_TILE - space::S8 - space::S18 - chip_w;
                 let name = fit_text(ui.painter(), &meta.name, fs(size::BODY), room);
                 let g = ui.painter().layout_no_wrap(name, fs(size::BODY), tok::TEXT_ON_DARK.gamma_multiply(labels));
@@ -543,15 +546,17 @@ impl App {
                     if icon_button(ui, Icon::Collapse, true, true).on_hover_text("Collapse the sidebar (Ctrl+\\)").clicked() {
                         self.toggle_sidebar();
                     }
-                    let redo = self.store.data.redo_target().map(|c| c.label.trim_start_matches("Undo: ").to_string());
-                    let redo_tip = redo.as_ref().map(|l| format!("Redo: {l} (Ctrl+Y)")).unwrap_or_else(|| "Nothing to redo".into());
-                    if icon_button(ui, Icon::Redo, redo.is_some(), true).on_hover_text(redo_tip).clicked() {
-                        self.do_redo();
-                    }
-                    let undo = self.store.data.undo_target().map(|c| c.label.clone());
-                    let undo_tip = undo.as_ref().map(|l| format!("Undo: {l} (Ctrl+Z)")).unwrap_or_else(|| "Nothing to undo".into());
-                    if icon_button(ui, Icon::Undo, undo.is_some(), true).on_hover_text(undo_tip).clicked() {
-                        self.do_undo();
+                    if !careers_top {
+                        let redo = self.store.data.redo_target().map(|c| c.label.trim_start_matches("Undo: ").to_string());
+                        let redo_tip = redo.as_ref().map(|l| format!("Redo: {l} (Ctrl+Y)")).unwrap_or_else(|| "Nothing to redo".into());
+                        if icon_button(ui, Icon::Redo, redo.is_some(), true).on_hover_text(redo_tip).clicked() {
+                            self.do_redo();
+                        }
+                        let undo = self.store.data.undo_target().map(|c| c.label.clone());
+                        let undo_tip = undo.as_ref().map(|l| format!("Undo: {l} (Ctrl+Z)")).unwrap_or_else(|| "Nothing to undo".into());
+                        if icon_button(ui, Icon::Undo, undo.is_some(), true).on_hover_text(undo_tip).clicked() {
+                            self.do_undo();
+                        }
                     }
                 });
             });

@@ -799,3 +799,28 @@ pub fn careers_sample(d: &mut WorkspaceData) -> Id {
     d.intakes.push(i);
     id
 }
+
+/// A Careers workspace as the Careers canvases draw it (Main, Projects, Tasks, Calendar): the
+/// sample search adopted from the Careers intake sample, the four calendars and today's
+/// interview, closing date and follow-up. Screenshot data only (`--careers`); never saved.
+/// `full` false: the workspace as Adopt leaves it with nothing else yet (the empty state).
+pub fn careers_workspace(full: bool) -> WorkspaceData {
+    let mut d = WorkspaceData { mode: Mode::Careers, ..Default::default() };
+    careers_calendars(&mut d);
+    if !full {
+        return d;
+    }
+    let iid = careers_sample(&mut d);
+    let _ = crate::resolve::journey::adopt_all(&mut d, &iid);
+    let t = crate::model::today();
+    let cal = |d: &WorkspaceData, name: &str| d.calendars.iter().find(|c| c.name == name).map(|c| c.id.clone()).unwrap_or_default();
+    let ev = |cal: String, title: &str, start: chrono::NaiveDateTime, mins: i64, all_day: bool| Event { id: new_id(), calendar_id: cal, record_id: None, source: String::new(), title: title.into(), start, end: start + Duration::minutes(mins), all_day, location: String::new(), notes: String::new(), recurrence: Default::default(), page_id: None, reminder_min: None, updated: now_ms() };
+    let at = |h: u32, m: u32| t.and_hms_opt(h, m, 0).unwrap_or_default();
+    let (i, c, f) = (cal(&d, "Interviews"), cal(&d, "Closing dates"), cal(&d, "Follow-ups"));
+    let mut screen = ev(i, "Screen call · Corvid Labs, Head of Product", at(10, 30), 30, false);
+    screen.source = "gmail".into();
+    d.events.push(screen);
+    d.events.push(ev(c, "Closing date · Fernbank Software, Director of Product", at(0, 0), 24 * 60, true));
+    d.events.push(ev(f, "Follow up on Tallis Group application", at(0, 0), 24 * 60, true));
+    d
+}

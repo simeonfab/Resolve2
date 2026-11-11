@@ -213,3 +213,37 @@ pub fn run(t: &mut T, port: u16) {
     let dashed: Vec<&str> = careers::ADOPT_STEPS.iter().chain(TEMPLATE.iter()).copied().chain([PUSH, THREE_MONTHS, EXAMPLE]).filter(|s| s.contains('—')).collect();
     t.check("no em dash in the Careers intake's copy", dashed.is_empty(), format!("{dashed:?}"));
 }
+
+/// Careers Step 3: the shell and daily screens in Careers mode.
+pub fn run_s3(t: &mut T) {
+    println!("\n-- Careers Step 3: shell and daily screens --");
+    // the first week's dates run in order from any weekday
+    let week: Vec<WeekTask> = ["Mon", "Tue", "Tue", "Wed", "Thu to Fri"].iter().map(|d| WeekTask { title: String::new(), day: d.to_string() }).collect();
+    let wed = chrono::NaiveDate::from_ymd_opt(2026, 11, 11).unwrap();
+    let dates: Vec<chrono::NaiveDate> = week_dates(&week, wed).into_iter().flatten().collect();
+    t.check("the first week's tasks are dated in order (never Thursday before Monday)", dates.len() == 5 && dates.windows(2).all(|w| w[0] <= w[1]) && dates[0] == chrono::NaiveDate::from_ymd_opt(2026, 11, 16).unwrap(), format!("{dates:?}"));
+    // a new Careers workspace's four calendars
+    let mut d = WorkspaceData { mode: Mode::Careers, ..Default::default() };
+    crate::seed::careers_calendars(&mut d);
+    let names: Vec<&str> = d.calendars.iter().map(|c| c.name.as_str()).collect();
+    let colours: std::collections::HashSet<[u8; 3]> = d.calendars.iter().map(|c| c.color).collect();
+    t.check("a Careers workspace starts with Interviews, Closing dates, Follow-ups and Offer deadlines, each its own colour and shown", names == ["Interviews", "Closing dates", "Follow-ups", "Offer deadlines"] && colours.len() == 4 && d.calendars.iter().all(|c| c.visible), format!("{names:?}"));
+    // the switcher's mode, kept in the workspace list
+    let pm: crate::store::WorkspaceMeta = serde_json::from_str(r#"{"id":"a","name":"Personal","color":[1,2,3],"created":1}"#).unwrap();
+    let mut c = pm.clone();
+    c.mode = Mode::Careers;
+    let cj = serde_json::to_string(&c).unwrap_or_default();
+    t.check("the workspace list keeps each workspace's mode (older lists load as PM; PM isn't written)", pm.mode == Mode::Pm && !serde_json::to_string(&pm).unwrap_or_default().contains("mode") && cj.contains("\"mode\":\"careers\""), &cj);
+    // task templates
+    t.check("+ Add task has the seven templates; Follow up on an application is due in 7 days", TASK_TEMPLATES.len() == 7 && TASK_TEMPLATES[0] == ("Follow up on an application", Some(7)) && TASK_TEMPLATES[6].0 == "Prepare an offer response", "");
+    t.check("tasks and events carry an empty Pipeline link, never written until it's set", !serde_json::to_string(&Task::new("x".to_string())).unwrap_or_default().contains("record_id"), "");
+    // Home's numbers come from the workspace itself
+    let full = crate::seed::careers_workspace(true);
+    let w = crate::ui::dashboard::careers_week(&full, today());
+    t.check("Home's counts line: applied against the weekly target, interviews this week, closing soon", w.target == 10 && w.daily == 20 && w.applied == 0 && w.interviews == 1 && w.closing == 1 && w.subline.contains("0 of 10 applied this week · 1 interview · 1 closing soon"), &w.subline);
+    let p = full.projects.first().map(|x| x.id.clone()).unwrap_or_default();
+    let mut dates: Vec<chrono::NaiveDate> = full.tasks.iter().filter(|x| x.project_id.as_deref() == Some(p.as_str())).filter_map(|x| x.due).collect();
+    let sorted = { let mut s = dates.clone(); s.sort(); s };
+    t.check("Adopt dates the first week in the order of the list", dates.len() == 5 && { dates.dedup(); true } && full.tasks.iter().filter(|x| x.project_id.as_deref() == Some(p.as_str())).filter_map(|x| x.due).collect::<Vec<_>>() == sorted, "");
+    t.check("an event the tracker added is marked from Gmail", full.events.iter().any(|e| e.source == "gmail"), "");
+}

@@ -219,6 +219,10 @@ enum HomeAct {
     Toggle(Id),
     OpenEvent(Id),
     AllProjects,
+    /// Careers: Start my daily hunt.
+    Hunt,
+    /// Careers: a card's link to its screen (Pipeline…).
+    Section(nav::Section),
     OpenProject(Id),
     Captured,
     RetryPlan,
@@ -228,7 +232,21 @@ enum HomeAct {
 
 impl App {
     pub fn dashboard(&mut self, ui: &mut egui::Ui, p: &Pal) {
-        let m = home_model(&self.store.data, now_local(), now_ms(), self.current_project.as_deref());
+        let mut m = home_model(&self.store.data, now_local(), now_ms(), self.current_project.as_deref());
+        let careers = self.store.data.mode == Mode::Careers;
+        let cw = careers_week(&self.store.data, today());
+        if careers {
+            m.subline = cw.subline.clone();
+            // the move comes from the search: its first move with its own reason
+            if let Some(h) = m.hero.as_mut() {
+                if let Some(c) = self.store.data.context_for(&h.project_id) {
+                    if !c.recommendation.recommended_action.trim().is_empty() {
+                        h.title = c.recommendation.recommended_action.clone();
+                        h.why = c.recommendation.why.clone();
+                    }
+                }
+            }
+        }
         let state = match self.view_state {
             ViewState::Full if m.hero.is_none() && m.projects.is_empty() => ViewState::Empty,
             ViewState::Full if self.plan.error.is_some() => ViewState::Error,
@@ -273,6 +291,9 @@ impl App {
                         ui.allocate_ui_with_layout(egui::vec2(left_w, 0.0), Layout::top_down(Align::Min), |ui| {
                             ui.set_width(left_w);
                             ui.spacing_mut().item_spacing.y = space::S16;
+                            if careers && state != ViewState::Loading {
+                                motion::fade_in(ui, card(0), rise, |ui| add_job_card(ui, p, &mut self.temp));
+                            }
                             match state {
                                 ViewState::Loading => {
                                     skeleton(ui, p, left_w, space::HOME_SKELETON_HERO);
@@ -282,10 +303,10 @@ impl App {
                                     motion::fade_in(ui, card(0), rise, |ui| {
                                         white_card(ui, p, false, |ui| {
                                             ui.label(RichText::new("Start here").font(fs(size::CARD_HEAD)).color(p.orange));
-                                            ui.label(RichText::new("Bring in your first project.").font(fserif(size::STEP_TITLE)).color(p.text));
-                                            wrap_label(ui, RichText::new("Tell Resolve what's going on, however messy. You'll get one clear first move and a roadmap you can change any time.").size(size::HERO_BODY).color(p.dim));
+                                            ui.label(RichText::new(if careers { "Start your job search." } else { "Bring in your first project." }).font(fserif(size::STEP_TITLE)).color(p.text));
+                                            wrap_label(ui, RichText::new(if careers { "Tell Resolve what job you want. You'll get your gates, your CV templates and one clear first move." } else { "Tell Resolve what's going on, however messy. You'll get one clear first move and a roadmap you can change any time." }).size(size::HERO_BODY).color(p.dim));
                                             ui.add_space(space::S10);
-                                            if button(ui, p, ButtonKind::Primary, "New project →", false, true).clicked() {
+                                            if button(ui, p, ButtonKind::Primary, if careers { "Start a job search →" } else { "New project →" }, false, true).clicked() {
                                                 acts.push(HomeAct::NewProject);
                                             }
                                         });
@@ -359,8 +380,9 @@ impl App {
                                             ui.label(RichText::new("Nothing scheduled. Events and dated tasks show here.").size(size::ROW_SMALL).color(p.dim));
                                         }
                                         for (i, a) in m.agenda.iter().enumerate() {
+                                            let cal = a.event.as_ref().filter(|_| careers).and_then(|e| self.store.data.events.iter().find(|x| &x.id == e)).and_then(|e| self.store.data.calendar(&e.calendar_id)).map(|c| rgb(c.color));
                                             let mark = match a.kind {
-                                                AgendaKind::Event => Mark::Event(p.orange),
+                                                AgendaKind::Event => Mark::Event(cal.unwrap_or(p.orange)),
                                                 AgendaKind::Task => Mark::Task(tok::AMBER),
                                                 AgendaKind::Captured => Mark::Task(p.faint),
                                             };
@@ -391,6 +413,9 @@ impl App {
                                         skeleton_card(ui, p, 2, "");
                                     }
                                     ui.label(RichText::new("Loading your day…").size(size::SMALL).color(p.dim));
+                                }
+                                ViewState::Full | ViewState::Empty if careers => {
+                                    careers_aside(ui, p, &cw, &mut acts);
                                 }
                                 ViewState::Empty => {
                                     motion::fade_in(ui, card(1), rise, |ui| {
@@ -497,6 +522,12 @@ impl App {
                 }
                 HomeAct::Captured => self.go(View::Inbox),
                 HomeAct::OpenToday => self.go(View::Today),
+                HomeAct::Hunt => {
+                    // the daily hunt is Scout's (its schedule comes with Pipeline)
+                    self.resolve_ui.agent = "scout".into();
+                    self.go(View::Sec(nav::Section::AiTeam));
+                }
+                HomeAct::Section(s) => self.go(View::Sec(s)),
                 HomeAct::SamplePersonal => {
                     if let Some(w) = self.reg.find("Personal").map(|w| w.id.clone()) {
                         self.switch_workspace(&w);
@@ -506,4 +537,81 @@ impl App {
         }
         let _ = Local::now();
     }
+}
+
+
+/// Careers Home's numbers (Careers brief, "Home"), from the open workspace's own data. Applied,
+/// waiting and the Pipeline's stages come from Pipeline records (Step 4): until then they are 0
+/// and their cards show their empty state.
+pub struct CareersWeek {
+    pub subline: String,
+    pub applied: usize,
+    pub target: usize,
+    pub found_today: usize,
+    pub daily: usize,
+    pub interviews: usize,
+    pub closing: usize,
+}
+
+pub fn careers_week(d: &WorkspaceData, t: chrono::NaiveDate) -> CareersWeek {
+    use chrono::Datelike;
+    let field = |k: &str, def: usize| d.records.iter().filter(|r| r.kind == crate::resolve::Kind::SearchTarget).find_map(|r| r.fields.get(k).and_then(|v| v.parse::<usize>().ok())).unwrap_or(def);
+    let (target, daily) = (field("weekly_target", 10), field("daily_found", 20));
+    let monday = t - chrono::Duration::days(t.weekday().num_days_from_monday() as i64);
+    let in_cal = |name: &str, from: chrono::NaiveDate, to: chrono::NaiveDate| d.events.iter().filter(|e| d.calendar(&e.calendar_id).map_or(false, |c| c.name == name)).filter(|e| e.start.date() >= from && e.start.date() <= to).count();
+    let interviews = in_cal("Interviews", monday, monday + chrono::Duration::days(6));
+    let closing = in_cal("Closing dates", t, t + chrono::Duration::days(7));
+    let applied = 0;
+    let subline = format!("{} · {applied} of {target} applied this week · {} · {} closing soon", t.format("%A %-d %B"), plural(interviews, "interview", "interviews"), closing);
+    CareersWeek { subline, applied, target, found_today: 0, daily, interviews, closing }
+}
+
+/// ADD A JOB, above the hero: paste text, a link, or drop a screenshot. The Reviewer's verdict
+/// (Apply or Skip, the reason, the deciding gate) comes with Pipeline in Step 4.
+fn add_job_card(ui: &mut egui::Ui, p: &Pal, temp: &mut std::collections::HashMap<String, String>) {
+    white_card(ui, p, false, |ui| {
+        ui.horizontal(|ui| {
+            ui.label(RichText::new("ADD A JOB").font(fs(size::CARD_HEAD)).color(p.text));
+            ui.label(RichText::new("Paste the ad text, a link, or drop a screenshot").size(size::ROW_SMALL).color(p.dim));
+        });
+        let mut text = temp.get("add_job").cloned().unwrap_or_default();
+        answer_box(ui, p, egui::Id::new("careers-add-job"), &mut text, "Paste the ad text or a link", space::S40 * 1.6, true);
+        temp.insert("add_job".into(), text);
+        wrap_label(ui, RichText::new("Unverified: the Reviewer's verdict and Open in Pipeline come in Step 4. Nothing you paste here is saved yet.").size(size::SMALL).color(p.dim));
+    });
+}
+
+/// The right column in Careers: THIS WEEK, WAITING TO HEAR BACK, PIPELINE, NEW FROM SCOUT and
+/// NEEDS A CHECK. The last four need Pipeline (Step 4) and show their empty state until then.
+fn careers_aside(ui: &mut egui::Ui, p: &Pal, w: &CareersWeek, acts: &mut Vec<HomeAct>) {
+    white_card(ui, p, false, |ui| {
+        card_head(ui, p, "THIS WEEK", None, false);
+        ui.horizontal(|ui| {
+            ui.label(RichText::new(w.applied.to_string()).font(fserif(size::CARD_SERIF)).color(p.text));
+            ui.label(RichText::new(format!("of {} applied", w.target)).size(size::ROW_SMALL).color(p.dim));
+        });
+        progress_line(ui, p, if w.target == 0 { 0.0 } else { w.applied as f32 / w.target as f32 }, ui.available_width());
+        ui.label(RichText::new(format!("Today's hunt · {} of {} found", w.found_today, w.daily)).size(size::ROW_SMALL).color(p.text));
+        if button(ui, p, ButtonKind::Secondary, "✦ Start my daily hunt", false, true).on_hover_text("Scout's daily hunt, in AI Team").clicked() {
+            acts.push(HomeAct::Hunt);
+        }
+    });
+    white_card(ui, p, false, |ui| {
+        card_head(ui, p, "WAITING TO HEAR BACK", None, false);
+        wrap_label(ui, RichText::new("Nothing yet. Roles you've applied to show here, oldest first, with the days since you applied.").size(size::ROW_SMALL).color(p.dim));
+    });
+    white_card(ui, p, false, |ui| {
+        if card_head(ui, p, "PIPELINE", Some(("All →", p.orange)), true) {
+            acts.push(HomeAct::Section(nav::Section::Pipeline));
+        }
+        wrap_label(ui, RichText::new("No roles yet. Add a job above, and the count per stage shows here.").size(size::ROW_SMALL).color(p.dim));
+    });
+    white_card(ui, p, true, |ui| {
+        card_head(ui, p, "NEW FROM SCOUT", None, false);
+        wrap_label(ui, RichText::new("Nothing waiting. Roles Scout finds wait here for you to keep or skip.").size(size::ROW_SMALL).color(p.dim));
+    });
+    white_card(ui, p, false, |ui| {
+        card_head(ui, p, "NEEDS A CHECK", None, false);
+        wrap_label(ui, RichText::new("Nothing to check. When the tracker isn't sure about an email, it asks here.").size(size::ROW_SMALL).color(p.dim));
+    });
 }

@@ -1641,6 +1641,8 @@ pub struct ProjectCardView<'a> {
     /// (Now, Next, Later, open questions) as their labels: "2 Now", "8 open questions".
     pub pills: [&'a str; 4],
     pub updated: &'a str,
+    /// Careers: the stage strip (Sourced, Applied, Screen, Interview, Offer) in place of the pills.
+    pub strip: &'a [(&'a str, usize)],
 }
 
 /// A small pill: ink for Now, sunk for Next and Later, terracotta tint for open questions.
@@ -1698,14 +1700,32 @@ pub fn project_card(ui: &mut Ui, p: &Pal, c: &ProjectCardView, menu_open: bool) 
             ui.painter().rect_filled(Rect::from_min_size(r.min, egui::vec2(w * c.frac.clamp(0.0, 1.0), space::BAR_H)), space::BAR_H / 2.0, tok::AMBER);
             ui.label(RichText::new(c.done).size(size::SMALL).color(p.dim));
         });
-        ui.horizontal_wrapped(|ui| {
-            ui.spacing_mut().item_spacing.x = space::S6;
-            for (i, t) in c.pills.iter().enumerate() {
-                if !t.is_empty() {
-                    count_pill(ui, p, t, i);
+        if c.strip.is_empty() {
+            ui.horizontal_wrapped(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S6;
+                for (i, t) in c.pills.iter().enumerate() {
+                    if !t.is_empty() {
+                        count_pill(ui, p, t, i);
+                    }
                 }
-            }
-        });
+            });
+        } else {
+            // the stage strip: each stage's count over its name, side by side
+            let n = c.strip.len() as f32;
+            let cw = (ui.available_width() - space::S6 * (n - 1.0)) / n;
+            ui.horizontal(|ui| {
+                ui.spacing_mut().item_spacing.x = space::S6;
+                for (name, k) in c.strip {
+                    egui::Frame::none().fill(p.surface_raised).rounding(Rounding::same(radius::SMALL_BUTTON)).inner_margin(egui::Margin::symmetric(0.0, space::S6)).show(ui, |ui| {
+                        ui.set_width(cw);
+                        ui.vertical_centered(|ui| {
+                            ui.label(RichText::new(k.to_string()).font(fs(size::ROW)).color(p.text));
+                            ui.label(RichText::new(*name).size(size::TINY).color(p.dim));
+                        });
+                    });
+                }
+            });
+        }
         ui.with_layout(Layout::right_to_left(Align::Min), |ui| {
             ui.label(RichText::new(c.updated).size(size::SMALL).color(p.dim));
         });
