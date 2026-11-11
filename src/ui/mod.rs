@@ -1850,6 +1850,10 @@ impl App {
                     } else if empty {
                         i.input.clear();
                         i.attachments.clear();
+                    } else if error {
+                        // a PDF Resolve couldn't read: the message and the paste box
+                        i.attachments.truncate(1);
+                        i.attachments.push(crate::resolve::intake::Attachment { name: "Profile.pdf".into(), place: "cv".into(), how: "you".into(), unreadable: true, ..Default::default() });
                     }
                 }
                 "questions" => {
