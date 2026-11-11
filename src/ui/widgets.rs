@@ -1273,6 +1273,25 @@ pub fn side_status(ui: &mut Ui, text: &str, ok: bool, labels: f32) -> Response {
     resp
 }
 
+/// The sidebar footer's preview label ("Preview: branch, version"), amber on the dark sidebar.
+/// Collapsed: an amber "P" in the label's place.
+pub fn preview_note(ui: &mut Ui, text: &str, labels: f32) -> Response {
+    let w = ui.available_width();
+    let text_w = w - space::NAV_LABEL_X + space::S10;
+    let g = (labels > 0.01).then(|| ui.painter().layout(text.to_string(), fs(size::TINY), tok::AMBER.gamma_multiply(labels), text_w));
+    let h = g.as_ref().map_or(space::S18, |g| g.size().y.max(space::S18));
+    let (rect, resp) = ui.allocate_exact_size(egui::vec2(w, h), Sense::hover());
+    match g {
+        Some(g) => {
+            ui.painter().galley(egui::pos2(rect.left() + space::NAV_ICON_X + space::S10, rect.top()), g, tok::AMBER);
+        }
+        None => {
+            ui.painter().text(egui::pos2(rect.left() + space::NAV_ICON_X, rect.top()), Align2::CENTER_TOP, "P", fs(size::TINY), tok::AMBER);
+        }
+    }
+    resp
+}
+
 /// The project picker's row (dot + name + ▾) on the dark sidebar. Collapsed: the dot alone.
 pub fn picker_row(ui: &mut Ui, dot: Color32, name: &str, labels: f32) -> Response {
     let (rect, resp) = ui.allocate_exact_size(egui::vec2(ui.available_width(), space::NAV_ITEM_H), Sense::click());

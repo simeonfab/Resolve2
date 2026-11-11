@@ -55,6 +55,17 @@ fn arg_value(args: &[String], flag: &str) -> Option<String> {
 fn main() {
     let args: Vec<String> = std::env::args().collect();
     let testlab = args.iter().any(|a| a == "--testlab");
+    // a preview build: its own data folder, and never the real one
+    if store::PREVIEW.is_some() {
+        match arg_value(&args, "--data-dir") {
+            Some(d) if store::is_real_root(std::path::Path::new(&d)) => {
+                eprintln!("Refused: Resolve 2 Preview never opens the real data folder ({d}).");
+                std::process::exit(2);
+            }
+            Some(_) => {}
+            None => store::set_root(store::preview_root()),
+        }
+    }
     if let Some(d) = arg_value(&args, "--data-dir") {
         let p = PathBuf::from(d);
         let p = if p.is_absolute() { p } else { std::env::current_dir().map(|c| c.join(&p)).unwrap_or(p) };
@@ -62,6 +73,35 @@ fn main() {
     } else if testlab {
         // Test Intake never touches the real data folder
         store::set_root(resolve::testlab::default_root());
+    }
+    if store::PREVIEW.is_some() && store::is_real_root(&store::root()) {
+        eprintln!("Refused: Resolve 2 Preview never opens the real data folder ({}).", store::root().display());
+        std::process::exit(2);
+    }
+    // resolve2 --seed-sample: add the café sample workspace to this data folder (the preview
+    // script uses it); refused in the real data folder
+    if args.iter().any(|a| a == "--seed-sample") {
+        if store::is_real_root(&store::root()) {
+            eprintln!("Refused: the sample goes in a preview or sandbox folder, never the real one.");
+            std::process::exit(2);
+        }
+        let mut reg = store::Registry::load();
+        let meta = match reg.find("Café sample").cloned() {
+            Some(m) => m,
+            None => reg.create("Café sample", [200, 160, 64]),
+        };
+        let mut st = store::Store::open(meta);
+        let mut d = model::WorkspaceData::default();
+        seed::seed_canvas(&mut d);
+        st.data = d;
+        match st.save() {
+            Ok(_) => println!("café sample workspace ready in {}", store::root().display()),
+            Err(e) => {
+                eprintln!("{e}");
+                std::process::exit(1);
+            }
+        }
+        return;
     }
     // standing rule: screenshots run only in a sandbox folder, never the real data folder. This
     // runs before anything opens a workspace. With no --data-dir, a screenshot gets a fresh sandbox
@@ -435,7 +475,11 @@ fn main() {
     let native = eframe::NativeOptions {
         viewport: eframe::egui::ViewportBuilder::default()
             // the version in the title (CHANGELOG.md has what each one changed)
-            .with_title(if testlab { format!("Resolve 2 {}: Test Intake (sandbox)", env!("CARGO_PKG_VERSION")) } else { format!("Resolve 2 {}", env!("CARGO_PKG_VERSION")) })
+            .with_title(match (testlab, store::PREVIEW) {
+                (true, _) => format!("Resolve 2 {}: Test Intake (sandbox)", env!("CARGO_PKG_VERSION")),
+                (false, Some(b)) => format!("Resolve 2 Preview: {b}, {}", env!("CARGO_PKG_VERSION")),
+                _ => format!("Resolve 2 {}", env!("CARGO_PKG_VERSION")),
+            })
             // --size WxH (screenshots at a given window width)
             .with_inner_size(arg_value(&args, "--size").and_then(|s| s.split_once('x').and_then(|(w, h)| Some([w.parse::<f32>().ok()?, h.parse::<f32>().ok()?]))).unwrap_or([1600.0, 900.0]))
             .with_min_inner_size([960.0, 600.0]),

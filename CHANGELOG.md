@@ -2,6 +2,14 @@
 
 Every build of Resolve 2 has a version number. The minor number goes up for each merged redesign phase or Careers step, the patch number for each fix. You can see the version in the window title. Newest first.
 
+## 0.8.1 (11 November 2026)
+
+Careers Step 2, continued (branch `careers/s2-intake`). Waiting for your review in the preview, not merged yet.
+
+**What changed**
+- PDFs read properly: CVs, LinkedIn exports and documents saved from Google Docs come in as clean text. If a PDF still can't be read, Resolve says "Resolve couldn't read this PDF. Paste the text instead." and gives you a box to paste it into.
+- Resolve 2 Preview: a separate app on your desktop for trying a branch before it's merged. It has its own copy of your data plus the café sample, never touches your real workspaces, and its sidebar says "Preview" with the branch and version.
+
 ## 0.8.0 (10 November 2026)
 
 Careers Step 2: the Careers intake (branch `careers/s2-intake`). Waiting for review, not merged yet.
@@ -18,7 +26,7 @@ Careers Step 2: the Careers intake (branch `careers/s2-intake`). Waiting for rev
 - Build checks now take their picture of the café sample's Home, in a sandbox, instead of the first-run screen.
 
 **Known differences and open items**
-- A PDF exported by most modern tools (a LinkedIn export likely included) doesn't read cleanly yet. Fixing it needs a PDF library; that's a question for you first.
+- A PDF exported by most modern tools didn't read cleanly. Fixed in 0.8.1.
 
 ## 0.7.1 (10 November 2026)
 

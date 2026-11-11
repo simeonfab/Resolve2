@@ -872,6 +872,9 @@ impl App {
 
     /// Sync with the always-on hub every minute (or now, when `force`), off the UI thread.
     pub fn hub_tick(&mut self, force: bool) {
+        if crate::store::PREVIEW.is_some() {
+            return;
+        }
         if let Some(rx) = &self.hub_rx {
             match rx.try_recv() {
                 Ok(Ok(merged)) => {
@@ -906,7 +909,8 @@ impl App {
     }
 
     pub fn ensure_server(&mut self) {
-        let want = self.store.settings.server_enabled;
+        // a preview runs no server (it would share the real app's port and MCP name)
+        let want = self.store.settings.server_enabled && crate::store::PREVIEW.is_none();
         let port = self.store.settings.server_port;
         let matches = self.server.as_ref().map_or(false, |s| s.port == port && s.workspace_id == self.store.meta.id);
         if want && !matches {
