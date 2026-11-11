@@ -1273,6 +1273,24 @@ pub fn side_status(ui: &mut Ui, text: &str, ok: bool, labels: f32) -> Response {
     resp
 }
 
+/// A small mode label on the dark sidebar ("Careers"), its left edge at `left_center`. Returns
+/// its width.
+pub fn mode_chip_at(painter: &egui::Painter, left_center: Pos2, label: &str, alpha: f32) -> f32 {
+    let g = painter.layout_no_wrap(label.to_string(), fs(size::TAG), tok::TEXT_ON_DARK.gamma_multiply(alpha));
+    let r = Rect::from_min_size(egui::pos2(left_center.x, left_center.y - g.size().y / 2.0 - space::S4 / 2.0), g.size() + egui::vec2(space::S8 * 2.0, space::S4));
+    painter.rect_filled(r, radius::PILL, tok::amber_a(0.22 * alpha));
+    painter.galley(r.min + egui::vec2(space::S8, space::S4 / 2.0), g, tok::TEXT_ON_DARK);
+    r.width()
+}
+
+/// A workspace row's mode label in the switcher: PM neutral, Careers green.
+pub fn mode_tag(ui: &mut Ui, p: &Pal, mode: crate::model::Mode) -> Response {
+    match mode {
+        crate::model::Mode::Careers => tag(ui, mode.label(), p.green_text, p.green_tint),
+        _ => tag(ui, mode.label(), p.dim, p.surface_sunk),
+    }
+}
+
 /// The sidebar footer's preview label ("Preview: branch, version"), amber on the dark sidebar.
 /// Collapsed: an amber "P" in the label's place.
 pub fn preview_note(ui: &mut Ui, text: &str, labels: f32) -> Response {

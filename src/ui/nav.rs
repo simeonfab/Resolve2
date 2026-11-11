@@ -321,6 +321,22 @@ impl App {
         }
     }
 
+    /// Keep the registry's mode for the open workspace in step with its data (the switcher reads it).
+    pub fn sync_meta_mode(&mut self) {
+        let m = self.store.data.mode;
+        if self.store.meta.mode == m {
+            return;
+        }
+        self.store.meta.mode = m;
+        let id = self.store.meta.id.clone();
+        if let Some(w) = self.reg.workspaces.iter_mut().find(|w| w.id == id) {
+            w.mode = m;
+        }
+        if !self.no_save {
+            self.reg.save();
+        }
+    }
+
     pub fn do_undo(&mut self) {
         let Some(cs) = self.store.data.undo_target().map(|c| c.id.clone()) else {
             self.toast("Nothing to undo");
@@ -508,12 +524,18 @@ impl App {
                 }
                 let tile = egui::Rect::from_min_size(rect.left_center() - egui::vec2(0.0, space::NAV_TILE / 2.0), egui::vec2(space::NAV_TILE, space::NAV_TILE));
                 ws_tile(ui.painter(), tile, &initial);
-                let room = rect.width() - space::NAV_TILE - space::S8 - space::S18;
+                // a Careers workspace shows its mode beside the name (Careers brief, "Sidebar")
+                let careers = self.store.data.mode == Mode::Careers;
+                let chip_w = if careers { space::S40 * 1.6 } else { 0.0 };
+                let room = rect.width() - space::NAV_TILE - space::S8 - space::S18 - chip_w;
                 let name = fit_text(ui.painter(), &meta.name, fs(size::BODY), room);
                 let g = ui.painter().layout_no_wrap(name, fs(size::BODY), tok::TEXT_ON_DARK.gamma_multiply(labels));
                 let gx = tile.right() + space::S8;
-                let gw = g.size().x;
+                let mut gw = g.size().x;
                 ui.painter().galley(egui::pos2(gx, rect.center().y - g.size().y / 2.0), g, tok::TEXT_ON_DARK);
+                if careers {
+                    gw += space::S6 + mode_chip_at(ui.painter(), egui::pos2(gx + gw + space::S6, rect.center().y), Mode::Careers.label(), labels);
+                }
                 paint_icon(ui.painter(), egui::pos2(gx + gw + space::S10, rect.center().y), Icon::Down, tok::TEXT_ON_DARK_SOFT.gamma_multiply(labels));
                 resp = Some(r.on_hover_cursor(egui::CursorIcon::PointingHand));
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
@@ -543,10 +565,18 @@ impl App {
         egui::popup_below_widget(ui, popup, &resp, egui::PopupCloseBehavior::CloseOnClick, |ui| {
             ui.set_min_width(space::SIDEBAR - space::NAV_PAD * 2.0);
             ui.label(RichText::new("Workspaces (each is private)").size(size::SMALL).color(p.dim));
+            // each row shows its mode (the open one reads its own data, the rest the registry)
+            let here = self.store.data.mode;
             for w in self.reg.workspaces.clone() {
-                if ui.selectable_label(w.id == meta.id, format!("●  {}", w.name)).clicked() {
-                    switch_to = Some(w.id.clone());
-                }
+                let mode = if w.id == meta.id { here } else { w.mode };
+                ui.horizontal(|ui| {
+                    if ui.selectable_label(w.id == meta.id, format!("●  {}", w.name)).clicked() {
+                        switch_to = Some(w.id.clone());
+                    }
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        mode_tag(ui, p, mode);
+                    });
+                });
             }
             ui.separator();
             if ui.button("+ Start something new with Resolve").on_hover_text("Runs the intake; Adopt creates a new workspace with your project as its first project").clicked() {
@@ -573,9 +603,12 @@ impl App {
 
     fn project_picker(&mut self, ui: &mut egui::Ui, p: &Pal, labels: f32, icons_only: bool) {
         let cur = self.current_project.as_deref().and_then(|id| self.store.data.project(id)).map(|x| (x.name.clone(), x.color));
+        // Careers: the picker chooses the search
+        let careers = self.store.data.mode == Mode::Careers;
+        let (all, new_one) = if careers { ("All searches", "+ New search (opens the intake)") } else { ("All projects", "+ New project (opens the intake)") };
         let (name, dot) = match &cur {
             Some((n, c)) => (n.clone(), rgb(*c)),
-            None => ("All projects".to_string(), tok::TEXT_ON_DARK_MUTED),
+            None => (all.to_string(), tok::TEXT_ON_DARK_MUTED),
         };
         let resp = picker_row(ui, dot, &name, labels);
         if icons_only {
@@ -589,7 +622,7 @@ impl App {
         let mut new_project = false;
         egui::popup_below_widget(ui, popup, &resp, egui::PopupCloseBehavior::CloseOnClick, |ui| {
             ui.set_min_width(space::SIDEBAR - space::NAV_PAD * 2.0);
-            if ui.selectable_label(self.current_project.is_none(), "All projects").clicked() {
+            if ui.selectable_label(self.current_project.is_none(), all).clicked() {
                 pick = Some(None);
             }
             let mut ps: Vec<&Project> = self.store.data.projects.iter().filter(|x| !x.archived).collect();
@@ -600,7 +633,7 @@ impl App {
                 }
             }
             ui.separator();
-            if ui.selectable_label(false, RichText::new("+ New project (opens the intake)").color(p.text)).clicked() {
+            if ui.selectable_label(false, RichText::new(new_one).color(p.text)).clicked() {
                 new_project = true;
             }
         });

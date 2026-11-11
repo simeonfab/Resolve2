@@ -81,6 +81,10 @@ pub struct WorkspaceMeta {
     /// multi-user Resolve can scope every workspace to an account without a data migration.
     #[serde(default = "local_owner")]
     pub owner: String,
+    /// The workspace's mode, so the switcher can label each row without opening it. Kept in
+    /// step with the workspace's own data when it opens; PM is never written.
+    #[serde(default, skip_serializing_if = "Mode::is_pm")]
+    pub mode: Mode,
 }
 
 pub fn local_owner() -> String {
@@ -189,7 +193,7 @@ impl Registry {
             .unwrap_or_default();
         if reg.workspaces.is_empty() {
             // your real workspace starts clean; the demo content lives in its own workspace
-            let personal = WorkspaceMeta { id: new_id(), name: "Personal".into(), color: crate::ui::theme::PICK_COLOURS[2], icon: "P".into(), created: now_ms(), owner: local_owner() };
+            let personal = WorkspaceMeta { mode: Mode::Pm, id: new_id(), name: "Personal".into(), color: crate::ui::theme::PICK_COLOURS[2], icon: "P".into(), created: now_ms(), owner: local_owner() };
             let dir = workspace_dir(&personal.id);
             let _ = fs::create_dir_all(&dir);
             let mut data = WorkspaceData::default();
@@ -221,6 +225,7 @@ impl Registry {
             icon: name.chars().next().map(|c| c.to_uppercase().to_string()).unwrap_or_default(),
             created: now_ms(),
             owner: local_owner(),
+            mode: Mode::Pm,
         };
         let dir = workspace_dir(&meta.id);
         let _ = fs::create_dir_all(&dir);

@@ -11,6 +11,18 @@ pub fn seed_empty(d: &mut WorkspaceData) {
     d.calendars.push(Calendar { id: new_id(), name: "Personal".into(), color: crate::ui::theme::PICK_COLOURS[1], visible: true, updated: t, ..Default::default() });
 }
 
+/// A new Careers workspace's four calendars (Careers brief, "Calendar"): each does the job of a
+/// tag, with its own colour from the tokens and its own toggle.
+pub fn careers_calendars(d: &mut WorkspaceData) {
+    use crate::ui::theme::tok;
+    let rgb = |c: eframe::egui::Color32| [c.r(), c.g(), c.b()];
+    let t = now_ms();
+    d.calendars = [("Interviews", tok::TERRACOTTA), ("Closing dates", tok::AMBER), ("Follow-ups", tok::GREEN), ("Offer deadlines", tok::INK_SOFT)]
+        .into_iter()
+        .map(|(name, c)| Calendar { id: new_id(), name: name.into(), color: rgb(c), visible: true, updated: t, ..Default::default() })
+        .collect();
+}
+
 fn at(h: u32, m: u32) -> NaiveTime {
     NaiveTime::from_hms_opt(h, m, 0).unwrap()
 }
@@ -263,7 +275,7 @@ pub fn seed(d: &mut WorkspaceData) {
         let start = (monday + Duration::days(day)).and_time(at(h, m));
         Event {
             id: new_id(),
-            calendar_id: cal.to_string(),
+            calendar_id: cal.to_string(), record_id: None, source: String::new(),
             title: title.into(),
             start,
             end: start + Duration::minutes(mins),
@@ -636,7 +648,7 @@ pub fn seed_canvas(d: &mut WorkspaceData) {
     // ---- events
     let ev = |cal: &str, title: &str, date: chrono::NaiveDate, h: u32, m: u32, mins: i64, rec: Recurrence, notes: &str| {
         let start = date.and_time(at(h, m));
-        Event { id: new_id(), calendar_id: cal.to_string(), title: title.into(), start, end: start + Duration::minutes(mins), all_day: false, location: String::new(), notes: notes.into(), recurrence: rec, page_id: None, reminder_min: None, updated: t }
+        Event { id: new_id(), calendar_id: cal.to_string(), record_id: None, source: String::new(), title: title.into(), start, end: start + Duration::minutes(mins), all_day: false, location: String::new(), notes: notes.into(), recurrence: rec, page_id: None, reminder_min: None, updated: t }
     };
     let first = today.with_day(1).unwrap_or(today);
     d.events.push(ev(&wc, "Call with The Corner Café", today, 10, 30, 30, Recurrence::None, "Bring the till export so we can check the hours"));

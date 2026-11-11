@@ -301,12 +301,19 @@ impl App {
                 name = format!("{want} {n}");
                 n += 1;
             }
-            let meta = self.reg.create(&name, [94, 125, 79]);
+            let mut meta = self.reg.create(&name, [94, 125, 79]);
+            meta.mode = Mode::Careers;
+            if let Some(w) = self.reg.workspaces.iter_mut().find(|w| w.id == meta.id) {
+                w.mode = Mode::Careers;
+            }
+            self.reg.save();
             let mut moved = it.clone();
             moved.new_workspace = false;
             moved.touch();
             let mut ws = crate::store::Store::open(meta.clone());
             ws.data.mode = Mode::Careers;
+            // the four starter calendars: Interviews, Closing dates, Follow-ups, Offer deadlines
+            crate::seed::careers_calendars(&mut ws.data);
             ws.data.intakes.push(moved);
             let _ = ws.save();
             let old = it.id.clone();

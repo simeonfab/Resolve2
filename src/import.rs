@@ -861,6 +861,8 @@ pub fn ics_events(text: &str, cal_id: &str) -> (Option<String>, Vec<Event>) {
                 out.push(Event {
                     id,
                     calendar_id: cal_id.to_string(),
+                    record_id: None,
+                    source: String::new(),
                     title: if title.is_empty() { "(No title)".into() } else { title },
                     start,
                     end: end.max(start + chrono::Duration::minutes(15)),

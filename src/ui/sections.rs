@@ -126,8 +126,15 @@ impl App {
         if !self.mode().is_pm() && matches!(s, Section::Pipeline | Section::MyCv | Section::Stats | Section::Recorder | Section::Frameworks | Section::Knowledge) {
             self.top_bar(ui, p, |_, _| {});
             let label = nav::nav(self.mode()).iter().flat_map(|g| g.items.iter()).find(|i| i.target == nav::Target::Sec(s)).map(|i| i.label).unwrap_or("This screen");
+            let step = match s {
+                Section::Pipeline => 4,
+                Section::MyCv => 5,
+                Section::Stats => 6,
+                Section::Recorder => 8,
+                _ => 7,
+            };
             ui.add_space(space::S40 * 3.0);
-            if empty_center(ui, p, Icon::Info, &format!("{label} comes in a later step"), "This mode's screens are being built one step at a time.", "Open Home") {
+            if empty_center(ui, p, Icon::Info, &format!("{label}: coming in Step {step}"), "Unverified: this screen isn't built yet, so nothing here works or has been checked.", "Open Home") {
                 self.go(View::Dashboard);
             }
             return;

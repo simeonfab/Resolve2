@@ -729,7 +729,7 @@ fn run(store: &mut Store, name: &str, a: &Value) -> Result<Value, String> {
             let creating = name == "create_event";
             let mut e = if creating {
                 let cal = d.default_calendar().ok_or("Create a calendar first")?;
-                Event { id: new_id(), calendar_id: cal, title: String::new(), start: now_local(), end: now_local(), all_day: false, location: String::new(), notes: String::new(), recurrence: Recurrence::None, page_id: None, reminder_min: None, updated: now_ms() }
+                Event { id: new_id(), calendar_id: cal, record_id: None, source: String::new(), title: String::new(), start: now_local(), end: now_local(), all_day: false, location: String::new(), notes: String::new(), recurrence: Recurrence::None, page_id: None, reminder_min: None, updated: now_ms() }
             } else {
                 let id = arg_str(a, "id").unwrap_or_default();
                 d.events.iter().find(|x| x.id == id).cloned().ok_or("Event not found")?

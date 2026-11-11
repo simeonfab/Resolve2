@@ -856,6 +856,7 @@ impl App {
         }
         self.store = Store::open(meta);
         self.store.auto_backup_if_due();
+        self.sync_meta_mode();
         self.reg.settings.last_workspace = Some(id.to_string());
         self.reg.save();
         self.view = View::Dashboard;
@@ -1463,7 +1464,7 @@ impl App {
                     if let Some(cal) = cal {
                         let e = Event {
                             id: new_id(),
-                            calendar_id: cal,
+                            calendar_id: cal, record_id: None, source: String::new(),
                             title: c.title.clone(),
                             start,
                             end: start + Duration::minutes(c.duration_min.unwrap_or(60) as i64),

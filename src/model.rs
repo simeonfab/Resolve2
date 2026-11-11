@@ -321,6 +321,9 @@ pub struct Project {
 #[derive(Serialize, Deserialize, Clone, Debug, Default)]
 pub struct Task {
     pub id: Id,
+    /// Careers: the Pipeline record this task belongs to (task templates; linked from Step 4 on).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub record_id: Option<Id>,
     pub title: String,
     #[serde(default)]
     pub notes: String,
@@ -457,6 +460,12 @@ fn yes() -> bool {
 pub struct Event {
     pub id: Id,
     pub calendar_id: Id,
+    /// Careers: the Pipeline record this event belongs to (linked from Step 4 on).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub record_id: Option<Id>,
+    /// Who added it: "" by hand, "gmail" for the tracker (the editor shows "Added from Gmail").
+    #[serde(default, skip_serializing_if = "String::is_empty")]
+    pub source: String,
     pub title: String,
     pub start: NaiveDateTime,
     pub end: NaiveDateTime,

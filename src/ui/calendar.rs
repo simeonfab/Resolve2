@@ -1024,7 +1024,7 @@ impl App {
                 None => {
                     self.store.data.events.push(Event {
                         id: new_id(),
-                        calendar_id: dr.calendar_id.clone(),
+                        calendar_id: dr.calendar_id.clone(), record_id: None, source: String::new(),
                         title: dr.title.clone(),
                         start,
                         end,

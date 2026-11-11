@@ -295,6 +295,11 @@ fn main() {
         let mut st = store::Store::open(meta);
         if careers_new {
             st.data.mode = model::Mode::Careers;
+            seed::careers_calendars(&mut st.data);
+            if let Some(w) = reg.workspaces.iter_mut().find(|w| w.id == st.meta.id) {
+                w.mode = model::Mode::Careers;
+            }
+            reg.save();
         }
         let rid = run.id.clone();
         if adopt && (run.proposal.is_some() || careers_new) {
