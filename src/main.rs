@@ -94,8 +94,20 @@ fn main() {
         let mut d = model::WorkspaceData::default();
         seed::seed_canvas(&mut d);
         st.data = d;
-        match st.save() {
-            Ok(_) => println!("café sample workspace ready in {}", store::root().display()),
+        let _ = st.save();
+        // and a Careers one: the sample job search, as Adopt leaves it plus today's events
+        let job = match reg.find("Job search sample").cloned() {
+            Some(m) => m,
+            None => reg.create("Job search sample", [94, 125, 79]),
+        };
+        if let Some(w) = reg.workspaces.iter_mut().find(|w| w.id == job.id) {
+            w.mode = model::Mode::Careers;
+        }
+        reg.save();
+        let mut js = store::Store::open(job);
+        js.data = seed::careers_workspace(true);
+        match js.save() {
+            Ok(_) => println!("café and job search samples ready in {}", store::root().display()),
             Err(e) => {
                 eprintln!("{e}");
                 std::process::exit(1);
